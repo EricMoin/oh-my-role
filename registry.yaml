@@ -1,0 +1,24 @@
+name: oh-my-role
+description: Default rolebox registry — community AI agent roles for opencode
+url: https://github.com/EricMoin/oh-my-role
+roles:
+  software-architect:
+    version: "1.0.0"
+    description: Professional software architect — designs systems, evaluates trade-offs, writes ADRs
+    tags: [architecture, design, planning, patterns]
+  react-frontend:
+    version: "1.0.0"
+    description: React/Next.js frontend developer — builds UIs with TypeScript and Tailwind
+    tags: [react, frontend, typescript, tailwindcss]
+  ai-designer:
+    version: "1.0.0"
+    description: AI application designer — researches, prototypes, and validates product experiences
+    tags: [design, ux, research, prototyping]
+  tauri:
+    version: "1.0.0"
+    description: Tauri desktop app developer — builds cross-platform apps with Rust and web tech
+    tags: [tauri, rust, desktop, cross-platform]
+  dart-flutter:
+    version: "1.0.0"
+    description: Dart/Flutter developer — builds mobile, web, and desktop apps
+    tags: [dart, flutter, mobile, cross-platform]
