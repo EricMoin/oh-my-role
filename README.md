@@ -18,7 +18,8 @@ oh-my-role/
     ├── ai-designer/          # UI/UX design and prototyping
     ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
     ├── tauri/                # Tauri desktop app development
-    └── dart-flutter/         # Dart/Flutter cross-platform development
+    ├── dart-flutter/         # Dart/Flutter cross-platform development
+    └── jetpack-compose/      # Jetpack Compose and Android development
 ```
 
 Each role directory contains:
