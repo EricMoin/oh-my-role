@@ -1,6 +1,6 @@
 ---
 name: dart-collect-coverage
-description: Collect coverage using the coverage packge and create an LCOV report
+description: Collect Dart or Flutter test coverage and create an LCOV report. Use when measuring unit/widget test coverage, enforcing coverage in CI, or generating `coverage/lcov.info`.
 metadata:
   model: models/gemini-3.1-pro-preview
   last_modified: Fri, 24 Apr 2026 15:14:32 GMT
@@ -53,17 +53,25 @@ flutter pub add dev:coverage
 ```
 
 ### 2. Collect Coverage and Generate LCOV
-Use the bundled `test_with_coverage` script. This script automatically runs all tests, collects the JSON coverage data from the Dart VM, and formats it into an LCOV report.
+For a pure Dart package, use the bundled `test_with_coverage` script. This script automatically runs all tests, collects the JSON coverage data from the Dart VM, and formats it into an LCOV report.
 
 ```bash
 dart run coverage:test_with_coverage
 ```
 *Note: If working within a Dart workspace (monorepo), specify the test directories explicitly (e.g., `dart run coverage:test_with_coverage -- pkgs/foo/test pkgs/bar/test`).*
 
+For a Flutter package, use the Flutter test runner's built-in coverage support:
+
+```bash
+flutter test --coverage
+```
+
+This writes `coverage/lcov.info`. For widget-only or package tests, prefer `flutter test --coverage`; use `integration_test` device coverage only when the project already has a device coverage workflow.
+
 ### 3. Feedback Loop: Validate Output
 **Run validator -> review errors -> fix:**
 1. Verify that the `coverage/` directory was created in the project root.
-2. Ensure `coverage/coverage.json` (raw data) and `coverage/lcov.info` (formatted report) exist.
+2. For Dart coverage, ensure `coverage/coverage.json` and `coverage/lcov.info` exist. For Flutter coverage, ensure `coverage/lcov.info` exists.
 3. If coverage is missing for specific files, ensure they are imported and executed by your test files, or add `// coverage:ignore-file` if they are intentionally excluded.
 
 ## Workflow: Advanced Manual Coverage Collection

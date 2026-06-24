@@ -1,132 +1,103 @@
 ---
 name: flutter-apply-architecture-best-practices
-description: Architects a Flutter application using the recommended layered approach (UI, Logic, Data). Use when structuring a new project or refactoring for scalability.
-metadata:
-  model: models/gemini-3.1-pro-preview
-  last_modified: Tue, 21 Apr 2026 20:11:20 GMT
+description: Structure or refactor Flutter applications using project-appropriate architecture, state ownership, UI/data boundaries, dependency injection, and testable feature organization. Use when adding features, reshaping modules, or reviewing scalability.
 ---
 # Architecting Flutter Applications
 
 ## Contents
-- [Architectural Layers](#architectural-layers)
-- [Project Structure](#project-structure)
-- [Workflow: Implementing a New Feature](#workflow-implementing-a-new-feature)
+- [Project-First Rule](#project-first-rule)
+- [Architecture Baseline](#architecture-baseline)
+- [Feature Workflow](#feature-workflow)
 - [Examples](#examples)
 
-## Architectural Layers
+## Project-First Rule
 
-Enforce strict Separation of Concerns by dividing the application into distinct layers. Never mix UI rendering with business logic or data fetching.
+Before changing architecture, inspect the existing project:
 
-### UI Layer (Presentation)
-Implement the MVVM (Model-View-ViewModel) pattern to manage UI state and logic.
-*   **Views:** Write reusable, lean widgets. Restrict logic in Views to UI-specific operations (e.g., animations, layout constraints, simple routing). Pass all required data from the ViewModel.
-*   **ViewModels:** Manage UI state and handle user interactions. Extend `ChangeNotifier` (or use `Listenable`) to expose state. Expose immutable state snapshots to the View. Inject Repositories into ViewModels via the constructor.
+- package/module layout
+- state management (`ChangeNotifier`, Riverpod, Bloc, ValueNotifier, Redux, custom)
+- routing (`Navigator`, `go_router`, auto_route, custom)
+- dependency injection/service location
+- DTO/domain/model conventions
+- code generation and immutable model conventions
+- test organization and fake/mock strategy
 
-### Data Layer
-Implement the Repository pattern to isolate data access logic and create a single source of truth.
-*   **Services:** Create stateless classes to wrap external APIs (HTTP clients, local databases, platform plugins). Return raw API models or `Result` wrappers.
-*   **Repositories:** Consume one or more Services. Transform raw API models into clean Domain Models. Handle caching, offline synchronization, and retry logic. Expose Domain Models to ViewModels.
+Follow established local patterns unless they are the source of the bug or the user explicitly asks for a redesign.
 
-### Logic Layer (Domain - Optional)
-*   **Use Cases:** Implement this layer only if the application contains complex business logic that clutters the ViewModel, or if logic must be reused across multiple ViewModels. Extract this logic into dedicated Use Case (interactor) classes that sit between ViewModels and Repositories.
+## Architecture Baseline
 
-## Project Structure
+For new or unstructured projects, use this default baseline. Adapt names to local conventions.
 
-Organize the codebase using a hybrid approach: group UI components by feature, and group Data/Domain components by type.
+- UI layer: widgets render state and forward user intents. Keep data fetching and business rules out of `build`.
+- Presentation state: a ViewModel/controller/notifier/Bloc owns screen state, commands, loading, errors, and lifecycle-safe cancellation.
+- Domain layer: add use cases only when business logic is reused or would clutter presentation state.
+- Data layer: repositories expose domain-friendly APIs and hide API clients, databases, caches, retries, and synchronization.
+- Models: keep API DTOs separate from domain models when transport nullability, naming, or shape should not leak into UI.
+- Dependencies: inject clients, repositories, clocks, storage, and platform services so tests can replace them.
 
-```text
-lib/
-├── data/
-│   ├── models/         # API models
-│   ├── repositories/   # Repository implementations
-│   └── services/       # API clients, local storage wrappers
-├── domain/
-│   ├── models/         # Clean domain models
-│   └── use_cases/      # Optional business logic classes
-└── ui/
-    ├── core/           # Shared widgets, themes, typography
-    └── features/
-        └── [feature_name]/
-            ├── view_models/
-            └── views/
-```
+Acceptable state primitives include `ChangeNotifier`, `ValueNotifier`, Riverpod notifiers/providers, Bloc/Cubit, streams, or a local pattern already used by the app. Do not introduce a new framework just to satisfy the baseline.
 
-## Workflow: Implementing a New Feature
+## Feature Workflow
 
-Follow this sequential workflow when adding a new feature to the application. Copy the checklist to track progress.
-
-### Task Progress
-- [ ] **Step 1: Define Domain Models.** Create immutable data classes for the feature using `freezed` or `built_value`.
-- [ ] **Step 2: Implement Services.** Create or update Service classes to handle external API communication.
-- [ ] **Step 3: Implement Repositories.** Create the Repository to consume Services and return Domain Models.
-- [ ] **Step 4: Apply Conditional Logic (Domain Layer).**
-  - *If the feature requires complex data transformation or cross-repository logic:* Create a Use Case class.
-  - *If the feature is a simple CRUD operation:* Skip to Step 5.
-- [ ] **Step 5: Implement the ViewModel.** Create the ViewModel extending `ChangeNotifier`. Inject required Repositories/Use Cases. Expose immutable state and command methods.
-- [ ] **Step 6: Implement the View.** Create the UI widget. Use `ListenableBuilder` or `AnimatedBuilder` to listen to ViewModel changes.
-- [ ] **Step 7: Inject Dependencies.** Register the new Service, Repository, and ViewModel in the dependency injection container (e.g., `provider` or `get_it`).
-- [ ] **Step 8: Run Validator.** Execute unit tests for the ViewModel and Repository.
-  - *Feedback Loop:* Run tests -> Review failures -> Fix logic -> Re-run until passing.
+- [ ] Capture project conventions and target platforms.
+- [ ] Define the user-facing state and commands for the feature.
+- [ ] Add or update DTO/domain models only as needed.
+- [ ] Implement service/repository boundaries with injectable dependencies.
+- [ ] Add presentation state using the project's existing state approach.
+- [ ] Build widgets as thin renderers of state.
+- [ ] Add unit tests for business/data logic and widget tests for user-visible behavior.
+- [ ] Run analyzer and relevant tests.
 
 ## Examples
 
-### Data Layer: Service and Repository
+### Repository Boundary
 
 ```dart
-// 1. Service (Raw API interaction)
-class ApiClient {
-  Future<UserApiModel> fetchUser(String id) async {
-    // HTTP GET implementation...
-  }
-}
-
-// 2. Repository (Single source of truth, returns Domain Model)
 class UserRepository {
-  UserRepository({required ApiClient apiClient}) : _apiClient = apiClient;
-  
-  final ApiClient _apiClient;
-  User? _cachedUser;
+  UserRepository({required UsersApi api}) : _api = api;
+
+  final UsersApi _api;
 
   Future<User> getUser(String id) async {
-    if (_cachedUser != null) return _cachedUser!;
-    
-    final apiModel = await _apiClient.fetchUser(id);
-    _cachedUser = User(id: apiModel.id, name: apiModel.fullName); // Transform to Domain Model
-    return _cachedUser!;
+    final dto = await _api.fetchUser(id);
+    return User(id: dto.id, displayName: dto.fullName);
   }
 }
 ```
 
-### UI Layer: ViewModel and View
+### Presentation State with `ChangeNotifier`
+
+Use this shape only when it matches the project, or for small new apps that do not already have a state framework.
 
 ```dart
-// 3. ViewModel (State management and presentation logic)
 class ProfileViewModel extends ChangeNotifier {
-  ProfileViewModel({required UserRepository userRepository}) 
+  ProfileViewModel({required UserRepository userRepository})
       : _userRepository = userRepository;
 
   final UserRepository _userRepository;
 
-  User? _user;
-  User? get user => _user;
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  ProfileState _state = const ProfileState.idle();
+  ProfileState get state => _state;
 
   Future<void> loadProfile(String id) async {
-    _isLoading = true;
+    _state = const ProfileState.loading();
     notifyListeners();
 
     try {
-      _user = await _userRepository.getUser(id);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      final user = await _userRepository.getUser(id);
+      _state = ProfileState.loaded(user);
+    } catch (error, stackTrace) {
+      _state = ProfileState.failed(error, stackTrace);
     }
+
+    notifyListeners();
   }
 }
+```
 
-// 4. View (Dumb UI component)
+### Thin Widget
+
+```dart
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key, required this.viewModel});
 
@@ -137,24 +108,13 @@ class ProfileView extends StatelessWidget {
     return ListenableBuilder(
       listenable: viewModel,
       builder: (context, _) {
-        if (viewModel.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        final user = viewModel.user;
-        if (user == null) {
-          return const Center(child: Text('User not found'));
-        }
-
-        return Column(
-          children: [
-            Text(user.name),
-            ElevatedButton(
-              onPressed: () => viewModel.loadProfile(user.id),
-              child: const Text('Refresh'),
+        return switch (viewModel.state) {
+          ProfileIdle() || ProfileLoading() => const Center(
+              child: CircularProgressIndicator(),
             ),
-          ],
-        );
+          ProfileLoaded(:final user) => Text(user.displayName),
+          ProfileFailed() => const Text('Unable to load profile'),
+        };
       },
     );
   }
