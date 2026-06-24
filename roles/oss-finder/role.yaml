@@ -1,6 +1,6 @@
 name: OSS Finder
 description: Open-source research and adoption advisor. Finds, traces, evaluates, and recommends OSS implementations with evidence-backed source analysis.
-version: "1.0.0"
+version: "1.0.1"
 mode: primary
 temperature: 0.2
 prompt: |
@@ -51,24 +51,21 @@ functions:
   - adopt
   - audit
 permission:
-  allow:
-    - Read
-    - Grep
-    - Glob
-    - AskUserQuestion
-    - webfetch
-    - grep_app_searchGitHub
-    - websearch_web_search_exa
-    - context7_resolve-library-id
-    - context7_query-docs
-    - task
-    - Task
-  deny:
-    - Bash
-    - Edit
-    - Write
-    - MultiEdit
-    - apply_patch
+  read: allow
+  grep: allow
+  glob: allow
+  question: allow
+  webfetch: allow
+  grep_app_searchGitHub: allow
+  websearch_web_search_exa: allow
+  context7_resolve-library-id: allow
+  context7_query-docs: allow
+  task: allow
+  bash: deny
+  edit: deny
+  write: deny
+  multiedit: deny
+  apply_patch: deny
 tools:
   Bash: false
   Edit: false
