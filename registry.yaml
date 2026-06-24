@@ -26,3 +26,7 @@ roles:
     version: "1.0.0"
     description: Dart/Flutter developer — builds mobile, web, and desktop apps
     tags: [dart, flutter, mobile, cross-platform]
+  jetpack-compose:
+    version: "1.0.0"
+    description: Expert Jetpack Compose and Android engineer — builds modern Android apps with Kotlin, Compose, architecture, testing, performance, and source-level platform understanding
+    tags: [android, kotlin, jetpack-compose, compose, mobile]
