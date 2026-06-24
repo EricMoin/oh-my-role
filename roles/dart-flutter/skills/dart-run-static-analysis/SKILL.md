@@ -40,7 +40,7 @@ Use this workflow to identify type-related bugs, style violations, and potential
 
 **Task Progress:**
 - [ ] 1. Verify `analysis_options.yaml` exists at the project root.
-- [ ] 2. Run the analyzer using the `analyze_files` MCP tool (if available) or the CLI command `dart analyze <target_directory>`.
+- [ ] 2. Run the analyzer using available Dart tooling, or the CLI command `dart analyze <target_directory>` / `flutter analyze <target_directory>`.
 - [ ] 3. Review the diagnostic output.
 - [ ] 4. If info-level issues must be treated as failures, append the `--fatal-infos` flag.
 - [ ] 5. Resolve reported errors manually or proceed to the Automated Fixes workflow.
@@ -50,11 +50,11 @@ Use this workflow to identify type-related bugs, style violations, and potential
 Use this workflow to resolve outdated API usages, apply quick fixes, and migrate code (e.g., Dart 3 migrations).
 
 **Task Progress:**
-- [ ] 1. Execute a dry run to preview proposed changes using the `dart_fix` MCP tool or CLI command `dart fix --dry-run`.
+- [ ] 1. Execute a dry run to preview proposed changes using available Dart tooling, or the CLI command `dart fix --dry-run`.
 - [ ] 2. Review the proposed fixes to ensure they align with the intended architecture.
 - [ ] 3. If additional fixes are required, verify that the corresponding linter rules are enabled in `analysis_options.yaml`.
-- [ ] 4. Apply the fixes using the `dart_fix` MCP tool or CLI command `dart fix --apply`.
-- [ ] 5. Format the modified code using the `dart_format` MCP tool or CLI command `dart format .`.
+- [ ] 4. Apply the fixes using available Dart tooling, or the CLI command `dart fix --apply`.
+- [ ] 5. Format the modified code using available Dart formatting tooling, or the CLI command `dart format .`.
 - [ ] 6. Run the static analysis workflow to verify all diagnostics are resolved.
 
 ## Examples
@@ -62,7 +62,7 @@ Use this workflow to resolve outdated API usages, apply quick fixes, and migrate
 ### Comprehensive `analysis_options.yaml`
 
 ```yaml
-include: package:flutter_lints/recommended.yaml
+include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:

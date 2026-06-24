@@ -136,8 +136,10 @@ Use `when` to evaluate arbitrary conditions after a pattern matches.
 **Implementation:**
 ```dart
 switch (shape) {
-  case Square(size: var s) || Circle(size: var s) when s > 0:
-    print('Valid symmetric shape with size $s');
+  case Square(length: var s) when s > 0:
+    print('Valid square with size $s');
+  case Circle(radius: var s) when s > 0:
+    print('Valid circle with radius $s');
   case Square() || Circle():
     print('Invalid or empty shape');
   default:

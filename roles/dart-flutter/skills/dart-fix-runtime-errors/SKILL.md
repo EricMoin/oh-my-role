@@ -1,11 +1,11 @@
 ---
 name: dart-fix-runtime-errors
-description: Uses get_runtime_errors and lsp to fetch an active stack trace, locate the failing line, apply a fix, and verify resolution via hot_reload.
+description: Resolve Dart static analysis failures and common runtime type/null-safety errors. Use when `dart analyze`, `flutter analyze`, tests, or app execution reveal type mismatches, invalid overrides, null-safety failures, or exception-handling bugs.
 metadata:
   model: provider/tier-4-preview
   last_modified: Fri, 24 Apr 2026 15:13:22 GMT
 ---
-# Resolving Dart Static Analysis Errors
+# Resolving Dart Analysis and Runtime Errors
 
 ## Contents
 - [Core Concepts & Guidelines](#core-concepts--guidelines)
