@@ -16,6 +16,7 @@ oh-my-role/
     ├── software-architect/   # Architecture design and decision-making
     ├── react-frontend/       # React/Next.js frontend development
     ├── ai-designer/          # UI/UX design and prototyping
+    ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
     ├── tauri/                # Tauri desktop app development
     └── dart-flutter/         # Dart/Flutter cross-platform development
 ```
