@@ -25,7 +25,9 @@ Each role directory contains:
 ```
 {role}/
 ├── role.yaml      # Role definition (name, description, prompt, skills)
-└── skills/        # Skill files (SKILL.md per skill)
+├── skills/        # Skill files (SKILL.md per skill)
+├── subagents/     # Optional rolebox child agents
+└── references/    # Optional long-form reference material
 ```
 
 ## Usage
