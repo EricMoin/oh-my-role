@@ -10,12 +10,11 @@ metadata:
 ## Contents
 - [Dependency Management](#dependency-management)
 - [Syntax Migration Guidelines](#syntax-migration-guidelines)
-- [Utilizing Dart MCP Tools](#utilizing-dart-mcp-tools)
 - [Migration Workflow](#migration-workflow)
 - [Examples](#examples)
 
 ## Dependency Management
-Manage dependencies using the Dart Tooling MCP Server `pub` tool or standard CLI commands.
+Manage dependencies using available Dart tooling or standard CLI commands.
 
 - Add `package:checks` as a `dev_dependency` using `dart pub add dev:checks`.
 - Remove `package:matcher` if it is explicitly listed in the `pubspec.yaml` (note: it is often transitively included by `package:test`, which is fine).
@@ -41,17 +40,17 @@ Copy and use the following checklist to track progress when migrating a test sui
   - [ ] Identify all test files using `package:matcher` (`expect` calls).
   - [ ] Import `package:checks/checks.dart` in target test files.
   - [ ] Rewrite all `expect(...)` statements to `check(...)` statements.
-  - [ ] Run static analyzer (`analyze_files`).
-  - [ ] Run tests (`run_tests`).
+  - [ ] Run static analyzer (`dart analyze` or `flutter analyze`).
+  - [ ] Run tests (`dart test` or `flutter test`).
 
 ### Feedback Loop: Static Analysis
-1. Run the `analyze_files` tool on the modified test directories.
+1. Run the analyzer on the modified test directories.
 2. Review any static analysis warnings or errors (e.g., missing imports, incorrect generic types on `isA`, unawaited futures).
 3. Fix the warnings.
 4. Repeat until the analyzer returns zero issues.
 
 ### Feedback Loop: Test Validation
-1. Run the `run_tests` tool.
+1. Run the relevant test command.
 2. If tests fail, review the failure output. `package:checks` provides detailed context (e.g., `Which: has length of <2>`).
 3. Adjust the `check()` expectations or the underlying code to resolve the failure.
 4. Repeat until all tests pass.

@@ -1,97 +1,91 @@
 ---
 name: flutter-implement-json-serialization
-description: Create model classes with `fromJson` and `toJson` methods using `dart:convert`. Use when manually mapping JSON keys to class properties for simple data structures.
-metadata:
-  model: provider/tier-4-preview
-  last_modified: Tue, 21 Apr 2026 21:44:50 GMT
+description: Implement Flutter/Dart JSON serialization with hand-written models or code generation (`json_serializable` / `freezed`). Use when mapping API payloads, local cache records, DTOs, domain models, or adding `fromJson`/`toJson` behavior.
 ---
-# Serializing JSON Manually in Flutter
+# Serializing JSON in Flutter
 
 ## Contents
-- [Core Guidelines](#core-guidelines)
-- [Workflow: Implementing a Serializable Model](#workflow-implementing-a-serializable-model)
-- [Workflow: Fetching and Parsing JSON](#workflow-fetching-and-parsing-json)
+- [Choose a Strategy](#choose-a-strategy)
+- [Manual Serialization](#manual-serialization)
+- [Generated Serialization](#generated-serialization)
+- [Validation](#validation)
 - [Examples](#examples)
 
-## Core Guidelines
+## Choose a Strategy
 
-- **Import `dart:convert`**: Utilize Flutter's built-in `dart:convert` library for manual JSON encoding (`jsonEncode`) and decoding (`jsonDecode`).
-- **Enforce Type Safety**: Always cast the `dynamic` result of `jsonDecode()` to the expected type, typically `Map<String, dynamic>` for objects or `List<dynamic>` for arrays.
-- **Encapsulate Serialization Logic**: Define plain model classes containing properties corresponding to the JSON structure. Implement a `fromJson` factory constructor and a `toJson` method within the model.
-- **Handle Background Parsing**: If parsing large JSON documents (execution time > 16ms), offload the parsing logic to a separate isolate using Flutter's `compute()` function to prevent UI jank.
-- **Throw Exceptions on Failure**: When handling HTTP responses, throw an exception if the status code is not successful (e.g., not 200 OK or 201 Created). Do not return `null`.
+- Use hand-written `fromJson` / `toJson` for small, stable, low-nesting models.
+- Use `json_serializable` when models are numerous, nested, renamed, nullable, or need consistent generated mapping.
+- Use `freezed` with `json_serializable` when immutable unions, copy helpers, equality, or sealed-like API states are valuable.
+- Keep DTO/API models separate from domain models when the API shape leaks transport details, unstable names, or nullable fields that the domain should normalize.
 
-## Workflow: Implementing a Serializable Model
+## Manual Serialization
 
-Use this checklist to implement manual JSON serialization for a data model.
+- Decode with `jsonDecode`, then cast to the expected shape.
+- Prefer pattern matching for validation-heavy parsing.
+- Throw `FormatException` for malformed payloads.
+- Write tests for required fields, optional fields, wrong types, and round-tripping.
+- Offload very large payload parsing with `compute()` or an isolate only when parsing cost can cause UI jank.
 
-**Task Progress:**
-- [ ] Define the plain model class with `final` properties.
-- [ ] Implement the `factory Model.fromJson(Map<String, dynamic> json)` constructor.
-- [ ] Implement the `Map<String, dynamic> toJson()` method.
-- [ ] Write unit tests for both serialization methods.
-- [ ] Run validator -> review type mismatch errors -> fix casting logic.
+## Generated Serialization
 
-1. **Define the Model**: Create a class with properties matching the JSON keys.
-2. **Implement `fromJson`**: Extract values from the `Map` and cast them to the appropriate Dart types. Use pattern matching or explicit casting.
-3. **Implement `toJson`**: Return a `Map<String, dynamic>` mapping the class properties back to their JSON string keys.
-4. **Validate**: Execute unit tests to ensure type safety, autocompletion, and compile-time exception handling function correctly.
+Add dependencies according to the project's existing code-generation stack:
 
-## Workflow: Fetching and Parsing JSON
+```bash
+flutter pub add json_annotation
+flutter pub add dev:build_runner dev:json_serializable
+```
 
-Use this conditional workflow when retrieving and parsing JSON from a network request.
+For `freezed`:
 
-**Task Progress:**
-- [ ] Execute the HTTP request.
-- [ ] Validate the response status code.
-- [ ] Determine parsing strategy (Synchronous vs. Isolate).
-- [ ] Decode and map the JSON to the model.
+```bash
+flutter pub add freezed_annotation
+flutter pub add dev:freezed
+```
 
-1. **Execute Request**: Use the `http` package to perform the network call.
-2. **Validate Response**: 
-   - If `response.statusCode == 200` (or 201 for POST), proceed to parsing.
-   - If the status code indicates failure, throw an `Exception`.
-3. **Determine Parsing Strategy**:
-   - If parsing a **small payload** (e.g., a single object), parse synchronously on the main thread.
-   - If parsing a **large payload** (e.g., an array of thousands of objects), use `compute(parseFunction, response.body)` to parse in a background isolate.
-4. **Decode and Map**: Pass the decoded JSON to your model's `fromJson` constructor.
+Generate code with:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Use `flutter pub run` only in legacy projects that have not moved to `dart run`.
+
+## Validation
+
+- [ ] Confirm the selected strategy matches project conventions.
+- [ ] Add serialization tests.
+- [ ] Run code generation if needed.
+- [ ] Run `dart analyze` or `flutter analyze`.
+- [ ] Run relevant tests.
 
 ## Examples
 
-### High-Fidelity Model Implementation
+### Manual Model with Pattern Matching
 
 ```dart
-import 'dart:convert';
-
 class User {
-  final int id;
-  final String name;
-  final String email;
-
   const User({
     required this.id,
     required this.name,
     required this.email,
   });
 
-  // Factory constructor for deserialization
+  final int id;
+  final String name;
+  final String email;
+
   factory User.fromJson(Map<String, dynamic> json) {
     return switch (json) {
       {
         'id': int id,
         'name': String name,
         'email': String email,
-      } => 
-        User(
-          id: id,
-          name: name,
-          email: email,
-        ),
-      _ => throw const FormatException('Failed to load User.'),
+      } =>
+        User(id: id, name: name, email: email),
+      _ => throw const FormatException('Invalid User payload'),
     };
   }
 
-  // Method for serialization
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -102,52 +96,41 @@ class User {
 }
 ```
 
-### Synchronous Parsing (Small Payload)
+### `json_serializable` Model
 
 ```dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:json_annotation/json_annotation.dart';
 
-Future<User> fetchUser(http.Client client, int userId) async {
-  final response = await client.get(
-    Uri.parse('https://api.example.com/users/$userId'),
-    headers: {'Accept': 'application/json'},
-  );
+part 'user_dto.g.dart';
 
-  if (response.statusCode == 200) {
-    // Decode returns dynamic, cast to Map<String, dynamic>
-    final Map<String, dynamic> jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
-    return User.fromJson(jsonMap);
-  } else {
-    throw Exception('Failed to load user');
+@JsonSerializable()
+class UserDto {
+  const UserDto({
+    required this.id,
+    required this.fullName,
+  });
+
+  final int id;
+
+  @JsonKey(name: 'full_name')
+  final String fullName;
+
+  factory UserDto.fromJson(Map<String, dynamic> json) {
+    return _$UserDtoFromJson(json);
   }
+
+  Map<String, dynamic> toJson() => _$UserDtoToJson(this);
 }
 ```
 
-### Background Parsing (Large Payload)
+### Parsing a List
 
 ```dart
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-
-// Top-level function required for compute()
-List<User> parseUsers(String responseBody) {
-  final parsed = (jsonDecode(responseBody) as List<dynamic>).cast<Map<String, dynamic>>();
-  return parsed.map<User>((json) => User.fromJson(json)).toList();
-}
-
-Future<List<User>> fetchUsers(http.Client client) async {
-  final response = await client.get(
-    Uri.parse('https://api.example.com/users'),
-    headers: {'Accept': 'application/json'},
-  );
-
-  if (response.statusCode == 200) {
-    // Offload expensive parsing to a background isolate
-    return compute(parseUsers, response.body);
-  } else {
-    throw Exception('Failed to load users');
-  }
+List<User> parseUsers(String body) {
+  final decoded = jsonDecode(body) as List<dynamic>;
+  return decoded
+      .cast<Map<String, dynamic>>()
+      .map(User.fromJson)
+      .toList(growable: false);
 }
 ```

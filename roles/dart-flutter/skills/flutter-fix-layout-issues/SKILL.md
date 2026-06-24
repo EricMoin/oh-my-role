@@ -1,6 +1,6 @@
 ---
 name: flutter-fix-layout-issues
-description: Fixes Flutter layout errors (overflows, unbounded constraints) using Dart and Flutter MCP tools. Use when addressing "RenderFlex overflowed", "Vertical viewport was given unbounded height", or similar layout issues.
+description: Fix Flutter layout errors such as overflows, unbounded constraints, missing parent data, and widgets not laid out. Use when addressing "RenderFlex overflowed", "Vertical viewport was given unbounded height", or similar layout issues.
 metadata:
   model: provider/tier-4-preview
   last_modified: Tue, 21 Apr 2026 19:45:59 GMT
@@ -29,7 +29,7 @@ Diagnose layout failures using the following error signatures:
 Copy and use this checklist to systematically resolve layout constraint violations.
 
 ### Task Progress
-- [ ] Run the application in debug mode to capture the exact layout exception in the console.
+- [ ] Run the application in debug mode and use available tooling, logs, Flutter Inspector, or DevTools to capture the exact layout exception.
 - [ ] Identify the primary error message (ignore cascading "RenderBox was not laid out" errors).
 - [ ] Apply the conditional fix based on the specific error type:
   - **If "Vertical viewport was given unbounded height"**: Wrap the scrollable child (`ListView`, `GridView`) in an `Expanded` widget to consume remaining space, or wrap it in a `SizedBox` to provide an absolute height constraint.
