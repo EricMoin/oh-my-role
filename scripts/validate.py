@@ -84,6 +84,12 @@ def validate_top_level_role(role_dir: Path, data: dict):
     if "skills" in data:
         validate_skills_field(yaml_rel, data["skills"])
 
+    if "references" in data:
+        validate_references_field(role_dir, data["references"], yaml_rel)
+
+    if "subagents" in data:
+        validate_inline_subagents_field(role_dir, data["subagents"], yaml_rel)
+
     validate_skill_refs(role_dir, data, yaml_rel)
 
 
@@ -138,6 +144,112 @@ def validate_skills_field(yaml_rel: str, skills):
     for i, s in enumerate(skills):
         if not isinstance(s, str):
             err(yaml_rel, f"skills[{i}] must be a string, got {type(s).__name__}")
+
+
+def validate_string_list_field(yaml_rel: str, field: str, value):
+    if not isinstance(value, list):
+        err(yaml_rel, f"'{field}' must be a list, got {type(value).__name__}")
+        return
+    for i, item in enumerate(value):
+        if not isinstance(item, str):
+            err(yaml_rel, f"{field}[{i}] must be a string, got {type(item).__name__}")
+
+
+def validate_references_field(base_dir: Path, references, yaml_rel: str):
+    if not isinstance(references, dict):
+        err(yaml_rel, f"'references' must be a mapping, got {type(references).__name__}")
+        return
+
+    base_resolved = base_dir.resolve()
+    for ref_name, ref_value in references.items():
+        if not isinstance(ref_name, str):
+            err(yaml_rel, f"references keys must be strings, got {type(ref_name).__name__}")
+            continue
+
+        ref_path = None
+        if isinstance(ref_value, str):
+            ref_path = ref_value
+        elif isinstance(ref_value, dict):
+            if "path" not in ref_value:
+                err(yaml_rel, f"references['{ref_name}'] missing required field: 'path'")
+                continue
+            if not isinstance(ref_value["path"], str):
+                err(yaml_rel, f"references['{ref_name}'].path must be a string")
+                continue
+            ref_path = ref_value["path"]
+            if "description" in ref_value and not isinstance(ref_value["description"], str):
+                err(yaml_rel, f"references['{ref_name}'].description must be a string")
+        else:
+            err(
+                yaml_rel,
+                f"references['{ref_name}'] must be a path string or mapping, got {type(ref_value).__name__}",
+            )
+            continue
+
+        target = (base_dir / ref_path).resolve()
+        try:
+            target.relative_to(base_resolved)
+        except ValueError:
+            err(yaml_rel, f"Reference '{ref_name}' path '{ref_path}' must stay within '{base_dir.relative_to(REPO_ROOT)}'")
+            continue
+
+        if not target.is_file():
+            err(yaml_rel, f"Reference '{ref_name}' points to missing file '{ref_path}'")
+
+
+def validate_inline_subagents_field(role_dir: Path, subagents, yaml_rel: str):
+    if not isinstance(subagents, list):
+        err(yaml_rel, f"'subagents' must be a list, got {type(subagents).__name__}")
+        return
+
+    seen: set[str] = set()
+    for i, subagent in enumerate(subagents):
+        prefix = f"subagents[{i}]"
+        if not isinstance(subagent, dict):
+            err(yaml_rel, f"{prefix} must be a mapping, got {type(subagent).__name__}")
+            continue
+
+        name = subagent.get("name")
+        if not isinstance(name, str) or not name:
+            err(yaml_rel, f"{prefix}.name must be a non-empty string")
+        elif "--" in name:
+            err(yaml_rel, f"{prefix}.name must not contain '--'")
+        else:
+            if name in seen:
+                err(yaml_rel, f"Duplicate inline subagent name '{name}'")
+            seen.add(name)
+
+        if "description" in subagent and not isinstance(subagent["description"], str):
+            err(yaml_rel, f"{prefix}.description must be a string")
+
+        prompt = subagent.get("prompt")
+        prompt_file = subagent.get("prompt_file")
+        has_prompt = isinstance(prompt, str) and bool(prompt.strip())
+        has_prompt_file = isinstance(prompt_file, str) and bool(prompt_file.strip())
+        if not has_prompt and not has_prompt_file:
+            err(yaml_rel, f"{prefix} must provide 'prompt' or 'prompt_file'")
+        if prompt is not None and not isinstance(prompt, str):
+            err(yaml_rel, f"{prefix}.prompt must be a string")
+        if prompt_file is not None:
+            if not isinstance(prompt_file, str):
+                err(yaml_rel, f"{prefix}.prompt_file must be a string")
+            elif not (role_dir / prompt_file).is_file():
+                err(yaml_rel, f"{prefix}.prompt_file points to missing file '{prompt_file}'")
+
+        if "skills" in subagent:
+            validate_skills_field(yaml_rel, subagent["skills"])
+            if isinstance(name, str):
+                subagent_dir = role_dir / "subagents" / rolebox_slug(name)
+                validate_skill_refs(subagent_dir if subagent_dir.is_dir() else role_dir, subagent, yaml_rel)
+
+        if "opencode_skills" in subagent:
+            validate_string_list_field(yaml_rel, f"{prefix}.opencode_skills", subagent["opencode_skills"])
+        if "functions" in subagent:
+            validate_string_list_field(yaml_rel, f"{prefix}.functions", subagent["functions"])
+        if "disable_functions" in subagent:
+            validate_string_list_field(yaml_rel, f"{prefix}.disable_functions", subagent["disable_functions"])
+        if "subagents" in subagent:
+            err(yaml_rel, f"{prefix} must not define nested subagents")
 
 
 def validate_skill_refs(role_dir: Path, data: dict, yaml_rel: str):
