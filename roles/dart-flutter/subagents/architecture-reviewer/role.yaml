@@ -1,4 +1,4 @@
-name: Flutter Architecture Reviewer
+name: Architecture Reviewer
 description: Reviews Flutter architecture, feature structure, state ownership, data boundaries, and dependency injection for Dart-Flutter.
 temperature: 0.2
 prompt: |

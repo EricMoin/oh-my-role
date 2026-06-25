@@ -1,4 +1,4 @@
-name: Flutter Release Engineer
+name: Release Engineer
 description: Reviews Flutter release readiness, flavors, permissions, signing, packaging, CI deployment, and store/platform configuration for Dart-Flutter.
 temperature: 0.2
 prompt: |

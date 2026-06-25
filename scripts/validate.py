@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate oh-my-role registry: YAML syntax, schema, skill refs, registry consistency."""
 
+import re
 import sys
 from pathlib import Path
 
@@ -30,6 +31,10 @@ def err(path: str, msg: str):
 
 def warn(path: str, msg: str):
     warnings.append(ValidationError(path, msg))
+
+
+def rolebox_slug(name: str) -> str:
+    return re.sub(r"\s+", "-", name.lower())
 
 
 def load_yaml(filepath: Path) -> dict | None:
@@ -92,6 +97,15 @@ def validate_subagent_role(subagent_dir: Path, data: dict):
 
     if "name" in data and not isinstance(data["name"], str):
         err(yaml_rel, f"'name' must be a string, got {type(data['name']).__name__}")
+
+    if "name" in data and isinstance(data["name"], str):
+        expected = subagent_dir.name
+        actual = rolebox_slug(data["name"])
+        if actual != expected:
+            err(
+                yaml_rel,
+                f"Subagent name slug '{actual}' must match directory name '{expected}' so rolebox IDs resolve correctly",
+            )
 
     if "description" in data and not isinstance(data["description"], str):
         err(yaml_rel, f"'description' must be a string, got {type(data['description']).__name__}")

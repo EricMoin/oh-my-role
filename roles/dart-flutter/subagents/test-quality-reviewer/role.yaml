@@ -1,4 +1,4 @@
-name: Flutter Test Quality Reviewer
+name: Test Quality Reviewer
 description: Reviews Dart and Flutter test strategy, regression coverage, mocks/fakes, analyzer checks, and CI verification for Dart-Flutter.
 temperature: 0.2
 prompt: |

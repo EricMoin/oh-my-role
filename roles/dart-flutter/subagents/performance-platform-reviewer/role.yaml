@@ -1,4 +1,4 @@
-name: Flutter Performance Platform Reviewer
+name: Performance Platform Reviewer
 description: Reviews Flutter performance, DevTools evidence, platform APIs, plugin behavior, runtime diagnostics, and build/platform risks for Dart-Flutter.
 temperature: 0.2
 prompt: |

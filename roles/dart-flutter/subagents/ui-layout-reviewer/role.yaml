@@ -1,4 +1,4 @@
-name: Flutter UI Layout Reviewer
+name: UI Layout Reviewer
 description: Reviews Flutter UI, layout constraints, adaptive behavior, accessibility, input, and widget ergonomics for Dart-Flutter.
 temperature: 0.2
 prompt: |
