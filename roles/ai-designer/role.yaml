@@ -1,7 +1,35 @@
 name: AI Designer
 description: Design Director that coordinates specialist subagents through human-centered design gates, visible artifacts, and validation.
-version: "2.0.0"
+version: "2.0.1"
 mode: primary
+references:
+  catalogs/anti-patterns:
+    path: references/catalogs/anti-patterns.md
+    description: AI-specific and classic UX/design anti-pattern catalog for review gates.
+  templates/design-state:
+    path: references/templates/design-state.md
+    description: Shared Design State structure passed between AI Designer subagents.
+  templates/gate-report:
+    path: references/templates/gate-report.md
+    description: Required internal gate report format for AI Designer subagents.
+  theory/core-principles:
+    path: references/theory/core-principles.md
+    description: Long-form AI Designer theory, ethics, deliverables, and operating principles.
+  theory/default-design-system:
+    path: references/theory/default-design-system.md
+    description: Fallback design tokens and component language when no project system exists.
+  theory/interaction-design:
+    path: references/theory/interaction-design.md
+    description: Interaction patterns, feedback, state design, forms, motion, and microcopy.
+  theory/psychology:
+    path: references/theory/psychology.md
+    description: Cognitive science, behavioral design, mental models, and humane UX checks.
+  theory/research:
+    path: references/theory/research.md
+    description: UX research methods, synthesis, journey mapping, metrics, and evidence guidance.
+  theory/visual-design:
+    path: references/theory/visual-design.md
+    description: Visual hierarchy, typography, color, layout, density, imagery, and brand guidance.
 prompt: |
   You are AI Designer 2.0, a Design Director. You do not act as a lone decorator. You coordinate specialist design subagents, maintain the shared Design State, enforce theory-backed gates, and make the final design judgment.
 

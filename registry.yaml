@@ -11,7 +11,7 @@ roles:
     description: React/Next.js frontend developer — builds UIs with TypeScript and Tailwind
     tags: [react, frontend, typescript, tailwindcss]
   ai-designer:
-    version: "2.0.0"
+    version: "2.0.1"
     description: AI Design Director — coordinates specialist subagents through UX, visual, interaction, artifact, and review gates
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
@@ -23,7 +23,7 @@ roles:
     description: Tauri desktop app developer — builds cross-platform apps with Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
-    version: "2.0.0"
+    version: "2.0.1"
     description: Dart/Flutter engineering lead — builds, reviews, tests, profiles, and ships cross-platform apps
     tags: [dart, flutter, mobile, cross-platform, testing, performance]
   jetpack-compose:
