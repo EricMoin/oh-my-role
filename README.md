@@ -26,11 +26,15 @@ Each role directory contains:
 
 ```
 {role}/
-├── role.yaml      # Role definition (name, description, prompt, skills)
+├── role.yaml      # Role definition (prompt, skills, references, functions, permissions)
 ├── skills/        # Skill files (SKILL.md per skill)
 ├── subagents/     # Optional rolebox child agents
 └── references/    # Optional long-form reference material
 ```
+
+Rolebox discovers file-based subagents from `subagents/{subagent}/role.yaml` and injects them into the parent role as `{role}--{subagent}` task targets. Keep each subagent `name` slug aligned with its directory name so task IDs and local skills resolve correctly.
+
+Rolebox also discovers Markdown reference files under `references/`. A top-level `references:` block in `role.yaml` can provide stable names and descriptions for those files.
 
 ## Usage
 
@@ -59,4 +63,4 @@ Individual role versions are declared in their `role.yaml` files and cross-refer
 
 ## Contributing
 
-To contribute a role, create a directory under `roles/` with a `role.yaml` and any required `skills/`. Submit a pull request to this repository.
+To contribute a role, create a directory under `roles/` with a `role.yaml` and any required `skills/`, `references/`, or `subagents/`. Submit a pull request to this repository.
