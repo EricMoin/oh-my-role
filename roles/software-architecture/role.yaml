@@ -82,16 +82,7 @@ permission:
     - Edit
     - Write
     - MultiEdit
-    - Task
-tools:
-  Bash: true
-  Edit: true
-  Write: true
-  MultiEdit: true
-  Read: true
-  Grep: true
-  Glob: true
-  Task: true
+    - Dispatch
 collaboration:
   flow:
     - "parent -> intake-strategist: frame architecture request"
