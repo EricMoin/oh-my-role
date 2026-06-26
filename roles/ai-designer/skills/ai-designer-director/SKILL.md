@@ -67,10 +67,10 @@ Next Gate:
 
 ## Dispatch Rules
 
-Use `task()` for each specialist. Include the current Design State and the specific gate objective. Keep prompts concrete and bounded.
+Use `dispatch()` for each specialist. Include the current Design State and the specific gate objective. Keep prompts concrete and bounded.
 
 ```text
-task(subagent_type="ai-designer--context-researcher", prompt="Run Context gate. Current Design State: ...")
+dispatch(subagent="ai-designer--context-researcher", prompt="Run Context gate. Current Design State: ...", run_in_background=false)
 ```
 
 Run gates sequentially when later work depends on earlier decisions. You may run Human Factors Review and Anti-Slop Review after the Artifact gate in parallel if both receive the same frozen artifact state.

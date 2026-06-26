@@ -32,7 +32,7 @@ Each role directory contains:
 └── references/    # Optional long-form reference material
 ```
 
-Rolebox discovers file-based subagents from `subagents/{subagent}/role.yaml` and injects them into the parent role as `{role}--{subagent}` task targets. Keep each subagent `name` slug aligned with its directory name so task IDs and local skills resolve correctly.
+Rolebox discovers file-based subagents from `subagents/{subagent}/role.yaml` and injects them into the parent role as `{role}--{subagent}` dispatch targets. Keep each subagent `name` slug aligned with its directory name so dispatch IDs and local skills resolve correctly.
 
 Rolebox also discovers Markdown reference files under `references/`. A top-level `references:` block in `role.yaml` can provide stable names and descriptions for those files.
 
