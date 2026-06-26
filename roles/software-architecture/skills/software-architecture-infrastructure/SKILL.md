@@ -1,6 +1,6 @@
 ---
-name: software-architect-infrastructure
-description: Infrastructure architecture for the Software Architect suite. Covers cloud-native principles (Twelve-Factor App, immutable infrastructure, IaC), container orchestration patterns (sidecar, ambassador, adapter, init container, operator, Kubernetes architecture), deployment strategies (rolling, blue-green, canary, A/B testing, feature flags), SRE practices (SLI/SLO/SLA, error budgets, toil reduction, incident management, blameless post-mortems), observability (metrics, logs, traces, alerting), security architecture at architect-awareness level (defense in depth, zero trust, threat modeling, OWASP Top 10, supply chain), DevOps culture and DORA metrics, and serverless patterns. Includes OSS case studies from Kubernetes and Prometheus.
+name: software-architecture-infrastructure
+description: Infrastructure architecture for the Software Architecture suite. Covers cloud-native principles (Twelve-Factor App, immutable infrastructure, IaC), container orchestration patterns (sidecar, ambassador, adapter, init container, operator, Kubernetes architecture), deployment strategies (rolling, blue-green, canary, A/B testing, feature flags), SRE practices (SLI/SLO/SLA, error budgets, toil reduction, incident management, blameless post-mortems), observability (metrics, logs, traces, alerting), security architecture at architect-awareness level (defense in depth, zero trust, threat modeling, OWASP Top 10, supply chain), DevOps culture and DORA metrics, and serverless patterns. Includes OSS case studies from Kubernetes and Prometheus.
 ---
 
 ## Role Identity
@@ -11,7 +11,7 @@ Every infrastructure decision must be traceable to a quality attribute requireme
 
 Infrastructure architecture exists to serve application architecture. The most elegant Kubernetes cluster is worthless if the applications running on it are unreliable. The infrastructure must match the application's needs, not the other way around.
 
-**Scale Context applies to every section of this Skill.** (See software-architect-core.md § Scale Context Framework) A Solo/Startup team does not need a service mesh. A Scale team does not SSH into servers. Every recommendation in this Skill must be qualified by the scale at which it makes sense.
+**Scale Context applies to every section of this Skill.** (See software-architecture-core.md § Scale Context Framework) A Solo/Startup team does not need a service mesh. A Scale team does not SSH into servers. Every recommendation in this Skill must be qualified by the scale at which it makes sense.
 
 
 ## Principle Ownership
@@ -20,17 +20,17 @@ This Skill is the **Home Skill** for three principles in the Principle Ownership
 
 | Principle | Referenced By |
 |---|---|
-| Defense in Depth | software-architect-distributed, software-architect-data |
+| Defense in Depth | software-architecture-distributed, software-architecture-data |
 | Infrastructure as Code | ALL |
-| Zero Trust Networking | software-architect-distributed |
+| Zero Trust Networking | software-architecture-distributed |
 
 This Skill references the following principles defined elsewhere:
-- Circuit Breaker (Home: software-architect-distributed.md § Circuit Breaker)
-- CAP Theorem (Home: software-architect-distributed.md § CAP Theorem)
-- Idempotency (Home: software-architect-distributed.md § Idempotency)
-- Caching Strategies (Home: software-architect-data.md § Caching Architecture)
-- Least Privilege / Least Knowledge (Home: software-architect-core.md § Least Privilege / Least Knowledge)
-- Fail Fast, Recover Gracefully (Home: software-architect-core.md § Fail Fast, Recover Gracefully)
+- Circuit Breaker (Home: software-architecture-distributed.md § Circuit Breaker)
+- CAP Theorem (Home: software-architecture-distributed.md § CAP Theorem)
+- Idempotency (Home: software-architecture-distributed.md § Idempotency)
+- Caching Strategies (Home: software-architecture-data.md § Caching Architecture)
+- Least Privilege / Least Knowledge (Home: software-architecture-core.md § Least Privilege / Least Knowledge)
+- Fail Fast, Recover Gracefully (Home: software-architecture-core.md § Fail Fast, Recover Gracefully)
 
 
 ## Cloud-Native Principles
@@ -135,7 +135,7 @@ From: Kubernetes Patterns (Ibryam & Huss)
 
 **Trade-off Summary**: Sidecars add resource overhead (CPU, memory) and increase the number of containers to manage. The benefit is separation of concerns: the application team owns business logic, the platform team owns the sidecar.
 
-**Real-World Reference**: Envoy proxy deployed as a sidecar in an Istio service mesh. Each application pod runs an Envoy sidecar that handles all inbound and outbound network traffic. The application doesn't know it's part of a service mesh. It binds to localhost. Envoy handles mTLS, retries, circuit breaking, and telemetry. (See software-architect-distributed.md § Circuit Breaker)
+**Real-World Reference**: Envoy proxy deployed as a sidecar in an Istio service mesh. Each application pod runs an Envoy sidecar that handles all inbound and outbound network traffic. The application doesn't know it's part of a service mesh. It binds to localhost. Envoy handles mTLS, retries, circuit breaking, and telemetry. (See software-architecture-distributed.md § Circuit Breaker)
 
 ```
 ┌─────────────────────────────────────────┐
@@ -802,7 +802,7 @@ From: Designing Secure Software (Kohnfelder), Threat Modeling (Shostack), The We
 
 **Definition**: A structured process for identifying, assessing, and mitigating security threats during the design phase. Threat modeling asks: "What could go wrong? What would an attacker do? How would we detect and respond?" It's applied at design time, not after deployment.
 
-**When to Apply**: During Phase 3 (Design) of the architecture workflow. (See software-architect-core.md § Architecture Workflow) Every significant system or feature should be threat-modeled. The depth of modeling scales with the sensitivity of the data and the exposure of the system.
+**When to Apply**: During Phase 3 (Design) of the architecture workflow. (See software-architecture-core.md § Architecture Workflow) Every significant system or feature should be threat-modeled. The depth of modeling scales with the sensitivity of the data and the exposure of the system.
 
 **Trade-off Summary**: Threat modeling takes time during the design phase, when pressure to start building is highest. The return is catching security flaws when they're cheap to fix (design time) rather than when they're expensive (in production, post-breach).
 

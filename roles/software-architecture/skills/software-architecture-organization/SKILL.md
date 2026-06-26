@@ -1,6 +1,6 @@
 ---
-name: software-architect-organization
-description: Organizational and sociotechnical architecture for the Software Architect suite. Covers Conway's Law and the Inverse Conway Maneuver, Team Topologies (four fundamental team types, three interaction modes, cognitive load), architect's role in organizations (architect types, architecture governance, technical leadership), systems thinking for architects (feedback loops, emergent behavior, leverage points, second-order effects), communication and stakeholder management (RFCs, ADR log, technical writing), managing technical debt (types, quantification, repayment), Brooks's Law and scaling patterns. From Team Topologies, The Mythical Man-Month, An Elegant Puzzle, Staff Engineer, Thinking in Systems.
+name: software-architecture-organization
+description: Organizational and sociotechnical architecture for the Software Architecture suite. Covers Conway's Law and the Inverse Conway Maneuver, Team Topologies (four fundamental team types, three interaction modes, cognitive load), architect's role in organizations (architect types, architecture governance, technical leadership), systems thinking for architects (feedback loops, emergent behavior, leverage points, second-order effects), communication and stakeholder management (RFCs, ADR log, technical writing), managing technical debt (types, quantification, repayment), Brooks's Law and scaling patterns. From Team Topologies, The Mythical Man-Month, An Elegant Puzzle, Staff Engineer, Thinking in Systems.
 ---
 
 ## Conway's Law and the Inverse Conway Maneuver
@@ -327,7 +327,7 @@ From: Team Topologies (Skelton & Pais)
 
 1. **Fitness Functions**: Automated tests that validate architectural characteristics. Example: a test that fails if a module imports from another module's internal package. Example: a performance test that fails if p99 latency exceeds the SLO. Fitness functions are the ideal governance mechanism: they enforce constraints without human gatekeeping.
 
-2. **Architecture Decision Records (ADRs)**: A running log of architectural decisions with context, rationale, and consequences. (See software-architect-core.md § ADR Template) ADRs are governance through transparency. Teams make decisions independently but must document them. Review happens asynchronously, not at a gate.
+2. **Architecture Decision Records (ADRs)**: A running log of architectural decisions with context, rationale, and consequences. (See software-architecture-core.md § ADR Template) ADRs are governance through transparency. Teams make decisions independently but must document them. Review happens asynchronously, not at a gate.
 
 3. **Technology Radar**: A living document that categorizes technologies as Adopt, Trial, Assess, or Hold. Maintained by senior engineers and architects. Provides guidance without mandates. Teams can deviate if they document why.
 
@@ -374,7 +374,7 @@ Foundational decisions: high blast radius, hard to reverse. Decide centrally wit
 
 1. **Influence without authority**: You cannot order teams to adopt your architecture. You must convince them. The architecture that wins is the one that makes teams more productive, not the one that is theoretically pure.
 
-2. **Make decisions transparent**: Every decision must be documented with rationale, alternatives, and trade-offs. (See software-architect-core.md § ADR Template) A decision without documented rationale will be re-litigated. A decision with documented rationale will be respected even by those who disagree.
+2. **Make decisions transparent**: Every decision must be documented with rationale, alternatives, and trade-offs. (See software-architecture-core.md § ADR Template) A decision without documented rationale will be re-litigated. A decision with documented rationale will be respected even by those who disagree.
 
 3. **Build consensus, don't force it**: Consensus does not mean unanimous agreement. It means everyone had a chance to argue their position, the decision was made transparently, and the dissenting views are documented. People accept decisions they disagree with when the process is fair.
 
@@ -390,7 +390,7 @@ Foundational decisions: high blast radius, hard to reverse. Decide centrally wit
 
 ### The Last Responsible Moment
 
-**Definition**: Defer decisions until you have enough information to make them well, but not past the point where delay costs more than the decision. This principle is defined in software-architect-core.md § Delay Decisions Until the Last Responsible Moment. The organizational implication: the architect must identify the "last responsible moment" for each decision and communicate it to stakeholders. "We are deferring this decision until Q2 when we'll have 3 months of production data from the beta" is a plan. "We'll figure it out later" is avoidance.
+**Definition**: Defer decisions until you have enough information to make them well, but not past the point where delay costs more than the decision. This principle is defined in software-architecture-core.md § Delay Decisions Until the Last Responsible Moment. The organizational implication: the architect must identify the "last responsible moment" for each decision and communicate it to stakeholders. "We are deferring this decision until Q2 when we'll have 3 months of production data from the beta" is a plan. "We'll figure it out later" is avoidance.
 
 **Organizational Application**:
 - Map each deferred decision to a trigger event (data available, milestone reached, date passed)
@@ -521,7 +521,7 @@ From: Thinking in Systems (Meadows), Antifragile (Taleb)
 
 ### Architecture Communication by Audience
 
-**Definition**: Different stakeholders need different views of the architecture. The C4 model provides the vocabulary. (See software-architect-core.md § C4 Model) The organizational skill adds audience-specific guidance.
+**Definition**: Different stakeholders need different views of the architecture. The C4 model provides the vocabulary. (See software-architecture-core.md § C4 Model) The organizational skill adds audience-specific guidance.
 
 | Stakeholder | What They Need | C4 Level | Format |
 |---|---|---|---|
@@ -641,7 +641,7 @@ an engineer from another team can understand the implications.]
 
 **Anti-patterns**: Architecture documents that are written once and never updated. Documents that describe what the architecture should be, not what it is. Documents that exist in multiple locations with conflicting information.
 
-From: An Elegant Puzzle (Larson), Staff Engineer (Larson), 97 Things Every Software Architect Should Know
+From: An Elegant Puzzle (Larson), Staff Engineer (Larson), 97 Things Every Software Architecture Should Know
 
 
 ## Managing Technical Debt
@@ -817,7 +817,7 @@ From: The Mythical Man-Month (Brooks)
 
 ## Organization Checklist
 
-This checklist integrates all organizational concerns into actionable yes/no items. Run it during Phase 5 (Validate) of the architecture workflow (See software-architect-core.md § Architecture Workflow). Mark each item yes, no, or N/A with explanation.
+This checklist integrates all organizational concerns into actionable yes/no items. Run it during Phase 5 (Validate) of the architecture workflow (See software-architecture-core.md § Architecture Workflow). Mark each item yes, no, or N/A with explanation.
 
 ### Critical
 
@@ -857,9 +857,9 @@ This table maps each section of this Skill to the primary and secondary books th
 |---|---|---|
 | Conway's Law and the Inverse Conway Maneuver | Team Topologies (Skelton & Pais), The Mythical Man-Month (Brooks) | Fundamentals of Software Architecture (Richards & Ford) |
 | Team Topologies | Team Topologies (Skelton & Pais) | An Elegant Puzzle (Larson), The Mythical Man-Month (Brooks) |
-| The Architect's Role in Organizations | Staff Engineer (Larson), Fundamentals of Software Architecture (Richards & Ford) | The Manager's Path (Fournier), 97 Things Every Software Architect Should Know (Monson-Haefel) |
+| The Architect's Role in Organizations | Staff Engineer (Larson), Fundamentals of Software Architecture (Richards & Ford) | The Manager's Path (Fournier), 97 Things Every Software Architecture Should Know (Monson-Haefel) |
 | Systems Thinking for Architects | Thinking in Systems (Meadows) | Antifragile (Taleb), The Fifth Discipline (Senge) |
-| Communication and Stakeholder Management | Staff Engineer (Larson), An Elegant Puzzle (Larson) | 97 Things Every Software Architect Should Know (Monson-Haefel), The C4 Model for Visualising Software Architecture (Brown) |
+| Communication and Stakeholder Management | Staff Engineer (Larson), An Elegant Puzzle (Larson) | 97 Things Every Software Architecture Should Know (Monson-Haefel), The C4 Model for Visualising Software Architecture (Brown) |
 | Managing Technical Debt | Working Effectively with Legacy Code (Feathers), Refactoring (Fowler) | Software Architecture: The Hard Parts (Ford, Richards, Sadalage, Dehghani) |
 | Brooks's Law and Scaling | The Mythical Man-Month (Brooks) | An Elegant Puzzle (Larson), Team Topologies (Skelton & Pais) |
 
@@ -871,7 +871,7 @@ This table maps each section of this Skill to the primary and secondary books th
 - **Staff Engineer** (Larson, 2021): Staff engineer archetypes, technical leadership, influence without authority, RFCs, architecture communication, organizational strategy.
 - **Thinking in Systems** (Meadows, 2008): Feedback loops, leverage points, emergent behavior, systems archetypes, second-order effects.
 - **The Manager's Path** (Fournier, 2017): Engineering management at scale, technical leadership, organizational structures, managing multiple teams.
-- **97 Things Every Software Architect Should Know** (Monson-Haefel, 2009): Practical architecture wisdom, communication, stakeholder management, soft skills.
+- **97 Things Every Software Architecture Should Know** (Monson-Haefel, 2009): Practical architecture wisdom, communication, stakeholder management, soft skills.
 - **Antifragile** (Taleb, 2012): Systems that gain from disorder, fragility vs. robustness, optionality, second-order effects.
 - **Fundamentals of Software Architecture** (Richards & Ford, 2020): Architecture characteristics, architect roles, architecture governance, technical leadership.
 - **Working Effectively with Legacy Code** (Feathers, 2004): Legacy code management, refactoring strategies, dependency breaking, test coverage for legacy systems.
