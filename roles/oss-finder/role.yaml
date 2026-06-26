@@ -51,23 +51,20 @@ functions:
   - adopt
   - audit
 permission:
-  read: allow
-  grep: allow
-  glob: allow
-  question: allow
-  webfetch: allow
-  grep_app_searchGitHub: allow
-  websearch_web_search_exa: allow
-  context7_resolve-library-id: allow
-  context7_query-docs: allow
-  task: allow
-  bash: deny
-  edit: deny
-  write: deny
-  multiedit: deny
-  apply_patch: deny
-tools:
-  Bash: false
-  Edit: false
-  Write: false
-  MultiEdit: false
+  allow:
+    - Read
+    - Grep
+    - Glob
+    - Question
+    - WebFetch
+    - grep_app_searchGitHub
+    - websearch_web_search_exa
+    - context7_resolve-library-id
+    - context7_query-docs
+    - Dispatch
+  deny:
+    - Bash
+    - Edit
+    - Write
+    - MultiEdit
+    - ApplyPatch
