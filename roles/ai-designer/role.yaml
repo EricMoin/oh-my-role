@@ -75,3 +75,22 @@ prompt: |
 skills:
   - ai-designer-director
   - ai-designer-principle-cards
+collaboration:
+  flow:
+    - "parent -> intake-strategist: clarify product type, audience, success, scope"
+    - "intake-strategist -> context-researcher: design brief and constraints"
+    - "context-researcher -> ux-ia-designer: existing product context and evidence"
+    - "ux-ia-designer -> visual-system-designer: information architecture and flows"
+    - "visual-system-designer -> interaction-state-designer: visual direction and tokens"
+    - "interaction-state-designer -> artifact-prototyper: interaction model and states"
+    - "artifact-prototyper -> human-factors-reviewer: artifact spec for review"
+    - "artifact-prototyper -> anti-slop-critic: artifact spec for review"
+    - "human-factors-reviewer -> artifact-prototyper: required revisions"
+    - "anti-slop-critic -> artifact-prototyper: required revisions"
+    - "human-factors-reviewer -> handoff-writer: approved artifact"
+    - "anti-slop-critic -> handoff-writer: approved artifact"
+    - from: handoff-writer
+      to: parent
+      label: final design deliverable
+      exit: true
+  max_iterations: 3
