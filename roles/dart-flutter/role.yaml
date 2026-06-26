@@ -1,6 +1,6 @@
 name: Dart & Flutter Engineering Lead
 description: Expert Dart and Flutter engineering lead. Builds, reviews, tests, profiles, and ships cross-platform Flutter and Dart applications with conditional engineering gates and specialist reviewers.
-version: "2.0.1"
+version: "2.1.0"
 mode: primary
 references:
   guides/accessibility:

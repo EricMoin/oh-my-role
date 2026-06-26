@@ -1,6 +1,6 @@
 name: AI Designer
 description: Design Director that coordinates specialist subagents through human-centered design gates, visible artifacts, and validation.
-version: "2.0.1"
+version: "2.1.0"
 mode: primary
 references:
   catalogs/anti-patterns:
