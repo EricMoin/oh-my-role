@@ -10,6 +10,12 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROLES_DIR = REPO_ROOT / "roles"
 REGISTRY_FILE = REPO_ROOT / "registry.yaml"
+BUILTIN_FUNCTIONS = {"plan", "execute"}
+VALID_COLLABORATION_TOPOLOGIES = {"pipeline", "review-loop", "star"}
+FLOW_EDGE_RE = re.compile(r"^\s*(\w+(?:-\w+)*)\s*->\s*(\w+(?:-\w+)*)(?:\s*:\s*(.*?))?\s*$")
+SOFTWARE_ARCHITECTURE_ROLE_ID = "software-architecture"
+LEGACY_ROLE_ID = "software-" + "architect"
+LEGACY_SOFTWARE_ARCHITECT_RE = re.compile(rf"{re.escape(LEGACY_ROLE_ID)}(?!ure)")
 
 
 class ValidationError:
@@ -84,11 +90,20 @@ def validate_top_level_role(role_dir: Path, data: dict):
     if "skills" in data:
         validate_skills_field(yaml_rel, data["skills"])
 
+    if "functions" in data:
+        validate_functions_field(role_dir, yaml_rel, "functions", data["functions"])
+
+    if "disable_functions" in data:
+        validate_string_list_field(yaml_rel, "disable_functions", data["disable_functions"])
+
     if "references" in data:
         validate_references_field(role_dir, data["references"], yaml_rel)
 
     if "subagents" in data:
         validate_inline_subagents_field(role_dir, data["subagents"], yaml_rel)
+
+    if "collaboration" in data:
+        validate_collaboration_field(role_dir, data["collaboration"], yaml_rel, data)
 
     validate_skill_refs(role_dir, data, yaml_rel)
 
@@ -124,6 +139,12 @@ def validate_subagent_role(subagent_dir: Path, data: dict):
     if "skills" in data:
         validate_skills_field(yaml_rel, data["skills"])
 
+    if "functions" in data:
+        validate_functions_field(subagent_dir, yaml_rel, "functions", data["functions"])
+
+    if "disable_functions" in data:
+        validate_string_list_field(yaml_rel, "disable_functions", data["disable_functions"])
+
     validate_skill_refs(subagent_dir, data, yaml_rel)
 
 
@@ -153,6 +174,25 @@ def validate_string_list_field(yaml_rel: str, field: str, value):
     for i, item in enumerate(value):
         if not isinstance(item, str):
             err(yaml_rel, f"{field}[{i}] must be a string, got {type(item).__name__}")
+
+
+def validate_functions_field(base_dir: Path, yaml_rel: str, field: str, value):
+    validate_string_list_field(yaml_rel, field, value)
+    if not isinstance(value, list):
+        return
+
+    functions_dir = base_dir / "functions"
+    for function_name in value:
+        if not isinstance(function_name, str):
+            continue
+        if function_name in BUILTIN_FUNCTIONS:
+            continue
+        function_file = functions_dir / f"{function_name}.md"
+        if not function_file.is_file():
+            err(
+                yaml_rel,
+                f"Function '{function_name}' referenced but '{function_file.relative_to(REPO_ROOT)}' not found",
+            )
 
 
 def validate_references_field(base_dir: Path, references, yaml_rel: str):
@@ -246,10 +286,163 @@ def validate_inline_subagents_field(role_dir: Path, subagents, yaml_rel: str):
             validate_string_list_field(yaml_rel, f"{prefix}.opencode_skills", subagent["opencode_skills"])
         if "functions" in subagent:
             validate_string_list_field(yaml_rel, f"{prefix}.functions", subagent["functions"])
+            if isinstance(name, str):
+                subagent_dir = role_dir / "subagents" / rolebox_slug(name)
+                validate_functions_field(
+                    subagent_dir if subagent_dir.is_dir() else role_dir,
+                    yaml_rel,
+                    f"{prefix}.functions",
+                    subagent["functions"],
+                )
         if "disable_functions" in subagent:
             validate_string_list_field(yaml_rel, f"{prefix}.disable_functions", subagent["disable_functions"])
         if "subagents" in subagent:
             err(yaml_rel, f"{prefix} must not define nested subagents")
+
+
+def subagent_slugs(role_dir: Path, data: dict) -> set[str]:
+    slugs: set[str] = set()
+
+    inline_subagents = data.get("subagents")
+    if isinstance(inline_subagents, list):
+        for subagent in inline_subagents:
+            if isinstance(subagent, dict) and isinstance(subagent.get("name"), str):
+                slugs.add(rolebox_slug(subagent["name"]))
+
+    subagents_dir = role_dir / "subagents"
+    if subagents_dir.is_dir():
+        for d in sorted(subagents_dir.iterdir()):
+            if d.is_dir():
+                slugs.add(d.name)
+
+    return slugs
+
+
+def expand_collaboration_topology(topology: str, agents: list[str]) -> list[dict[str, object]]:
+    if topology == "pipeline":
+        edges: list[dict[str, object]] = [{"from": "parent", "to": agents[0]}]
+        for i in range(len(agents) - 1):
+            edges.append({"from": agents[i], "to": agents[i + 1]})
+        edges.append({"from": agents[-1], "to": "parent", "exit": True})
+        return edges
+
+    if topology == "review-loop":
+        edges = [{"from": "parent", "to": agents[0]}]
+        for i in range(len(agents) - 1):
+            edges.append({"from": agents[i], "to": agents[i + 1]})
+        edges.append({"from": agents[-1], "to": agents[0], "label": "loop"})
+        edges.append({"from": agents[-1], "to": "parent", "label": "exit", "exit": True})
+        return edges
+
+    if topology == "star":
+        edges = []
+        for agent in agents:
+            edges.append({"from": "parent", "to": agent})
+            edges.append({"from": agent, "to": "parent", "exit": True})
+        return edges
+
+    return []
+
+
+def parse_collaboration_flow_edge(yaml_rel: str, prefix: str, value) -> dict[str, object] | None:
+    if isinstance(value, str):
+        match = FLOW_EDGE_RE.match(value)
+        if not match:
+            err(yaml_rel, f"{prefix} has invalid flow edge string '{value}'")
+            return None
+        edge: dict[str, object] = {"from": match.group(1), "to": match.group(2)}
+        if match.group(3):
+            edge["label"] = match.group(3)
+        return edge
+
+    if isinstance(value, dict):
+        from_value = value.get("from")
+        to_value = value.get("to")
+        if not isinstance(from_value, str) or not isinstance(to_value, str):
+            err(yaml_rel, f"{prefix} object edge must include string 'from' and 'to'")
+            return None
+        edge = {"from": from_value, "to": to_value}
+        if "label" in value:
+            if not isinstance(value["label"], str):
+                err(yaml_rel, f"{prefix}.label must be a string")
+            else:
+                edge["label"] = value["label"]
+        if "exit" in value:
+            if not isinstance(value["exit"], bool):
+                err(yaml_rel, f"{prefix}.exit must be a boolean")
+            else:
+                edge["exit"] = value["exit"]
+        return edge
+
+    err(yaml_rel, f"{prefix} must be a string or mapping edge")
+    return None
+
+
+def validate_collaboration_field(role_dir: Path, collaboration, yaml_rel: str, data: dict):
+    if not isinstance(collaboration, dict):
+        err(yaml_rel, f"'collaboration' must be a mapping, got {type(collaboration).__name__}")
+        return
+
+    known_agents = subagent_slugs(role_dir, data)
+    edges: list[dict[str, object]] = []
+
+    topology = collaboration.get("topology")
+    if topology is not None:
+        if not isinstance(topology, str):
+            err(yaml_rel, "collaboration.topology must be a string")
+        elif topology not in VALID_COLLABORATION_TOPOLOGIES:
+            err(yaml_rel, f"collaboration.topology '{topology}' is not supported")
+
+    agents = collaboration.get("agents")
+    topology_agents: list[str] = []
+    if agents is not None:
+        if not isinstance(agents, list):
+            err(yaml_rel, "collaboration.agents must be a list")
+        else:
+            for i, agent in enumerate(agents):
+                if not isinstance(agent, str):
+                    err(yaml_rel, f"collaboration.agents[{i}] must be a string")
+                else:
+                    topology_agents.append(agent)
+
+    if isinstance(topology, str) and topology in VALID_COLLABORATION_TOPOLOGIES:
+        if not topology_agents:
+            err(yaml_rel, "collaboration with topology requires at least one agent")
+        else:
+            edges.extend(expand_collaboration_topology(topology, topology_agents))
+
+    flow = collaboration.get("flow")
+    if flow is not None:
+        if not isinstance(flow, list):
+            err(yaml_rel, "collaboration.flow must be a list")
+        else:
+            for i, flow_edge in enumerate(flow):
+                parsed = parse_collaboration_flow_edge(yaml_rel, f"collaboration.flow[{i}]", flow_edge)
+                if parsed:
+                    edges.append(parsed)
+
+    if not edges:
+        err(yaml_rel, "collaboration must define topology+agents or flow")
+        return
+
+    for edge in edges:
+        for endpoint in ["from", "to"]:
+            value = edge.get(endpoint)
+            if not isinstance(value, str):
+                continue
+            if value != "parent" and value not in known_agents:
+                err(yaml_rel, f"collaboration edge references unknown agent '{value}'")
+
+    if not any(edge.get("from") == "parent" for edge in edges):
+        err(yaml_rel, 'collaboration must have at least one edge from "parent"')
+
+    if not any(edge.get("to") == "parent" or edge.get("exit") is True for edge in edges):
+        err(yaml_rel, 'collaboration must have at least one exit edge to "parent" or exit: true')
+
+    max_iterations = collaboration.get("max_iterations")
+    if max_iterations is not None:
+        if not isinstance(max_iterations, int) or max_iterations < 0:
+            err(yaml_rel, "collaboration.max_iterations must be a non-negative integer")
 
 
 def validate_skill_refs(role_dir: Path, data: dict, yaml_rel: str):
@@ -277,6 +470,9 @@ def validate_registry(registry_data: dict):
     if not isinstance(roles_map, dict):
         err(rel, "'roles' must be a mapping")
         return
+
+    if LEGACY_ROLE_ID in roles_map:
+        err(rel, f"Legacy role key '{LEGACY_ROLE_ID}' must not be registered; use '{SOFTWARE_ARCHITECTURE_ROLE_ID}'")
 
     for role_key, role_meta in roles_map.items():
         role_dir = ROLES_DIR / role_key
@@ -336,6 +532,44 @@ def find_orphan_skills(role_dir: Path, referenced_skills: set[str], context: str
             warn(context, f"Skill directory 'skills/{d.name}/' exists but is not referenced in role.yaml")
 
 
+def find_orphan_functions(role_dir: Path, referenced_functions: set[str], context: str):
+    functions_dir = role_dir / "functions"
+    if not functions_dir.is_dir():
+        return
+
+    for f in sorted(functions_dir.glob("*.md")):
+        if f.stem not in referenced_functions:
+            warn(context, f"Function file 'functions/{f.name}' exists but is not referenced in role.yaml")
+
+
+def validate_no_legacy_software_architect_refs():
+    legacy_dir = ROLES_DIR / LEGACY_ROLE_ID
+    if legacy_dir.exists():
+        err(f"roles/{LEGACY_ROLE_ID}", f"Legacy role directory must be removed; use roles/{SOFTWARE_ARCHITECTURE_ROLE_ID}")
+
+    scan_roots = [
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "registry.yaml",
+        REPO_ROOT / "scripts",
+        ROLES_DIR / SOFTWARE_ARCHITECTURE_ROLE_ID,
+    ]
+
+    for root in scan_roots:
+        if not root.exists():
+            continue
+        paths = [root] if root.is_file() else sorted(p for p in root.rglob("*") if p.is_file())
+        for path in paths:
+            try:
+                content = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            if LEGACY_SOFTWARE_ARCHITECT_RE.search(content):
+                err(
+                    str(path.relative_to(REPO_ROOT)),
+                    f"Legacy identifier '{LEGACY_ROLE_ID}' found; use '{SOFTWARE_ARCHITECTURE_ROLE_ID}'",
+                )
+
+
 def main():
     print("Validating oh-my-role registry...\n")
 
@@ -392,6 +626,18 @@ def main():
                     sub_referenced,
                     f"roles/{role_name}/subagents/{sub_dir.name}/role.yaml",
                 )
+
+                sub_functions = set(sub_data.get("functions", []))
+                find_orphan_functions(
+                    sub_dir,
+                    sub_functions,
+                    f"roles/{role_name}/subagents/{sub_dir.name}/role.yaml",
+                )
+
+        referenced_functions = set(data.get("functions", []))
+        find_orphan_functions(role_dir, referenced_functions, f"roles/{role_name}/role.yaml")
+
+    validate_no_legacy_software_architect_refs()
 
     report_and_exit()
 

@@ -1,6 +1,6 @@
 ---
-name: software-architect-antipatterns
-description: Anti-pattern catalog for the Software Architect suite. Catalogs AI-specific architecture mistakes (resume-driven architecture, pattern salad, Netflix cargo cult, technology name-dropping, premature distribution, solution-first architecture, missing trade-off acknowledgment, greenfield assumption, symmetry bias, over-documentation), classic architecture anti-patterns (big ball of mud, distributed monolith, sinkhole architecture, golden hammer, architecture astronaut, lava flow, vendor lock-in), data architecture anti-patterns, operational anti-patterns, and process anti-patterns. Load as a companion to all other software-architect Skills to audit architecture decisions for common mistakes.
+name: software-architecture-antipatterns
+description: Anti-pattern catalog for the Software Architecture suite. Catalogs AI-specific architecture mistakes (resume-driven architecture, pattern salad, Netflix cargo cult, technology name-dropping, premature distribution, solution-first architecture, missing trade-off acknowledgment, greenfield assumption, symmetry bias, over-documentation), classic architecture anti-patterns (big ball of mud, distributed monolith, sinkhole architecture, golden hammer, architecture astronaut, lava flow, vendor lock-in), data architecture anti-patterns, operational anti-patterns, and process anti-patterns. Load as a companion to all other software-architecture Skills to audit architecture decisions for common mistakes.
 ---
 
 # Anti-Pattern Library
@@ -41,7 +41,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI training data is disproportionately sourced from conference talks, engineering blogs, and documentation for sophisticated technologies. These sources describe solutions at FAANG scale because that's what gets written about. Nobody writes blog posts about their boring monolithic CRUD app that works perfectly. The AI learns that "good architecture" equals "architecture that uses advanced technologies."
 
-**What To Do Instead**: Start every architecture recommendation by stating the scale context. (See software-architect-core.md § Scale Context Framework) Map every technology choice to a concrete problem it solves at the current scale. If you can't name the specific problem a technology solves for this system, don't recommend it. Rule of thumb: the complexity of the solution must not exceed the complexity of the problem.
+**What To Do Instead**: Start every architecture recommendation by stating the scale context. (See software-architecture-core.md § Scale Context Framework) Map every technology choice to a concrete problem it solves at the current scale. If you can't name the specific problem a technology solves for this system, don't recommend it. Rule of thumb: the complexity of the solution must not exceed the complexity of the problem.
 
 **Detection**: "Does the solution complexity exceed the problem complexity? Would a simpler architecture using fewer technologies solve the same requirements?"
 
@@ -55,7 +55,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models are pattern-matching engines. Given a problem, they retrieve all patterns associated with that problem domain and present them exhaustively. The AI can enumerate patterns but cannot weigh trade-offs because trade-offs require understanding of the specific context, team, and scale that the prompt may not include. Enumeration feels like thoroughness. It's actually abdication.
 
-**What To Do Instead**: For any architectural decision, recommend exactly one approach with rationale. If multiple approaches are genuinely viable, present them with a decision framework: "Choose X when A and B are true. Choose Y when C and D are true." If you cannot articulate the conditions that favor one over the other, you don't understand the trade-offs well enough to recommend either. (See software-architect-core.md § Trade-Off Analysis Methodology)
+**What To Do Instead**: For any architectural decision, recommend exactly one approach with rationale. If multiple approaches are genuinely viable, present them with a decision framework: "Choose X when A and B are true. Choose Y when C and D are true." If you cannot articulate the conditions that favor one over the other, you don't understand the trade-offs well enough to recommend either. (See software-architecture-core.md § Trade-Off Analysis Methodology)
 
 **Detection**: "Do my recommendations read as 'you could do X or Y or Z' without a clear decision framework? Can the reader determine which option to choose without additional research?"
 
@@ -69,7 +69,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI training data contains extensive documentation of FAANG architectures. These are well-documented, well-justified solutions to real problems at extreme scale. The AI learns these patterns as "correct architecture" and applies them without the scale calibration that a human architect would instinctively perform. The AI doesn't know that your user said "10-person startup" unless you explicitly constrain it.
 
-**What To Do Instead**: Always qualify recommendations with scale context. (See software-architect-core.md § Scale Context Framework) Before recommending any pattern or technology, ask: "What is the minimum scale at which this solution becomes cost-effective?" If the current system is below that threshold, the solution is premature. Default to the simplest architecture that meets requirements at the current scale tier, with a documented path to the next tier when needed.
+**What To Do Instead**: Always qualify recommendations with scale context. (See software-architecture-core.md § Scale Context Framework) Before recommending any pattern or technology, ask: "What is the minimum scale at which this solution becomes cost-effective?" If the current system is below that threshold, the solution is premature. Default to the simplest architecture that meets requirements at the current scale tier, with a documented path to the next tier when needed.
 
 **Detection**: "Have I considered the current scale context? Would a simpler solution work at the actual number of users, requests, and engineers this system will have?"
 
@@ -97,7 +97,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models have been trained on software engineering literature that discusses principles extensively. The model can recite the definition of every principle but struggles to apply them contextually because application requires understanding the specific system being designed. Principles are easy to state. Grounded application requires design work.
 
-**What To Do Instead**: Every principle invocation must be followed by a concrete application: what it means for this system specifically, where the boundary goes, what changes as a result. If you say "apply Separation of Concerns," show the concern decomposition. If you say "design for failure," show the specific failure modes and the specific mitigation for each. (See software-architect-core.md § Principle Ownership Map for principle definitions)
+**What To Do Instead**: Every principle invocation must be followed by a concrete application: what it means for this system specifically, where the boundary goes, what changes as a result. If you say "apply Separation of Concerns," show the concern decomposition. If you say "design for failure," show the specific failure modes and the specific mitigation for each. (See software-architecture-core.md § Principle Ownership Map for principle definitions)
 
 **Detection**: "For every principle I invoke, have I shown a concrete, system-specific application of it? Or did I just name the principle and move on?"
 
@@ -111,7 +111,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI processes technical requirements but not organizational context unless explicitly provided. The AI doesn't know the team size, skill distribution, or operational maturity unless you tell it. It produces the technically optimal architecture for the requirements as stated, ignoring that the organization can't implement or operate it.
 
-**What To Do Instead**: Before recommending any architecture, assess: (1) team size and skill distribution, (2) operational maturity (do they have on-call? incident response? CI/CD?), (3) organizational structure (Conway's Law). (See software-architect-organization.md § Conway's Law) The right architecture is the best one the team can build and operate, not the best one in the abstract.
+**What To Do Instead**: Before recommending any architecture, assess: (1) team size and skill distribution, (2) operational maturity (do they have on-call? incident response? CI/CD?), (3) organizational structure (Conway's Law). (See software-architecture-organization.md § Conway's Law) The right architecture is the best one the team can build and operate, not the best one in the abstract.
 
 **Detection**: "Does the team have the skills and headcount to implement and operate this architecture? Have I considered what they can actually deliver?"
 
@@ -125,7 +125,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models see "microservices" as the default modern architecture. The pattern is so prevalent in training data that the AI may not consider a monolith as a valid starting point. Distribution feels like progress. It's actually premature optimization of the system structure.
 
-**What To Do Instead**: Start with a well-structured modular monolith. Extract services only when you have a clear, measurable reason: independent scaling needs, team autonomy requirements, fault isolation requirements, or different technology needs for different components. Before extracting any service, verify that the domain boundary is stable. A service extracted along the wrong boundary is worse than no service at all. (See software-architect-core.md § Scale Evolution Path)
+**What To Do Instead**: Start with a well-structured modular monolith. Extract services only when you have a clear, measurable reason: independent scaling needs, team autonomy requirements, fault isolation requirements, or different technology needs for different components. Before extracting any service, verify that the domain boundary is stable. A service extracted along the wrong boundary is worse than no service at all. (See software-architecture-core.md § Scale Evolution Path)
 
 **Detection**: "Do the service boundaries align with business capabilities? Is there a concrete, measurable problem that distribution solves that a monolith cannot? Can I articulate three specific problems distribution solves for this system?"
 
@@ -139,7 +139,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models are trained to be helpful and produce output quickly. Given a vague prompt, the AI fills in the gaps with plausible architecture choices rather than asking clarifying questions. Producing a solution feels more productive than asking questions. But the questions are the architecture work.
 
-**What To Do Instead**: Follow the Architecture Workflow in order. (See software-architect-core.md § Architecture Workflow) Phase 1 (Understand) comes before Phase 3 (Design) for a reason. Before recommending any technology, document: what the system does, for whom, at what scale, under what constraints, and what the architecturally significant requirements are. Technology choices come last, not first.
+**What To Do Instead**: Follow the Architecture Workflow in order. (See software-architecture-core.md § Architecture Workflow) Phase 1 (Understand) comes before Phase 3 (Design) for a reason. Before recommending any technology, document: what the system does, for whom, at what scale, under what constraints, and what the architecturally significant requirements are. Technology choices come last, not first.
 
 **Detection**: "Did I recommend technologies before defining requirements? Did I ask clarifying questions before proposing solutions?"
 
@@ -153,7 +153,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models are exhaustive by default. Given a prompt to "document the architecture," the AI will document everything — because it doesn't know what's important and what isn't. It cannot judge what the reader needs versus what the writer can include. More documentation feels like more thoroughness.
 
-**What To Do Instead**: Documentation must match its audience and purpose. ADRs are for individual decisions — 1-2 pages each. System Design Documents provide the holistic view — 10-15 pages for most systems. (See software-architect-core.md § Architecture Output Templates) If a section doesn't help the reader make a decision or understand the system, cut it. A 10-page document that gets read is worth more than a 50-page document that doesn't.
+**What To Do Instead**: Documentation must match its audience and purpose. ADRs are for individual decisions — 1-2 pages each. System Design Documents provide the holistic view — 10-15 pages for most systems. (See software-architecture-core.md § Architecture Output Templates) If a section doesn't help the reader make a decision or understand the system, cut it. A 10-page document that gets read is worth more than a 50-page document that doesn't.
 
 **Detection**: "Is this document longer than its audience will read? Can a new team member understand the architecture in under 30 minutes from this document?"
 
@@ -167,7 +167,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models favor consistency and pattern-matching. If one service uses a pattern, the AI tends to apply the same pattern to all services because that's the statistically safe choice. Uniformity is easier to generate and easier to explain. But systems are not uniform, and architectures that pretend they are create friction.
 
-**What To Do Instead**: Treat each component according to its actual requirements, not according to a uniform template. Some services need relational databases. Others need document stores. Some interactions should be synchronous. Others should be asynchronous. The architecture should reflect the diversity of the problem domain, not impose artificial uniformity. Consistency is a tool, not a goal. (See software-architect-core.md § Simplicity First)
+**What To Do Instead**: Treat each component according to its actual requirements, not according to a uniform template. Some services need relational databases. Others need document stores. Some interactions should be synchronous. Others should be asynchronous. The architecture should reflect the diversity of the problem domain, not impose artificial uniformity. Consistency is a tool, not a goal. (See software-architecture-core.md § Simplicity First)
 
 **Detection**: "Am I applying the same pattern to every component without justification? Would different patterns better serve different components' actual requirements?"
 
@@ -181,7 +181,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models are optimized to produce confident, helpful-sounding recommendations. Stating the downside of a recommendation feels like undermining it. But in architecture, stating the downside is the most important part — it's how you know the architect actually evaluated the decision rather than just pattern-matched a solution.
 
-**What To Do Instead**: Every recommendation must include "The downside is..." or "What we give up by choosing this..." If you cannot articulate the trade-off, you haven't completed the analysis. (See software-architect-core.md § Trade-Off Analysis Methodology) A recommendation without trade-off acknowledgment is not a recommendation — it's a guess dressed up as architecture.
+**What To Do Instead**: Every recommendation must include "The downside is..." or "What we give up by choosing this..." If you cannot articulate the trade-off, you haven't completed the analysis. (See software-architecture-core.md § Trade-Off Analysis Methodology) A recommendation without trade-off acknowledgment is not a recommendation — it's a guess dressed up as architecture.
 
 **Detection**: "For every recommendation I make, have I explicitly stated what we're sacrificing? Does the reader know the cost of this decision?"
 
@@ -195,7 +195,7 @@ These are patterns that AI architects are disproportionately prone to. They stem
 
 **Why It Happens**: AI models default to greenfield design because it's cleaner and easier. Given no explicit instruction about existing systems, the AI assumes none exist. Greenfield architecture is also more satisfying to produce — it's a complete, coherent vision unconstrained by legacy. But real architecture is always evolution, never creation.
 
-**What To Do Instead**: Every architecture must include a migration strategy: how do we get from the current state to the target state without a big-bang rewrite? (See software-architect-core.md § Phase 6: Evolve) Use the strangler fig pattern as the default migration approach — incrementally replace parts of the old system while both systems coexist. Document the current state before designing the target state.
+**What To Do Instead**: Every architecture must include a migration strategy: how do we get from the current state to the target state without a big-bang rewrite? (See software-architecture-core.md § Phase 6: Evolve) Use the strangler fig pattern as the default migration approach — incrementally replace parts of the old system while both systems coexist. Document the current state before designing the target state.
 
 **Detection**: "Have I described the current system state? Is there a migration path from current to target? Did I assume we can start over?"
 
@@ -213,7 +213,7 @@ These are well-documented architectural mistakes that have been recognized for d
 
 **Why It Happens**: Big balls of mud are never designed. They accumulate. They happen when: (1) the system grows without architectural guidance, (2) deadlines consistently override quality concerns, (3) there is no shared understanding of the system's structure, (4) code reviews don't enforce architectural boundaries, (5) the original architecture was never documented, so each new feature erodes it further.
 
-**What To Do Instead**: Define and enforce architectural boundaries. Use dependency rules: high-level modules don't depend on low-level modules. Both depend on abstractions. Establish a shared understanding of the system structure through C4 diagrams and ADRs. (See software-architect-core.md § C4 Model) If you're already in a big ball of mud, don't rewrite it. Incrementally extract modules along natural seams, one bounded context at a time.
+**What To Do Instead**: Define and enforce architectural boundaries. Use dependency rules: high-level modules don't depend on low-level modules. Both depend on abstractions. Establish a shared understanding of the system structure through C4 diagrams and ADRs. (See software-architecture-core.md § C4 Model) If you're already in a big ball of mud, don't rewrite it. Incrementally extract modules along natural seams, one bounded context at a time.
 
 **Detection**: "Can I draw the system's module dependencies on a whiteboard without crossing lines everywhere? Can a new developer understand the system's structure in a week?"
 
@@ -227,7 +227,7 @@ These are well-documented architectural mistakes that have been recognized for d
 
 **Why It Happens**: Organizations split a monolith into services along technical layers rather than business capabilities. They keep the shared database because splitting it is hard. They use synchronous HTTP calls because asynchronous messaging is unfamiliar. The result looks like microservices on a diagram but behaves like a distributed disaster in production. This is the most common architectural failure mode in organizations attempting microservices.
 
-**What To Do Instead**: Before distributing, identify stable domain boundaries. (See software-architect-ddd.md § Bounded Context) Each service owns its data — no shared databases. Communication between services is asynchronous wherever possible. Each service must be independently deployable. If you can't deploy a service without deploying others, it's not a service — it's a module of a distributed monolith. Either merge the services back into a monolith or fix the boundaries.
+**What To Do Instead**: Before distributing, identify stable domain boundaries. (See software-architecture-ddd.md § Bounded Context) Each service owns its data — no shared databases. Communication between services is asynchronous wherever possible. Each service must be independently deployable. If you can't deploy a service without deploying others, it's not a service — it's a module of a distributed monolith. Either merge the services back into a monolith or fix the boundaries.
 
 **Detection**: "Can I deploy any service independently without deploying others? Does any service directly access another service's database? Does a request require all services to be up to succeed?"
 
@@ -269,7 +269,7 @@ These are well-documented architectural mistakes that have been recognized for d
 
 **Why It Happens**: Abstraction feels like good architecture. It's intellectually satisfying to build systems that can handle any future requirement. But abstraction has a cost: every layer of indirection makes the system harder to understand, debug, and modify. Architecture astronauts optimize for flexibility at the expense of simplicity, forgetting that simplicity is itself a quality attribute.
 
-**What To Do Instead**: Design for the requirements you have, not the requirements you imagine. Abstractions should be extracted, not invented. Wait until you have at least 3 concrete use cases before creating an abstraction. Before adding any abstraction, ask: "What concrete problem does this solve today, not someday?" (See software-architect-core.md § Simplicity First)
+**What To Do Instead**: Design for the requirements you have, not the requirements you imagine. Abstractions should be extracted, not invented. Wait until you have at least 3 concrete use cases before creating an abstraction. Before adding any abstraction, ask: "What concrete problem does this solve today, not someday?" (See software-architecture-core.md § Simplicity First)
 
 **Detection**: "Am I solving problems that don't exist yet? Does this abstraction have at least 3 concrete use cases today? Would the system be simpler and just as functional without it?"
 
@@ -315,7 +315,7 @@ Data architecture mistakes are among the most expensive to fix. They compound ov
 
 **Why It Happens**: Sharing a database is easy. It avoids the complexity of data synchronization, API design, and eventual consistency. At small scale, it works. But as the system grows, the shared database becomes a coupling point that prevents independent evolution of services. Every schema change becomes a cross-team negotiation. Performance problems in one service's queries affect all other services.
 
-**What To Do Instead**: Each service owns its data exclusively. No service accesses another service's database directly. Services communicate through APIs (for synchronous reads) or events (for asynchronous updates). (See software-architect-distributed.md § Data Ownership) If multiple services need the same data, one service owns it and exposes it through a well-defined API. Data duplication across services is acceptable when managed through events — it's the price of autonomy.
+**What To Do Instead**: Each service owns its data exclusively. No service accesses another service's database directly. Services communicate through APIs (for synchronous reads) or events (for asynchronous updates). (See software-architecture-distributed.md § Data Ownership) If multiple services need the same data, one service owns it and exposes it through a well-defined API. Data duplication across services is acceptable when managed through events — it's the price of autonomy.
 
 **Detection**: "Does more than one service read from or write to the same database or schema? Does a schema change in one service risk breaking another service?"
 
@@ -329,7 +329,7 @@ Data architecture mistakes are among the most expensive to fix. They compound ov
 
 **Why It Happens**: Developers with relational database backgrounds apply ACID transaction patterns to distributed systems. Two-phase commit is the standard solution in the database world, so it feels natural to extend it across services. But distributed transactions violate the fundamental principle of distributed systems: services should be autonomous. A transaction that spans services means no service can complete its work independently.
 
-**What To Do Instead**: Use the Saga pattern for long-running business transactions that span services. (See software-architect-distributed.md § Saga Pattern) Each service performs its local transaction and publishes an event. If a subsequent step fails, compensating transactions undo the previous steps. This preserves service autonomy at the cost of eventual consistency. Accept that distributed systems cannot have the same consistency guarantees as monolithic databases.
+**What To Do Instead**: Use the Saga pattern for long-running business transactions that span services. (See software-architecture-distributed.md § Saga Pattern) Each service performs its local transaction and publishes an event. If a subsequent step fails, compensating transactions undo the previous steps. This preserves service autonomy at the cost of eventual consistency. Accept that distributed systems cannot have the same consistency guarantees as monolithic databases.
 
 **Detection**: "Does a single business operation require transactional consistency across multiple services? Am I using distributed transactions where sagas or eventual consistency would be more appropriate?"
 
@@ -343,7 +343,7 @@ Data architecture mistakes are among the most expensive to fix. They compound ov
 
 **Why It Happens**: Caches are fast. Writing to a cache and reading from it feels like a performance win. The database becomes an afterthought — a persistence layer that's rarely read from. Over time, the cache accumulates business logic (what data to cache, how to invalidate, how to handle misses) that should be in the application layer. The cache stops being an optimization and starts being the system.
 
-**What To Do Instead**: The database is the source of truth. The cache is a read-through performance optimization. Every write goes to the database first. The cache is populated from the database on read. If the cache is lost, the system continues to function correctly (slower, but correctly). Cache invalidation is the application's responsibility, not the infrastructure's. (See software-architect-data.md § Caching Architecture)
+**What To Do Instead**: The database is the source of truth. The cache is a read-through performance optimization. Every write goes to the database first. The cache is populated from the database on read. If the cache is lost, the system continues to function correctly (slower, but correctly). Cache invalidation is the application's responsibility, not the infrastructure's. (See software-architecture-data.md § Caching Architecture)
 
 **Detection**: "If I delete the entire cache, does the system still function correctly? Do writes go to the database first, or to the cache first? Is any data only available in the cache?"
 
@@ -357,7 +357,7 @@ Data architecture mistakes are among the most expensive to fix. They compound ov
 
 **Why It Happens**: Schema on read is liberating in the short term. Teams can ingest data without upfront modeling. They don't need to agree on schemas or coordinate with other teams. But without governance, the data becomes increasingly inconsistent and unreliable. The cost shifts from producers (who save time by not defining schemas) to consumers (who waste time reverse-engineering meaning from raw data).
 
-**What To Do Instead**: Use a layered approach. Raw data can be schema-on-read for exploratory use cases. But curated datasets that serve multiple consumers need explicit schemas, documentation, and quality guarantees. (See software-architect-data.md § Data Modeling Fundamentals) Define a data contract between producers and consumers. The producer guarantees the schema. The consumer trusts the schema.
+**What To Do Instead**: Use a layered approach. Raw data can be schema-on-read for exploratory use cases. But curated datasets that serve multiple consumers need explicit schemas, documentation, and quality guarantees. (See software-architecture-data.md § Data Modeling Fundamentals) Define a data contract between producers and consumers. The producer guarantees the schema. The consumer trusts the schema.
 
 **Detection**: "Do data consumers have to reverse-engineer the meaning of data? Are there inconsistent interpretations of the same data across different consumers?"
 
@@ -389,7 +389,7 @@ An architecture that can't be operated is not an architecture — it's a prototy
 
 **Why It Happens**: Manual configuration is faster in the moment than automation. An engineer SSHes into a server, tweaks a setting, and the problem is solved. Documenting the change and encoding it in infrastructure-as-code takes longer. Over months and years, these manual tweaks accumulate until the server is a unique artifact that cannot be reproduced.
 
-**What To Do Instead**: Infrastructure as Code (IaC) for everything. Every server configuration, every network rule, every deployment step is defined in version-controlled configuration. (See software-architect-infrastructure.md § Infrastructure as Code) Servers are cattle, not pets. If a server misbehaves, you terminate it and a new one is provisioned automatically from the IaC definition. No manual SSH. No undocumented tweaks.
+**What To Do Instead**: Infrastructure as Code (IaC) for everything. Every server configuration, every network rule, every deployment step is defined in version-controlled configuration. (See software-architecture-infrastructure.md § Infrastructure as Code) Servers are cattle, not pets. If a server misbehaves, you terminate it and a new one is provisioned automatically from the IaC definition. No manual SSH. No undocumented tweaks.
 
 **Detection**: "Can I rebuild the entire production environment from version control without manual steps? If a server dies, does a new one come up automatically with the correct configuration?"
 
@@ -417,7 +417,7 @@ An architecture that can't be operated is not an architecture — it's a prototy
 
 **Why It Happens**: Documentation is deferred. ADRs aren't written because "everyone knows why we made that decision." Runbooks aren't created because "Alice handles that." The hero engineer becomes the system's living documentation. This works until the hero goes on vacation, changes teams, or leaves the company. Then the system becomes a black box that nobody can operate or evolve.
 
-**What To Do Instead**: Write ADRs for every significant decision. (See software-architect-core.md § Architecture Output Templates — ADR Template) Create runbooks for every operational procedure. Pair on complex tasks so knowledge spreads. The architect's job is to make themselves unnecessary — the architecture should be understandable and operable by any qualified engineer, not just the person who designed it.
+**What To Do Instead**: Write ADRs for every significant decision. (See software-architecture-core.md § Architecture Output Templates — ADR Template) Create runbooks for every operational procedure. Pair on complex tasks so knowledge spreads. The architect's job is to make themselves unnecessary — the architecture should be understandable and operable by any qualified engineer, not just the person who designed it.
 
 **Detection**: "Is there any part of the system that only one person understands? What happens if that person is unavailable? Is the bus factor >1 for every critical component?"
 
@@ -431,7 +431,7 @@ An architecture that can't be operated is not an architecture — it's a prototy
 
 **Why It Happens**: Post-mortems take time. After an incident, the priority is restoring service and catching up on work that was delayed. Writing a post-mortem feels like additional overhead when everyone is already behind. Organizations that don't have a blameless culture may avoid post-mortems because they fear blame assignment. But without post-mortems, the organization cannot learn.
 
-**What To Do Instead**: Every incident above a defined severity threshold gets a blameless post-mortem. The post-mortem documents: what happened (timeline), why it happened (root causes), how it was detected, how it was resolved, and what prevents recurrence (action items). Action items have owners and deadlines. Post-mortems are shared broadly so the entire organization learns from each incident. (See software-architect-infrastructure.md § Incident Management)
+**What To Do Instead**: Every incident above a defined severity threshold gets a blameless post-mortem. The post-mortem documents: what happened (timeline), why it happened (root causes), how it was detected, how it was resolved, and what prevents recurrence (action items). Action items have owners and deadlines. Post-mortems are shared broadly so the entire organization learns from each incident. (See software-architecture-infrastructure.md § Incident Management)
 
 **Detection**: "Does every significant incident result in a post-mortem? Are action items tracked to completion? Do incidents with the same root cause recur?"
 
@@ -445,7 +445,7 @@ An architecture that can't be operated is not an architecture — it's a prototy
 
 **Why It Happens**: Monitoring is easier than observability. Monitoring tells you whether predefined metrics are within predefined thresholds. Observability lets you ask arbitrary questions about system behavior. Setting up dashboards with CPU, memory, and error rate is straightforward. Setting up distributed tracing, structured logging, and high-cardinality metrics that enable ad-hoc investigation requires more investment.
 
-**What To Do Instead**: Observability means you can answer any operational question without deploying new code. (See software-architect-core.md § Observability) Implement: (1) structured logging with trace IDs, (2) distributed tracing across service boundaries, (3) high-cardinality metrics (per-endpoint latency percentiles, not just average latency), (4) SLO-based alerting (error budget burn rate, not static thresholds). The test: when something is slow, can you identify the bottleneck in under 5 minutes?
+**What To Do Instead**: Observability means you can answer any operational question without deploying new code. (See software-architecture-core.md § Observability) Implement: (1) structured logging with trace IDs, (2) distributed tracing across service boundaries, (3) high-cardinality metrics (per-endpoint latency percentiles, not just average latency), (4) SLO-based alerting (error budget burn rate, not static thresholds). The test: when something is slow, can you identify the bottleneck in under 5 minutes?
 
 **Detection**: "Can I answer 'why is this slow?' without deploying new instrumentation? Do I have distributed tracing? Are my alerts based on SLOs or static thresholds?"
 
@@ -463,7 +463,7 @@ Architecture is not just about the system. It's about how the system is designed
 
 **Why It Happens**: Organizations value consensus. "Everyone should have input" sounds inclusive. But architecture requires making trade-offs — choosing one thing means not choosing another. When 15 people must agree, the decision converges on the option that offends the fewest people, not the option that best serves the system's requirements. Consensus is the enemy of good architecture.
 
-**What To Do Instead**: Assign decision rights clearly. The architect (or architecture team) has authority over architectural decisions. Stakeholders provide input but don't vote. Decisions are made by the people with the most context and accountability for the outcome. ADRs document decisions so they can be reviewed and challenged after the fact, but they are not blocked waiting for consensus. (See software-architect-organization.md § The Architecture Decision Spectrum)
+**What To Do Instead**: Assign decision rights clearly. The architect (or architecture team) has authority over architectural decisions. Stakeholders provide input but don't vote. Decisions are made by the people with the most context and accountability for the outcome. ADRs document decisions so they can be reviewed and challenged after the fact, but they are not blocked waiting for consensus. (See software-architecture-organization.md § The Architecture Decision Spectrum)
 
 **Detection**: "How many people must approve an architectural decision? Does the approval process take longer than the time spent analyzing the decision itself?"
 
@@ -477,7 +477,7 @@ Architecture is not just about the system. It's about how the system is designed
 
 **Why It Happens**: Organizations separate "architecture" from "engineering" as distinct roles. Architects are promoted out of engineering and stop writing code. Their understanding of the system becomes increasingly theoretical. Meanwhile, engineering teams work around architectural constraints that don't make sense in practice, creating a gap between the documented architecture and the actual system.
 
-**What To Do Instead**: Architects must stay connected to implementation. This doesn't mean writing all the code — it means understanding the codebase, participating in code reviews, and occasionally implementing non-trivial features to maintain context. The architecture is validated by implementation, not by diagrams. If the architecture can't be implemented by the team, the architecture is wrong, regardless of how elegant it looks. (See software-architect-core.md § Architect's Role: Guide, Don't Dictate)
+**What To Do Instead**: Architects must stay connected to implementation. This doesn't mean writing all the code — it means understanding the codebase, participating in code reviews, and occasionally implementing non-trivial features to maintain context. The architecture is validated by implementation, not by diagrams. If the architecture can't be implemented by the team, the architecture is wrong, regardless of how elegant it looks. (See software-architecture-core.md § Architect's Role: Guide, Don't Dictate)
 
 **Detection**: "Do the architects regularly write or review code? Does the documented architecture match what's actually running in production?"
 
@@ -491,7 +491,7 @@ Architecture is not just about the system. It's about how the system is designed
 
 **Why It Happens**: BUFD feels responsible. "Measure twice, cut once." Architecture is hard to change later, so design it thoroughly upfront. This logic is correct for structural decisions (database choice, system boundaries) but wrong for detailed design (component internals, API contracts, data models). BUFD assumes the requirements are complete and stable. They never are.
 
-**What To Do Instead**: Make irreversible decisions early. Defer reversible decisions. (See software-architect-core.md § Delay Decisions Until the Last Responsible Moment) Design the architecture at the level of system structure (components, boundaries, communication patterns) and defer detailed design until implementation. Use evolutionary architecture — design enough to start building, then let the architecture evolve as you learn from implementation. The architecture should guide implementation, not specify it exhaustively.
+**What To Do Instead**: Make irreversible decisions early. Defer reversible decisions. (See software-architecture-core.md § Delay Decisions Until the Last Responsible Moment) Design the architecture at the level of system structure (components, boundaries, communication patterns) and defer detailed design until implementation. Use evolutionary architecture — design enough to start building, then let the architecture evolve as you learn from implementation. The architecture should guide implementation, not specify it exhaustively.
 
 **Detection**: "How long is the architecture phase before the first code is written? Are we designing details that could be deferred until implementation?"
 
@@ -505,7 +505,7 @@ Architecture is not just about the system. It's about how the system is designed
 
 **Why It Happens**: Agile methodologies emphasize working software over comprehensive documentation. This is misinterpreted as "no architecture." Teams that have been burned by BUFD swing too far in the opposite direction, rejecting all upfront architecture as waterfall thinking. But agile values architecture — it just values evolutionary architecture over big upfront architecture. The absence of architecture is not agility. It's negligence.
 
-**What To Do Instead**: Define just enough architecture to provide a shared understanding of the system's structure and constraints. (See software-architect-core.md § Architecture Workflow — Phase 3: Design) Write ADRs for significant decisions. Establish boundaries between components. Define communication patterns. This is not BUFD — it's the minimum architecture needed to prevent chaos. The architecture can and should evolve, but it needs a starting point.
+**What To Do Instead**: Define just enough architecture to provide a shared understanding of the system's structure and constraints. (See software-architecture-core.md § Architecture Workflow — Phase 3: Design) Write ADRs for significant decisions. Establish boundaries between components. Define communication patterns. This is not BUFD — it's the minimum architecture needed to prevent chaos. The architecture can and should evolve, but it needs a starting point.
 
 **Detection**: "Can every team member describe the system's architecture in the same way? Are there documented boundaries between components? Would a new team member know where to put new code?"
 
@@ -596,7 +596,7 @@ The anti-patterns in this catalog are informed by the following references. Each
 | Documenting Software Architectures | Clements, Bachmann, Bass, et al. | Documentation anti-patterns, view mismatch, over-documentation |
 | Enterprise Integration Patterns | Gregor Hohpe, Bobby Woolf | Integration anti-patterns, messaging failures, routing mistakes |
 | Patterns of Enterprise Application Architecture | Martin Fowler | Layered architecture anti-patterns, data source patterns, distribution |
-| 97 Things Every Software Architect Should Know | Various (ed. Richard Monson-Haefel) | Practice anti-patterns, communication failures, stakeholder management |
+| 97 Things Every Software Architecture Should Know | Various (ed. Richard Monson-Haefel) | Practice anti-patterns, communication failures, stakeholder management |
 | Software Architecture Patterns | Mark Richards | Pattern misapplication, style selection failures |
 | Database Internals | Alex Petrov | Data architecture anti-patterns, storage engine misuse |
 | Streaming Systems | Tyler Akidau, Slava Chernyak, Reuven Lax | Event streaming anti-patterns, watermark failures, state management |
@@ -604,4 +604,4 @@ The anti-patterns in this catalog are informed by the following references. Each
 
 ---
 
-*Load this skill alongside any software-architect skill. After producing an architecture artifact, run § Anti-Pattern Detection Checklist. Fix critical issues immediately. Flag high-priority issues for revision. Note medium-priority items for future iteration.*
+*Load this skill alongside any software-architecture skill. After producing an architecture artifact, run § Anti-Pattern Detection Checklist. Fix critical issues immediately. Flag high-priority issues for revision. Note medium-priority items for future iteration.*

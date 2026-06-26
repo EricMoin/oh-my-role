@@ -1,6 +1,6 @@
 ---
-name: software-architect-data
-description: Data architecture for the Software Architect suite. Covers data modeling fundamentals (relational, document, wide-column, graph, key-value, time-series), database internals at architect level (storage engines, indexes, transaction isolation, WAL, MVCC), replication strategies, partitioning/sharding, caching architecture, stream processing, system design methodology, and scalability patterns. Includes real-world OSS case studies from PostgreSQL, Redis, Elasticsearch, ClickHouse, TiDB, CockroachDB, and Vitess.
+name: software-architecture-data
+description: Data architecture for the Software Architecture suite. Covers data modeling fundamentals (relational, document, wide-column, graph, key-value, time-series), database internals at architect level (storage engines, indexes, transaction isolation, WAL, MVCC), replication strategies, partitioning/sharding, caching architecture, stream processing, system design methodology, and scalability patterns. Includes real-world OSS case studies from PostgreSQL, Redis, Elasticsearch, ClickHouse, TiDB, CockroachDB, and Vitess.
 ---
 
 ## Data Architecture Overview
@@ -11,7 +11,7 @@ This Skill covers the full stack of data architecture concerns: which data model
 
 ### What This Skill Owns
 
-Per the Principle Ownership Map (See software-architect-core.md § Principle Ownership Map), this Skill is the Home for:
+Per the Principle Ownership Map (See software-architecture-core.md § Principle Ownership Map), this Skill is the Home for:
 
 - **Database per Service**: Microservice data isolation strategy
 - **Polyglot Persistence**: Using different data stores for different workloads
@@ -20,13 +20,13 @@ Per the Principle Ownership Map (See software-architect-core.md § Principle Own
 
 ### What This Skill References (Does Not Redefine)
 
-- **CAP Theorem, PACELC Theorem**: (See software-architect-distributed.md § CAP Theorem)
-- **Event Sourcing, CQRS**: (See software-architect-distributed.md § Event Sourcing)
-- **Saga Pattern**: (See software-architect-distributed.md § Saga Pattern)
-- **Idempotency**: (See software-architect-distributed.md § Idempotency)
-- **Domain Events**: (See software-architect-ddd.md § Domain Event)
-- **Aggregate Design**: (See software-architect-ddd.md § Aggregate)
-- **Immutability**: (See software-architect-core.md § Principle Ownership Map — Home: software-architect-patterns)
+- **CAP Theorem, PACELC Theorem**: (See software-architecture-distributed.md § CAP Theorem)
+- **Event Sourcing, CQRS**: (See software-architecture-distributed.md § Event Sourcing)
+- **Saga Pattern**: (See software-architecture-distributed.md § Saga Pattern)
+- **Idempotency**: (See software-architecture-distributed.md § Idempotency)
+- **Domain Events**: (See software-architecture-ddd.md § Domain Event)
+- **Aggregate Design**: (See software-architecture-ddd.md § Aggregate)
+- **Immutability**: (See software-architecture-core.md § Principle Ownership Map — Home: software-architecture-patterns)
 
 
 ## Data Modeling Fundamentals
@@ -781,7 +781,7 @@ For each API endpoint: HTTP method, path, request parameters, response format, e
 
 **Step 4: Design High-Level Architecture (C4 Level 2)**
 
-Draw the containers: the major deployable/runnable units and how they connect. (See software-architect-core.md § C4 Model)
+Draw the containers: the major deployable/runnable units and how they connect. (See software-architecture-core.md § C4 Model)
 
 For a typical data-intensive system, the containers include: load balancer, API servers, database (primary), cache, message queue, blob storage, CDN. Identify which container owns which responsibility. Label communication protocols.
 
@@ -943,14 +943,14 @@ Not every operation needs to complete synchronously. Defer non-critical work to 
 **Batch Jobs**: Process data in bulk, not one at a time. Use for: daily reports, data aggregation, bulk email, data cleanup. Implementation: cron jobs, workflow orchestrators (Airflow, Temporal).
 
 **Design Rules**:
-- Async work should be idempotent (reprocessing the same job twice produces the same result). (See software-architect-distributed.md § Idempotency)
+- Async work should be idempotent (reprocessing the same job twice produces the same result). (See software-architecture-distributed.md § Idempotency)
 - Async work should have a dead letter queue for jobs that fail repeatedly.
 - Async work should be monitored: queue depth, processing rate, failure rate, age of oldest message.
 
 
 ## Data Architecture Checklist
 
-Run this checklist during Phase 5 (Validate) of the architecture workflow. (See software-architect-core.md § Architecture Workflow) Every item is a yes/no verifiable question.
+Run this checklist during Phase 5 (Validate) of the architecture workflow. (See software-architecture-core.md § Architecture Workflow) Every item is a yes/no verifiable question.
 
 ### Critical (Must Pass)
 

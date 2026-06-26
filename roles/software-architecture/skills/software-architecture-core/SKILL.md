@@ -1,6 +1,6 @@
 ---
-name: software-architect-core
-description: Foundational Skill for the Software Architect suite. Establishes the architect's identity, trade-off analysis methodology, 6-phase architecture workflow, Architecture Decision Record (ADR) template, System Design Document template, Trade-Off Analysis template, Scale Context Framework, Principle Ownership Map, C4 model vocabulary, writing style guide for all Skills, foundational architecture principles, and master self-review checklist. Load this Skill first — all other software-architect Skills reference it.
+name: software-architecture-core
+description: Foundational Skill for the Software Architecture suite. Establishes the architect's identity, trade-off analysis methodology, 6-phase architecture workflow, Architecture Decision Record (ADR) template, System Design Document template, Trade-Off Analysis template, Scale Context Framework, Principle Ownership Map, C4 model vocabulary, writing style guide for all Skills, foundational architecture principles, and master self-review checklist. Load this Skill first — all other software-architecture Skills reference it.
 ---
 
 ## Role Identity & Mindset
@@ -35,13 +35,13 @@ An architecture that requires you to review every pull request has failed. An ar
 
 These are non-negotiable constraints, not optional guidelines:
 
-- **Security is non-negotiable.** Every architecture must include a security model. No architecture is complete without addressing authentication, authorization, data protection, and threat surface. Security is not a feature to add later — it is a quality attribute that shapes every architectural decision. (See software-architect-infrastructure.md § Defense in Depth)
+- **Security is non-negotiable.** Every architecture must include a security model. No architecture is complete without addressing authentication, authorization, data protection, and threat surface. Security is not a feature to add later — it is a quality attribute that shapes every architectural decision. (See software-architecture-infrastructure.md § Defense in Depth)
 
 - **Data integrity is sacred.** The system must never silently lose, corrupt, or misrepresent data. Eventual consistency is acceptable when explicitly designed for. Data loss through architectural oversight is not.
 
 - **Availability SLAs are commitments.** If the system promises 99.9% uptime, every architectural element must be designed to support that commitment. A single point of failure that can take down the system violates this promise.
 
-- **Observability is not optional.** If you can't observe it, you can't operate it, debug it, or improve it. Every component must expose metrics, logs, and traces sufficient to answer operational questions without deploying new code. (See software-architect-infrastructure.md § Observability)
+- **Observability is not optional.** If you can't observe it, you can't operate it, debug it, or improve it. Every component must expose metrics, logs, and traces sufficient to answer operational questions without deploying new code. (See software-architecture-infrastructure.md § Observability)
 
 ### What You Produce
 
@@ -55,7 +55,7 @@ Your primary outputs are structured documents, not diagrams. Diagrams illustrate
 
 ## Writing Style Guide for All Skills
 
-This section establishes the consistent tone, format, and structure for ALL 8 Skills in the software-architect suite. Every Skill must follow these conventions.
+This section establishes the consistent tone, format, and structure for ALL 8 Skills in the software-architecture suite. Every Skill must follow these conventions.
 
 ### Tone
 
@@ -68,15 +68,15 @@ This section establishes the consistent tone, format, and structure for ALL 8 Sk
 
 When referencing content in another Skill file, use this exact format:
 
-`(See software-architect-{domain}.md § Section Name)`
+`(See software-architecture-{domain}.md § Section Name)`
 
 Examples:
-- `(See software-architect-patterns.md § Separation of Concerns)`
-- `(See software-architect-distributed.md § CAP Theorem)`
-- `(See software-architect-ddd.md § Bounded Context)`
-- `(See software-architect-data.md § Data Modeling Fundamentals)`
-- `(See software-architect-infrastructure.md § Defense in Depth)`
-- `(See software-architect-organization.md § Conway's Law)`
+- `(See software-architecture-patterns.md § Separation of Concerns)`
+- `(See software-architecture-distributed.md § CAP Theorem)`
+- `(See software-architecture-ddd.md § Bounded Context)`
+- `(See software-architecture-data.md § Data Modeling Fundamentals)`
+- `(See software-architecture-infrastructure.md § Defense in Depth)`
+- `(See software-architecture-organization.md § Conway's Law)`
 
 When referencing content within the same file, use: `(See § Section Name)`
 
@@ -223,41 +223,41 @@ This master table shows where each universal architecture principle is defined a
 
 | Principle | Home Skill | Referenced By |
 |---|---|---|
-| Simplicity First | software-architect-core | ALL |
-| Delay Decisions Until Last Responsible Moment | software-architect-core | ALL |
-| Architect for Evolution, Not Perfection | software-architect-core | ALL |
-| Make the Implicit Explicit | software-architect-core | ALL |
-| Least Privilege / Least Knowledge | software-architect-core | distributed, infrastructure |
-| Fail Fast, Recover Gracefully | software-architect-core | distributed, infrastructure |
-| Separation of Concerns | software-architect-patterns | core, ddd, distributed |
-| Single Responsibility | software-architect-patterns | core, ddd |
-| Immutability | software-architect-patterns | distributed, data |
-| CAP Theorem | software-architect-distributed | data, infrastructure |
-| PACELC Extension | software-architect-distributed | data |
-| Event Sourcing | software-architect-distributed | ddd, data |
-| CQRS | software-architect-distributed | ddd, data |
-| Idempotency | software-architect-distributed | data, infrastructure |
-| Saga Pattern | software-architect-distributed | ddd, data |
-| Circuit Breaker | software-architect-distributed | infrastructure |
-| Bounded Context | software-architect-ddd | distributed, organization |
-| Domain Event | software-architect-ddd | distributed, data |
-| Aggregate | software-architect-ddd | data |
-| Database per Service | software-architect-data | distributed, ddd |
-| Polyglot Persistence | software-architect-data | ddd |
-| Data Partitioning (Sharding) | software-architect-data | distributed |
-| Caching Architecture | software-architect-data | infrastructure, distributed |
-| Defense in Depth | software-architect-infrastructure | distributed, data |
-| Infrastructure as Code | software-architect-infrastructure | ALL |
-| Zero Trust Architecture | software-architect-infrastructure | distributed |
-| Conway's Law | software-architect-organization | core, distributed |
-| Team Topologies | software-architect-organization | ddd, distributed |
-| Cognitive Load (per team) | software-architect-organization | core |
+| Simplicity First | software-architecture-core | ALL |
+| Delay Decisions Until Last Responsible Moment | software-architecture-core | ALL |
+| Architect for Evolution, Not Perfection | software-architecture-core | ALL |
+| Make the Implicit Explicit | software-architecture-core | ALL |
+| Least Privilege / Least Knowledge | software-architecture-core | distributed, infrastructure |
+| Fail Fast, Recover Gracefully | software-architecture-core | distributed, infrastructure |
+| Separation of Concerns | software-architecture-patterns | core, ddd, distributed |
+| Single Responsibility | software-architecture-patterns | core, ddd |
+| Immutability | software-architecture-patterns | distributed, data |
+| CAP Theorem | software-architecture-distributed | data, infrastructure |
+| PACELC Extension | software-architecture-distributed | data |
+| Event Sourcing | software-architecture-distributed | ddd, data |
+| CQRS | software-architecture-distributed | ddd, data |
+| Idempotency | software-architecture-distributed | data, infrastructure |
+| Saga Pattern | software-architecture-distributed | ddd, data |
+| Circuit Breaker | software-architecture-distributed | infrastructure |
+| Bounded Context | software-architecture-ddd | distributed, organization |
+| Domain Event | software-architecture-ddd | distributed, data |
+| Aggregate | software-architecture-ddd | data |
+| Database per Service | software-architecture-data | distributed, ddd |
+| Polyglot Persistence | software-architecture-data | ddd |
+| Data Partitioning (Sharding) | software-architecture-data | distributed |
+| Caching Architecture | software-architecture-data | infrastructure, distributed |
+| Defense in Depth | software-architecture-infrastructure | distributed, data |
+| Infrastructure as Code | software-architecture-infrastructure | ALL |
+| Zero Trust Architecture | software-architecture-infrastructure | distributed |
+| Conway's Law | software-architecture-organization | core, distributed |
+| Team Topologies | software-architecture-organization | ddd, distributed |
+| Cognitive Load (per team) | software-architecture-organization | core |
 
 ### How to Use This Map
 
 - **When writing a principle**: Check this table first. If the principle has a Home Skill that isn't the one you're writing, do not redefine it. Write a cross-reference instead.
 - **When reading a cross-reference**: The Home Skill contains the full definition, criteria, and checklist. The referencing Skill contains only the application-specific guidance.
-- **When adding a new principle**: Add it to this table in software-architect-core.md. Assign a single Home Skill. List all Skills that reference it.
+- **When adding a new principle**: Add it to this table in software-architecture-core.md. Assign a single Home Skill. List all Skills that reference it.
 
 
 ## Scale Context Framework
@@ -277,7 +277,7 @@ Every architecture recommendation in every Skill MUST be qualified by scale cont
 
 **Growth (10–50 engineers, 100K–10M users)**:
 - Optimize for: team autonomy, system reliability, sustainable delivery velocity
-- Architectural style: modular monolith or service-oriented. Boundaries emerge along team boundaries (Conway's Law). (See software-architect-organization.md § Conway's Law)
+- Architectural style: modular monolith or service-oriented. Boundaries emerge along team boundaries (Conway's Law). (See software-architecture-organization.md § Conway's Law)
 - Data: data partitioning begins. Read replicas. Separate schemas per bounded context.
 - Communication: APIs between modules (even in a monolith). Consider async messaging for cross-boundary communication.
 - Deployment: independent deployability for high-change modules. Canary deployments, feature flags.
@@ -347,7 +347,7 @@ Quality attributes define what the system must *be*, not just what it must *do*.
 
 **Key concerns**: Redundancy (no single points of failure), failover mechanisms, health checking, graceful degradation, disaster recovery, SLA definition.
 
-**Trade-off**: Higher availability costs more (redundant infrastructure, operational complexity) and often conflicts with consistency (CAP theorem). (See software-architect-distributed.md § CAP Theorem) Each additional nine roughly doubles the cost.
+**Trade-off**: Higher availability costs more (redundant infrastructure, operational complexity) and often conflicts with consistency (CAP theorem). (See software-architecture-distributed.md § CAP Theorem) Each additional nine roughly doubles the cost.
 
 ### Reliability
 
@@ -361,7 +361,7 @@ Quality attributes define what the system must *be*, not just what it must *do*.
 
 **Definition**: Protecting the system and its data from unauthorized access, modification, or denial of service. Covers confidentiality (data not exposed), integrity (data not tampered), and availability (system not taken down by attackers).
 
-**Key concerns**: Authentication, authorization, encryption (in transit and at rest), input validation, threat modeling, principle of least privilege, secure defaults, defense in depth. (See software-architect-infrastructure.md § Defense in Depth)
+**Key concerns**: Authentication, authorization, encryption (in transit and at rest), input validation, threat modeling, principle of least privilege, secure defaults, defense in depth. (See software-architecture-infrastructure.md § Defense in Depth)
 
 **Trade-off**: Security always adds friction (for users, for developers, for operations). The question is never "should we add security?" It's "what security is appropriate for this threat model?" Under-securing is negligence. Over-securing wastes resources and slows everything down.
 
@@ -493,7 +493,7 @@ These are the recurring trade-off patterns that appear in almost every architect
 
 **When to choose Consistency**: Financial transactions, inventory management, user authentication, anything where wrong data is worse than no data.
 **When to choose Availability**: Social media feeds, recommendation engines, analytics dashboards, anything where stale data is acceptable for short periods.
-**When it's not a binary choice**: Most real systems use a hybrid: strong consistency for critical paths, eventual consistency for everything else. (See software-architect-distributed.md § PACELC Extension)
+**When it's not a binary choice**: Most real systems use a hybrid: strong consistency for critical paths, eventual consistency for everything else. (See software-architecture-distributed.md § PACELC Extension)
 
 #### Simplicity vs. Flexibility
 
@@ -608,7 +608,7 @@ This is the main loop for architecture work. Every significant architecture task
 - Select architectural style(s): layered, microservices, event-driven, space-based, service-oriented, microkernel, etc. Most systems use a hybrid: the primary style plus secondary styles for specific subsystems.
 - Decompose into components/services: identify bounded contexts (if using DDD), define component responsibilities, define interfaces between components.
 - Define communication patterns: synchronous (REST, gRPC, GraphQL) vs. asynchronous (message queues, event streams, webhooks). Choose per interaction, not per system.
-- Define data architecture: storage types per component, data ownership, data flow, consistency requirements per interaction. (See software-architect-data.md § Data Modeling Fundamentals)
+- Define data architecture: storage types per component, data ownership, data flow, consistency requirements per interaction. (See software-architecture-data.md § Data Modeling Fundamentals)
 - Address cross-cutting concerns: authentication/authorization, logging, monitoring, error handling, configuration management. These must be designed once and applied consistently.
 
 **Outputs**: Architectural style selection with rationale, component decomposition (C4 Level 2), interface definitions, data architecture overview, cross-cutting concern strategy.
@@ -660,7 +660,7 @@ This is the main loop for architecture work. Every significant architecture task
 - Architecture evaluation: review the architecture against quality attribute scenarios. Does each scenario have a credible architectural response?
 - Trade-off review: for each significant trade-off, verify that the chosen side is still correct given current constraints and scale.
 - Prototype critical paths: for high-risk technical decisions, build a spike/prototype to validate assumptions. (e.g., "Can this database handle our peak write throughput?")
-- Threat modeling: identify attack vectors, assess risks, verify mitigations. (See software-architect-infrastructure.md § Threat Modeling)
+- Threat modeling: identify attack vectors, assess risks, verify mitigations. (See software-architecture-infrastructure.md § Threat Modeling)
 - Review against scale context: would this architecture survive the next scale tier? What would need to change?
 
 **Outputs**: Architecture evaluation report, identified gaps and risks, prototype results (if applicable), threat model.
@@ -896,7 +896,7 @@ reconsidered?]
 
 ## Related
 - ADR-NNN: [Related decision]
-- (See software-architect-{domain}.md § Section Name)
+- (See software-architecture-{domain}.md § Section Name)
 ```
 
 ### System Design Document Template
@@ -1057,7 +1057,7 @@ The architect's core analytical tool. Use for any decision where multiple option
 
 ## Foundational Architecture Principles
 
-These principles are owned by software-architect-core. Their full definitions, criteria, trade-off analysis, and checklists live here. Other Skills may reference them but must not redefine them.
+These principles are owned by software-architecture-core. Their full definitions, criteria, trade-off analysis, and checklists live here. Other Skills may reference them but must not redefine them.
 
 ### Simplicity First
 
@@ -1320,7 +1320,7 @@ Failure on any Critical item blocks handoff. Fix before proceeding.
 2. [ ] **Quality attribute coverage**: Are all non-negotiable quality attributes addressed with concrete architectural mechanisms?
 3. [ ] **Scale appropriateness**: Is every architectural decision qualified by the correct scale tier? (See § Scale Context Framework)
 4. [ ] **Trade-off documentation**: Is every significant trade-off explicitly acknowledged with what was sacrificed and why it's acceptable?
-5. [ ] **Security model**: Does the architecture include authentication, authorization, and data protection? (See software-architect-infrastructure.md § Defense in Depth)
+5. [ ] **Security model**: Does the architecture include authentication, authorization, and data protection? (See software-architecture-infrastructure.md § Defense in Depth)
 6. [ ] **Data integrity**: Are there mechanisms to prevent data loss, corruption, or silent inconsistency?
 7. [ ] **Single points of failure identified**: Are all SPOFs identified, and either eliminated or accepted with documented rationale?
 8. [ ] **ADR completeness**: Are all significant architectural decisions documented as ADRs? (See § ADR Template)
@@ -1350,7 +1350,7 @@ These items are situation-dependent. They may or may not apply to every architec
 3. [ ] **Capacity planning**: Are there capacity estimates and scale triggers for key components?
 4. [ ] **Disaster recovery**: Is there a disaster recovery strategy appropriate for the availability SLA?
 5. [ ] **Compliance addressed**: Are regulatory requirements (GDPR, HIPAA, PCI-DSS) addressed in the architecture?
-6. [ ] **Team structure alignment**: Does the architecture align with team boundaries (Conway's Law)? (See software-architect-organization.md § Conway's Law)
+6. [ ] **Team structure alignment**: Does the architecture align with team boundaries (Conway's Law)? (See software-architecture-organization.md § Conway's Law)
 7. [ ] **Technology learning curve**: Is the team's capability to operate the chosen technologies assessed?
 8. [ ] **Cost model**: Is there a rough cost model for the infrastructure at projected scale?
 
@@ -1361,7 +1361,7 @@ This table maps each section of this Skill to the primary and secondary books th
 
 | Section | Primary Books | Secondary Books |
 |---|---|---|
-| Role Identity & Mindset | Fundamentals of Software Architecture (Richards & Ford), 97 Things Every Software Architect Should Know (Monson-Haefel) | Software Architecture in Practice 4th Ed. (Bass, Clements, Kazman), Clean Architecture (Martin) |
+| Role Identity & Mindset | Fundamentals of Software Architecture (Richards & Ford), 97 Things Every Software Architecture Should Know (Monson-Haefel) | Software Architecture in Practice 4th Ed. (Bass, Clements, Kazman), Clean Architecture (Martin) |
 | Writing Style Guide for All Skills | (Original — established by this Skill) | — |
 | Principle Ownership Map | (Original — established by this Skill) | — |
 | Scale Context Framework | The Art of Scalability (Abbott & Fisher), Web Scalability for Startup Engineers (Ejsmont) | Fundamentals of Software Architecture (Richards & Ford) |
@@ -1384,7 +1384,7 @@ This table maps each section of this Skill to the primary and secondary books th
 - **A Philosophy of Software Design** (Ousterhout, 2018): Complexity management, deep modules, information hiding, tactical vs. strategic programming.
 - **Building Evolutionary Architectures** (Ford, Parsons, Kua, 2017): Fitness functions, evolutionary architecture, incremental change, architectural governance.
 - **The Art of Scalability** (Abbott & Fisher, 2015): Scale cubes, organizational scalability, AKF scale cube, process scalability.
-- **97 Things Every Software Architect Should Know** (Monson-Haefel, 2009): Practical wisdom, soft skills, communication, architecture as a role.
+- **97 Things Every Software Architecture Should Know** (Monson-Haefel, 2009): Practical wisdom, soft skills, communication, architecture as a role.
 - **Thinking Fast and Slow** (Kahneman, 2011): Cognitive biases, decision-making under uncertainty, System 1 vs. System 2 thinking.
 - **How to Measure Anything** (Hubbard, 2014): Quantifying intangibles, measurement in the absence of perfect data, value of information.
 - **Antifragile** (Taleb, 2012): Systems that gain from disorder, fragility vs. robustness vs. antifragility, optionality.

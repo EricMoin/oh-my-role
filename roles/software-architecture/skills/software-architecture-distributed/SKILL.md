@@ -1,6 +1,6 @@
 ---
-name: software-architect-distributed
-description: Distributed systems architecture for the Software Architect suite. Covers distributed fundamentals (8 fallacies, CAP/PACELC theorems, consistency models, consensus protocols, time in distributed systems), microservice decomposition strategies, distributed data patterns (Saga, CQRS, Event Sourcing, Outbox, CDC, Idempotency), resilience patterns (circuit breaker, bulkhead, retry, timeout, rate limiting, health checks, graceful degradation, chaos engineering), reactive systems, and event-driven architecture deep dive. Includes real-world OSS case studies from Kafka, Kubernetes, Envoy, Istio, and etcd.
+name: software-architecture-distributed
+description: Distributed systems architecture for the Software Architecture suite. Covers distributed fundamentals (8 fallacies, CAP/PACELC theorems, consistency models, consensus protocols, time in distributed systems), microservice decomposition strategies, distributed data patterns (Saga, CQRS, Event Sourcing, Outbox, CDC, Idempotency), resilience patterns (circuit breaker, bulkhead, retry, timeout, rate limiting, health checks, graceful degradation, chaos engineering), reactive systems, and event-driven architecture deep dive. Includes real-world OSS case studies from Kafka, Kubernetes, Envoy, Istio, and etcd.
 ---
 
 ## Distributed Systems Fundamentals
@@ -18,7 +18,7 @@ These are not "mistakes beginners make." These are assumptions that every distri
 | 1 | The network is reliable | Networks drop packets, partitions happen, cables get unplugged | Retry with backoff, idempotency, circuit breakers |
 | 2 | Latency is zero | Every network call adds milliseconds to seconds. Light speed is a hard limit | Batch requests, cache aggressively, colocate data and compute |
 | 3 | Bandwidth is infinite | Network links have throughput limits. Large payloads saturate links | Paginate, compress, stream instead of batch-transfer |
-| 4 | The network is secure | Every network boundary is an attack surface | mTLS, encryption in transit, zero-trust architecture (See software-architect-infrastructure.md § Zero Trust Architecture) |
+| 4 | The network is secure | Every network boundary is an attack surface | mTLS, encryption in transit, zero-trust architecture (See software-architecture-infrastructure.md § Zero Trust Architecture) |
 | 5 | Topology doesn't change | Servers come and go. IPs change. DNS updates are not instant | Service discovery, load balancing, health checks |
 | 6 | There is one administrator | Different teams administer different parts. Nobody has global visibility | Federation, delegation, clear ownership boundaries |
 | 7 | Transport cost is zero | Serialization, deserialization, and protocol overhead are real CPU costs | Efficient serialization (Protobuf, Avro), connection pooling |
@@ -257,11 +257,11 @@ Decompose around what the business does, not how the software is built. A busine
 
 **When to apply**: Organizations with clear business domains and dedicated teams per domain. The business capability boundary is the natural service boundary.
 
-**When NOT**: When the organization is cross-functional and team boundaries don't align with business capabilities. Conway's Law applies: if the team structure doesn't match, the architecture won't either. (See software-architect-organization.md § Conway's Law)
+**When NOT**: When the organization is cross-functional and team boundaries don't align with business capabilities. Conway's Law applies: if the team structure doesn't match, the architecture won't either. (See software-architecture-organization.md § Conway's Law)
 
 #### By Subdomain (DDD)
 
-Decompose using Domain-Driven Design's subdomain classification: core (competitive advantage), supporting (necessary but not differentiating), generic (commodity). This is the strongest decomposition heuristic when business complexity is the dominant challenge. (See software-architect-ddd.md § Subdomains)
+Decompose using Domain-Driven Design's subdomain classification: core (competitive advantage), supporting (necessary but not differentiating), generic (commodity). This is the strongest decomposition heuristic when business complexity is the dominant challenge. (See software-architecture-ddd.md § Subdomains)
 
 **When to apply**: Complex business domains where the domain model is the primary source of complexity. Financial services, healthcare, logistics, insurance.
 
@@ -277,7 +277,7 @@ Decompose around who owns which data. Each service owns its data and is the only
 
 #### By Team Structure (Conway's Law)
 
-Structure services to match team boundaries. If you have three teams, you will end up with roughly three services (or three modules in a monolith). The architecture will reflect the communication structure of the organization. This is not a strategy you choose. It is physics. (See software-architect-organization.md § Conway's Law)
+Structure services to match team boundaries. If you have three teams, you will end up with roughly three services (or three modules in a monolith). The architecture will reflect the communication structure of the organization. This is not a strategy you choose. It is physics. (See software-architecture-organization.md § Conway's Law)
 
 **Real-world**: Amazon's "two-pizza team" rule: each team should be small enough to be fed by two pizzas (6-8 people). Each team owns one or more services. The service boundaries align with team boundaries. This is the Inverse Conway Maneuver: structure teams to produce the desired architecture.
 
@@ -301,7 +301,7 @@ Just right: The service maps to a bounded context (if using DDD), a business cap
 
 #### Bounded Context as Natural Boundary
 
-A bounded context is the strongest heuristic for service boundaries. Within a bounded context, the model is consistent and the language is shared. Across bounded contexts, models differ and translation is explicit. (See software-architect-ddd.md § Bounded Context)
+A bounded context is the strongest heuristic for service boundaries. Within a bounded context, the model is consistent and the language is shared. Across bounded contexts, models differ and translation is explicit. (See software-architecture-ddd.md § Bounded Context)
 
 **Scale context**: At Solo/Startup, the entire application is one bounded context (or a few, in a modular monolith). At Growth, bounded contexts become service boundaries. At Scale, a single bounded context may span multiple services (if scaling or team size requires further decomposition within the context).
 
@@ -960,7 +960,7 @@ Event-driven architecture (EDA) is an architectural style where components commu
 
 ### Event Types
 
-**Domain Events**: Events that domain experts care about. They represent something meaningful in the business domain. "OrderPlaced", "PaymentReceived", "ShipmentDelivered". These are the core of event-driven systems and should be named in the ubiquitous language. (See software-architect-ddd.md § Domain Event)
+**Domain Events**: Events that domain experts care about. They represent something meaningful in the business domain. "OrderPlaced", "PaymentReceived", "ShipmentDelivered". These are the core of event-driven systems and should be named in the ubiquitous language. (See software-architecture-ddd.md § Domain Event)
 
 **Integration Events**: Events published for external consumption by other bounded contexts or services. They are the public API of a service's event stream. Integration events should be stable and versioned. They should carry enough data for consumers to act without calling back.
 

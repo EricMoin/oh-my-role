@@ -1,6 +1,6 @@
 ---
-name: software-architect-ddd
-description: Domain-Driven Design for the Software Architect suite. Covers strategic DDD (bounded contexts, context mapping, subdomains, ubiquitous language), tactical DDD (aggregates, entities, value objects, domain events, repositories, domain services, application services, factories), DDD and microservices interplay, Event Storming methodology, and DDD anti-patterns. Includes OSS case studies.
+name: software-architecture-ddd
+description: Domain-Driven Design for the Software Architecture suite. Covers strategic DDD (bounded contexts, context mapping, subdomains, ubiquitous language), tactical DDD (aggregates, entities, value objects, domain events, repositories, domain services, application services, factories), DDD and microservices interplay, Event Storming methodology, and DDD anti-patterns. Includes OSS case studies.
 ---
 
 ## DDD Philosophy and When to Apply
@@ -52,7 +52,7 @@ Strategic DDD is about the big picture: where are the boundaries, how do context
 
 **Trade-off Summary**: Explicit bounded contexts add complexity (translation between contexts, data duplication, eventual consistency). The payoff is independent evolution of each context. Without bounded contexts, the model becomes a single, inconsistent tangle where changing one concept breaks another.
 
-**Real-World Reference**: Amazon's "two-pizza team" structure is bounded contexts at organizational scale. Each team owns a bounded context. Each bounded context exposes a well-defined interface (API). Teams do not share databases. The organization mirrors the architecture (Conway's Law). (See software-architect-organization.md § Conway's Law)
+**Real-World Reference**: Amazon's "two-pizza team" structure is bounded contexts at organizational scale. Each team owns a bounded context. Each bounded context exposes a well-defined interface (API). Teams do not share databases. The organization mirrors the architecture (Conway's Law). (See software-architecture-organization.md § Conway's Law)
 
 **Examples of bounded contexts in an e-commerce system**:
 
@@ -444,7 +444,7 @@ order.addItem(productId, 5, unitPrice)  // root enforces invariants
 
 **Naming convention**: Past tense, domain language. `OrderPlaced`, `PaymentReceived`, `ShipmentDelivered`, `CustomerRelocated`. Never `OrderCreatedEvent` (the "Event" suffix is redundant and not domain language). Never `OrderStatusChanged` (too generic, doesn't say what happened).
 
-**Event persistence patterns**: (See software-architect-distributed.md § Event Sourcing) for event sourcing and event store patterns. Domain events can be used without event sourcing (just publish them after persisting state). Event sourcing takes domain events further by using them as the primary source of truth.
+**Event persistence patterns**: (See software-architecture-distributed.md § Event Sourcing) for event sourcing and event store patterns. Domain events can be used without event sourcing (just publish them after persisting state). Event sourcing takes domain events further by using them as the primary source of truth.
 
 ```
 // Domain event: immutable, past-tense, carries relevant data
@@ -649,7 +649,7 @@ The context map relationships translate directly into microservice communication
 
 ### Data Ownership
 
-Each bounded context owns its data. No other context accesses it directly. This is the "Database per Service" pattern from microservices, applied at the bounded context level. (See software-architect-distributed.md § Data Ownership)
+Each bounded context owns its data. No other context accesses it directly. This is the "Database per Service" pattern from microservices, applied at the bounded context level. (See software-architecture-distributed.md § Data Ownership)
 
 **What "owns its data" means**:
 - The bounded context is the sole writer to its database
@@ -663,7 +663,7 @@ Each bounded context owns its data. No other context accesses it directly. This 
 
 Event Storming is the most effective technique for discovering bounded contexts in a microservice migration. The process surfaces domain events, which naturally cluster into bounded contexts. (See § Event Storming) for the full methodology.
 
-**For microservice decomposition**: (See software-architect-distributed.md § Microservice Decomposition) for the decomposition strategies (by business capability, by subdomain, by transaction boundary). DDD provides the domain analysis. The Distributed Skill provides the architectural patterns for implementing the decomposition.
+**For microservice decomposition**: (See software-architecture-distributed.md § Microservice Decomposition) for the decomposition strategies (by business capability, by subdomain, by transaction boundary). DDD provides the domain analysis. The Distributed Skill provides the architectural patterns for implementing the decomposition.
 
 **From**: Learning DDD (Khononov, 2021), Building Microservices (Newman, 2015/2021)
 
@@ -770,8 +770,8 @@ The Event Storming board is a direct input for implementation:
 - **Orange stickies (domain events)** → Domain event classes, event schemas
 - **Yellow stickies (aggregates)** → Aggregate classes, aggregate roots
 - **Blue stickies (commands)** → Command objects, API endpoints
-- **Lilac stickies (policies)** → Event handlers, saga participants. (See software-architect-distributed.md § Saga Pattern) for saga implementation
-- **Green stickies (read models)** → Database views, materialized views, query endpoints. (See software-architect-distributed.md § CQRS) for CQRS implementation
+- **Lilac stickies (policies)** → Event handlers, saga participants. (See software-architecture-distributed.md § Saga Pattern) for saga implementation
+- **Green stickies (read models)** → Database views, materialized views, query endpoints. (See software-architecture-distributed.md § CQRS) for CQRS implementation
 - **Pink stickies (hot spots)** → Backlog items for investigation, architecture decisions
 
 **From**: Introducing Event Storming (Brandolini, 2013), Learning DDD (Khononov, 2021)
