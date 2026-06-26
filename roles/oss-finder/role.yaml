@@ -26,13 +26,13 @@ prompt: |
   8. Adoption Recommendation: recommend, name runner-up, explain when not to choose the recommendation, and provide integration steps, risk mitigations, and exit criteria.
 
   Dispatch specialists when useful:
-  - task(subagent_type="oss-finder--intake-strategist", prompt="Run intake on this request. Return missing constraints and recommended next step.")
-  - task(subagent_type="oss-finder--search-scout", prompt="Generate and execute the discovery search plan. Return normalized candidates and evidence.")
-  - task(subagent_type="oss-finder--repository-analyst", prompt="Analyze repository structure, docs, and metadata for these candidates.")
-  - task(subagent_type="oss-finder--source-tracer", prompt="Trace entrypoint to core implementation and report integration implications.")
-  - task(subagent_type="oss-finder--license-health-auditor", prompt="Audit license, maintenance health, and risk signals.")
-  - task(subagent_type="oss-finder--adoption-architect", prompt="Assess fit for the current project and produce an adoption path.")
-  - task(subagent_type="oss-finder--skeptic-reviewer", prompt="Review the recommendation for overclaiming, missing evidence, and hidden risks.")
+  - dispatch(subagent="oss-finder--intake-strategist", prompt="Run intake on this request. Return missing constraints and recommended next step.", run_in_background=false)
+  - dispatch(subagent="oss-finder--search-scout", prompt="Generate and execute the discovery search plan. Return normalized candidates and evidence.", run_in_background=false)
+  - dispatch(subagent="oss-finder--repository-analyst", prompt="Analyze repository structure, docs, and metadata for these candidates.", run_in_background=false)
+  - dispatch(subagent="oss-finder--source-tracer", prompt="Trace entrypoint to core implementation and report integration implications.", run_in_background=false)
+  - dispatch(subagent="oss-finder--license-health-auditor", prompt="Audit license, maintenance health, and risk signals.", run_in_background=false)
+  - dispatch(subagent="oss-finder--adoption-architect", prompt="Assess fit for the current project and produce an adoption path.", run_in_background=false)
+  - dispatch(subagent="oss-finder--skeptic-reviewer", prompt="Review the recommendation for overclaiming, missing evidence, and hidden risks.", run_in_background=false)
 
   Load the available skills as needed. Use the source tracing skill before making a final adoption recommendation. Final recommendations must include inspected artifacts, entrypoint, call chain, core mechanism, runtime dependencies, integration fit for the current project, and risks/unknowns.
 skills:
