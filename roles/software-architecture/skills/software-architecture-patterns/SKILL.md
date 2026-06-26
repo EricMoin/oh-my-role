@@ -1,6 +1,6 @@
 ---
-name: software-architect-patterns
-description: Design patterns and architectural styles for the Software Architect suite. Covers architectural styles catalog (layered, microservices, event-driven, monolith, service-based, space-based, pipe-and-filter, microkernel), code-level design patterns at architecture scale, POSA patterns, API design patterns (REST, GraphQL, gRPC), enterprise integration patterns, legacy refactoring patterns, and pattern selection methodology. Includes real-world OSS case studies.
+name: software-architecture-patterns
+description: Design patterns and architectural styles for the Software Architecture suite. Covers architectural styles catalog (layered, microservices, event-driven, monolith, service-based, space-based, pipe-and-filter, microkernel), code-level design patterns at architecture scale, POSA patterns, API design patterns (REST, GraphQL, gRPC), enterprise integration patterns, legacy refactoring patterns, and pattern selection methodology. Includes real-world OSS case studies.
 ---
 
 ## Pattern Thinking
@@ -26,7 +26,7 @@ Knowing 23 GoF patterns does not make you an architect. Patterns are a shared vo
 
 Use patterns as decision tools, not as a checklist to fill. A system that implements every pattern in this catalog is an over-engineered disaster. A system that uses exactly two patterns, both perfectly fitted to the context, is good architecture.
 
-**Core principle**: "Make the implicit explicit." (See software-architect-core.md § Principle Ownership Map) If you're applying a pattern, state which pattern you're applying and why. Don't let the pattern be an accidental structure that emerged. Make it an explicit architectural decision.
+**Core principle**: "Make the implicit explicit." (See software-architecture-core.md § Principle Ownership Map) If you're applying a pattern, state which pattern you're applying and why. Don't let the pattern be an accidental structure that emerged. Make it an explicit architectural decision.
 
 
 ## Architectural Styles Catalog
@@ -94,7 +94,7 @@ Every style below includes quality attribute ratings, scale context, and concret
 
 ### Microservices Architecture
 
-**Description**: Independent deployable services, each owning a bounded context (See software-architect-ddd.md § Bounded Context). Services communicate over the network via lightweight protocols (HTTP/REST, gRPC, messaging). Each service has its own database.
+**Description**: Independent deployable services, each owning a bounded context (See software-architecture-ddd.md § Bounded Context). Services communicate over the network via lightweight protocols (HTTP/REST, gRPC, messaging). Each service has its own database.
 
 **Quality Attributes**:
 
@@ -196,7 +196,7 @@ Broker Topology:
 **When NOT to Use**: Large teams. When different parts of the system need independent deployment. When fault isolation is a hard requirement.
 
 **Scale Context**:
-- **Solo/Startup**: The correct choice. (See software-architect-core.md § Scale Context Framework — Solo/Startup)
+- **Solo/Startup**: The correct choice. (See software-architecture-core.md § Scale Context Framework — Solo/Startup)
 - **Growth**: Modular monolith. Enforce module boundaries at the code level. Prepare for extraction.
 - **Scale**: Usually outgrown. The monolith becomes the strangler fig target.
 
@@ -362,7 +362,7 @@ START
   └─ CRUD-heavy, simple logic? ──▶ Layered
 ```
 
-The decision tree narrows options. The final selection requires trade-off analysis against specific quality attribute requirements. (See software-architect-core.md § Trade-Off Analysis Template)
+The decision tree narrows options. The final selection requires trade-off analysis against specific quality attribute requirements. (See software-architecture-core.md § Trade-Off Analysis Template)
 
 
 ## Code-Level Design Patterns at Architecture Scale
@@ -498,7 +498,7 @@ anti_corruption_layer:
 
 ### Command
 
-**System-Level Application**: CQRS command handling. (See software-architect-distributed.md § CQRS) Each command is an object that encapsulates a write operation's intent, data, and validation.
+**System-Level Application**: CQRS command handling. (See software-architecture-distributed.md § CQRS) Each command is an object that encapsulates a write operation's intent, data, and validation.
 
 **When It Becomes Architectural**: When you separate the command model from the query model. Commands become first-class architectural elements with their own pipeline (validation, authorization, execution, event publication).
 
@@ -895,7 +895,7 @@ Based on *Enterprise Integration Patterns* (Hohpe & Woolf). These patterns gover
 
 Distributed transaction pattern for long-running business processes. Each step is a local transaction with a compensating transaction for rollback.
 
-This pattern is defined in software-architect-distributed.md § Saga Pattern. The integration-relevant aspects:
+This pattern is defined in software-architecture-distributed.md § Saga Pattern. The integration-relevant aspects:
 
 - **Choreography**: Each service publishes events and listens for events. Services coordinate without a central controller. More loosely coupled but harder to understand the full workflow.
 - **Orchestration**: A saga orchestrator manages the workflow, calling each service and handling compensation on failure. Easier to reason about but introduces a central coordinator.
@@ -908,7 +908,7 @@ Without an ACL, the external system's model leaks into your domain. You start us
 
 ### Real-World Integration Systems
 
-**Apache Kafka**: Distributed commit log. Append-only, partitioned, replicated. Consumers maintain their own offset. Supports replay, which makes it ideal for event sourcing and CQRS. (See software-architect-distributed.md § Event Sourcing)
+**Apache Kafka**: Distributed commit log. Append-only, partitioned, replicated. Consumers maintain their own offset. Supports replay, which makes it ideal for event sourcing and CQRS. (See software-architecture-distributed.md § Event Sourcing)
 
 **RabbitMQ**: Traditional message broker. Exchanges route messages to queues based on routing keys. Supports complex routing topologies (direct, topic, fanout, headers exchanges). Better for traditional messaging patterns with complex routing rules.
 
@@ -1036,17 +1036,17 @@ Choosing the right pattern is not a matter of taste. It's a structured decision 
 
 1. **Requirements**: What must the system do? Functional requirements define scope. Quality attribute requirements define shape.
 
-2. **Quality Attributes**: Rank the quality attributes by priority. No system optimizes for everything. (See software-architect-core.md § Quality Attribute Trade-off Matrix) The top 2-3 quality attributes drive pattern selection.
+2. **Quality Attributes**: Rank the quality attributes by priority. No system optimizes for everything. (See software-architecture-core.md § Quality Attribute Trade-off Matrix) The top 2-3 quality attributes drive pattern selection.
 
 3. **Constraints**: What can't you change? Technology stack, team size, budget, timeline, regulatory requirements. Constraints eliminate patterns.
 
-4. **Scale Context**: What scale tier are you in now? What tier are you growing into? (See software-architect-core.md § Scale Context Framework) Patterns that are right at one tier are wrong at another.
+4. **Scale Context**: What scale tier are you in now? What tier are you growing into? (See software-architecture-core.md § Scale Context Framework) Patterns that are right at one tier are wrong at another.
 
 5. **Pattern Candidates**: Generate 2-3 candidate patterns that satisfy the quality attributes and constraints.
 
-6. **Trade-off Analysis**: For each candidate, articulate what you gain and what you sacrifice. (See software-architect-core.md § Trade-Off Analysis Template)
+6. **Trade-off Analysis**: For each candidate, articulate what you gain and what you sacrifice. (See software-architecture-core.md § Trade-Off Analysis Template)
 
-7. **Decision**: Select the pattern with the best trade-off profile for your specific context. Document in an ADR. (See software-architect-core.md § ADR Template)
+7. **Decision**: Select the pattern with the best trade-off profile for your specific context. Document in an ADR. (See software-architecture-core.md § ADR Template)
 
 ### Common Decision Points
 
@@ -1129,7 +1129,7 @@ Choosing the right pattern is not a matter of taste. It's a structured decision 
 | One-to-many, loose coupling | Publish-Subscribe Channel |
 | Route based on content | Content-Based Router |
 | Protect domain from external model | Anti-Corruption Layer |
-| Long-running business transaction | Saga (See software-architect-distributed.md § Saga Pattern) |
+| Long-running business transaction | Saga (See software-architecture-distributed.md § Saga Pattern) |
 | Collect correlated messages | Aggregator |
 | Failed message handling | Dead Letter Channel |
 
@@ -1141,10 +1141,10 @@ Use this checklist when selecting and applying architectural patterns. Every "no
 ### Pattern Selection
 
 - [ ] Have you ranked quality attributes by priority before selecting patterns?
-- [ ] Does the selected architectural style match your current scale tier? (See software-architect-core.md § Scale Context Framework)
+- [ ] Does the selected architectural style match your current scale tier? (See software-architecture-core.md § Scale Context Framework)
 - [ ] Have you articulated what you gain AND what you sacrifice with this pattern?
 - [ ] Have you documented the pattern selection decision in an ADR?
-- [ ] Is the pattern the simplest thing that works at your scale? (See software-architect-core.md § Simplicity First)
+- [ ] Is the pattern the simplest thing that works at your scale? (See software-architecture-core.md § Simplicity First)
 - [ ] Have you considered how the system will evolve to the next scale tier?
 
 ### Pattern Application
@@ -1167,7 +1167,7 @@ Use this checklist when selecting and applying architectural patterns. Every "no
 
 - [ ] Is there a dead letter channel for every message queue?
 - [ ] Are message retry policies defined (max retries, backoff strategy)?
-- [ ] Is idempotency guaranteed for all message consumers? (See software-architect-distributed.md § Idempotency)
+- [ ] Is idempotency guaranteed for all message consumers? (See software-architecture-distributed.md § Idempotency)
 - [ ] Do external integrations go through an Anti-Corruption Layer?
 
 ### Legacy Refactoring

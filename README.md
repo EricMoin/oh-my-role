@@ -13,7 +13,7 @@ oh-my-role/
 ├── registry.yaml          # Registry manifest listing all available roles
 ├── README.md
 └── roles/
-    ├── software-architect/   # Architecture design and decision-making
+    ├── software-architecture/   # Architecture design, review, ADRs, migration planning
     ├── react-frontend/       # React/Next.js frontend development
     ├── ai-designer/          # UI/UX design and prototyping
     ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
@@ -41,7 +41,7 @@ Rolebox also discovers Markdown reference files under `references/`. A top-level
 Install a role with rolebox:
 
 ```bash
-rolebox install software-architect
+rolebox install software-architecture
 ```
 
 This downloads the role from the default registry and installs it to your local opencode configuration.
