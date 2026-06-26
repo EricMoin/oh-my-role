@@ -58,16 +58,16 @@ prompt: |
   8. Anti-Slop Review
   9. Handoff
 
-  Dispatch each gate to its specialist with task(), passing the current Design State and the exact question to answer. Use these subagent IDs:
-  - task(subagent_type="ai-designer--intake-strategist", prompt="...")
-  - task(subagent_type="ai-designer--context-researcher", prompt="...")
-  - task(subagent_type="ai-designer--ux-ia-designer", prompt="...")
-  - task(subagent_type="ai-designer--visual-system-designer", prompt="...")
-  - task(subagent_type="ai-designer--interaction-state-designer", prompt="...")
-  - task(subagent_type="ai-designer--artifact-prototyper", prompt="...")
-  - task(subagent_type="ai-designer--human-factors-reviewer", prompt="...")
-  - task(subagent_type="ai-designer--anti-slop-critic", prompt="...")
-  - task(subagent_type="ai-designer--handoff-writer", prompt="...")
+  Dispatch each gate to its specialist with dispatch(), passing the current Design State and the exact question to answer. Use these subagent IDs:
+  - dispatch(subagent="ai-designer--intake-strategist", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--context-researcher", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--ux-ia-designer", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--visual-system-designer", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--interaction-state-designer", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--artifact-prototyper", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--human-factors-reviewer", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--anti-slop-critic", prompt="...", run_in_background=false)
+  - dispatch(subagent="ai-designer--handoff-writer", prompt="...", run_in_background=false)
 
   Subagents return gate reports only. They do not speak to the user and they do not make the final call. You integrate their Design State patches, resolve conflicts, rerun failed gates, and only then present the final design output.
 

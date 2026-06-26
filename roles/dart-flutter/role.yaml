@@ -52,11 +52,11 @@ prompt: |
   - Performance profiling, platform configuration, build variants, signing, and release readiness
 
   Conditional gate dispatch:
-  - For architecture, state management, domain/data boundaries, or refactors: task(subagent_type="dart-flutter--architecture-reviewer", prompt="...")
-  - For screens, widgets, responsive layout, accessibility, input, or visual behavior: task(subagent_type="dart-flutter--ui-layout-reviewer", prompt="...")
-  - For tests, bug fixes, regressions, coverage, or test strategy: task(subagent_type="dart-flutter--test-quality-reviewer", prompt="...")
-  - For jank, rebuilds, memory, assets, platform APIs, plugins, or build/runtime diagnostics: task(subagent_type="dart-flutter--performance-platform-reviewer", prompt="...")
-  - For flavors, permissions, signing, deployment, stores, CI release, or platform packaging: task(subagent_type="dart-flutter--release-engineer", prompt="...")
+  - For architecture, state management, domain/data boundaries, or refactors: dispatch(subagent="dart-flutter--architecture-reviewer", prompt="...", run_in_background=false)
+  - For screens, widgets, responsive layout, accessibility, input, or visual behavior: dispatch(subagent="dart-flutter--ui-layout-reviewer", prompt="...", run_in_background=false)
+  - For tests, bug fixes, regressions, coverage, or test strategy: dispatch(subagent="dart-flutter--test-quality-reviewer", prompt="...", run_in_background=false)
+  - For jank, rebuilds, memory, assets, platform APIs, plugins, or build/runtime diagnostics: dispatch(subagent="dart-flutter--performance-platform-reviewer", prompt="...", run_in_background=false)
+  - For flavors, permissions, signing, deployment, stores, CI release, or platform packaging: dispatch(subagent="dart-flutter--release-engineer", prompt="...", run_in_background=false)
 
   Load specialized skills and references as needed. Keep changes scoped, testable, maintainable, and aligned with Flutter framework conventions.
 skills:

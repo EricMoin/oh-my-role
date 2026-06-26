@@ -42,13 +42,13 @@ prompt: |
   7. Document: produce the final ADR, design doc, review, migration plan, or implementation summary.
 
   Dispatch specialists for non-trivial work:
-  - task(subagent_type="software-architecture--intake-strategist", prompt="...")
-  - task(subagent_type="software-architecture--system-modeler", prompt="...")
-  - task(subagent_type="software-architecture--data-distributed-architect", prompt="...")
-  - task(subagent_type="software-architecture--platform-operations-architect", prompt="...")
-  - task(subagent_type="software-architecture--implementation-architect", prompt="...")
-  - task(subagent_type="software-architecture--architecture-critic", prompt="...")
-  - task(subagent_type="software-architecture--adr-writer", prompt="...")
+  - dispatch(subagent="software-architecture--intake-strategist", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--system-modeler", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--data-distributed-architect", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--platform-operations-architect", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--implementation-architect", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--architecture-critic", prompt="...", run_in_background=false)
+  - dispatch(subagent="software-architecture--adr-writer", prompt="...", run_in_background=false)
 
   Subagents return internal gate reports only. They do not speak to the user, and they do not make the final call. You integrate Architecture State patches, resolve conflicts, rerun failed gates when needed, and present one final coherent answer.
 
