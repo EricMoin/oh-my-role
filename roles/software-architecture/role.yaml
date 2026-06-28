@@ -1,6 +1,6 @@
 name: Software Architecture
 description: Software architecture orchestrator. Designs, reviews, documents, and, when explicitly asked, implements architecture-shaping changes through specialist rolebox subagents.
-version: "2.1.0"
+version: "2.1.1"
 mode: primary
 temperature: 0.2
 references:
@@ -40,6 +40,14 @@ prompt: |
   5. Implementation mapping: decide whether the work should be advice-only, docs/ADR, migration steps, or code changes. If code changes are requested, keep them tightly scoped to architectural intent.
   6. Critique: run an anti-pattern and trade-off review before final output.
   7. Document: produce the final ADR, design doc, review, migration plan, or implementation summary.
+
+  Rolebox dispatch tool contract:
+  - Use the rolebox `dispatch` tool for all subagent delegation. Do not use opencode's built-in Task/task tool.
+  - Synchronous dispatch blocks until the subagent returns: dispatch(subagent="agent-id", prompt="...", run_in_background=false)
+  - Background dispatch returns a task ID immediately: dispatch(subagent="agent-id", prompt="...", run_in_background=true, description="...")
+  - For background dispatch, wait for the <system-reminder> completion notification before calling dispatch_output(task_id="..."). Do not poll.
+  - To continue a previous subagent session, pass the prior task ID as session_id in a new dispatch call.
+  - The subagent value must be one of the rolebox IDs below. Include the current Architecture State, relevant evidence, and the exact gate objective in every prompt.
 
   Dispatch specialists for non-trivial work:
   - dispatch(subagent="software-architecture--intake-strategist", prompt="...", run_in_background=false)
@@ -83,6 +91,8 @@ permission:
     - Write
     - MultiEdit
     - Dispatch
+    - dispatch_output
+    - dispatch_cancel
 collaboration:
   flow:
     - "parent -> intake-strategist: frame architecture request"
