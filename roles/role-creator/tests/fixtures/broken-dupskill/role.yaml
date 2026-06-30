@@ -1,0 +1,8 @@
+name: Duplicate Skill Role
+description: Role with duplicate skill names
+mode: primary
+prompt: |
+  Test role with duplicate skills.
+skills:
+  - same-skill
+  - same-skill

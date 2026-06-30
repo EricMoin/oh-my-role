@@ -1,0 +1,4 @@
+description: Missing name field
+mode: primary
+prompt: |
+  This role has no name.

@@ -1,0 +1,8 @@
+name: Bad Graph Role
+description: Graph with no exit edge
+mode: primary
+prompt: |
+  Test role with broken graph.
+collaboration:
+  flow:
+    - "parent -> unknown-agent: bad edge"
