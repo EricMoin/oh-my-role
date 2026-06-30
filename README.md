@@ -17,6 +17,7 @@ oh-my-role/
     ├── react-frontend/       # React/Next.js frontend development
     ├── ai-designer/          # UI/UX design and prototyping
     ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
+    ├── supersearch/          # Evidence-backed search across local files, web, GitHub, docs, sessions, and media
     ├── tauri/                # Tauri desktop app development
     ├── dart-flutter/         # Dart/Flutter cross-platform development
     └── jetpack-compose/      # Jetpack Compose and Android development
