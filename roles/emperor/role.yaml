@@ -20,11 +20,31 @@ skills:
   - delegation-heuristics
   - escalate-recovery
 
+# Cost/budget awareness reference for dispatch decisions
+references:
+  cost-model:
+    path: references/cost-model.md
+    description: Cost/budget awareness reference for dispatch decisions — covers DIRECT-default policy, per-session caps, per-parent-session hard cap, and model pool layout
+
+# Subagent orchestration pipeline — topology describes the hierarchy, flow describes the pipeline
+collaboration:
+  topology: "emperor → [chancellor (strategy: drafter/reviewer/finalizer) | jinyiwei (execution: ui/backend/test)]"
+  flow: "triage → [DIRECT | chancellor→strategy→user-approval→jinyiwei→execute→validate→synthesize | jinyiwei→synthesize]"
+
 # Emperor never writes code directly — delegates all implementation to subagents
 tools:
   Write: false
   Edit: false
   Bash: false
+
+permission:
+  allow:
+    - Read
+    - Grep
+    - Glob
+    - dispatch
+    - dispatch_output
+    - dispatch_cancel
 
 # Dispatch configuration for subagent orchestration
 dispatch:

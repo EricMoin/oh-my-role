@@ -13,13 +13,15 @@ oh-my-role/
 ├── registry.yaml          # Registry manifest listing all available roles
 ├── README.md
 └── roles/
-    ├── software-architecture/   # Architecture design, review, ADRs, migration planning
     ├── react-frontend/       # React/Next.js frontend development
+    ├── role-creator/          # Role verification and testing
+    ├── software-architecture/   # Architecture design, review, ADRs, migration planning
     ├── ai-designer/          # UI/UX design and prototyping
     ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
     ├── supersearch/          # Evidence-backed search across local files, web, GitHub, docs, sessions, and media
     ├── tauri/                # Tauri desktop app development
     ├── dart-flutter/         # Dart/Flutter cross-platform development
+    ├── emperor/              # Supreme orchestrator — triages, delegates, synthesizes
     └── jetpack-compose/      # Jetpack Compose and Android development
 ```
 
