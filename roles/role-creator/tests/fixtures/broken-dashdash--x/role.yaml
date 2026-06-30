@@ -1,0 +1,5 @@
+name: broken-dashdash--x
+description: The directory name contains --
+mode: primary
+prompt: |
+  This role's directory has -- in its name.

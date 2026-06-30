@@ -1,0 +1,4 @@
+name: Sub Test
+description: A test subagent
+prompt: |
+  You are a test subagent.
