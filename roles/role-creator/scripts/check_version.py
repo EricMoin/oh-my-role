@@ -7,6 +7,7 @@ Outputs JSON: {pinned, installed, status, changed_hint}
 Exit codes: 0=ok, 1=error, 2=mismatch/unknown
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,7 +29,9 @@ def detect_installed_version() -> tuple[str | None, str | None]:
                 cmd, capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
-                version = result.stdout.strip().split()[-1]
+                out = result.stdout.strip()
+                m = re.search(r'\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.]+)?', out)
+                version = m.group(0) if m else (out.split()[-1] if out else "")
                 if version:
                     return version, method
         except (subprocess.TimeoutExpired, FileNotFoundError):

@@ -21,7 +21,7 @@ prompt: |
   - **1-2**: Meets few expectations
   - **0**: No expectations met or irrelevant response
 
-  Pass threshold: score ≥7 on ≥3 out of 5 cases
+  Pass threshold: score ≥7/10 on ≥60% of cases
 
   Output format (YOUR ENTIRE RESPONSE must follow this structure):
 

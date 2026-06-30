@@ -88,7 +88,7 @@ python3 scripts/run_eval.py <roleDir> --evals <evals.json> --confirm --spot-chec
 
 Report the grader's verdict for each case.
 
-**Pass threshold:** ≥7/10 on ≥3/5 cases (configurable).
+**Pass threshold:** ≥7/10 on ≥60% of cases (configurable).
 
 ---
 
@@ -119,7 +119,7 @@ After all requested tiers complete, produce this report:
 
 ### Tier 4 — Eval: {PASS/FAIL/SKIP}
 - Cases passed: {n}/{total}
-- Threshold: ≥7/10 on ≥3/5
+- Threshold: ≥7/10 on ≥60% of cases
 - Mode: {full/spot-check}
 
 ### Summary
