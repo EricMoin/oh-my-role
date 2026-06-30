@@ -237,16 +237,16 @@ def main():
         baseline_config = build_baseline_config(tmpdir)
         with_skill_config = build_with_skill_config(tmpdir, str(role_dir), role_id)
 
+        n_runs = 1 if args.spot_check else 3
+
         results = {
             "role_id": role_id,
             "evals_path": evals_path,
             "spot_check": args.spot_check,
-            "runs_per_case": 1 if args.spot_check else 3,
+            "runs_per_case": n_runs,
             "cases": [],
             "state_machine_checks": run_state_machine_checks(str(role_dir)),
         }
-
-        n_runs = 1 if args.spot_check else 3
 
         for eval_entry in evals_data.get("evals", []):
             for case in eval_entry.get("cases", []):

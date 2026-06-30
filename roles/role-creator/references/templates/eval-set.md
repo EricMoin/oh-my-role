@@ -115,6 +115,8 @@ Scenarios run turns sequentially. Each turn's expected_state is checked before t
 
 ## Deterministic Check Spec
 
+> Status: this section specifies the *intended* deterministic checks. `run_eval.py` does not yet automate them (`run_state_machine_checks()` is a stub) — apply them manually until the checks are implemented.
+
 State-machine functions have deterministic properties that evals must verify. These checks mirror the patterns in golden-path tests (`evaluateGateAndTransitions`, `decideContinuation`, `buildActiveArtifactBlock`).
 
 ### Gate Blocks When Condition Is False
@@ -175,7 +177,7 @@ LLM output varies between runs. Running 3+ times and taking majority vote filter
 | Parameter | Default | Override |
 |-----------|---------|----------|
 | Grader score | >= 7/10 | Configurable per run |
-| Cases passing | >= 3/5 | Configurable per run |
+| Cases passing | >= 60% of cases | Configurable per run |
 | Runs per case | >= 3 | Configurable per run |
 | Scoring method | Majority vote | - |
 

@@ -127,13 +127,13 @@ Verdict is PASS when zero errors exist. Warnings do not block but are surfaced t
 | Parameter | Default |
 |-----------|---------|
 | Grader score per case | >= 7/10 |
-| Cases that must pass | >= 3/5 |
+| Cases that must pass | >= 60% of cases |
 | Runs per case | >= 3 |
 | Scoring method | Majority vote across runs |
 
 **Spot-check mode:** For quick iteration during development: 1 case, 1 run, no baseline. Verifies the agent doesn't completely break. Not sufficient for final validation.
 
-**Deterministic checks** (for state-machine functions):
+**Deterministic checks** (for state-machine functions) — *specified below but not yet automated by `run_eval.py` (`run_state_machine_checks()` is a stub); verify these manually until implemented*:
 
 - Gate blocks when condition is false, passes when true
 - Observe reactions are non-mutating (active function set unchanged)

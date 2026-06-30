@@ -29,15 +29,15 @@ You capture what the user wants, generate role files using the Generator subagen
 
 ## First step (every session)
 
-Before creating or verifying any role, run `check_version.py` to compare the pinned rolebox version (0.12.0) against your installed version:
+Before creating or verifying any role, run `check_version.py`. It compares the rolebox version pinned in `references/schema/validation-catalog.md` (the single source of truth) against your installed version:
 
 ```bash
-python scripts/check_version.py
+python3 scripts/check_version.py
 ```
 
 If there's a mismatch, decide whether to continue. Minor patch differences are fine. Major version mismatches might mean schema changes that affect validation. Mention the mismatch to the user and proceed unless it looks risky.
 
-Why: rolebox's schema evolves. A role that validates against 0.12.0 might break on 0.14.0. Catching this early saves wasted effort.
+Why: rolebox's schema evolves. A role that validates against one schema version might break on a later one. Catching this early saves wasted effort.
 
 ---
 
@@ -87,7 +87,7 @@ The Generator returns the complete file set: `role.yaml`, `PROMPT.md` (if needed
 
 ### 5. Draft evals
 
-After generation, sketch 2-3 evaluation scenarios that test whether the role works. These go in `evals/` and will be used during Tier 4 verification. Keep them realistic: actual user queries the role should handle well.
+After generation, sketch 3-5 evaluation scenarios that test whether the role works. These go in `evals/` and will be used during Tier 4 verification. Keep them realistic: actual user queries the role should handle well.
 
 ### 6. Hand off to verify
 
@@ -97,46 +97,36 @@ Run the verification flow on the generated files. Don't wait for the user to ask
 
 ## Verifying a role (verify)
 
-Verification runs in tiers. Each tier catches different classes of problems.
+Verification runs in tiers. Each tier catches a different class of problem. The `|verify|` function drives the flow by running the self-contained scripts in `scripts/` — they reimplement the rules in `validation-catalog.md` without importing rolebox. The Validator and Grader subagents are delegation wrappers around the same scripts; dispatch to them when you want verification done in an isolated, read-only context.
 
-### Tier 1: Schema validation (automatic)
+### Tier 1: Structural validation (automatic)
 
-Dispatch to Validator:
+Run `python3 scripts/validate_role.py <roleDir> --json`. Tier 1 checks structural validity: `role.yaml` parses, required fields are present (`name`, and one of `prompt`/`prompt_file` that resolves on disk), and the role ID contains no reserved `--` separator. Fast, catches typos.
 
-```
-dispatch(subagent="role-creator--validator", prompt="Run Tier 1+2 checks on roles/{name}/", run_in_background=false)
-```
+### Tier 2: Resolution simulation (automatic)
 
-Tier 1 checks structural validity: valid YAML, required fields present, field types correct, no unknown keys. This is fast and catches typos.
+Accumulated by the same `validate_role.py` run. It simulates rolebox's resolution: every declared skill resolves via the 4-candidate priority search, every function via the 3-candidate search, file-based subagents parse, and the collaboration graph passes its 6 checks (unknown agent / no exit / no entry are fatal; orphan / disconnected / uncapped cycle are warnings).
 
-### Tier 2: Convention checks (automatic)
+Why combine Tier 1+2: both are fast, static, and need no user interaction. A single `validate_role.py` run produces both.
 
-Runs alongside Tier 1. Checks conventions: prompt length limits, skill references resolve, function names follow patterns, permissions make sense for the role's stated purpose.
+### Tier 3: Deploy/health check (user confirmation required)
 
-Why combine Tier 1+2: they're both fast, static, and don't need user interaction. Running them together saves a round-trip.
+Run `python3 scripts/sync_check.py <roleDir> --json`. This installs the role into a throwaway config and runs the rolebox CLI to confirm it registers, syncs, and resolves its skill symlinks. If rolebox isn't on PATH, it reports "skipped" — not a failure.
 
-### Tier 3: Sync check (user confirmation required)
+Ask before running: "Tier 3 deploys the role into a throwaway config and runs the rolebox CLI. Run it?"
 
-This checks whether the role's skills, references, and subagents actually exist on disk and resolve correctly. It might touch the filesystem extensively or run rolebox's own resolution logic.
+Why ask: Tier 3 is slower and depends on the rolebox CLI being installed.
 
-Ask the user before running: "Tier 3 checks whether all file references resolve. This reads the filesystem. Run it?"
+### Tier 4: Behavioral eval (opt-in, cost estimate)
 
-Why ask: Tier 3 is slower and might surface false positives if the user hasn't created all referenced files yet. During scaffolding, some references are intentionally stubs.
+Run `python3 scripts/run_eval.py <roleDir> --evals <evals.json> --confirm`. This spawns a *separate* opencode instance (not an in-session dispatch), runs each eval case with and without the role loaded, and the Grader subagent scores the resulting transcripts. The script prints a cost estimate and refuses to run without `--confirm`.
 
-### Tier 4: Eval run (opt-in, cost estimate)
-
-This dispatches to the Grader subagent, which runs evaluation transcripts and scores the results.
-
-Before starting, report the estimated cost:
-- Number of eval scenarios
-- Approximate token usage per scenario
+Before confirming, report the estimate:
+- Number of eval cases × runs per case
+- Approximate token usage
 - Total estimated cost
 
-Only proceed with explicit user confirmation. Tier 4 uses real model inference and costs real money.
-
-```
-dispatch(subagent="role-creator--grader", prompt="Score these eval transcripts...", run_in_background=true)
-```
+Only proceed with explicit user confirmation — Tier 4 uses real model inference and costs real money. Use `--spot-check` (1 case, 1 run, no baseline) for cheap iteration.
 
 ### Verification report
 
@@ -209,8 +199,8 @@ For background dispatch, wait for the `<system-reminder>` completion notificatio
 
 Subagent IDs:
 - `role-creator--generator`: authoring and file generation
-- `role-creator--validator`: schema and convention checks
-- `role-creator--grader`: eval scoring and A/B comparison
+- `role-creator--validator`: structural, resolution, and deploy checks (Tier 1-3)
+- `role-creator--grader`: eval scoring and A/B comparison (Tier 4 transcripts)
 
 ---
 

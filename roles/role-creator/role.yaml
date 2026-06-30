@@ -4,6 +4,26 @@ version: "0.1.0"
 mode: primary
 prompt_file: PROMPT.md
 
+references:
+  schema/validation-catalog:
+    path: references/schema/validation-catalog.md
+    description: Frozen rolebox validation contract — the rule source for all Tier 1/2 checks.
+  schema/role-yaml-schema:
+    path: references/schema/role-yaml-schema.md
+    description: Field-by-field role.yaml and SubAgentConfig schema dictionary.
+  conventions/simple:
+    path: references/conventions/simple.md
+    description: Conventions for the simple (single-prompt) role template.
+  conventions/director-gated:
+    path: references/conventions/director-gated.md
+    description: Conventions for the director-gated (dispatch-through-gates) role template.
+  conventions/nested-statemachine:
+    path: references/conventions/nested-statemachine.md
+    description: Conventions for the nested state-machine (reactive orchestration) role template.
+  templates/eval-set:
+    path: references/templates/eval-set.md
+    description: Eval set format, scenario format, deterministic checks, and pass thresholds.
+
 functions:
   - scaffold
   - verify
@@ -13,6 +33,31 @@ skills:
   - role-creator-conventions
   - role-creator-schema
   - role-creator-verification
+
+collaboration:
+  topology: review-loop
+  flow:
+    - from: parent
+      to: generator
+      label: intent, template, reference roles
+    - from: generator
+      to: validator
+      label: generated role files
+    - from: validator
+      to: generator
+      label: targeted fixes (iterate loop)
+    - from: validator
+      to: grader
+      label: eval transcripts (Tier 4, opt-in)
+    - from: grader
+      to: parent
+      label: eval scores and verdict
+      exit: true
+    - from: validator
+      to: parent
+      label: verification report
+      exit: true
+  max_iterations: 3
 
 permission:
   allow:
