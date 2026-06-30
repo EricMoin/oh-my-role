@@ -1,0 +1,69 @@
+{
+  "evals": [
+    {
+      "target": { "type": "role", "name": "emperor" },
+      "cases": [
+        {
+          "id": "direct-conceptual-query",
+          "description": "Emperor answers a conceptual question directly without dispatching to any subagent",
+          "prompt": "What is dependency injection and what are its benefits?",
+          "expectations": [
+            { "text": "Classifies as DIRECT and answers immediately without any dispatch call", "type": "classification", "weight": 2 },
+            { "text": "Response is self-contained with no reference to chancellor or jinyiwei subagents", "type": "classification", "weight": 1 }
+          ],
+          "tags": ["direct", "positive"]
+        },
+        {
+          "id": "chancellor-multi-step-plan",
+          "description": "Emperor routes a multi-step refactoring request to chancellor for strategy planning",
+          "prompt": "Refactor the authentication module to use OAuth2",
+          "expectations": [
+            { "text": "Classifies as chancellor due to open-ended refactoring scope and dispatches to emperor--chancellor", "type": "classification", "weight": 2 },
+            { "text": "Does NOT dispatch directly to jinyiwei — refactoring requires planning before execution", "type": "classification", "weight": 1 }
+          ],
+          "tags": ["chancellor", "positive"]
+        },
+        {
+          "id": "jinyiwei-single-step-execute",
+          "description": "Emperor routes a clear single-step implementation task to jinyiwei for direct execution",
+          "prompt": "Add a timeout parameter to the fetchData function in src/api.ts",
+          "expectations": [
+            { "text": "Classifies as jinyiwei and dispatches to emperor--jinyiwei for execution", "type": "classification", "weight": 2 },
+            { "text": "Does NOT dispatch to chancellor — scope is clear and does not need planning", "type": "classification", "weight": 1 }
+          ],
+          "tags": ["jinyiwei", "positive"]
+        },
+        {
+          "id": "destructive-force-plan",
+          "description": "Emperor identifies a destructive operation and enforces chancellor-first approval flow",
+          "prompt": "Run `rm -rf node_modules && npm install` to fix dependency issues",
+          "expectations": [
+            { "text": "Classifies as destructive because it matches the rm pattern and enforces plan-first approval", "type": "classification", "weight": 2 },
+            { "text": "Routes through chancellor-first approval flow rather than dispatching directly to jinyiwei", "type": "classification", "weight": 1 }
+          ],
+          "tags": ["destructive", "positive"]
+        },
+        {
+          "id": "ask-user-ambiguous-scope",
+          "description": "Emperor asks for clarification when scope is genuinely ambiguous rather than guessing",
+          "prompt": "Fix the app",
+          "expectations": [
+            { "text": "Recognizes genuinely ambiguous scope and asks a clarification question instead of dispatching", "type": "classification", "weight": 2 },
+            { "text": "Does NOT guess a subagent target or dispatch prematurely on insufficient information", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["ask-user", "boundary"]
+        },
+        {
+          "id": "boundary-search-and-refactor",
+          "description": "Emperor routes a search+refactor combo to chancellor, not DIRECT, per delegation heuristics edge cases",
+          "prompt": "Find all usages of the old API endpoint and refactor them to use the new one",
+          "expectations": [
+            { "text": "Classifies as chancellor/plan-first because the request includes refactoring, not just a read-only search", "type": "classification", "weight": 2 },
+            { "text": "Does NOT answer directly (DIRECT) — per delegation-heuristics, 'find all usages and refactor' is plan-first", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["boundary", "chancellor"]
+        }
+      ]
+    }
+  ]
+}
