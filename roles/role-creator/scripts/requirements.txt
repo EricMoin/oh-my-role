@@ -1,1 +1,4 @@
+# Primary YAML library (sufficient on its own — preserves comments and key order).
 ruamel.yaml>=0.18.0
+# Optional fallback used by registry_write.py when ruamel.yaml is unavailable.
+PyYAML>=6.0

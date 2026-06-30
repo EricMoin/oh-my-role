@@ -56,7 +56,7 @@ The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, func
 
 ### Step 5: Draft Eval Cases
 
-Create `evals/evals.json` with basic eval cases for the new role. At minimum:
+Create `evals/evals.json` with basic eval cases for the new role. Aim for 3-5 cases — at minimum:
 
 - 1 positive case (the role handles its core task correctly)
 - 1 boundary case (edge of scope, should still work)

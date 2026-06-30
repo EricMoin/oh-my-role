@@ -2,6 +2,11 @@
 import re
 from pathlib import Path
 
+try:
+    import ruamel.yaml as _ruamel_yaml
+except ImportError:
+    _ruamel_yaml = None
+
 SCRIPT_DIR = Path(__file__).parent
 ROLE_CREATOR_DIR = SCRIPT_DIR.parent
 CATALOG_PATH = ROLE_CREATOR_DIR / "references" / "schema" / "validation-catalog.md"
@@ -29,14 +34,14 @@ def parse_frontmatter(path: str) -> tuple[dict, str]:
     if body.startswith('\n'):
         body = body[1:]
 
-    try:
-        import ruamel.yaml
-        yaml = ruamel.yaml.YAML(typ='safe')
-        meta = yaml.load(yaml_str)
-        if isinstance(meta, dict):
-            return dict(meta), body
-    except Exception:
-        pass
+    if _ruamel_yaml is not None:
+        try:
+            yaml = _ruamel_yaml.YAML(typ='safe')
+            meta = yaml.load(yaml_str)
+            if isinstance(meta, dict):
+                return dict(meta), body
+        except Exception:
+            pass
     return {}, body
 
 
@@ -49,7 +54,7 @@ def load_catalog_version(catalog_path: str) -> str | None:
     if not path.exists():
         return None
     content = path.read_text()
-    match = re.search(r'rolebox_version:\s*["\']?([\w.]+)', content)
+    match = re.search(r'rolebox_version:\s*["\']?([\w.+-]+)', content)
     if match:
         return match.group(1)
     return None

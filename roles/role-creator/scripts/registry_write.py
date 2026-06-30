@@ -16,11 +16,15 @@ import tempfile
 from pathlib import Path
 
 
-import yaml as _FALLBACK_YAML
-
 _RUAMEL_YAML = None
 try:
     from ruamel.yaml import YAML as _RUAMEL_YAML
+except ImportError:
+    pass
+
+_FALLBACK_YAML = None
+try:
+    import yaml as _FALLBACK_YAML
 except ImportError:
     pass
 
@@ -36,6 +40,8 @@ def load_registry(path: str) -> dict:
         yaml_inst = _RUAMEL_YAML()
         yaml_inst.preserve_quotes = True
         return yaml_inst.load(content) or {}
+    if _FALLBACK_YAML is None:
+        raise RuntimeError("No YAML library available (need ruamel.yaml or PyYAML)")
     return _FALLBACK_YAML.safe_load(content) or {}
 
 
@@ -118,6 +124,8 @@ def upsert_role(
             yaml_out.preserve_quotes = True
             yaml_out.dump(data, Path(tmp_path))
         else:
+            if _FALLBACK_YAML is None:
+                raise RuntimeError("No YAML library available (need ruamel.yaml or PyYAML)")
             with open(tmp_path, "w") as f:
                 _FALLBACK_YAML.dump(data, f, default_flow_style=False)
         os.replace(tmp_path, registry_path)
@@ -136,6 +144,15 @@ def upsert_role(
 
 def main():
     import argparse
+
+    if _RUAMEL_YAML is None and _FALLBACK_YAML is None:
+        print(
+            "ERROR: registry_write.py needs a YAML library "
+            "(ruamel.yaml preferred, PyYAML fallback). "
+            "Install with: pip install -r scripts/requirements.txt",
+            file=sys.stderr,
+        )
+        return 1
 
     parser = argparse.ArgumentParser(
         description="Atomically upsert role entry into registry.yaml"

@@ -370,21 +370,6 @@ def _run_tier2(role_dir, role_id, data):
         if orphan_agents:
             graph_warnings.append(f"Orphan agent(s) not referenced in any flow edge: {sorted(orphan_agents)}")
 
-        adj = {}
-        for a in available_names:
-            adj[a] = []
-
-        for edge in edges:
-            frm = edge.get('from', '')
-            to = edge.get('to', '')
-            if frm != 'parent' and to != 'parent':
-                if frm in adj:
-                    adj[frm].append(to)
-                if frm not in adj and frm in available_names:
-                    adj[frm] = [to]
-                if to not in adj and to in available_names:
-                    adj[to] = []
-
         if has_entry_edge:
             reachable = set()
             q = deque(['parent'])
@@ -399,7 +384,6 @@ def _run_tier2(role_dir, role_id, data):
                     if e_from == node and e_to not in reachable:
                         q.append(e_to)
 
-            disconnected = available_names - reachable - referenced_in_edges
             real_disconnected = available_names - reachable
             if real_disconnected:
                 graph_warnings.append(f"Disconnected node(s) unreachable from parent: {sorted(real_disconnected)}")
