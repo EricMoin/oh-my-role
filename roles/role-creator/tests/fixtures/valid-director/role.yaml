@@ -1,0 +1,18 @@
+name: Valid Director Role
+description: A minimal director role with subagents
+mode: primary
+prompt: |
+  You are a director role that coordinates specialists.
+functions:
+  - plan
+  - execute
+skills:
+  - test-skill
+collaboration:
+  flow:
+    - "parent -> sub-test: test flow"
+    - from: sub-test
+      to: parent
+      label: done
+      exit: true
+  max_iterations: 3

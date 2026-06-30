@@ -1,0 +1,11 @@
+name: Valid Nested Role
+description: A minimal nested role with state-machine function
+mode: primary
+prompt: |
+  You are a nested test role.
+functions:
+  - plan
+  - execute
+auto_activate:
+  - plan
+locked: true

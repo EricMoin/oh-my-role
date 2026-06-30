@@ -1,0 +1,5 @@
+name: Valid Simple Role
+description: A minimal valid role for testing
+mode: primary
+prompt: |
+  You are a simple test role.
