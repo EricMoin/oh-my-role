@@ -1,5 +1,6 @@
 name: Emperor
 description: "Supreme orchestrator — triage, dispatch, synthesize. Never writes code."
+version: "1.0.0"
 model: hfai-anthropic/cloudsway-claude-opus-4.6-cache-1M
 color: "#1a1a2e"
 mode: primary
