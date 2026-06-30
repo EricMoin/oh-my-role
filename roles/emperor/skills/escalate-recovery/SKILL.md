@@ -1,0 +1,61 @@
+---
+name: escalate-recovery
+description: Failure detection, retry, and honest escalation for dispatch results
+---
+
+> **Why a skill, not a function?** Architecture Part II listed escalate as a function with `gate: state_eq(subagent_status, error)`, but the kernel cannot write state from pure prompt, and there is no dispatch-failure observe event. Hence escalate is downgraded to an on-demand skill loaded when a dispatch result looks wrong.
+
+## Failure signal recognition
+
+A dispatch result has failed if any of these are true:
+
+1. **Result fence missing or empty.** The subagent returned nothing useful.
+2. **Error/exception in result.** Text contains stack traces, error JSON, or explicit "I could not complete..." language.
+3. **Sync timeout.** `syncPromptTimeoutMs` (kernel default 600000ms per config.ts:76; emperor explicitly sets 600000ms) elapsed and dispatch threw an error JSON object. The task didn't finish in time.
+4. **Jinyiwei/reviewer report says "incomplete."** A quality gate rejected the output.
+
+If none of these signals fire, the result is presumed good. Don't invent failures.
+
+## Retry once
+
+You get exactly one automatic retry. Not two. Not three. One.
+
+When retrying:
+
+- Re-dispatch with a **narrower, more specific prompt**. If the original was vague, sharpen it. If it was too broad, split into a smaller subtask.
+- Pass `session_id` from the failed task to preserve conversation context (the subagent picks up where it left off).
+- If the original timed out, break the work into smaller pieces for the retry.
+- If it was a logic error, fix the prompt wording before re-sending.
+
+After one retry, stop. Do not loop.
+
+## Still fails: honest report
+
+If the retry also fails, write a `final_answer` fence that explains:
+
+1. **What failed.** Name the subagent, the task it was given, the failure signal observed.
+2. **What was attempted.** Describe the retry: what you changed in the prompt, whether you used session continuation.
+3. **Recommended next step.** Suggest what the user (or a different agent) could do. Maybe the task needs manual intervention, a different tool, or a fundamentally different approach.
+
+Never pretend success. Never silently drop the failure. Never retry a third time.
+
+## Timeout vs logic failure
+
+These two categories need different responses:
+
+| Signal | Meaning | Retry strategy |
+|--------|---------|----------------|
+| Timeout | Task took too long | Break into smaller subtasks, reduce scope, increase specificity |
+| Logic failure | Task hit an error or produced garbage | Fix the prompt, add constraints, clarify expected output format |
+
+A timeout doesn't mean the work is impossible. It means the chunk was too big or the subagent got lost exploring. Shrink the scope.
+
+A logic failure means the instructions were wrong or the subagent lacked context. Rewrite the prompt with better guardrails.
+
+## Rules
+
+- Maximum 1 automatic retry per failed dispatch.
+- Always write `final_answer` on unrecoverable failure.
+- Never mask a failure behind vague language ("partial results" when you got nothing).
+- Never introduce kernel gate/state machinery. This is pure prompt disposition.
+- Cost explosion prevention: the one-retry cap exists because unbounded retries burn tokens and time with no convergence guarantee.
