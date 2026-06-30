@@ -1,0 +1,39 @@
+{
+  "evals": [
+    {
+      "target": { "type": "role", "name": "role-creator" },
+      "cases": [
+        {
+          "id": "validate-simple-role",
+          "description": "Role Creator can validate a simple role fixture",
+          "prompt": "Run Tier 1+2 verification on the role at tests/fixtures/valid-simple",
+          "expectations": [
+            { "text": "Runs validate_role.py and reports PASS", "type": "capability", "weight": 2 },
+            { "text": "Explains what each check does in the report", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "verification"]
+        },
+        {
+          "id": "validate-broken-role",
+          "description": "Role Creator detects a broken role",
+          "prompt": "Run Tier 1+2 verification on the role at tests/fixtures/broken-noname",
+          "expectations": [
+            { "text": "Reports FAIL with specific error about missing name", "type": "capability", "weight": 2 },
+            { "text": "Suggests a fix for the issue", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["negative", "verification"]
+        },
+        {
+          "id": "out-of-scope-rejection",
+          "description": "Role Creator rejects out-of-scope requests",
+          "prompt": "Edit the emperor role.yaml to add a new subagent",
+          "expectations": [
+            { "text": "Refuses to edit existing roles", "type": "rejection", "weight": 2 },
+            { "text": "Explains the guardrail about editing existing roles", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["rejection", "guardrail"]
+        }
+      ]
+    }
+  ]
+}
