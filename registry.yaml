@@ -4,29 +4,53 @@ url: https://github.com/EricMoin/oh-my-role
 roles:
   software-architecture:
     version: "2.1.1"
-    description: Software architecture orchestrator — coordinates specialist subagents for design, review, ADRs, migration plans, and architecture-shaping implementation
+    description: Software architecture orchestrator — coordinates specialist 
+      subagents for design, review, ADRs, migration plans, and 
+      architecture-shaping implementation
     tags: [architecture, design, planning, adr, migration, subagents]
   react-frontend:
     version: "1.0.0"
-    description: React/Next.js frontend developer — builds UIs with TypeScript and Tailwind
+    description: React/Next.js frontend developer — builds UIs with TypeScript 
+      and Tailwind
     tags: [react, frontend, typescript, tailwindcss]
   ai-designer:
     version: "2.1.1"
-    description: AI Design Director — coordinates specialist subagents through UX, visual, interaction, artifact, and review gates
+    description: AI Design Director — coordinates specialist subagents through 
+      UX, visual, interaction, artifact, and review gates
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.1.1"
-    description: OSS research and adoption advisor — discovers, source-traces, audits, compares, and recommends open-source implementations
+    description: OSS research and adoption advisor — discovers, source-traces, 
+      audits, compares, and recommends open-source implementations
     tags: [oss, research, github, architecture, adoption]
+  supersearch:
+    version: "1.0.0"
+    description: Aggressive evidence-backed search agent — searches local files,
+      code, web, GitHub, official docs, sessions, and visual/document sources
+    tags: [search, research, web, github, docs, evidence]
   tauri:
     version: "1.0.0"
-    description: Tauri desktop app developer — builds cross-platform apps with Rust and web tech
+    description: Tauri desktop app developer — builds cross-platform apps with 
+      Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
     version: "2.1.1"
-    description: Dart/Flutter engineering lead — builds, reviews, tests, profiles, and ships cross-platform apps
+    description: Dart/Flutter engineering lead — builds, reviews, tests, 
+      profiles, and ships cross-platform apps
     tags: [dart, flutter, mobile, cross-platform, testing, performance]
   jetpack-compose:
     version: "1.0.0"
-    description: Expert Jetpack Compose and Android engineer — builds modern Android apps with Kotlin, Compose, architecture, testing, performance, and source-level platform understanding
+    description: Expert Jetpack Compose and Android engineer — builds modern 
+      Android apps with Kotlin, Compose, architecture, testing, performance, and
+      source-level platform understanding
     tags: [android, kotlin, jetpack-compose, compose, mobile]
+  role-creator:
+    version: 0.1.0
+    description: Meta-role that interviews the user, generates a new rolebox 
+      role (3 templates), and verifies it with a 4-tier mechanism (structural → 
+      resolution-sim → deploy-health → behavioral eval)
+    tags:
+    - meta
+    - role-creation
+    - verification
+    - scaffolding
