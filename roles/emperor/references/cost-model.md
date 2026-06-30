@@ -65,15 +65,17 @@ The three-department nested loop changes the cost geometry significantly. Each p
 | Reviewer verdict (round 2) ← pass | 1 | 6 |
 | Finalizer finalize | 1 | 7 |
 | Jinyiwei execute × N | 1-3 | 8-10 |
+| Validate (chancellor path only) | 1 | 9-11 |
 
 ### Budget Math
 
 - **`maxTotalSessionsPerRequest` set to 8** (Phase 2 value)
 - The budget counts sessions per direct parent session: the emperor's subtree (emperor + chancellor dispatch + any siblings) is capped at ≤8, and the chancellor's subtree (chancellor + drafters + reviewers + finalizer + jinyiwei) is independently capped at ≤8
-- The chancellor's own loop iteration cap (≤3 rounds via `continue_max`) is the **inner bound** preventing runaway within a single dispatch
+- The chancellor's own loop iteration cap (≤3 review rounds procedural cap in the convergence loop) is the **inner bound** preventing runaway within a single dispatch
 - The `maxTotalSessionsPerRequest=8` is the **outer safety net** — if the loop somehow exceeds expectations, the per-parent budget stops it cleanly
 - Worst-case (chancellor subtree): 1 chancellor + 5 drafter/reviewer rounds + 1 finalizer + 1 jinyiwei = 8 sessions (hits the cap)
 - Typical case (chancellor subtree): 1 chancellor + ~3 drafter/reviewer rounds + 1 finalizer = 6 sessions (under budget)
+- Validate (chancellor path only, emperor-dispatched): adds 1 session to the emperor's private budget (not chancellor's), optional
 - **Why 8 and not higher**: 8 accommodates the worst-case three-department loop plus jinyiwei headroom, while still preventing unbounded per-parent trees. A higher number would weaken the safety-net purpose.
 
 ### Interaction with Existing Layers
@@ -81,7 +83,7 @@ The three-department nested loop changes the cost geometry significantly. Each p
 - Layer 1 (DIRECT default) unchanged
 - Layer 2 (`maxActivePerParent: 2`, `maxConcurrent: 5` per-model pool) unchanged
 - Layer 3: ceiling ≤8 per direct parent session
-- New: chancellor's `continue_max: 3` per-loop cap serves as Layer 2.5 — an inner bound between per-session concurrency and per-parent-session budget
+- Layer 2.5: chancellor's ≤3 review round procedural cap (with `continue_max: 15` as outer safety net) — an inner bound between per-session concurrency and per-parent-session budget
 
 ### Model Pool Layout
 

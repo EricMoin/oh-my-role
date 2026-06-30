@@ -83,7 +83,7 @@ Jinyiwei's dispatch configuration enforces concurrency gates:
 
 ```
 maxActivePerParent: 2      — max 2 background tasks running per jinyiwei session
-maxTotalSessionsPerRequest: 8  — tree-level cap on total sessions spawned from one user request
+maxTotalSessionsPerRequest: 8  — per-parent-session cap — each direct parent session (emperor, chancellor, jinyiwei) gets its own independent ≤8 budget
 ```
 
-**Implication for routing:** When routing splits a task into multiple subtasks, jinyiwei can dispatch at most 2 workers in parallel. Any additional workers must wait in the queue. The tree-level cap of 8 applies across all dispatches from the originating user request, not per-subtask.
+**Implication for routing:** When routing splits a task into multiple subtasks, jinyiwei can dispatch at most 2 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own budget of ≤8, ensuring fair allocation across the request tree.

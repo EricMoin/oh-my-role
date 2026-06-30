@@ -17,7 +17,7 @@ Jinyiwei operates through six domain departments, each named after a Ming Dynast
 
 Three departments are implemented: ui (工部), backend (兵部), and test (刑部). The remaining three (data, docs, quality) are placeholders in the domain-routing table.
 
-**Single source of truth:** The live `ui/` directory at `rolebox/emperor/subagents/jinyiwei/subagents/ui/` serves as the canonical template. There is no separate template directory. Copy from `subagents/ui/`, adapt per this checklist.
+**Single source of truth:** The live `ui/` directory at `roles/emperor/subagents/jinyiwei/subagents/ui/` serves as the canonical template. There is no separate template directory. Copy from `subagents/ui/`, adapt per this checklist.
 
 ## 2. Copy Checklist
 
@@ -67,7 +67,7 @@ Create `skills/{domain}-scope/SKILL.md` with:
 
 ### Step 5: domain-routing SKILL.md
 
-Open `rolebox/emperor/subagents/jinyiwei/skills/domain-routing/SKILL.md` and uncomment the corresponding row in the routing table:
+Open `roles/emperor/subagents/jinyiwei/skills/domain-routing/SKILL.md` and uncomment the corresponding row in the routing table:
 
 ```
 <!-- TODO: backend | emperor--jinyiwei--backend | Backend/API: ... -->
@@ -111,8 +111,8 @@ Lighting up departments has real cost implications:
 
 - **Do NOT activate all six at once.** Each active department is a separate LLM session. Six parallel departments would blow through token budgets.
 - **maxActivePerParent: 2** limits jinyiwei to 2 concurrent background department workers. Additional dispatches queue.
-- **maxTotalSessionsPerRequest: 8** is the tree-level cap. Emperor + jinyiwei + 2 departments already consumes 4 of 8 slots.
-- **Budget assessment first.** Before lighting a new department, estimate: how many subtasks will it handle per request? What model does it need? Sonnet for precision work, Haiku for mechanical tasks?
+- **maxTotalSessionsPerRequest: 8** is the per-parent-session cap. Emperor + jinyiwei + 2 departments already consumes 4 of 8 slots.
+- **Budget assessment first.** Before lighting a new department, estimate: how many subtasks will it handle per request? What model does it need? Tier-2 Reasoning for precision work, Tier-3 Fast for routing?
 - **Recommended approach:** Light one domain at a time. Validate routing, evidence collection, and cost profile. Then proceed to the next.
 
 ## 6. Drift Prevention

@@ -2,6 +2,7 @@
 name: draft
 description: Research the codebase and produce a structured strategy draft
 produces: draft
+consumes: plan
 gate: artifact_exists(plan)
 continue_until: artifact_exists(draft)
 observe:
