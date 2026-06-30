@@ -63,9 +63,12 @@ def validate_top_level_role(role_dir: Path, data: dict):
     rel = str(role_dir.relative_to(REPO_ROOT))
     yaml_rel = f"{rel}/role.yaml"
 
-    for field in ["name", "description", "version", "mode", "prompt"]:
+    for field in ["name", "description", "version", "mode"]:
         if field not in data:
             err(yaml_rel, f"Missing required field: '{field}'")
+
+    if "prompt" not in data and "prompt_file" not in data:
+        err(yaml_rel, "Missing required field: 'prompt' or 'prompt_file'")
 
     if "name" in data and not isinstance(data["name"], str):
         err(yaml_rel, f"'name' must be a string, got {type(data['name']).__name__}")
@@ -84,6 +87,12 @@ def validate_top_level_role(role_dir: Path, data: dict):
 
     if "prompt" in data and not isinstance(data["prompt"], str):
         err(yaml_rel, f"'prompt' must be a string, got {type(data['prompt']).__name__}")
+
+    if "prompt_file" in data:
+        if not isinstance(data["prompt_file"], str):
+            err(yaml_rel, f"'prompt_file' must be a string, got {type(data['prompt_file']).__name__}")
+        elif not (role_dir / data["prompt_file"]).is_file():
+            err(yaml_rel, f"'prompt_file' points to missing file '{data['prompt_file']}'")
 
     validate_temperature(yaml_rel, data)
 
@@ -405,13 +414,13 @@ def validate_collaboration_field(role_dir: Path, collaboration, yaml_rel: str, d
                 else:
                     topology_agents.append(agent)
 
-    if isinstance(topology, str) and topology in VALID_COLLABORATION_TOPOLOGIES:
-        if not topology_agents:
-            err(yaml_rel, "collaboration with topology requires at least one agent")
-        else:
-            edges.extend(expand_collaboration_topology(topology, topology_agents))
-
     flow = collaboration.get("flow")
+
+    if isinstance(topology, str) and topology in VALID_COLLABORATION_TOPOLOGIES:
+        if not topology_agents and not isinstance(flow, list):
+            err(yaml_rel, "collaboration with topology requires at least one agent (or explicit flow)")
+        elif topology_agents:
+            edges.extend(expand_collaboration_topology(topology, topology_agents))
     if flow is not None:
         if not isinstance(flow, list):
             err(yaml_rel, "collaboration.flow must be a list")
@@ -504,7 +513,7 @@ def validate_registry(registry_data: dict):
 
     if ROLES_DIR.is_dir():
         for d in sorted(ROLES_DIR.iterdir()):
-            if d.is_dir() and d.name not in roles_map:
+            if d.is_dir() and not d.name.startswith(".") and d.name not in roles_map:
                 warn(rel, f"Directory 'roles/{d.name}/' exists but is not listed in registry")
 
 
@@ -584,6 +593,8 @@ def main():
 
     for role_dir in sorted(ROLES_DIR.iterdir()):
         if not role_dir.is_dir():
+            continue
+        if role_dir.name.startswith("."):
             continue
 
         role_yaml = role_dir / "role.yaml"
