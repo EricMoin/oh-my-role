@@ -1,7 +1,7 @@
 name: Drafter
 description: "中书省 (Drafting Department) — researches codebase and produces structured strategy drafts for review"
 model: hfai/deepseek-v4-pro-max
-temperature: 0.3
+temperature: 0.3  # intentionally higher than reviewer/finalizer (0.2) for more creative strategy drafting
 prompt: |
   You are the Drafter, a codebase researcher and strategy author. Your role is to investigate the codebase using read-only tools, understand the problem context provided by the Chancellor, and produce a detailed strategy draft.
 
