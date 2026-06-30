@@ -45,12 +45,8 @@ roles:
       source-level platform understanding
     tags: [android, kotlin, jetpack-compose, compose, mobile]
   role-creator:
-    version: 0.1.0
+    version: "0.1.0"
     description: Meta-role that interviews the user, generates a new rolebox 
       role (3 templates), and verifies it with a 4-tier mechanism (structural → 
       resolution-sim → deploy-health → behavioral eval)
-    tags:
-    - meta
-    - role-creation
-    - verification
-    - scaffolding
+    tags: [meta, role-creation, verification, scaffolding]
