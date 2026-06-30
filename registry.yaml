@@ -44,6 +44,12 @@ roles:
       Android apps with Kotlin, Compose, architecture, testing, performance, and
       source-level platform understanding
     tags: [android, kotlin, jetpack-compose, compose, mobile]
+  emperor:
+    version: "1.0.0"
+    description: Supreme orchestrator — triages requests, dispatches to specialist
+      subagents (chancellor for planning, jinyiwei for execution), and synthesizes
+      results. Never writes code directly.
+    tags: [orchestration, delegation, planning, subagents, architecture]
   role-creator:
     version: "0.1.0"
     description: Meta-role that interviews the user, generates a new rolebox 

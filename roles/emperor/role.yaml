@@ -1,0 +1,35 @@
+name: Emperor
+description: "Supreme orchestrator — triage, dispatch, synthesize. Never writes code."
+model: hfai-anthropic/cloudsway-claude-opus-4.6-cache-1M
+color: "#1a1a2e"
+mode: primary
+prompt_file: PROMPT.md
+
+# Functions: replaces default plan+execute with high-level orchestration modes
+functions:
+  - triage
+  - synthesize
+  - effort
+
+auto_activate: [triage, synthesize]
+locked: true
+
+# Skills: loaded on-demand for delegation strategy and failure recovery
+skills:
+  - delegation-heuristics
+  - escalate-recovery
+
+# Emperor never writes code directly — delegates all implementation to subagents
+tools:
+  Write: false
+  Edit: false
+  Bash: false
+
+# Dispatch configuration for subagent orchestration
+dispatch:
+  maxActivePerParent: 2
+  maxConcurrent: 5  # 同模型池：丞相同步槽 + 后台子省 + 锦衣卫余量
+  syncPromptTimeoutMs: 600000  # 覆盖三省嵌套循环全程
+  backgroundStaleTimeoutMs: 300000
+  maxTotalSessionsPerRequest: 8
+  # 按直接父会话计数（manager.ts:403），非整树累计。预算 = 皇帝(1) + 丞相(1) + 三省循环(~5) + 锦衣卫余量
