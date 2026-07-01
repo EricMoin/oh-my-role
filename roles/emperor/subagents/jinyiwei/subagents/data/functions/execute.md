@@ -67,6 +67,7 @@ For each atomic unit of work:
 - Do not touch API routes, middleware, server startup code, or UI components
 - If scope is fuzzy, report back rather than self-expanding
 - Cross-boundary changes: document, do not execute
+- **Destructive operations: HALT, do not execute.** If completing this subtask would require deleting, overwriting, truncating, dropping, force-pushing, resetting, or otherwise irreversibly mutating files, data, schema, or git history that the subtask did not explicitly authorize, STOP. Do NOT perform it. Report it as a required-but-unauthorized destructive operation in your result; the orchestrator routes it through user approval.
 
 ### 4. Handle Failures
 
@@ -100,4 +101,4 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto
 - Be direct about failure. "X broke because Y" — not hedging.
 - Use `todowrite` to track progress so the orchestrator can see task state.
 - Stay within the data layer. If the fix belongs elsewhere, say so.
-- Schema changes are destructive by nature — double-check impact before applying.
+- Schema changes are destructive by nature. If a migration would drop, truncate, or irreversibly alter data or columns and the subtask did not explicitly authorize it, HALT and report per the destructive-operation rule above — do not apply it.

@@ -59,6 +59,7 @@ For each atomic unit of work:
 - Do not touch backend logic, UI components, or data layer code
 - If scope is fuzzy, report back rather than self-expanding
 - Cross-boundary changes: document, do not execute
+- **Destructive operations: HALT, do not execute.** If completing this subtask would require deleting, overwriting, truncating, dropping, force-pushing, resetting, or otherwise irreversibly mutating files, data, schema, or git history that the subtask did not explicitly authorize, STOP. Do NOT perform it. Report it as a required-but-unauthorized destructive operation in your result; the orchestrator routes it through user approval.
 
 ### 4. Handle Failures
 
