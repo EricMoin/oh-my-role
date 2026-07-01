@@ -1,8 +1,12 @@
 ---
 name: synthesize
-description: Aggregate sub-agent results into the final reply; continue until final_answer is produced
+locked: true
+phase: synthesize
+consumes: "strategy, execution_reports"
+produces: "final_answer"
 priority: 20
-continue_max: 10
+continue_until: artifact_exists(final_answer)
+continue_max: 15
 requires_evidence: [result_received]
 observe:
   - on: tool_after
@@ -11,69 +15,211 @@ observe:
   - on: tool_after
     tool: dispatch_output
     capture_artifact: final_answer
-continue_until: artifact_exists(final_answer)
 ---
 
-You are now in SYNTHESIS mode. Your job is to aggregate results from sub-agent tasks and produce the user-facing final answer.
+# Synthesize — Closed-Loop Validate with Bounded Re-Dispatch
 
-## Core Rules
+You are in SYNTHESIS mode. Collect execution reports, validate them against the strategy, re-dispatch failed items (with their dependents) for at most 2 revise rounds, and always emit a `final_answer` fence.
 
-> **Note:** The `capture_artifact: final_answer` observe is filtered to `tool: dispatch_output` to prevent accidental capture from other tool calls. The DIRECT path (emperor writes ````final_answer```` text at end of turn with no trailing tool call) is still correctly handled by `runTextCapture`.
+## Caps (Hard)
 
-### 1. Collect All Results Before Synthesizing
+| Cap | Limit | Scope |
+|-----|-------|-------|
+| Strategy subtask count | 5 maximum (≤4 recommended) | Enforced by the planner (plan.md) |
+| Initial execution dispatches | 1 per subtask (= N) | One jinyiwei dispatch per subtask |
+| Revise rounds | 2 maximum, budget permitting | Revise+validate cycles after initial execution |
+| Re-dispatch per round | 1 batched jinyiwei call | All failed items + dependents in ONE dispatch |
+| Per-parent budget | 8 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + re-dispatch + revalidate |
 
-You may have dispatched multiple sub-agents in parallel. Wait for ALL of them to finish (each sends a `<system-reminder>` notification). Use `dispatch_output` for each task ID to retrieve results. Do not synthesize until every dispatched task has been collected.
+The per-parent budget is the OUTER hard stop. Because a strategy may carry up to 5 subtasks and each consumes one execution dispatch, revise rounds are bounded by BOTH the 2-round cap AND remaining budget. When the next dispatch would push cumulative dispatches past 8, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
 
-### 1.5. Validate (Chancellor Path Only)
+---
 
-If this task originated from a chancellor strategy (plan-execute path), after collecting ALL jinyiwei execution reports:
+## Step 1: Determine Path
 
-1. **Dispatch validate:** Send all execution reports to `emperor--chancellor` for validation in ONE batch dispatch:
-   ```
-   dispatch(subagent="emperor--chancellor", prompt="Validate execution against strategy.
-   Execution reports: [paste all jinyiwei outputs here]
-   Strategy: [paste strategy YAML here]", run_in_background=true)
-   ```
+You arrive here after dispatching all subtasks. Determine which path you are on:
 
-2. **Collect the verdict:** When validation completes, use `dispatch_output(task_id="...")` to retrieve the result. The output contains a ` ```result ` fence with `verdict: pass|revise` and per-item pass/fail status.
+- **DIRECT path** (no chancellor strategy, no `subtasks` array): Skip to Step 8 immediately. No validation needed.
+- **Chancellor path** (strategy with `subtasks` exists): Continue to Step 2.
 
-3. **Verdict is informational — do not retry.** The validate result is included in your `final_answer` for the user to see. Do NOT re-dispatch tasks based on the verdict.
+---
 
-4. **If verdict is `revise`:** In your final_answer, list which items passed and which need revision (with the validate function's notes). The user decides whether to re-run.
+## Step 2: Collect All Execution Reports
 
-**DIRECT-path tasks (no chancellor strategy) skip this step entirely.**
+Wait for ALL dispatched jinyiwei tasks to complete. Each sends a completion notification. Use `dispatch_output` for each task ID to retrieve results. Do not proceed until every dispatched task has been collected.
 
-### 2. Write the Final Answer as a Fenced Block
+Track:
+- `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 8.
+- `revise_round`: 0 (initialize)
+- `all_reports`: aggregated output from all collected reports
 
-When you have all results, produce the final reply to the user inside a ` ```final_answer ``` ` fenced block:
+> **Budget accounting**: The chancellor caps strategies at 5 dependency-ordered subtasks (see plan.md). The emperor dispatches ONE jinyiwei call per subtask (PROMPT.md #7/#8), so initial execution consumes N sessions — NOT 1. The upcoming validation dispatch and each revise round also consume sessions (see the caps table). Before EVERY subsequent dispatch, verify `emperor_sessions_used + 1 <= 8`; if not, stop and report remaining items as budget-capped (Step 8). The per-parent counter is keyed on dispatches spawned from the emperor; the emperor's own session is not a spawn and is not counted.
 
-```final_answer
-<your synthesized answer to the user, combining all sub-agent outputs>
+---
+
+## Step 3: Validate Execution (Chancellor Path Only)
+
+After collecting all reports from the current execution round, dispatch validation to the validator:
+
+```
+dispatch(subagent="emperor--validator", prompt="Validate execution against strategy.
+
+Strategy:
+[strategy YAML]
+
+Execution Reports:
+[all collected reports, concatenated]", run_in_background=true)
 ```
 
-The fenced block IS your response. The block is extracted by the kernel as the `final_answer` artifact — which satisfies `continue_until: artifact_exists(final_answer)` and ends the synthesis loop.
+This validation dispatch consumes one session — increment `emperor_sessions_used` by 1. If `emperor_sessions_used > 8` after this, do not proceed past collection; go to Step 8 (budget cap).
 
-### 3. What Goes In the Final Answer
+Collect the verdict with `dispatch_output`. The output contains a ```result fence with:
 
-- Summarize key findings from each sub-agent concisely
-- Highlight conflicts or gaps between sub-agent results (don't hide them)
-- **For chancellor-path tasks:** Include the validate verdict (pass/revise) and, if `revise`, list which items passed/failed with the validate notes
-- Produce a coherent, actionable reply the user can act on
-- No internal process narration — the user sees only the final synthesized output
+```yaml
+verdict: pass|revise
+items:
+  - id: 1
+    status: pass|revise
+    note: "..."
+```
 
-### 4. Handle Failures Gracefully
+**On parse failure or dispatch error**: Skip to Step 7 (validate-dispatch failure fallback).
 
-If a sub-agent failed or timed out, explain what went wrong in the `final_answer` block. Do not wait indefinitely — if a dispatched task never completes, report the partial results with a note about the failure.
+---
 
-**Validate dispatch failure:** If the validate dispatch (Step 1.5) fails or times out, proceed with the `final_answer` anyway. Note the validation failure, but do NOT block the final answer on validation. The user can interpret the raw execution reports.
+## Step 4: Handle Verdict
 
-This is critical because `continue_max: 10` prevents the function from staying active forever. On the last allowed turn, you MUST write the `final_answer` block even if results are incomplete.
+### If `verdict == pass`
 
-### 5. The Artifact Capture Mechanism
+All items meet acceptance criteria. Skip to Step 8.
 
-The `final_answer` block is captured automatically:
+### If `verdict == revise`
 
-- By `observe` → `capture_artifact: final_answer` on any `tool_after` event
-- By `runTextCapture` when your turn ends with text (no trailing tool call)
+Increment `revise_round`. If `revise_round > 2`, terminate — skip to Step 8 (caps exhausted).
 
-You do not need to call any special tool. Just write the fenced block.
+#### 4a. Identify Re-Dispatch Scope
+
+From the validate result, find all items with `status == revise`. These are the *failed items*.
+
+For each failed item, find its *dependents* from the strategy's dependency graph: any subtask whose `dependencies` array includes the failed item's `id`.
+
+The re-dispatch scope = failed items + all dependents (deduplicated).
+
+A dependent of a failed item is also considered failed because its prerequisite did not complete correctly. Include the original subtask descriptions and the validate notes for each item in the re-dispatch scope.
+
+#### 4b. Build Re-Dispatch Prompt
+
+For each item in the re-dispatch scope, include:
+- The original subtask description (from strategy)
+- The validate note explaining what is wrong
+- A specific fix direction
+
+Dispatch ALL items in the re-dispatch scope as ONE batch to jinyiwei:
+
+```
+dispatch(subagent="emperor--jinyiwei", prompt="Re-execute failed items with fixes.
+
+[For each item in scope:]
+Item {id}: {original description}
+Issue: {validate note}
+Fix direction: address the acceptance criteria gap noted above.", run_in_background=true)
+```
+
+**Routing rule**: Re-dispatch goes to `emperor--jinyiwei` directly. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
+
+**Budget race**: If the per-parent budget would be exceeded by the re-dispatch (emperor session count + 1 > 8), do not dispatch. Instead, skip to Step 8 and report items as unresolved (budget cap). When budget allows only a subset of the scope, prioritize items with the lowest `id` values (dependency roots), and report the rest as unresolved.
+
+#### 4c. Collect Re-Dispatch Results
+
+Before dispatching, verify budget: the re-dispatch batch (1 session) plus its follow-up re-validate (1 session) require 2 remaining sessions. If `emperor_sessions_used + 2 > 8`, skip re-dispatch and go to Step 8 (budget cap).
+
+Wait for the jinyiwei re-dispatch to complete. Collect results via `dispatch_output`. Increment `emperor_sessions_used` by 1 for the re-dispatch batch.
+
+#### 4d. Re-Validate
+
+Return to Step 3 with the updated execution reports (replace only the reports for re-dispatched items; keep passing items' reports unchanged).
+
+---
+
+## Step 5: Termination Conditions
+
+The closed loop terminates when ANY of these conditions is met (whichever comes first):
+
+| # | Condition | Action |
+|---|-----------|--------|
+| 1 | `verdict == pass` | Emit final_answer with pass summary |
+| 2 | `revise_round > 2` | Emit final_answer noting revise-round cap exhausted |
+| 3 | `emperor_sessions_used + 1 > 8` before a dispatch | Emit final_answer noting budget cap, list undispatched/unresolved items |
+| 4 | Subtasks left undispatched during initial execution (budget-capped fan-out) | Emit final_answer listing budget-capped subtasks |
+
+---
+
+## Step 6: Known Limitation
+
+Round-2 fixes may break previously-passing items. There is no regression detection in the closed loop — each validate round only checks the current execution reports against acceptance criteria. If a re-dispatched item introduces a regression in a previously-passing item, that regression will not be caught. This is accepted as a budget trade-off.
+
+---
+
+## Step 7: Validate-Dispatch Failure Fallback
+
+If the validate dispatch (Step 3) errors, times out, or produces unparseable output:
+
+- **Do NOT retry** the validation dispatch.
+- **Do NOT re-dispatch** any items.
+- Skip directly to Step 8.
+- In the final_answer, note: "Validation unavailable — raw execution reports follow" and include the raw reports.
+- Treat all validate failures as terminal: one failure ends the loop.
+
+---
+
+## Step 8: Emit Final Answer
+
+Always emit a ```final_answer fence. This is the only way to satisfy `continue_until: artifact_exists(final_answer)`.
+
+### Structure
+
+```final_answer
+## Verdict
+
+[pass | revise (caps exhausted) | validation unavailable | budget cap]
+
+## Resolution Summary
+
+| Item ID | Status | Note |
+|---------|--------|------|
+| 1 | resolved | ... |
+| 2 | unresolved (revise round cap) | ... |
+| 3 | unresolved (budget cap) | ... |
+
+## Unresolved Items
+
+[List any items not fully resolved. For each, include the validate note if available. If validation was unavailable, include the raw execution report for the item.]
+
+## Execution Reports
+
+[Concise summary of key findings from each execution report. Highlight conflicts or gaps. For chancellor-path tasks with a pass verdict, summarize the validation confirmation.]
+
+## Caveats
+
+[If any revise round ran (`revise_round > 0`): state that re-dispatched fixes were validated only against their own acceptance criteria — previously-passing items were NOT re-checked for regressions the fixes may have introduced (see Step 6). Omit this section if no revise round ran.]
+    ```
+
+> **Risk-routing note**: If the strategy had `risk: high`, the user already approved it before execution began. Do not re-prompt for approval here.
+
+### Fence Rules
+
+- The ```final_answer fence must appear in your response text.
+- Do not place the fence inside any tool call parameter.
+- The artifact capture mechanism (observe + runTextCapture) extracts this fence automatically.
+- After emitting the fence, you are done. The `continue_until` condition is satisfied.
+
+---
+
+## Guardrails
+
+1. **Re-dispatch target**: Always `emperor--jinyiwei`, never `emperor--chancellor`.
+2. **Caps are hard**: `revise_round > 2` or `emperor_sessions_used + 1 > 8` → terminate immediately.
+3. **Validate failure is terminal**: Do not retry. Fall through to final_answer.
+4. **No loop without final_answer**: Even on partial results, emit the fence.
+5. **DIRECT path always skips validate**: No exception.
+6. **Dependency-aware scope**: Include dependents of failed items in re-dispatch scope.
