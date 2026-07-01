@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.1.0"
+version: "2.2.0"
 model: hfai-anthropic/cloudsway-claude-opus-4.6-cache-1M
 color: "#1a1a2e"
 mode: primary
@@ -60,6 +60,10 @@ permission:
     - Read
     - Grep
     - Glob
+    - WebFetch
+    - websearch_web_search_exa
+    - context7_resolve-library-id
+    - context7_query-docs
     - dispatch
     - dispatch_output
     - dispatch_cancel
@@ -71,4 +75,4 @@ dispatch:
   syncPromptTimeoutMs: 600000  # Covers full nested loop across all 3 model pools
   backgroundStaleTimeoutMs: 300000
   maxTotalSessionsPerRequest: 8
-  # Counted by direct parent session, not cumulative tree total. Budget: emperor(1) + chancellor(1) + nested loop(~5) + jinyiwei margin
+  # Counted by direct parent session, not cumulative tree total. The emperor's own session is free (not a spawn).
