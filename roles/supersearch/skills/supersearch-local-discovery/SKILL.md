@@ -7,10 +7,15 @@ description: Search local workspace files, code structure, git history, previous
 
 Local discovery is the first pass when the answer may be in the workspace or previous work.
 
-## File And Text Search
+## Local Tool Priority
 
-- Start broad with `rg --files`, then narrow with `rg`.
-- Use Glob/Grep or find/grep only when `rg` is unavailable, when a host tool's structured output is more useful, or when the search is not a good fit for ripgrep.
+- Use LSP when the question is about definitions, references, symbols, diagnostics, or code truth.
+- Use ast_grep_search when syntax shape matters, such as imports, call sites, decorators, JSX, or API usage.
+- Use structured parsers for JSON, YAML, CSV, TSV, lockfiles, manifests, and generated metadata.
+- Use Git history tools when the question is about when, why, provenance, deleted code, or regressions.
+- Use session_search when prior user decisions, previous research, or earlier agent findings may answer the question.
+- Use look_at when images, screenshots, PDFs, or media are directly relevant.
+- Use Glob for unknown path discovery, Grep for exact text discovery, and Read for targeted context once candidates are known.
 - Prefer exact strings from the request before synonyms.
 - Search docs, tests, configs, source, scripts, examples, changelogs, and issue notes.
 - Read enough surrounding context to avoid quote-mining a match.
@@ -21,7 +26,7 @@ Local discovery is the first pass when the answer may be in the workspace or pre
 - Use `yq` for YAML when available.
 - Use `xsv`, `mlr`, or a short read-only parser for CSV/TSV when available.
 - Use package-manager or lockfile-aware tools only for inspection, never installation.
-- If a parser is unavailable, fall back to `rg` with tight patterns and mark the evidence as weaker.
+- If a parser is unavailable, fall back to Grep with tight patterns and mark the evidence as weaker.
 
 ## Code Intelligence
 
@@ -34,7 +39,6 @@ Local discovery is the first pass when the answer may be in the workspace or pre
 
 Use Bash only for inspection:
 
-- `git grep <term>`
 - `git log --oneline -- <path>`
 - `git log -S '<term>' -- <path>`
 - `git log -G '<regex>' -- <path>`
