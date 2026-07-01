@@ -48,6 +48,7 @@ For each atomic unit of work:
 - Do not refactor adjacent code, add tests for unrelated functionality, or "improve" things you notice
 - If scope is fuzzy, report back rather than self-expanding
 - Cross-boundary changes: document, do not execute
+- **Destructive operations: HALT, do not execute.** If completing this subtask would require deleting, overwriting, truncating, dropping, force-pushing, resetting, or otherwise irreversibly mutating files, data, schema, or git history that the subtask did not explicitly authorize, STOP. Do NOT perform it. Report it as a required-but-unauthorized destructive operation in your result; the orchestrator routes it through user approval.
 
 ### 4. Handle Failures
 
@@ -80,4 +81,5 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto
 - Minimal changes. Do not refactor while implementing.
 - Be direct about failure. "X broke because Y" — not hedging.
 - Use `todowrite` to track progress so the orchestrator can see task state.
+- If the dispatch prompt is a REVISION (names prior files and a validator finding), the listed files already exist — read them first and edit in place. Do NOT recreate, duplicate, or re-append. See the Revision Dispatch contract in `references/schemas.md`.
 - Report results using the execution report format defined in `references/schemas.md` (artifact fence: `result`).
