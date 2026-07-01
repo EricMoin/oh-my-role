@@ -19,6 +19,11 @@ functions:
 skills:
   - task-decomposition
   - dependency-ordering
+# System-enforces the round-3 convergence cap (orchestrate.md) at the kernel level.
+# Without this, the drafter/reviewer/finalizer loop is bounded only by prompt instructions.
+dispatch:
+  maxActivePerParent: 2
+  maxTotalSessionsPerRequest: 8
 tools:
   Write: false
   Edit: false
