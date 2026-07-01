@@ -1,9 +1,11 @@
 name: Emperor
-description: "Supreme orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "1.0.0"
+description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
+version: "2.1.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
+# Low temperature: routing/classification and dispatch decisions should be deterministic
+temperature: 0.1
 prompt_file: PROMPT.md
 
 # Functions: replaces default plan+execute with high-level orchestration modes
@@ -13,23 +15,39 @@ functions:
   - effort
 
 auto_activate: [triage, synthesize]
-locked: true
 
 # Skills: loaded on-demand for delegation strategy and failure recovery
 skills:
   - delegation-heuristics
   - escalate-recovery
 
-# Cost/budget awareness reference for dispatch decisions
+# Reference documents for dispatch decisions, schemas, terminology, model pools, and departments
 references:
-  cost-model:
-    path: references/cost-model.md
-    description: Cost/budget awareness reference for dispatch decisions — covers DIRECT-default policy, per-session caps, per-parent-session hard cap, and model pool layout
+  schemas:
+    path: references/schemas.md
+    description: Schema definitions for dispatch payloads, strategy documents, and validation results
+  terminology-and-style:
+    path: references/terminology-and-style.md
+    description: Terminology conventions and English style guide for all emperor-facing output
+  model-pool-and-budget:
+    path: references/model-pool-and-budget.md
+    description: Model pool configuration — three independent pools (tier-1-flagship, tier-2-reasoning, tier-3-fast) each with 5-slot semaphore, and budget allocation rules
+  departments:
+    path: references/departments.md
+    description: Department definitions and domain assignments for dispatch routing
 
-# Subagent orchestration pipeline — topology describes the hierarchy, flow describes the pipeline
+# Subagent orchestration pipeline — flow defines the dispatch edges.
+# max_iterations bounds the closed-loop validate/revise cycle (see synthesize.md caps).
 collaboration:
-  topology: "emperor → [chancellor (strategy: drafter/reviewer/finalizer) | jinyiwei (execution: ui/backend/test)]"
-  flow: "triage → [DIRECT | chancellor→strategy→user-approval→jinyiwei→execute→validate→synthesize | jinyiwei→synthesize]"
+  max_iterations: 3
+  flow:
+    - "parent -> chancellor: strategic planning"
+    - "parent -> jinyiwei: direct execution"
+    - "chancellor -> parent: strategy document"
+    - "jinyiwei -> parent: execution result"
+    - "parent -> validator: closed-loop validation"
+    - "validator -> parent: validation result"
+    - "parent -> jinyiwei: re-dispatch failed subtasks"
 
 # Emperor never writes code directly — delegates all implementation to subagents
 tools:
@@ -49,8 +67,8 @@ permission:
 # Dispatch configuration for subagent orchestration
 dispatch:
   maxActivePerParent: 2
-  maxConcurrent: 5  # 同模型池：丞相同步槽 + 后台子省 + 锦衣卫余量
-  syncPromptTimeoutMs: 600000  # 覆盖三省嵌套循环全程
+  maxConcurrent: 5  # Shared across 3 model pools: chancellor sync slot + background sub-agents + jinyiwei margin
+  syncPromptTimeoutMs: 600000  # Covers full nested loop across all 3 model pools
   backgroundStaleTimeoutMs: 300000
   maxTotalSessionsPerRequest: 8
-  # 按直接父会话计数（manager.ts:403），非整树累计。预算 = 皇帝(1) + 丞相(1) + 三省循环(~5) + 锦衣卫余量
+  # Counted by direct parent session, not cumulative tree total. Budget: emperor(1) + chancellor(1) + nested loop(~5) + jinyiwei margin
