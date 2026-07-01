@@ -5,11 +5,11 @@ description: Fine-grained delegation decision guidance beyond the triage tree
 
 # Delegation Heuristics
 
-Refines the Emperor's triage tree with boundary-case guidance. This skill doesn't replace PROMPT.md routing; it sharpens the edges where categories blur.
+Refines the orchestrator's triage tree with boundary-case guidance. This skill does not replace PROMPT.md routing; it sharpens the edges where categories blur.
 
 ## Decision Matrix
 
-### Direct (自答)
+### Direct
 
 Answer yourself. Zero dispatch overhead.
 
@@ -22,23 +22,23 @@ Answer yourself. Zero dispatch overhead.
 
 **Rule:** If the answer requires only reading (no writes, no multi-step investigation), handle it directly.
 
-### Plan-First (先规划)
+### Plan-First
 
-Dispatch to chancellor synchronously. You need a plan before execution.
+Dispatch to the planner subtree synchronously. You need a plan before execution.
 
 **Signals:**
 - Fuzzy or open-ended scope: "refactor the auth system", "improve performance"
-- Multi-file changes where the file set isn't obvious upfront
-- Cross-module refactoring where dependencies aren't fully mapped
+- Multi-file changes where the file set is not obvious upfront
+- Cross-module refactoring where dependencies are not fully mapped
 - Requests that need tool-based investigation before you can estimate effort
 - "Make it better" style requests without clear acceptance criteria
 - Feature work touching 3+ files or 2+ modules
 
-**Rule:** If you can't write a concrete checklist of changes in under 30 seconds of thought, plan first.
+**Rule:** If you cannot write a concrete checklist of changes in under 30 seconds of thought, plan first.
 
-### Execute (直接执行)
+### Execute
 
-Background dispatch to jinyiwei. Scope is locked, just do it.
+Background dispatch to the executor/router. Scope is locked, just do it.
 
 **Signals:**
 - Single file change with clear intent: "add a timeout parameter to fetchData"
@@ -49,15 +49,15 @@ Background dispatch to jinyiwei. Scope is locked, just do it.
 
 **Rule:** If you can state the exact files, the exact change, and the done-condition in one sentence, execute.
 
-### Ask-User (问用户)
+### Ask-User
 
-Don't guess. Clarify before dispatching.
+Do not guess. Clarify before dispatching.
 
 **Signals:**
 - Scope genuinely ambiguous: "fix the app" (which part?)
 - Requirements conflict with each other or with existing code
 - Multiple valid interpretations that lead to different architectures
-- User references something you can't find in the codebase
+- User references something you cannot find in the codebase
 - Risk of irreversible or expensive work on a wrong assumption
 
 **Rule:** If guessing wrong costs more than one round-trip of clarification, ask.
@@ -66,15 +66,15 @@ Don't guess. Clarify before dispatching.
 
 | Situation | Looks like... | Actually route to... | Why |
 |-----------|---------------|---------------------|-----|
-| Read-only + fuzzy scope | Direct | Ask-user | "Explain how auth works" is direct. "What should we do about auth?" needs clarification. |
-| Large but well-scoped | Plan-first | Plan-first then execute | Even if scope is clear, 5+ file changes benefit from a checklist. Verify scope with a plan, then fan out execution. |
-| Small but risky | Execute | Ask-user | A one-line config change that could break prod deserves confirmation. |
-| Investigation request | Direct | Direct (or plan-first) | "Find all usages of X" is direct. "Find all usages and refactor them" is plan-first. |
-| User says "just do it" | Execute | Execute | Trust explicit user intent. Skip clarification if they've signaled confidence. |
+| Read-only + fuzzy scope | Direct | Ask-User | "Explain how auth works" is direct. "What should we do about auth?" needs clarification. |
+| Large but well-scoped | Plan-First | Plan-First then Execute | Even if scope is clear, 5+ file changes benefit from a checklist. Verify scope with a plan, then fan out execution. |
+| Small but risky | Execute | Ask-User | A one-line config change that could break prod deserves confirmation. |
+| Investigation request | Direct | Direct (or Plan-First) | "Find all usages of X" is direct. "Find all usages and refactor them" is plan-first. |
+| User says "just do it" | Execute | Execute | Trust explicit user intent. Skip clarification if they have signaled confidence. |
 
 ## Anti-Patterns
 
-- **Premature planning:** Don't dispatch to chancellor for a typo fix. That's execute.
-- **Premature execution:** Don't background-dispatch work you haven't scoped. You'll get halfway, hit ambiguity, and waste tokens.
-- **Over-asking:** If the user gave enough info and you're stalling, pick the most reasonable interpretation and execute. Reserve ask-user for genuine ambiguity, not indecision.
-- **Dispatch to wrong target:** Chancellor plans, jinyiwei executes. Never send execution work to chancellor or planning work to jinyiwei.
+- **Premature planning:** Do not dispatch to the planner for a typo fix. That is execute.
+- **Premature execution:** Do not background-dispatch work you have not scoped. You will get halfway, hit ambiguity, and waste tokens.
+- **Over-asking:** If the user gave enough info and you are stalling, pick the most reasonable interpretation and execute. Reserve ask-user for genuine ambiguity, not indecision.
+- **Dispatch to wrong target:** The planner plans, the executor/router executes. Never send execution work to the planner or planning work to the executor/router.
