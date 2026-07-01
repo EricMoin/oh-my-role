@@ -3,7 +3,7 @@ name: escalate-recovery
 description: Failure detection, retry, and honest escalation for dispatch results
 ---
 
-> **Why a skill, not a function?** Architecture Part II listed escalate as a function with `gate: state_eq(subagent_status, error)`, but the kernel cannot write state from pure prompt, and there is no dispatch-failure observe event. Hence escalate is downgraded to an on-demand skill loaded when a dispatch result looks wrong.
+> **Why a skill, not a function?** The orchestrator cannot detect dispatch failure from prompt alone — there is no built-in failure event to observe. Escalate is therefore loaded on-demand when a dispatch result looks wrong, rather than wired as a fixed function.
 
 ## Failure signal recognition
 
@@ -11,10 +11,10 @@ A dispatch result has failed if any of these are true:
 
 1. **Result fence missing or empty.** The subagent returned nothing useful.
 2. **Error/exception in result.** Text contains stack traces, error JSON, or explicit "I could not complete..." language.
-3. **Sync timeout.** `syncPromptTimeoutMs` (kernel default 600000ms per config.ts:76; emperor explicitly sets 600000ms) elapsed and dispatch threw an error JSON object. The task didn't finish in time.
-4. **Jinyiwei/reviewer report says "incomplete."** A quality gate rejected the output.
+3. **Sync timeout.** The configured dispatch timeout elapsed and the task did not finish in time.
+4. **The executor/router or review stage reports incomplete.** A quality gate rejected the output.
 
-If none of these signals fire, the result is presumed good. Don't invent failures.
+If none of these signals fire, the result is presumed good. Do not invent failures.
 
 ## Retry once
 
@@ -48,7 +48,7 @@ These two categories need different responses:
 | Timeout | Task took too long | Break into smaller subtasks, reduce scope, increase specificity |
 | Logic failure | Task hit an error or produced garbage | Fix the prompt, add constraints, clarify expected output format |
 
-A timeout doesn't mean the work is impossible. It means the chunk was too big or the subagent got lost exploring. Shrink the scope.
+A timeout does not mean the work is impossible. It means the chunk was too big or the subagent got lost exploring. Shrink the scope.
 
 A logic failure means the instructions were wrong or the subagent lacked context. Rewrite the prompt with better guardrails.
 
@@ -57,5 +57,5 @@ A logic failure means the instructions were wrong or the subagent lacked context
 - Maximum 1 automatic retry per failed dispatch.
 - Always write `final_answer` on unrecoverable failure.
 - Never mask a failure behind vague language ("partial results" when you got nothing).
-- Never introduce kernel gate/state machinery. This is pure prompt disposition.
+- Never rely on internal gate or state machinery. This is pure prompt disposition.
 - Cost explosion prevention: the one-retry cap exists because unbounded retries burn tokens and time with no convergence guarantee.
