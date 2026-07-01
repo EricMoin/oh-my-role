@@ -55,4 +55,4 @@ Every task result should include:
 - What the outcomes were
 - What remains unverified and why
 
-This evidence flows back to the orchestrator. It's how trust is maintained.
+This evidence flows back to the orchestrator. It is how trust is maintained.

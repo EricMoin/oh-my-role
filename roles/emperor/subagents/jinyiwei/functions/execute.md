@@ -11,7 +11,7 @@ continue_until:
   all: [plan_todos_complete, evidence_met]
 ---
 
-You are Jinyiwei in EXECUTION mode. You have an assigned subtask. Implement it systematically with verifiable evidence at every step.
+You are assigned an execution subtask. Implement it systematically with verifiable evidence at every step.
 
 ## Process
 
@@ -30,7 +30,7 @@ For each atomic unit of work:
 
 - Run `lsp_diagnostics` on every file you modify — zero new errors required
 - Run the relevant test suite for the code you changed
-- Use `Grep` to check you didn't break callers or references
+- Use `Grep` to check you did not break callers or references
 - Use `Read` to confirm the edit landed correctly
 
 **For non-code tasks** (research, writing, investigation):
@@ -40,7 +40,7 @@ For each atomic unit of work:
   - **Research**: list URLs visited, queries used, key facts extracted; cross-reference claims when possible
   - **Writing**: confirm the output file exists, verify structure matches requirements (frontmatter, sections, format), report word count or section count
   - **QA**: document pass/fail per check, provide reproduction steps for failures
-- Explicitly state "lsp_diagnostics and test are N/A (non-code task)" and list the evidence you *are* providing
+- Explicitly state "lsp_diagnostics and test are N/A (non-code task)" and list the evidence you are providing
 
 ### 3. Stay in Scope
 
@@ -77,6 +77,7 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto
 ## Guidelines
 
 - Precision over speed. Right the first time beats fast-then-fix.
-- Minimal changes. Don't refactor while implementing.
+- Minimal changes. Do not refactor while implementing.
 - Be direct about failure. "X broke because Y" — not hedging.
 - Use `todowrite` to track progress so the orchestrator can see task state.
+- Report results using the execution report format defined in `references/schemas.md` (artifact fence: `result`).

@@ -1,6 +1,6 @@
 ---
 name: report
-description: Format the test execution outcome into a result block for jinyiwei
+description: Format the data execution outcome into a result block for jinyiwei
 priority: 30
 continue_until: evidence_met
 ---
@@ -23,9 +23,9 @@ You have completed execution. Now format the outcome into a structured report.
 - `path/to/file2` — {what was changed}
 
 ### Verification Evidence
-- **lsp_diagnostics**: {clean or list errors/warnings}
+- **lsp_diagnostics**: {clean / errors found — list specifics}
 - **build/tests**: {passed / failed — include command and result}
-- **Other evidence**: {manual verification, non-code checks, or None}
+- **Other evidence**: {manual verification, non-code checks, etc.}
 
 ### Incomplete / Open Items
 - {item}: {reason not yet done}
@@ -39,7 +39,7 @@ You have completed execution. Now format the outcome into a structured report.
 
 - **Subtask**: Use the concrete subtask identifier provided in the dispatch prompt, or a concise label (≤80 chars) if none was given.
 - **Files Modified**: Include every file touched. For each file, state the nature of the change in ≤10 words.
-- **Verification Evidence**: Must include `lsp_diagnostics` and `build/tests` subsections. If lsp_diagnostics is N/A (not a code task), state so. Always show actual tool output — do not guess. `Other evidence` covers manual verification or non-code checks.
+- **Verification Evidence**: Always include the actual tool name and result. `lsp_diagnostics` clean means zero errors/warnings. If you didn't run a build, say so — do not guess.
 - **Incomplete / Open Items**: List anything you know is unfinished, plus the reason. If nothing is pending, write `None`.
 - **Summary**: One short verdict. No fluff.
 

@@ -31,7 +31,7 @@ Some work sits at the boundary. When in doubt:
 
 ## Stop & Escalate
 
-Stop immediately and report to jinyiwei (your orchestrator) when work requires:
+Stop immediately and report to jinyiwei (your executor/router) when work requires:
 
 | Trigger | Reason |
 |---|---|
