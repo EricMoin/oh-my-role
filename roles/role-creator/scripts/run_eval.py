@@ -296,6 +296,12 @@ def main():
                     }
                 )
 
+                # spot-check: only run 1 case then break
+                if n_runs == 1 and args.spot_check:
+                    break
+            if n_runs == 1 and args.spot_check:
+                break
+
         results["status"] = "completed"
         results["output_dir"] = output_dir
 
