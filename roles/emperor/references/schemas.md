@@ -210,6 +210,26 @@ Created rate_limiter.go with token-bucket algorithm. All tests pass, diagnostics
 
 ---
 
+## Revision Dispatch (Re-Execution Input)
+
+**Direction**: emperor → jinyiwei → department (closed-loop revise rounds only)
+
+**Purpose**: Re-execute a failed subtask idempotently. The emperor re-dispatches to a NEW jinyiwei session, and the original department session cannot be resumed across the isolation boundary — so the prior work is invisible to the new worker unless the prompt carries it. Without this contract a revision would recreate or duplicate work already done.
+
+Unlike the contracts above, this is an INPUT prompt shape (not a fenced return envelope). A revision dispatch prompt MUST carry:
+
+| Field | Source | Purpose |
+|-------|--------|---------|
+| subtask id + original description | strategy | identifies the unit |
+| prior `### Files Modified` + `### Summary` | the item's previous execution report | tells the worker what already exists |
+| validator note | validate result `items[].note` | what is wrong |
+| fix direction | emperor | the specific correction |
+| revision flag | emperor | explicit "this is a revision — edit in place; do NOT recreate, duplicate, or re-append" |
+
+The worker treats the listed files as existing state: it reads them first, then makes minimal corrective edits. One failed item per dispatch (see `functions/synthesize.md` Step 4b). This is how the closed loop stays idempotent across isolated sessions.
+
+---
+
 ## Field Drift Prevention
 
 **Principle**: This document is the single source of truth for inter-agent contract schemas. All producers reference it. No producer may unilaterally change a contract.
