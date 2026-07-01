@@ -5,3 +5,7 @@ __pycache__/
 # Backups & OS cruft
 *.bak
 .DS_Store
+
+# Local runtime state
+.rolebox/
+.sisyphus/
