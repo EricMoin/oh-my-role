@@ -28,10 +28,10 @@ You are in SYNTHESIS mode. Collect execution reports, validate them against the 
 | Strategy subtask count | 5 maximum (≤4 recommended) | Enforced by the planner (plan.md) |
 | Initial execution dispatches | 1 per subtask (= N) | One jinyiwei dispatch per subtask |
 | Revise rounds | 2 maximum, budget permitting | Revise+validate cycles after initial execution |
-| Re-dispatch per round | 1 batched jinyiwei call | All failed items + dependents in ONE dispatch |
-| Per-parent budget | 8 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + re-dispatch + revalidate |
+| Re-dispatch per round | 1 jinyiwei call PER failed item (+ dependents), dependency-root order | Each failed item is re-dispatched in its own isolated session |
+| Per-parent budget | 8 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + per-item re-dispatches + revalidate |
 
-The per-parent budget is the OUTER hard stop. Because a strategy may carry up to 5 subtasks and each consumes one execution dispatch, revise rounds are bounded by BOTH the 2-round cap AND remaining budget. When the next dispatch would push cumulative dispatches past 8, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
+The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 8`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own session, a wide plan affords fewer total re-dispatches than a narrow one (N=4 leaves room for one item; N=2 leaves room for two). When the next dispatch would push cumulative dispatches past 8, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
 
 ---
 
@@ -107,33 +107,32 @@ The re-dispatch scope = failed items + all dependents (deduplicated).
 
 A dependent of a failed item is also considered failed because its prerequisite did not complete correctly. Include the original subtask descriptions and the validate notes for each item in the re-dispatch scope.
 
-#### 4b. Build Re-Dispatch Prompt
+#### 4b. Re-Dispatch Each Failed Item Individually
 
-For each item in the re-dispatch scope, include:
-- The original subtask description (from strategy)
-- The validate note explaining what is wrong
-- A specific fix direction
+Re-dispatch failed items ONE PER jinyiwei session — never batched. One item per session keeps each fix focused, isolates its verification, and prevents one item's outcome from contaminating another's report (this is the intended design). Order the scope by dependency: lowest `id` first (dependency roots), and re-dispatch a dependent only after its prerequisite's re-dispatch has completed.
 
-Dispatch ALL items in the re-dispatch scope as ONE batch to jinyiwei:
+For EACH item in the re-dispatch scope, dispatch a separate jinyiwei session carrying the revision context (the Revision Dispatch contract in `references/schemas.md`):
 
 ```
-dispatch(subagent="emperor--jinyiwei", prompt="Re-execute failed items with fixes.
+dispatch(subagent="emperor--jinyiwei", prompt="REVISION of subtask {id}.
 
-[For each item in scope:]
-Item {id}: {original description}
-Issue: {validate note}
-Fix direction: address the acceptance criteria gap noted above.", run_in_background=true)
+Original subtask: {original description}
+Already attempted (prior execution report): {the item's prior ### Files Modified + ### Summary}
+Validator finding: {validate note}
+Fix direction: {specific correction addressing the acceptance-criteria gap}
+
+This is a revision, not a first attempt. Edit the existing files in place; do NOT recreate, duplicate, or re-append work already done.", run_in_background=true)
 ```
 
-**Routing rule**: Re-dispatch goes to `emperor--jinyiwei` directly. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
+Increment `emperor_sessions_used` by 1 for EACH item dispatched.
 
-**Budget race**: If the per-parent budget would be exceeded by the re-dispatch (emperor session count + 1 > 8), do not dispatch. Instead, skip to Step 8 and report items as unresolved (budget cap). When budget allows only a subset of the scope, prioritize items with the lowest `id` values (dependency roots), and report the rest as unresolved.
+**Routing rule**: Re-dispatch goes to `emperor--jinyiwei` directly, one call per item. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
+
+**Budget-bounded scope**: Let F = the total number of items in the re-dispatch scope (failed items + their dependents, as defined in 4a). A round costs F re-dispatch sessions + 1 revalidate. Before starting the round, verify `emperor_sessions_used + F + 1 <= 8`. If the full scope does not fit, re-dispatch items in lowest-`id` (dependency-root) order up to `8 - emperor_sessions_used - 1` (reserving one session for the revalidate), and report the remaining items as unresolved (budget cap). NEVER dispatch past 8 — a mid-execution rejection would silently drop items.
 
 #### 4c. Collect Re-Dispatch Results
 
-Before dispatching, verify budget: the re-dispatch batch (1 session) plus its follow-up re-validate (1 session) require 2 remaining sessions. If `emperor_sessions_used + 2 > 8`, skip re-dispatch and go to Step 8 (budget cap).
-
-Wait for the jinyiwei re-dispatch to complete. Collect results via `dispatch_output`. Increment `emperor_sessions_used` by 1 for the re-dispatch batch.
+Wait for ALL re-dispatched items in this round to complete — each sends its own completion notification, one per item. Collect each result via `dispatch_output`. Respect `maxActivePerParent: 2`: at most two item re-dispatches run concurrently; the rest queue. `emperor_sessions_used` was already incremented once per item in 4b, and the 4b budget check already reserved the revalidate session.
 
 #### 4d. Re-Validate
 
@@ -223,3 +222,4 @@ Always emit a ```final_answer fence. This is the only way to satisfy `continue_u
 4. **No loop without final_answer**: Even on partial results, emit the fence.
 5. **DIRECT path always skips validate**: No exception.
 6. **Dependency-aware scope**: Include dependents of failed items in re-dispatch scope.
+7. **Per-item re-dispatch**: Re-dispatch failed items one per jinyiwei session in dependency-root order, never batched. Budget each round as F + 1 (F items + one revalidate); dispatch lowest-`id` first up to budget and report the rest as budget-capped.

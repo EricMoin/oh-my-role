@@ -44,6 +44,8 @@ When the planner returns a strategy marked `risk: high`, the orchestrator stops 
 
 This gate is unconditional. Even in `|auto|` mode, a high-risk strategy still requires user sign-off before dispatch.
 
+Approval is a two-turn handshake: the orchestrator re-prints the full strategy and waits; the next user message is read as an approval response — approve, reject (which cancels any running tasks), or partial ("skip subtask 3", which drops that subtask and its dependents). The orchestrator recovers the pending strategy from its own conversation history, so no external state is needed. Destructiveness discovered at execution time is routed back through this same gate.
+
 Low-risk strategies proceed immediately without confirmation.
 
 ## Closed-loop validation
@@ -53,15 +55,18 @@ After execution completes, the orchestrator validates results against the origin
 1. Collect all execution reports.
 2. Dispatch validation to the validator.
 3. If verdict is `pass`, synthesize the final answer.
-4. If verdict is `revise`, re-dispatch only the failed subtasks directly to the executor (not through the planner or validator). Then re-validate.
+4. If verdict is `revise`, re-dispatch each failed subtask individually — one per executor session, in dependency-root order — directly to the executor (not through the planner or validator). Then re-validate once.
 
 Caps prevent infinite loops:
 
 | Cap | Limit |
 |-----|-------|
-| Strategy subtask count | 5 maximum (≤4 recommended) |
+| Strategy subtask count | 5 maximum (≤4 recommended, ≤3 to re-dispatch more than one failure) |
 | Revise rounds | 2 maximum, budget permitting |
-| Per-parent session budget | 8 (chancellor + N execute + validate + re-dispatches) |
+| Re-dispatch per round | one session per failed item (never batched) |
+| Per-parent session budget | 8 (chancellor + N execute + validate + per-item re-dispatches) |
+
+Because each failed item is re-dispatched in its own isolated session, a revise round costs `F + 1` sessions (F failed items + one revalidate). Wider plans therefore afford fewer re-dispatches — a deliberate trade of breadth for per-item focus. See [model-pool-and-budget.md](references/model-pool-and-budget.md).
 
 Validation only runs on the plan-execute path. Direct answers skip it entirely.
 
@@ -103,7 +108,7 @@ A typical complex request flows like this:
 7. Jinyiwei routes each subtask to the appropriate department (ui, backend, test, etc.). Department executes and returns a structured execution report.
 8. As subtasks complete, emperor dispatches newly-unblocked subtasks until all are done.
 9. Emperor dispatches validation to the validator with all execution reports.
-10. If validation passes, emperor synthesizes a final answer. If it fails, emperor re-dispatches failed subtasks (up to 2 rounds), then synthesizes regardless.
+10. If validation passes, emperor synthesizes a final answer. If it fails, emperor re-dispatches failed subtasks one per session (up to 2 rounds, budget permitting), then synthesizes regardless.
 11. Emperor emits a `final_answer` fence. Always. Even on partial failure.
 
 ## Extension guide
