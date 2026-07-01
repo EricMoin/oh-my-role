@@ -1,11 +1,28 @@
 ---
 name: effort
-description: User effort override that forces a routing decision
+description: User effort override that influences routing between plan-execute and DIRECT paths
 params:
   level: medium
-priority: 10
+  priority: 10
 ---
 
-用户已设 effort 覆盖：**{level}**。规则：`high` → 强制 PLAN_EXECUTE（先取丞相方略，再派锦衣卫，不直接回答）；`low` → 强制 DIRECT（皇帝直接回答，不派发）。
+The user has set an effort override: **{level}**.
 
-冲突说明：若 |plan| 模式同时激活，谋定流程优先 — 本 effort 仅影响是否允许 DIRECT。激活方式：`|effort:high|` / `|effort:low|` / `|effort level=high|`。
+## Routing impact
+
+| Effort level | Routing instruction |
+|---|---|
+| `high` | Force the plan-execute path. Dispatch to the planner subtree for strategy, then to the executor/router for implementation. Do NOT answer directly. |
+| `low` | Prefer the DIRECT path. Answer directly when appropriate. Do NOT dispatch to the planner subtree unless forced by higher-precedence rules below. |
+
+## Precedence order (highest to lowest)
+
+1. **Destructive detection** — ALWAYS overrides effort:low. If the task involves destructive operations, the plan+approval gate is REQUIRED regardless of effort level. effort:low MUST NOT bypass the destructive gate.
+2. **`|plan|` mode** — Forces planning. Still overrides effort:high on non-destructive tasks (planning is still required).
+3. **Effort override** (`|effort:high|` / `|effort:low|`) — influences default routing within the bounds above.
+4. **Default behavior** — medium effort: the orchestrator classifies naturally and routes accordingly.
+
+## Notes
+
+- effort:high on a conceptual question is intentional and allowed. It forces a structured plan-execute path for any request type.
+- Activation syntax: `|effort:high|` / `|effort:low|` / `|effort level=high|`
