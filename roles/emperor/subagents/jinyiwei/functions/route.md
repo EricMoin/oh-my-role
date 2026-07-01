@@ -46,6 +46,8 @@ dispatch(
 
 **CRITICAL: MUST use `run_in_background=true` on every dispatch call.** Background dispatch is required. Do not use synchronous dispatch.
 
+**Revision dispatches (closed-loop revise rounds).** If the incoming prompt is a REVISION (it says "REVISION of subtask N" and includes the prior `### Files Modified` / `### Summary` plus a validator finding), forward that revision context intact to the department worker and instruct it explicitly: the listed files already exist — read them first and edit in place; do NOT recreate, duplicate, or re-append. This preserves idempotency across the isolated re-execution session (see the Revision Dispatch contract in `references/schemas.md`).
+
 ### 3. Collect the Result
 
 Wait for the `<system-reminder>` notification confirming the department worker has finished. Then collect:

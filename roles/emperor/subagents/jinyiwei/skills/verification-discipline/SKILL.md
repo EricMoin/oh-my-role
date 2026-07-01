@@ -20,10 +20,13 @@ After making changes:
 
 ### Research Tasks
 
-1. Use `websearch` and `webfetch` to gather information.
+1. Gather information with the read-only tools your role actually grants. Use `WebFetch` /
+   `websearch` only if they are in your permission set; otherwise use read-only Bash
+   (`curl`, `gh`) plus local `Read`/`Grep`/`Glob`. Do not assume a web tool exists — check
+   what you have.
 2. Keep traces: URLs visited, queries used, key facts extracted.
 3. Cross-reference claims when possible (two sources > one source).
-4. Record: sources consulted, search queries, confidence level of findings.
+4. Record: sources consulted, queries, confidence level of findings.
 
 ### Writing Tasks
 
