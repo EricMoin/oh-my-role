@@ -2,19 +2,37 @@
 name: draft
 description: Research the codebase and produce a structured strategy draft
 produces: draft
-consumes: plan
-gate: artifact_exists(plan)
 continue_until: artifact_exists(draft)
 observe:
   - on: tool_after
     capture_artifact: draft
 ---
 
-You are producing a strategy draft for the Chancellor.
+You are producing a strategy draft.
 
-1. Read the plan artifact (provided by the Chancellor via context)
-2. Investigate relevant code areas using Read, Grep, and Glob
-3. Produce a strategy draft in a ```draft``` fence following the YAML schema (objective, subtasks, risks)
-4. On revision rounds, incorporate the Reviewer's veto notes
+1. Read the plan provided by the planner via the dispatch prompt.
+2. Investigate relevant code areas using Read, Grep, and Glob.
+3. Produce a strategy draft in a ```draft``` fence following the exact YAML schema below.
 
-The draft artifact should contain your complete strategy.
+On revision rounds, the review stage's veto notes are passed to you by the planner via the dispatch prompt. Incorporate those notes and revise your draft.
+
+The draft artifact must follow the canonical strategy schema:
+
+```yaml
+objective: "<one sentence stating the end goal>"
+subtasks:
+  - id: 1
+    description: "<concrete, scoped instruction>"
+    target: "jinyiwei"
+    dependencies: []
+    acceptance: "<verifiable done-condition>"
+risk: "low"
+notes: "<optional context, single string>"
+```
+
+Schema rules:
+- `subtasks[].id`: integer, monotonic from 1 upward
+- `subtasks[].dependencies`: array of integer IDs. Empty `[]` means runnable immediately.
+- `risk`: scalar, `low` or `high`
+- `notes`: optional, single string, not a list
+- Do NOT emit `risks` as a list. Do NOT use short-id strings for `subtasks[].id`.
