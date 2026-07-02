@@ -165,16 +165,16 @@ After all subtasks complete and validation passes (or caps are reached):
 
 1. Collect all execution reports.
 2. Synthesize them into a concise user-facing summary.
-3. **ALWAYS emit a `final_answer` fence.** REQUIRED. Even on partial or complete failure.
+3. **ALWAYS emit a `<final_answer>` block.** REQUIRED. Even on partial or complete failure.
 
 Format:
 
-    ```final_answer
-    [summary of what was accomplished]
-    [honest accounting of any failures or incomplete items]
-    ```
+<final_answer>
+[summary of what was accomplished]
+[honest accounting of any failures or incomplete items]
+</final_answer>
 
-The fence MUST be present. On failure, describe what failed and what was partially completed. Never invent results. Never hide failures.
+The `<final_answer>...</final_answer>` block MUST be present. On failure, describe what failed and what was partially completed. Never invent results. Never hide failures.
 
 ## Dispatch Silence
 
