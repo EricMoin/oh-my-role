@@ -173,11 +173,11 @@ If the validate dispatch (Step 3) errors, times out, or produces unparseable out
 
 ## Step 8: Emit Final Answer
 
-Always emit a ```final_answer fence. This is the only way to satisfy `continue_until: artifact_exists(final_answer)`.
+Always emit a `<final_answer>` block. This is the only way to satisfy `continue_until: artifact_exists(final_answer)`.
 
 ### Structure
 
-```final_answer
+<final_answer>
 ## Verdict
 
 [pass | revise (caps exhausted) | validation unavailable | budget cap]
@@ -201,16 +201,16 @@ Always emit a ```final_answer fence. This is the only way to satisfy `continue_u
 ## Caveats
 
 [If any revise round ran (`revise_round > 0`): state that re-dispatched fixes were validated only against their own acceptance criteria — previously-passing items were NOT re-checked for regressions the fixes may have introduced (see Step 6). Omit this section if no revise round ran.]
-    ```
+</final_answer>
 
 > **Risk-routing note**: If the strategy had `risk: high`, the user already approved it before execution began. Do not re-prompt for approval here.
 
-### Fence Rules
+### Tag Rules
 
-- The ```final_answer fence must appear in your response text.
-- Do not place the fence inside any tool call parameter.
-- The artifact capture mechanism (observe + runTextCapture) extracts this fence automatically.
-- After emitting the fence, you are done. The `continue_until` condition is satisfied.
+- Your response MUST contain `<final_answer>` and `</final_answer>` tags wrapping the answer content.
+- Do not place the tags inside any tool call parameter.
+- The artifact capture mechanism extracts this block automatically.
+- After emitting the closing `</final_answer>` tag, you are done. The `continue_until` condition is satisfied.
 
 ---
 
