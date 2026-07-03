@@ -60,6 +60,7 @@ functions:
   - plan
   - search
   - verify
+  - loop
 permission:
   allow:
     - Read

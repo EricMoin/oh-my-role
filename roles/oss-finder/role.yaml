@@ -58,6 +58,7 @@ functions:
   - compare
   - adopt
   - audit
+  - loop
 permission:
   allow:
     - Read

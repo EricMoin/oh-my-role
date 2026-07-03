@@ -81,6 +81,7 @@ functions:
   - adr
   - review
   - migrate
+  - loop
 permission:
   allow:
     - Read

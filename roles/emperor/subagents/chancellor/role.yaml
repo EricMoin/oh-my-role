@@ -16,6 +16,7 @@ subagents:
 functions:
   - plan
   - orchestrate
+  - loop
 skills:
   - task-decomposition
   - dependency-ordering

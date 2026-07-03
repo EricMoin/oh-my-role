@@ -28,6 +28,7 @@ functions:
   - scaffold
   - verify
   - iterate
+  - loop
 
 skills:
   - role-creator-conventions

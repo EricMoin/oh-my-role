@@ -30,6 +30,7 @@ permission:
 functions:
   - execute
   - report
+  - loop
 skills:
   - test-scope
 opencode_skills:

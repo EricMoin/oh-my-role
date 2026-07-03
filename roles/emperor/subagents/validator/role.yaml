@@ -38,6 +38,7 @@ prompt: |
   references/schemas.md). Emit exactly that schema, nothing else.
 functions:
   - validate
+  - loop
 tools:
   Write: false
   Edit: false

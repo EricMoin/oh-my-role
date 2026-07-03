@@ -29,6 +29,7 @@ permission:
 functions:
   - execute
   - report
+  - loop
 skills:
   - data-scope
 opencode_skills:

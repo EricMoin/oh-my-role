@@ -10,7 +10,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROLES_DIR = REPO_ROOT / "roles"
 REGISTRY_FILE = REPO_ROOT / "registry.yaml"
-BUILTIN_FUNCTIONS = {"plan", "execute"}
+BUILTIN_FUNCTIONS = {"plan", "execute", "loop"}
 VALID_COLLABORATION_TOPOLOGIES = {"pipeline", "review-loop", "star"}
 FLOW_EDGE_RE = re.compile(r"^\s*(\w+(?:-\w+)*)\s*->\s*(\w+(?:-\w+)*)(?:\s*:\s*(.*?))?\s*$")
 SOFTWARE_ARCHITECTURE_ROLE_ID = "software-architecture"

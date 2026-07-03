@@ -6,6 +6,7 @@ prompt: |
 functions:
   - plan
   - execute
+  - loop
 skills:
   - test-skill
 collaboration:

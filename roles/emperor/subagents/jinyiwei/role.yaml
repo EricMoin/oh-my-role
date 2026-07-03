@@ -15,6 +15,7 @@ functions:
   - execute
   - report
   - route
+  - loop
 
 # Skills: scope discipline, verification rigor, and domain routing
 skills:
