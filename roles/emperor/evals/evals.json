@@ -291,11 +291,11 @@
         },
         {
           "id": "revise-rounds-bounded-by-budget",
-          "description": "Revise rounds are bounded by the 8-session per-parent budget: initial execution consumes one session per subtask, so wider plans afford fewer revise rounds",
+          "description": "Revise rounds are bounded by the 20-session per-parent budget: initial execution consumes one session per subtask, so wider plans afford fewer revise rounds",
           "prompt": "Add a feature that touches UI, backend, and database layers with interdependent checks",
           "expectations": [
             { "text": "Counts one emperor session per subtask dispatched — not 1 for the whole initial execution", "type": "classification", "weight": 2 },
-            { "text": "Stops re-dispatching when the next dispatch would exceed the 8-session per-parent budget, with a budget-cap note in final_answer", "type": "boundary", "weight": 2 },
+            { "text": "Stops re-dispatching when the next dispatch would exceed the 20-session per-parent budget, with a budget-cap note in final_answer", "type": "boundary", "weight": 2 },
             { "text": "Does not exceed 2 revise rounds even when budget would otherwise allow more", "type": "boundary", "weight": 1 }
           ],
           "tags": ["closed-loop", "budget", "cap"]
@@ -402,7 +402,7 @@
         {
           "id": "budget-aware-wide-plan-truncation",
           "description": "When a strategy has more runnable subtasks than the per-parent session budget allows, emperor dispatches within budget (lowest-id priority) and reports the rest as budget-capped",
-          "prompt": "Execute a strategy whose subtask count would exceed the 8-session per-parent budget once validation and revise headroom are reserved",
+          "prompt": "Execute a strategy whose subtask count would exceed the 20-session per-parent budget once validation and revise headroom are reserved",
           "expectations": [
             { "text": "Never dispatches past the maxTotalSessionsPerRequest cap — no silent mid-execution drop", "type": "boundary", "weight": 2 },
             { "text": "Dispatches dependency-root (lowest-id) subtasks first when budget cannot cover all", "type": "classification", "weight": 1 },
@@ -442,7 +442,7 @@
           "expectations": [
             { "text": "subtasks[].id are monotonic integers from 1; no string IDs", "type": "capability", "weight": 2 },
             { "text": "risk is a scalar (low|high), never a risks list; no final_notes field", "type": "boundary", "weight": 2 },
-            { "text": "subtasks count is within budget (<= 5, ideally <= 4)", "type": "boundary", "weight": 1 },
+            { "text": "subtasks count is within budget (<= 10, ideally <= 8)", "type": "boundary", "weight": 1 },
             { "text": "every subtask has a tool-verifiable acceptance condition", "type": "capability", "weight": 1 }
           ],
           "tags": ["subagent", "drafter", "schema", "budget", "conformance"]
@@ -628,7 +628,7 @@
           "expectations": [
             { "text": "Re-dispatches each failed item as its own emperor--jinyiwei session, not a single batched call", "type": "classification", "weight": 2 },
             { "text": "Dispatches lowest-id (dependency-root) first and budgets the round as F + 1 sessions (F items + one revalidate)", "type": "boundary", "weight": 2 },
-            { "text": "Never exceeds the per-parent budget of 8; reports any remaining failed items as budget-capped", "type": "boundary", "weight": 1 }
+            { "text": "Never exceeds the per-parent budget of 20; reports any remaining failed items as budget-capped", "type": "boundary", "weight": 1 }
           ],
           "tags": ["closed-loop", "revise", "per-item", "budget"]
         },

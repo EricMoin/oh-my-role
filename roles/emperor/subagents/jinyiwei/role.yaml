@@ -25,8 +25,8 @@ skills:
 
 # Dispatch configuration for department worker routing
 dispatch:
-  maxActivePerParent: 2
-  maxTotalSessionsPerRequest: 8
+  maxActivePerParent: 3
+  maxTotalSessionsPerRequest: 20
 
 # Jinyiwei routes domain work to departments and executes directly otherwise
 tools:

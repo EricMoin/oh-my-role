@@ -83,13 +83,13 @@ The executor/router's dispatch configuration in `role.yaml` enforces concurrency
 
 ```yaml
 dispatch:
-  maxActivePerParent: 2
-  maxTotalSessionsPerRequest: 8
+  maxActivePerParent: 3
+  maxTotalSessionsPerRequest: 20
 ```
 
 | Field | Value | Meaning |
 |-------|-------|---------|
-| `maxActivePerParent` | 2 | At most 2 background department workers running concurrently per executor/router session |
-| `maxTotalSessionsPerRequest` | 8 | Hard per-parent-session cap — each direct parent session (orchestrator, planner, executor/router) gets its own independent ≤8 budget |
+| `maxActivePerParent` | 3 | At most 3 background department workers running concurrently per executor/router session |
+| `maxTotalSessionsPerRequest` | 20 | Hard per-parent-session cap — each direct parent session (orchestrator, planner, executor/router) gets its own independent ≤20 budget |
 
-**Implication for routing:** When routing splits a task into multiple subtasks, the executor/router can dispatch at most 2 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own independent budget, ensuring fair allocation across the request tree. With all six departments active and the `maxTotalSessionsPerRequest: 8` cap now explicitly set, the executor/router has headroom for up to 6 department dispatches plus 2 slots for re-dispatch or execution overhead within a single request.
+**Implication for routing:** When routing splits a task into multiple subtasks, the executor/router can dispatch at most 3 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own independent budget, ensuring fair allocation across the request tree. With all six departments active and the `maxTotalSessionsPerRequest: 20` cap now explicitly set, the executor/router has headroom for up to 6 department dispatches plus 14 slots for re-dispatch or execution overhead within a single request.

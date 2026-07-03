@@ -13,7 +13,7 @@ The planner structures the dependency graph. The orchestrator enacts it at dispa
 
 **Planner (you):** Identify dependencies. Populate each subtask's `dependencies` field in the strategy. The schema (see `references/schemas.md`) defines `subtasks[].dependencies` as an array of subtask IDs that must complete before this one.
 
-**Orchestrator (dispatch layer):** Reads `dependencies[]` at dispatch time. Dispatches depth-0 subtasks (empty `dependencies[]`), bounded by concurrency (`maxActivePerParent`) and the remaining per-parent session budget. For each subsequent subtask, waits until its dependencies complete, then dispatches it. The orchestrator manages concurrency and budget; the planner manages the graph structure and keeps the subtask count within budget (≤5).
+**Orchestrator (dispatch layer):** Reads `dependencies[]` at dispatch time. Dispatches depth-0 subtasks (empty `dependencies[]`), bounded by concurrency (`maxActivePerParent`) and the remaining per-parent session budget. For each subsequent subtask, waits until its dependencies complete, then dispatches it. The orchestrator manages concurrency and budget; the planner manages the graph structure and keeps the subtask count within budget (≤10).
 
 **Constraint:** Do NOT put scheduling logic (retry, timeout, parallelism logic) into the subtask descriptions or dependencies. The orchestrator handles scheduling mechanics. The planner handles dependency structure only.
 

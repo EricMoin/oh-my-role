@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.3.0"
+version: "2.4.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -71,9 +71,9 @@ permission:
 
 # Dispatch configuration for subagent orchestration
 dispatch:
-  maxActivePerParent: 2
+  maxActivePerParent: 3
   maxConcurrent: 5  # Shared across 3 model pools: chancellor sync slot + background sub-agents + jinyiwei margin
   syncPromptTimeoutMs: 600000  # Covers full nested loop across all 3 model pools
   backgroundStaleTimeoutMs: 300000
-  maxTotalSessionsPerRequest: 8
+  maxTotalSessionsPerRequest: 20
   # Counted by direct parent session, not cumulative tree total. The emperor's own session is free (not a spawn).

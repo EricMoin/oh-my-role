@@ -12,6 +12,8 @@ observe:
   - on: tool_after
     tool: dispatch_output
     set_evidence: result_received
+    when_output:
+      not_contains: "still running"
   - on: tool_after
     tool: dispatch_output
     capture_artifact: final_answer
@@ -25,13 +27,13 @@ You are in SYNTHESIS mode. Collect execution reports, validate them against the 
 
 | Cap | Limit | Scope |
 |-----|-------|-------|
-| Strategy subtask count | 5 maximum (≤4 recommended) | Enforced by the planner (plan.md) |
+| Strategy subtask count | 10 maximum (≤8 recommended) | Enforced by the planner (plan.md) |
 | Initial execution dispatches | 1 per subtask (= N) | One jinyiwei dispatch per subtask |
 | Revise rounds | 2 maximum, budget permitting | Revise+validate cycles after initial execution |
 | Re-dispatch per round | 1 jinyiwei call PER failed item (+ dependents), dependency-root order | Each failed item is re-dispatched in its own isolated session |
-| Per-parent budget | 8 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + per-item re-dispatches + revalidate |
+| Per-parent budget | 20 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + per-item re-dispatches + revalidate |
 
-The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 8`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own session, a wide plan affords fewer total re-dispatches than a narrow one (N=4 leaves room for one item; N=2 leaves room for two). When the next dispatch would push cumulative dispatches past 8, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
+The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 20`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own session, a wide plan affords fewer total re-dispatches than a narrow one (N=10 leaves room for re-dispatching a few failed items; N=8 leaves room for more). When the next dispatch would push cumulative dispatches past 20, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
 
 ---
 
@@ -49,11 +51,11 @@ You arrive here after dispatching all subtasks. Determine which path you are on:
 Wait for ALL dispatched jinyiwei tasks to complete. Each sends a completion notification. Use `dispatch_output` for each task ID to retrieve results. Do not proceed until every dispatched task has been collected.
 
 Track:
-- `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 8.
+- `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 20.
 - `revise_round`: 0 (initialize)
 - `all_reports`: aggregated output from all collected reports
 
-> **Budget accounting**: The chancellor caps strategies at 5 dependency-ordered subtasks (see plan.md). The emperor dispatches ONE jinyiwei call per subtask (PROMPT.md #7/#8), so initial execution consumes N sessions — NOT 1. The upcoming validation dispatch and each revise round also consume sessions (see the caps table). Before EVERY subsequent dispatch, verify `emperor_sessions_used + 1 <= 8`; if not, stop and report remaining items as budget-capped (Step 8). The per-parent counter is keyed on dispatches spawned from the emperor; the emperor's own session is not a spawn and is not counted.
+> **Budget accounting**: The chancellor caps strategies at 10 dependency-ordered subtasks (see plan.md). The emperor dispatches ONE jinyiwei call per subtask (PROMPT.md #7/#8), so initial execution consumes N sessions — NOT 1. The upcoming validation dispatch and each revise round also consume sessions (see the caps table). Before EVERY subsequent dispatch, verify `emperor_sessions_used + 1 <= 20`; if not, stop and report remaining items as budget-capped (Step 8). The per-parent counter is keyed on dispatches spawned from the emperor; the emperor's own session is not a spawn and is not counted.
 
 ---
 
@@ -71,7 +73,7 @@ Execution Reports:
 [all collected reports, concatenated]", run_in_background=true)
 ```
 
-This validation dispatch consumes one session — increment `emperor_sessions_used` by 1. If `emperor_sessions_used > 8` after this, do not proceed past collection; go to Step 8 (budget cap).
+This validation dispatch consumes one session — increment `emperor_sessions_used` by 1. If `emperor_sessions_used > 20` after this, do not proceed past collection; go to Step 8 (budget cap).
 
 Collect the verdict with `dispatch_output`. The output contains a ```result fence with:
 
@@ -128,11 +130,11 @@ Increment `emperor_sessions_used` by 1 for EACH item dispatched.
 
 **Routing rule**: Re-dispatch goes to `emperor--jinyiwei` directly, one call per item. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
 
-**Budget-bounded scope**: Let F = the total number of items in the re-dispatch scope (failed items + their dependents, as defined in 4a). A round costs F re-dispatch sessions + 1 revalidate. Before starting the round, verify `emperor_sessions_used + F + 1 <= 8`. If the full scope does not fit, re-dispatch items in lowest-`id` (dependency-root) order up to `8 - emperor_sessions_used - 1` (reserving one session for the revalidate), and report the remaining items as unresolved (budget cap). NEVER dispatch past 8 — a mid-execution rejection would silently drop items.
+**Budget-bounded scope**: Let F = the total number of items in the re-dispatch scope (failed items + their dependents, as defined in 4a). A round costs F re-dispatch sessions + 1 revalidate. Before starting the round, verify `emperor_sessions_used + F + 1 <= 20`. If the full scope does not fit, re-dispatch items in lowest-`id` (dependency-root) order up to `20 - emperor_sessions_used - 1` (reserving one session for the revalidate), and report the remaining items as unresolved (budget cap). NEVER dispatch past 20 — a mid-execution rejection would silently drop items.
 
 #### 4c. Collect Re-Dispatch Results
 
-Wait for ALL re-dispatched items in this round to complete — each sends its own completion notification, one per item. Collect each result via `dispatch_output`. Respect `maxActivePerParent: 2`: at most two item re-dispatches run concurrently; the rest queue. `emperor_sessions_used` was already incremented once per item in 4b, and the 4b budget check already reserved the revalidate session.
+Wait for ALL re-dispatched items in this round to complete — each sends its own completion notification, one per item. Collect each result via `dispatch_output`. Respect `maxActivePerParent: 3`: at most three item re-dispatches run concurrently; the rest queue. `emperor_sessions_used` was already incremented once per item in 4b, and the 4b budget check already reserved the revalidate session.
 
 #### 4d. Re-Validate
 
@@ -148,7 +150,7 @@ The closed loop terminates when ANY of these conditions is met (whichever comes 
 |---|-----------|--------|
 | 1 | `verdict == pass` | Emit final_answer with pass summary |
 | 2 | `revise_round > 2` | Emit final_answer noting revise-round cap exhausted |
-| 3 | `emperor_sessions_used + 1 > 8` before a dispatch | Emit final_answer noting budget cap, list undispatched/unresolved items |
+| 3 | `emperor_sessions_used + 1 > 20` before a dispatch | Emit final_answer noting budget cap, list undispatched/unresolved items |
 | 4 | Subtasks left undispatched during initial execution (budget-capped fan-out) | Emit final_answer listing budget-capped subtasks |
 
 ---
@@ -217,7 +219,7 @@ Always emit a `<final_answer>` block. This is the only way to satisfy `continue_
 ## Guardrails
 
 1. **Re-dispatch target**: Always `emperor--jinyiwei`, never `emperor--chancellor`.
-2. **Caps are hard**: `revise_round > 2` or `emperor_sessions_used + 1 > 8` → terminate immediately.
+2. **Caps are hard**: `revise_round > 2` or `emperor_sessions_used + 1 > 20` → terminate immediately.
 3. **Validate failure is terminal**: Do not retry. Fall through to final_answer.
 4. **No loop without final_answer**: Even on partial results, emit the fence.
 5. **DIRECT path always skips validate**: No exception.

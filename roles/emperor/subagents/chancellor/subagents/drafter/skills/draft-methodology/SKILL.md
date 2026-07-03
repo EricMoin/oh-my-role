@@ -49,10 +49,10 @@ executor/router — do not pre-assign departments in the draft.
 
 ## Subtask Budget (HARD)
 
-A draft MUST NOT exceed **5 subtasks**; aim for **≤ 4**. The orchestrator dispatches
-one execution session per subtask against an 8-session per-parent budget, and
+A draft MUST NOT exceed **10 subtasks**; aim for **≤ 8**. The orchestrator dispatches
+one execution session per subtask against a 20-session per-parent budget, and
 needs headroom for validation and a revise round. If the work seems to need more
-than 5 units, MERGE related steps into coarser subtasks. Fewer, larger subtasks
+than 10 units, MERGE related steps into coarser subtasks. Fewer, larger subtasks
 give each worker more context and keep the plan inside budget. Do not split finely.
 
 ## Risk Classification
@@ -77,7 +77,7 @@ intact, and do NOT introduce unrelated changes. Re-emit the full draft in the
 
 1. Schema: required fields present, forbidden fields (`risks` list, `final_notes`,
    string IDs) absent, correct types.
-2. Budget: `subtasks` count ≤ 5.
+2. Budget: `subtasks` count ≤ 10.
 3. Executability: each description is actionable from its own text.
 4. Verifiability: each acceptance is tool-checkable.
 5. DAG: dependencies valid and acyclic.

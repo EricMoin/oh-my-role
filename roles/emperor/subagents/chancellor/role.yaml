@@ -23,8 +23,8 @@ skills:
 # System-enforces the round-3 convergence cap (orchestrate.md) at the kernel level.
 # Without this, the drafter/reviewer/finalizer loop is bounded only by prompt instructions.
 dispatch:
-  maxActivePerParent: 2
-  maxTotalSessionsPerRequest: 8
+  maxActivePerParent: 3
+  maxTotalSessionsPerRequest: 20
 tools:
   Write: false
   Edit: false

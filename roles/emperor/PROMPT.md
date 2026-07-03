@@ -76,14 +76,14 @@ Force the plan-then-execute path with explicit user approval.
 
 When the planner subtree returns a strategy with multiple subtasks (`subtasks[]`):
 
-1. Read the strategy. Extract the `subtasks` array. The planner caps strategies at 5 subtasks (see plan.md); if a strategy somehow arrives with more, treat the excess as budget-capped.
+1. Read the strategy. Extract the `subtasks` array. The planner caps strategies at 10 subtasks (see plan.md); if a strategy somehow arrives with more, treat the excess as budget-capped.
 2. Identify all subtasks with empty dependencies (`dependencies: []`). These are depth-0, runnable immediately.
-3. Dispatch depth-0 subtasks to the executor/router, bounded by BOTH `maxActivePerParent: 2` (concurrency) AND the remaining per-parent budget (`maxTotalSessionsPerRequest: 8` minus sessions already dispatched from this session).
+3. Dispatch depth-0 subtasks to the executor/router, bounded by BOTH `maxActivePerParent: 3` (concurrency) AND the remaining per-parent budget (`maxTotalSessionsPerRequest: 20` minus sessions already dispatched from this session).
 4. When a subtask completes and returns its execution report, check the remaining subtasks. Any subtask whose dependencies are now all satisfied becomes runnable.
 5. Dispatch newly-runnable subtasks as slots become available, always checking budget first.
 6. Continue until all subtasks are dispatched and complete.
 
-Each subtask dispatch is a SEPARATE call and consumes ONE session against the 8-session per-parent budget: `dispatch(subagent="emperor--jinyiwei", prompt="[subtask description from strategy]", run_in_background=true)`.
+Each subtask dispatch is a SEPARATE call and consumes ONE session against the 20-session per-parent budget: `dispatch(subagent="emperor--jinyiwei", prompt="[subtask description from strategy]", run_in_background=true)`.
 
 **Dependency context passing (REQUIRED).** When dispatching a subtask with non-empty `dependencies`, embed the completed prerequisites' execution reports in the dispatch prompt — at minimum their `### Files Modified` and `### Summary` sections. Subtasks run in isolated sessions and cannot see each other's work; a dependent that is not handed its prerequisites' outputs will re-derive or contradict them.
 
@@ -155,7 +155,7 @@ After all execution reports are collected:
    - Identify failed subtasks from the `items` array (those with `status: revise`), plus their dependents.
    - Re-dispatch each failed item as its OWN executor/router session — one item per dispatch, NEVER batched — in dependency-root (lowest-id) order, directly to `emperor--jinyiwei` (NOT through the planner subtree). Each dispatch carries the revision context: the item's prior execution report, the validator note, and a fix direction. See synthesize.md Step 4b and the Revision Dispatch contract in `references/schemas.md`.
    - Collect all re-dispatched items' results, then re-validate once.
-   - Caps: at most 2 revise rounds. A round of F failed items costs F + 1 sessions (F per-item re-dispatches + 1 revalidate). Never exceed the per-parent budget of 8 — dispatch lowest-id first up to budget, report the rest as budget-capped.
+    - Caps: at most 2 revise rounds. A round of F failed items costs F + 1 sessions (F per-item re-dispatches + 1 revalidate). Never exceed the per-parent budget of 20 — dispatch lowest-id first up to budget, report the rest as budget-capped.
 
 Re-dispatches go directly from orchestrator to executor/router, one per failed item. They NEVER pass through the planner subtree.
 

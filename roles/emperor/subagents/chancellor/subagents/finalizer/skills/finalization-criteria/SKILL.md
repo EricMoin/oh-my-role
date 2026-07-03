@@ -30,7 +30,7 @@ new subtasks, drop approved ones, or re-scope the objective.
 
 1. **Add or remove subtasks** beyond what review approved. The subtask set is
    locked at approval.
-2. **Exceed the subtask budget.** The strategy MUST stay within 5 subtasks (≤4
+2. **Exceed the subtask budget.** The strategy MUST stay within 10 subtasks (≤8
    recommended). If the approved draft already exceeds it, flag this in `notes`
    rather than silently expanding.
 3. **Re-scope the objective.** The `objective` reflects the approved intent.
@@ -52,7 +52,7 @@ Before emitting the `final_strategy` fence, confirm:
 | `subtasks[].acceptance` | Tool-verifiable done-condition |
 | `risk` | Scalar `low` or `high`, never relaxed from the draft |
 | `notes` | Optional single string; use for unresolved concerns |
-| subtask count | ≤ 5 |
+| subtask count | ≤ 10 |
 
 ## Unresolved-Concern Handling
 
