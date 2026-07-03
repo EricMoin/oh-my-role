@@ -61,10 +61,10 @@ Caps prevent infinite loops:
 
 | Cap | Limit |
 |-----|-------|
-| Strategy subtask count | 5 maximum (≤4 recommended, ≤3 to re-dispatch more than one failure) |
+| Strategy subtask count | 10 maximum (≤8 recommended, ≤7 to re-dispatch more than one failure) |
 | Revise rounds | 2 maximum, budget permitting |
 | Re-dispatch per round | one session per failed item (never batched) |
-| Per-parent session budget | 8 (chancellor + N execute + validate + per-item re-dispatches) |
+| Per-parent session budget | 20 (chancellor + N execute + validate + per-item re-dispatches) |
 
 Because each failed item is re-dispatched in its own isolated session, a revise round costs `F + 1` sessions (F failed items + one revalidate). Wider plans therefore afford fewer re-dispatches — a deliberate trade of breadth for per-item focus. See [model-pool-and-budget.md](references/model-pool-and-budget.md).
 
@@ -93,7 +93,7 @@ Three independent pools, each with a 5-slot semaphore. Cross-pool dispatch doesn
 
 The reviewer shares the opus pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
 
-Per-parent session budget is 8 across all subtrees. See [model-pool-and-budget.md](references/model-pool-and-budget.md) for worst-case session tables and cost patterns.
+Per-parent session budget is 20 across all subtrees. See [model-pool-and-budget.md](references/model-pool-and-budget.md) for worst-case session tables and cost patterns.
 
 ## End-to-end sequence
 
@@ -104,7 +104,7 @@ A typical complex request flows like this:
 3. Chancellor runs the three-stage loop: drafter produces a strategy, reviewer audits it (veto sends it back, pass advances it), finalizer locks the final strategy.
 4. Chancellor returns the `final_strategy` to the emperor. Strategy includes `subtasks[]` with dependency ordering and a `risk` field.
 5. If `risk: high`, emperor presents the strategy to the user and waits for approval.
-6. Emperor reads the dependency graph. Dispatches depth-0 subtasks (empty dependencies) to jinyiwei — one dispatch per subtask — bounded by `maxActivePerParent: 2` (concurrency) and remaining per-parent budget. Strategies are capped at 5 subtasks so the fan-out fits the 8-session budget; if budget can't cover all runnable subtasks, emperor dispatches lowest-id first and reports the rest as budget-capped.
+6. Emperor reads the dependency graph. Dispatches depth-0 subtasks (empty dependencies) to jinyiwei — one dispatch per subtask — bounded by `maxActivePerParent: 3` (concurrency) and remaining per-parent budget. Strategies are capped at 10 subtasks so the fan-out fits the 20-session budget; if budget can't cover all runnable subtasks, emperor dispatches lowest-id first and reports the rest as budget-capped.
 7. Jinyiwei routes each subtask to the appropriate department (ui, backend, test, etc.). Department executes and returns a structured execution report.
 8. As subtasks complete, emperor dispatches newly-unblocked subtasks until all are done.
 9. Emperor dispatches validation to the validator with all execution reports.

@@ -2,6 +2,12 @@
 
 All notable changes to the Emperor role. Versioning follows semantic versioning; releases are tracked via git tags.
 
+## [Unreleased]
+
+## [2.4.0] — 2026-07-03
+
+- **Budget caps relaxed to aggressive tier.** Subtask count cap raised from 5 to 10 (recommended ≤8). Per-parent session budget (`maxTotalSessionsPerRequest`) raised from 8 to 20 across emperor, chancellor, and jinyiwei. Concurrency (`maxActivePerParent`) raised from 2 to 3 across all three dispatch parents. This allows emperor to complete larger, more complete tasks without hitting budget walls mid-execution. Updated all worst-case session tables, budget expressions, and verification greps across 14 files.
+
 ## [2.2.0]
 
 ### Added
