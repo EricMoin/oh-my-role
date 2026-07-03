@@ -13,6 +13,7 @@ functions:
   - triage
   - synthesize
   - effort
+  - loop
 
 auto_activate: [triage, synthesize]
 

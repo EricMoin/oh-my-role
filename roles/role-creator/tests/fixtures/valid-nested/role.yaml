@@ -6,6 +6,7 @@ prompt: |
 functions:
   - plan
   - execute
+  - loop
 auto_activate:
   - plan
 locked: true

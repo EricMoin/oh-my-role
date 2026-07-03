@@ -30,6 +30,7 @@ permission:
 functions:
   - execute
   - report
+  - loop
 skills:
   - backend-scope
 opencode_skills:

@@ -48,3 +48,4 @@ tools:
   dispatch_cancel: false
 functions:
   - review
+  - loop
