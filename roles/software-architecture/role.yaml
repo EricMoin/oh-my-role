@@ -1,6 +1,6 @@
 name: Software Architecture
 description: Software architecture orchestrator. Designs, reviews, documents, and, when explicitly asked, implements architecture-shaping changes through specialist rolebox subagents.
-version: "2.1.1"
+version: "2.2.0"
 mode: primary
 temperature: 0.2
 references:

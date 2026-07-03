@@ -3,7 +3,7 @@ description: Default rolebox registry — community AI agent roles for opencode
 url: https://github.com/EricMoin/oh-my-role
 roles:
   software-architecture:
-    version: "2.1.1"
+    version: "2.2.0"
     description: Software architecture orchestrator — coordinates specialist
       subagents for design, review, ADRs, migration plans, and
       architecture-shaping implementation
@@ -19,12 +19,12 @@ roles:
       UX, visual, interaction, artifact, and review gates
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
-    version: "1.1.1"
+    version: "1.2.0"
     description: OSS research and adoption advisor — discovers, source-traces,
       audits, compares, and recommends open-source implementations
     tags: [oss, research, github, architecture, adoption]
   supersearch:
-    version: "1.0.0"
+    version: "1.1.0"
     description: Aggressive evidence-backed search agent — searches local files,
       code, web, GitHub, official docs, sessions, and visual/document sources
     tags: [search, research, web, github, docs, evidence]
@@ -45,13 +45,13 @@ roles:
       source-level platform understanding
     tags: [android, kotlin, jetpack-compose, compose, mobile]
   emperor:
-    version: "2.2.1"
+    version: "2.3.0"
     description:
       "Top-level orchestrator — classifies user requests, dispatches to
       planner/executor subtrees, synthesizes results with closed-loop validation"
     tags: [orchestrator, triage, dispatch, planner, executor, subagents]
   role-creator:
-    version: "0.1.0"
+    version: "0.2.0"
     description: Meta-role that interviews the user, generates a new rolebox
       role (3 templates), and verifies it with a 4-tier mechanism (structural →
       resolution-sim → deploy-health → behavioral eval)
