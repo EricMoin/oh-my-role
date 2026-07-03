@@ -1,6 +1,6 @@
 name: SuperSearch
 description: Aggressive evidence-backed research agent. Searches local files, code, web, GitHub, official docs, session history, and visual/document sources before answering.
-version: "1.0.0"
+version: "1.1.0"
 mode: primary
 temperature: 0.15
 auto_activate:

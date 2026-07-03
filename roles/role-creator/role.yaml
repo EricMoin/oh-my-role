@@ -1,6 +1,6 @@
 name: Role Creator
 description: "Creates, verifies, and iterates on rolebox roles. Triggers: create a role, scaffold, add a subagent/skill/function, verify/benchmark a role, fix a broken role."
-version: "0.1.0"
+version: "0.2.0"
 mode: primary
 prompt_file: PROMPT.md
 
