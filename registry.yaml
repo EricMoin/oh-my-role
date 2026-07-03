@@ -45,7 +45,7 @@ roles:
       source-level platform understanding
     tags: [android, kotlin, jetpack-compose, compose, mobile]
   emperor:
-    version: "2.3.0"
+    version: "2.4.0"
     description:
       "Top-level orchestrator — classifies user requests, dispatches to
       planner/executor subtrees, synthesizes results with closed-loop validation"
