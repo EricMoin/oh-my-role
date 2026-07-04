@@ -7,16 +7,6 @@ produces: "final_answer"
 priority: 20
 continue_until: artifact_exists(final_answer)
 continue_max: 15
-requires_evidence: [result_received]
-observe:
-  - on: tool_after
-    tool: dispatch_output
-    set_evidence: result_received
-    when_output:
-      not_contains: "still running"
-  - on: tool_after
-    tool: dispatch_output
-    capture_artifact: final_answer
 ---
 
 # Synthesize — Closed-Loop Validate with Bounded Re-Dispatch
@@ -47,6 +37,8 @@ You arrive here after dispatching all subtasks. Determine which path you are on:
 ---
 
 ## Step 2: Collect All Execution Reports
+
+**Fire-and-forget: Do NOT poll.** After dispatching jinyiwei tasks (or re-dispatching failed items), do NOT call `dispatch_output` until you receive the `<system-reminder>` notification for each task. The kernel sends notifications automatically when background tasks complete. Calling `dispatch_output` before a notification returns "still running" and wastes a turn.
 
 Wait for ALL dispatched jinyiwei tasks to complete. Each sends a completion notification. Use `dispatch_output` for each task ID to retrieve results. Do not proceed until every dispatched task has been collected.
 

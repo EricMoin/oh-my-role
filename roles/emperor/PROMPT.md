@@ -128,6 +128,8 @@ If the session has grown long and you cannot locate the pending strategy in your
 
 Background tasks complete with a `<system-reminder>` notification.
 
+**Do NOT poll.** Never call `dispatch_output` before receiving the `<system-reminder>` notification for a task. The kernel sends notifications automatically when background tasks complete. Calling `dispatch_output` prematurely returns "still running" and wastes a turn.
+
 For each completed task, call `dispatch_output(task_id="...")` to retrieve the result. Parse the output for the fenced content:
 - Planner subtree results use the ` ```result` fence containing YAML.
 - Executor/router results use the ` ```result` fence containing an execution report.
