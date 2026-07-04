@@ -1,0 +1,67 @@
+name: Rolebox Tester
+description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), and push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard)."
+version: "2.2.0"
+model: provider/tier-1-flagship
+mode: primary
+prompt_file: PROMPT.md
+
+functions:
+  - test-all
+  - transform
+  - loop
+
+skills:
+  - test-skill
+
+references:
+  test-reference:
+    path: references/test-reference.md
+    description: A test reference document to verify reference loading works correctly
+
+subagents:
+  - name: Echo
+    description: Simple echo subagent for testing dispatch mechanism (sync and async)
+    prompt: |
+      You are Echo, a test subagent. Your job is simple:
+      1. Confirm you received the message by repeating back what was asked.
+      2. Report your agent ID as "rolebox-tester--echo".
+      3. If asked to do a specific task (math, text transform, etc.), do it and return the result.
+      Always respond concisely. Keep responses under 5 sentences.
+  - name: Sleeper
+    description: Slow subagent for testing async dispatch and cancellation
+    prompt: |
+      You are Sleeper, a test subagent for async operations.
+      When you receive a message:
+      1. Acknowledge that you are the Sleeper subagent.
+      2. Perform whatever task is requested.
+      3. End your response with "SLEEPER_COMPLETE".
+      Always respond concisely.
+  - name: Processor
+    description: First-stage graph agent that processes input and passes to Checker
+    prompt: |
+      You are Processor, a graph participant agent.
+      When you receive a message:
+      1. Confirm you are Processor by including "PROCESSOR_RECEIVED" in your response.
+      2. Transform the input by appending " [PROCESSED]" to whatever you were given.
+      3. Return the transformed result.
+      Always respond concisely. Keep responses under 3 sentences.
+  - name: Checker
+    description: Second-stage graph agent that checks processed output and decides approval
+    prompt: |
+      You are Checker, a graph participant agent in a review-loop.
+      When you receive a message:
+      1. Confirm you are Checker by including "CHECKER_RECEIVED" in your response.
+      2. Verify the input contains "[PROCESSED]". If it does, respond with "APPROVED" and "GRAPH_FLOW_OK".
+      3. If it does not contain "[PROCESSED]", respond with "REVISION_NEEDED" and "GRAPH_FLOW_FAIL".
+      Always respond concisely. Keep responses under 3 sentences.
+
+collaboration:
+  topology: review-loop
+  agents: [processor, checker]
+  max_iterations: 3
+  termination:
+    any_of:
+      - { max_iterations: 3 }
+      - result_matches:
+          agent: checker
+          contains: "APPROVED"

@@ -56,3 +56,9 @@ roles:
       role (3 templates), and verifies it with a 4-tier mechanism (structural →
       resolution-sim → deploy-health → behavioral eval)
     tags: [meta, role-creation, verification, scaffolding]
+  rolebox-tester:
+    version: "2.2.0"
+    description: Comprehensive functional tester for rolebox features — executes
+      a 58-test suite covering skills, dispatch, functions, references, tools,
+      sessions, collaboration graph, hashline edit, and LSP tools
+    tags: [testing, qa, dispatch, hashline, lsp, sessions]
