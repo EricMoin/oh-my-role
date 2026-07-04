@@ -2,7 +2,6 @@
 name: route
 description: Route subtasks by domain to specialist department workers via background dispatch, collect results, and format for orchestrator handoff
 priority: 15
-requires_evidence: [dispatch_output]
 continue_until: artifact_exists(result)
 continue_max: 10
 ---
@@ -49,6 +48,8 @@ dispatch(
 **Revision dispatches (closed-loop revise rounds).** If the incoming prompt is a REVISION (it says "REVISION of subtask N" and includes the prior `### Files Modified` / `### Summary` plus a validator finding), forward that revision context intact to the department worker and instruct it explicitly: the listed files already exist — read them first and edit in place; do NOT recreate, duplicate, or re-append. This preserves idempotency across the isolated re-execution session (see the Revision Dispatch contract in `references/schemas.md`).
 
 ### 3. Collect the Result
+
+**Fire-and-forget: Do NOT poll.** After dispatching a department worker, do NOT call `dispatch_output` until you receive the `<system-reminder>` notification confirming the task completed. The kernel sends the notification automatically. Calling `dispatch_output` before the notification returns "still running" and wastes a turn.
 
 Wait for the `<system-reminder>` notification confirming the department worker has finished. Then collect:
 
