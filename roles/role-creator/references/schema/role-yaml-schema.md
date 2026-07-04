@@ -19,7 +19,7 @@ This is a field DICTIONARY. Validation rules live in `validation-catalog.md`.
 | `description` | `string` | NO (strongly recommended) | `""` | — | Brief description of the role's purpose. |
 | `prompt` | `string` | YES (xor `prompt_file`) | — | — | Inline system prompt text. Ignored if `prompt_file` is set. |
 | `prompt_file` | `string` | NO (xor `prompt`) | — | — | Path to external prompt file, resolved relative to role directory. |
-| `model` | `string` | NO | (system default) | YES | LLM model identifier (e.g. `"claude-sonnet-4-20250514"`). |
+| `model` | `string` | NO | (system default) | YES | LLM model identifier (e.g. `"provider/tier-1-flagship"`). |
 | `mode` | `"primary" \| "subagent" \| "all"` | NO | `"primary"` | NO | Determines when the role is active. |
 | `color` | `string` | NO | — | YES | Display color for the role in terminal/UI. |
 | `variant` | `string` | NO | — | YES | Model variant selector. |

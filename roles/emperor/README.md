@@ -22,18 +22,18 @@ The orchestrator never touches implementation. It reads, it routes, it summarize
 
 ```
 emperor (tier-1-flagship)
-├── chancellor [planner] (pro-max)
-│   ├── drafter (pro-max)       — produces strategy draft
+├── chancellor [planner] (tier-2-reasoning)
+│   ├── drafter (tier-2-reasoning)       — produces strategy draft
 │   ├── reviewer (tier-1-flagship)     — audits draft, veto or pass
-│   └── finalizer (pro-max)     — produces final_strategy
-├── validator (pro-max)         — judges execution reports against acceptance criteria
-└── jinyiwei [executor/router] (flash)
-    ├── ui (pro-max)            — frontend, components, styling
-    ├── backend (pro-max)       — API, services, server logic
-    ├── test (pro-max)          — tests, mocking, coverage
-    ├── data (pro-max)          — schema, migrations, queries
-    ├── docs (pro-max)          — documentation, guides
-    └── quality (pro-max)       — lint, format, static analysis
+│   └── finalizer (tier-2-reasoning)     — produces final_strategy
+├── validator (tier-2-reasoning)         — judges execution reports against acceptance criteria
+└── jinyiwei [executor/router] (tier-3-fast)
+    ├── ui (tier-2-reasoning)            — frontend, components, styling
+    ├── backend (tier-2-reasoning)       — API, services, server logic
+    ├── test (tier-2-reasoning)          — tests, mocking, coverage
+    ├── data (tier-2-reasoning)          — schema, migrations, queries
+    ├── docs (tier-2-reasoning)          — documentation, guides
+    └── quality (tier-2-reasoning)       — lint, format, static analysis
 ```
 
 The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, up to 3 rounds), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator is a dedicated read-only judge: after execution it compares each subtask's report against the strategy's acceptance criteria and returns a per-item pass/revise verdict.
@@ -91,7 +91,7 @@ Three independent pools, each with a 5-slot semaphore. Cross-pool dispatch doesn
 | tier-2-reasoning | `provider/tier-2-reasoning` | Chancellor, Drafter, Finalizer, Validator, UI, Backend, Test, Data, Docs, Quality |
 | tier-3-fast | `provider/tier-3-fast` | Jinyiwei |
 
-The reviewer shares the opus pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
+The reviewer shares the tier-1-flagship pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
 
 Per-parent session budget is 20 across all subtrees. See [model-pool-and-budget.md](references/model-pool-and-budget.md) for worst-case session tables and cost patterns.
 

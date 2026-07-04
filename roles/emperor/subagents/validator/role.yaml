@@ -1,8 +1,8 @@
 name: Validator
 description: "Validation stage — compares execution reports against the strategy's acceptance criteria and emits a per-item pass/revise verdict. Never dispatches, never edits files."
-# Model: tier-2-reasoning (pro-max pool). Validation is a read-only reasoning
-# task; it does not need the opus reviewer. Keeping the validator in the pro-max
-# pool means the closed-loop validate step never consumes the opus pool.
+# Model: tier-2-reasoning. Validation is a read-only reasoning
+# task; it does not need the tier-1-flagship reviewer. Keeping the validator in the tier-2-reasoning
+# pool means the closed-loop validate step never consumes the tier-1-flagship pool.
 model: provider/tier-2-reasoning
 temperature: 0.2
 # validate is the only function and auto-activates so the dispatched session

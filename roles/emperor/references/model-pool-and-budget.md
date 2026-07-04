@@ -25,13 +25,13 @@ Three independent model pools serve the emperor tree. Each pool has an independe
 
 ### Pool Membership Notes
 
-- **tier-1-flagship pool**: Emperor and Reviewer share this pool. The emperor is idle while reviewer runs (emperor dispatches chancellor, chancellor dispatches reviewer), so contention is rare. When the emperor awaits chancellor results, the opus slot is fully available for reviewer.
-- **tier-2-reasoning pool**: All strategy, validation, and execution agents (chancellor subtree, the validator, plus all six jinyiwei departments). At most 3 concurrent per parent (`maxActivePerParent: 3`), so pro-max dispatch never exceeds 3 concurrent from a given parent — well within the 5-slot semaphore.
-- **tier-3-fast pool**: Jinyiwei alone, used for domain routing and simple execution. Flash is cheap and fast; the pool exists so jinyiwei sessions never compete with pro-max strategy work.
+- **tier-1-flagship pool**: Emperor and Reviewer share this pool. The emperor is idle while reviewer runs (emperor dispatches chancellor, chancellor dispatches reviewer), so contention is rare. When the emperor awaits chancellor results, the tier-1-flagship slot is fully available for reviewer.
+- **tier-2-reasoning pool**: All strategy, validation, and execution agents (chancellor subtree, the validator, plus all six jinyiwei departments). At most 3 concurrent per parent (`maxActivePerParent: 3`), so tier-2-reasoning dispatch never exceeds 3 concurrent from a given parent — well within the 5-slot semaphore.
+- **tier-3-fast pool**: Jinyiwei alone, used for domain routing and simple execution. tier-3-fast is cheap and fast; the pool exists so jinyiwei sessions never compete with tier-2-reasoning strategy work.
 
-## Reviewer on Opus Pool — Rationale
+## Reviewer on tier-1-flagship Pool — Rationale
 
-### Why Reviewer Runs on Opus
+### Why Reviewer Runs on tier-1-flagship
 
 The reviewer runs on `tier-1-flagship`, a distinct and stronger model than the `tier-2-reasoning` drafter it audits (see `subagents/chancellor/subagents/reviewer/role.yaml`). A meaningful veto requires an independent model that can catch flaws the drafter's own model would miss — an audit not limited by the drafter's model ceiling.
 
@@ -39,15 +39,15 @@ The reviewer runs on `tier-1-flagship`, a distinct and stronger model than the `
 
 Tier-1-Flagship is more expensive per token than tier-2-reasoning. However:
 
-- Reviewer runs typically 1-3 rounds within the chancellor convergence loop. Closed-loop validation is handled by the separate Validator (pro-max pool), so it does NOT consume the opus pool. The total reviewer token spend per request is bounded and deterministic.
-- While reviewer occupies an opus slot, the emperor is idle (waiting for chancellor to return). No additional opus concurrency is consumed.
-- Opus pool concurrency stays at or below 2 (emperor + reviewer), safe within the 5-slot semaphore.
+- Reviewer runs typically 1-3 rounds within the chancellor convergence loop. Closed-loop validation is handled by the separate Validator (tier-2-reasoning pool), so it does NOT consume the tier-1-flagship pool. The total reviewer token spend per request is bounded and deterministic.
+- While reviewer occupies a tier-1-flagship slot, the emperor is idle (waiting for chancellor to return). No additional tier-1-flagship concurrency is consumed.
+- tier-1-flagship pool concurrency stays at or below 2 (emperor + reviewer), safe within the 5-slot semaphore.
 - The review-round procedural cap (at most 3 rounds) remains unchanged.
 
 ### Budget Safety
 
 - Chancellor convergence loop: at most 3 review rounds (procedural cap), each consuming one reviewer session.
-- Closed-loop validate: at most 2 revise rounds, each with one Validator call. The Validator runs on the pro-max pool and never invokes the reviewer.
+- Closed-loop validate: at most 2 revise rounds, each with one Validator call. The Validator runs on the tier-2-reasoning pool and never invokes the reviewer.
 - Worst-case reviewer sessions per request: 3 (chancellor loop only) — the closed-loop validate step does not use the reviewer. All within the emperor's per-parent budget of 20.
 
 ## Closed-Loop Validate Budget
