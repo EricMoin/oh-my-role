@@ -1,6 +1,6 @@
 name: Rolebox Tester
-description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), and push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard)."
-version: "2.2.0"
+description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), and push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard). and memory tools (write, recall, list, update), memory injection, and |memory| function definition."
+version: "2.3.0"
 model: provider/tier-1-flagship
 mode: primary
 prompt_file: PROMPT.md
@@ -9,6 +9,7 @@ functions:
   - test-all
   - transform
   - loop
+  - memory
 
 skills:
   - test-skill
@@ -65,3 +66,9 @@ collaboration:
       - result_matches:
           agent: checker
           contains: "APPROVED"
+
+memory:
+  inject: true
+  max_inject: 10
+  min_relevance: medium
+  scope: both
