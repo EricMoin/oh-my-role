@@ -1,11 +1,11 @@
 ---
-description: Frozen validation contract for rolebox 0.12.0 — the definitive rule source for all Tier 1/2 validation code
-rolebox_version: 0.12.0
+description: Frozen validation contract for rolebox 0.20.0 — the definitive rule source for all Tier 1/2 validation code
+rolebox_version: 0.20.0
 ---
 
 # Validation Catalog
 
-This document defines every validation rule enforced by rolebox 0.12.0. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
+This document defines every validation rule enforced by rolebox 0.20.0. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
 
 ---
 

@@ -474,7 +474,7 @@ def validate_role(role_dir):
     role_id = role_path.name
     role_yaml_path = role_path / 'role.yaml'
 
-    version = load_catalog_version(str(CATALOG_PATH)) or '0.12.0'
+    version = load_catalog_version(str(CATALOG_PATH)) or '0.20.0'
 
     tier1, data = _run_tier1(role_yaml_path, role_id)
 

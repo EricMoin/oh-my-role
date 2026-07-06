@@ -1,6 +1,6 @@
 ---
 description: Complete field reference dictionary for role.yaml (RoleConfig) and SubAgentConfig types
-rolebox_version: 0.12.0
+rolebox_version: 0.20.0
 ---
 
 # role.yaml Field Reference
