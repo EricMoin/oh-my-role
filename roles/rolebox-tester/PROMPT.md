@@ -514,7 +514,7 @@ hashline_edit(
 Call `lsp_diagnostics` on the types file to verify diagnostic retrieval works.
 
 ```
-lsp_diagnostics(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_diagnostics(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: The tool returns without error. Result is either a diagnostics list or the message "No diagnostics found." Both are acceptable.
@@ -526,7 +526,7 @@ lsp_diagnostics(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_goto_definition` at a position where the `Position` type is imported from `types.ts`.
 
 ```
-lsp_goto_definition(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_goto_definition(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns one or more location results (file URIs with line/column ranges) or "No results found." without error. The test passes as long as no exception is thrown.
@@ -607,7 +607,7 @@ dispatch(subagent="rolebox-tester--echo", prompt="Reply with the exact phrase: S
 Call `lsp_goto_type_definition` at the same position as Test 31.
 
 ```
-lsp_goto_type_definition(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_goto_type_definition(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns without error. The response may be a location, "not supported", or "no results found." Any of these is acceptable — the test verifies the tool is callable.
@@ -619,7 +619,7 @@ lsp_goto_type_definition(filePath="/path/to/rolebox/src/lsp/position.ts", line=1
 Call `lsp_find_references` at the top of `position.ts` where the `Position` type is used.
 
 ```
-lsp_find_references(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_find_references(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns references list or "No results found." without error.
@@ -631,7 +631,7 @@ lsp_find_references(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, cha
 Call `lsp_document_highlights` to find all occurrences of a symbol in the current document.
 
 ```
-lsp_document_highlights(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_document_highlights(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns highlights or "No results found." without error.
@@ -643,7 +643,7 @@ lsp_document_highlights(filePath="/path/to/rolebox/src/lsp/position.ts", line=1,
 Call `lsp_document_symbols` on the types file to retrieve all exported interfaces, enums, and types.
 
 ```
-lsp_document_symbols(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_document_symbols(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns a symbol tree/list (functions, interfaces, enums, etc.) without error.
@@ -667,7 +667,7 @@ lsp_workspace_symbols(query="LspClient")
 Call `lsp_hover` at the `Position` import in `position.ts` to get type documentation.
 
 ```
-lsp_hover(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_hover(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns hover info (type signature, documentation) or "No hover information available." without error.
@@ -679,7 +679,7 @@ lsp_hover(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
 Call `lsp_signature_help` on the `client-manager.ts` file, targeting a method call position.
 
 ```
-lsp_signature_help(filePath="/path/to/rolebox/src/lsp/client-manager.ts", line=0, character=0)
+lsp_signature_help(filePath="/path/to/workspace/src/lsp/client-manager.ts", line=0, character=0)
 ```
 
 **Pass criteria**: Returns without error (signature info or "No signature help available.").
@@ -691,7 +691,7 @@ lsp_signature_help(filePath="/path/to/rolebox/src/lsp/client-manager.ts", line=0
 Call `lsp_completion` to get code completion suggestions at the top of `position.ts`.
 
 ```
-lsp_completion(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=25)
+lsp_completion(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=25)
 ```
 
 **Pass criteria**: Returns completion items or "No completions available." without error.
@@ -703,7 +703,7 @@ lsp_completion(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, characte
 Call `lsp_prepare_rename` to check if a symbol at a given position can be renamed.
 
 ```
-lsp_prepare_rename(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_prepare_rename(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns without error (rename range/placeholder or "not supported" message).
@@ -715,7 +715,7 @@ lsp_prepare_rename(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, char
 Call `lsp_code_actions` on a range in `types.ts` to see what refactoring actions are available.
 
 ```
-lsp_code_actions(filePath="/path/to/rolebox/src/lsp/types.ts", startLine=0, startChar=0, endLine=5, endChar=0)
+lsp_code_actions(filePath="/path/to/workspace/src/lsp/types.ts", startLine=0, startChar=0, endLine=5, endChar=0)
 ```
 
 **Pass criteria**: Returns code actions list or "No code actions available." without error.
@@ -727,7 +727,7 @@ lsp_code_actions(filePath="/path/to/rolebox/src/lsp/types.ts", startLine=0, star
 Call `lsp_folding_ranges` to get foldable region boundaries in `types.ts`.
 
 ```
-lsp_folding_ranges(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_folding_ranges(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns folding ranges (start/end line pairs) or "No folding ranges found." without error.
@@ -739,7 +739,7 @@ lsp_folding_ranges(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_selection_ranges` with a position list at the top of the file.
 
 ```
-lsp_selection_ranges(filePath="/path/to/rolebox/src/lsp/types.ts", positions=[{line:0, character:0}])
+lsp_selection_ranges(filePath="/path/to/workspace/src/lsp/types.ts", positions=[{line:0, character:0}])
 ```
 
 **Pass criteria**: Returns selection ranges or "No selection ranges found." without error.
@@ -751,7 +751,7 @@ lsp_selection_ranges(filePath="/path/to/rolebox/src/lsp/types.ts", positions=[{l
 Call `lsp_semantic_tokens` to get token coloring metadata for `types.ts`.
 
 ```
-lsp_semantic_tokens(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_semantic_tokens(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns semantic tokens (flat uint32 array) or "No semantic tokens available." without error.
@@ -763,7 +763,7 @@ lsp_semantic_tokens(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_code_lens` to retrieve run/debug/test lenses embedded in `types.ts`.
 
 ```
-lsp_code_lens(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_code_lens(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns code lens items or "No code lens available." without error.
@@ -775,7 +775,7 @@ lsp_code_lens(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_inlay_hints` to get parameter name hints and type annotations.
 
 ```
-lsp_inlay_hints(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_inlay_hints(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns inlay hints or "No inlay hints available." without error.
@@ -787,7 +787,7 @@ lsp_inlay_hints(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_document_links` to find hyperlinks embedded in `types.ts`.
 
 ```
-lsp_document_links(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_document_links(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns document links (URL targets with ranges) or "No document links found." without error.
@@ -799,7 +799,7 @@ lsp_document_links(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_document_colors` to find color references in `types.ts`.
 
 ```
-lsp_document_colors(filePath="/path/to/rolebox/src/lsp/types.ts")
+lsp_document_colors(filePath="/path/to/workspace/src/lsp/types.ts")
 ```
 
 **Pass criteria**: Returns color info (RGBA values with ranges) or "No colors found." without error.
@@ -811,7 +811,7 @@ lsp_document_colors(filePath="/path/to/rolebox/src/lsp/types.ts")
 Call `lsp_goto_implementation` at an interface definition in `types.ts`.
 
 ```
-lsp_goto_implementation(filePath="/path/to/rolebox/src/lsp/types.ts", line=6, character=10)
+lsp_goto_implementation(filePath="/path/to/workspace/src/lsp/types.ts", line=6, character=10)
 ```
 
 **Pass criteria**: Returns without error (location(s) or "not supported" or "no results").
@@ -823,7 +823,7 @@ lsp_goto_implementation(filePath="/path/to/rolebox/src/lsp/types.ts", line=6, ch
 Call `lsp_goto_declaration` at the `Position` import in `position.ts`.
 
 ```
-lsp_goto_declaration(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, character=20)
+lsp_goto_declaration(filePath="/path/to/workspace/src/lsp/position.ts", line=1, character=20)
 ```
 
 **Pass criteria**: Returns without error (location(s) or "not supported" or "no results").
@@ -835,7 +835,7 @@ lsp_goto_declaration(filePath="/path/to/rolebox/src/lsp/position.ts", line=1, ch
 Call `lsp_type_hierarchy_supertypes` at an interface in `types.ts` to find parent types.
 
 ```
-lsp_type_hierarchy_supertypes(filePath="/path/to/rolebox/src/lsp/types.ts", line=6, character=10)
+lsp_type_hierarchy_supertypes(filePath="/path/to/workspace/src/lsp/types.ts", line=6, character=10)
 ```
 
 **Pass criteria**: Returns without error (supertypes list or "not supported").
@@ -847,7 +847,7 @@ lsp_type_hierarchy_supertypes(filePath="/path/to/rolebox/src/lsp/types.ts", line
 Call `lsp_prepare_call_hierarchy` at a method in `client-manager.ts`.
 
 ```
-lsp_prepare_call_hierarchy(filePath="/path/to/rolebox/src/lsp/client-manager.ts", line=15, character=10)
+lsp_prepare_call_hierarchy(filePath="/path/to/workspace/src/lsp/client-manager.ts", line=15, character=10)
 ```
 
 **Pass criteria**: Returns without error (call hierarchy items or "not supported").
@@ -914,6 +914,103 @@ dispatch_output(task_id="<task_id from step 1>")
 4. The **Step 3** `dispatch_output` call SUCCEEDS and the output contains "SLOW_DONE_OK" — proving the task completed normally and the earlier error did not corrupt the task lifecycle.
 
 **Evidence**: Step 2 produces an error containing "still running" and "system-reminder", while Step 3 retrieves the completed result. The error in Step 2 must be a thrown error (the tool call itself fails), not a string return from a successful tool call.
+
+---
+
+### Test 59: Memory Write Tool
+
+Call `memory_write` to create a new memory entry:
+
+```
+memory_write(title="Test Memory Entry", content="This is a test memory created by rolebox-tester to verify the memory_write tool works correctly.", category="note", scope="workspace", tags=["test", "memory"], relevance="medium")
+```
+
+**Pass criteria**: The tool returns without error and the response contains "Memory written" and a non-empty ID.
+
+---
+
+### Test 60: Memory Recall Tool
+
+Call `memory_recall` to search for the memory written in Test 59:
+
+```
+memory_recall(query="test memory", scope="workspace", limit=5)
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The results contain the entry from Test 59 (title "Test Memory Entry" or content containing "test memory").
+3. The result includes the ID, title, category, and relevance fields.
+
+---
+
+### Test 61: Memory List Tool
+
+Call `memory_list` to list all memories:
+
+```
+memory_list(scope="both", limit=20, sort="recent")
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The list includes at least one entry (the one written in Test 59).
+3. Each entry shows title, category, relevance, and updated timestamp.
+
+---
+
+### Test 62: Memory Update Tool
+
+**Step 1**: Call `memory_recall` to get the ID of the memory from Test 59:
+
+```
+memory_recall(query="test memory", scope="workspace", limit=1)
+```
+
+**Step 2**: Call `memory_update` with the ID from Step 1 to change the title:
+
+```
+memory_update(id="<id from step 1>", title="Updated Test Memory Entry", relevance="high")
+```
+
+**Step 3**: Call `memory_recall` again to verify the update:
+
+```
+memory_recall(query="updated test memory", scope="workspace", limit=5)
+```
+
+**Pass criteria (all must be true)**:
+1. Step 2 returns without error and contains "updated".
+2. Step 3 results contain the updated title "Updated Test Memory Entry".
+3. The relevance is now "high".
+
+---
+
+### Test 63: Memory Injection Block
+
+This test verifies that the `<available_memory>` block is injected into the system prompt.
+
+Check your system prompt for an `<available_memory>` block. The block should contain at least one `<memory>` child element with the entry from Test 59 (or Test 62's updated version).
+
+**Pass criteria (all must be true)**:
+1. The system prompt contains `<available_memory>` tags.
+2. The block contains at least one `<memory>` child.
+3. Each `<memory>` child has `<id>`, `<title>`, `<category>`, `<relevance>`, and `<updated>` sub-elements.
+4. The block contains the instruction text mentioning `memory_recall`.
+
+---
+
+### Test 64: Memory Function Definition
+
+Verify that the `|memory|` function is available in the available functions list.
+
+Check your available functions list (the `<available_functions>` block in your system prompt) for a function named `memory` with `params: { scope: all }`.
+
+**Pass criteria (all must be true)**:
+1. The `memory` function appears in the available functions list.
+2. The function description mentions memory consolidation or session review.
+3. The function has a `scope` parameter with default value "all".
+4. This proves the built-in `memory` function from `functions/memory.md` was discovered and loaded.
 
 ---
 
@@ -985,15 +1082,146 @@ After all tests complete, produce a summary table:
 ║ 57. LSP Restart Server            │ PASS/SKIP    ║
 ║ 58. Dispatch Output — Running     │ PASS/FAIL    ║
 ║     Task Error Guard              │              ║
+║ 59. Memory Write Tool              │ PASS/FAIL    ║
+║ 60. Memory Recall Tool             │ PASS/FAIL    ║
+║ 61. Memory List Tool              │ PASS/FAIL    ║
+║ 62. Memory Update Tool             │ PASS/FAIL    ║
+║ 63. Memory Injection Block         │ PASS/FAIL    ║
+║ 64. Memory Function Definition    │ PASS/FAIL    ║
 ╠═══════════════════════════════════╪══════════════╣
-║ TOTAL                             │ X/58 PASS    ║
+║ TOTAL                             │ X/64 PASS    ║
+╚══════════════════════════════════════════════════╝
+```
+
+### Test 65: TUI Visibility — Parallel Background Dispatch
+
+This test verifies that the TUI sidebar shows live dispatch activity. It launches multiple parallel background tasks that take long enough to be visible in the 3-second TUI refresh window.
+
+**Step 1**: Dispatch THREE background tasks in parallel to different subagents. Each task should take 10+ seconds to complete:
+
+```
+dispatch(subagent="rolebox-tester--sleeper", prompt="Count from 1 to 20, one per line, then reply with TUI_TASK_ALPHA_OK", run_in_background=true)
+dispatch(subagent="rolebox-tester--echo", prompt="List 15 common programming languages, one per line, then reply with TUI_TASK_BRAVO_OK", run_in_background=true)
+dispatch(subagent="rolebox-tester--processor", prompt="Write a 200-word essay about why testing matters. End with TUI_TASK_CHARLIE_OK", run_in_background=true)
+```
+
+**Step 2**: Before collecting any results, wait 5 seconds (the TUI refreshes every 3s). During this window the TUI sidebar should show:
+- `▸ ACTIVE` health state
+- Three running dispatch rows with agent names and elapsed time
+
+**Step 3**: Wait for all three `<system-reminder>` completion notifications, then collect results:
+
+```
+dispatch_output(task_id="<task_id_alpha>")
+dispatch_output(task_id="<task_id_bravo>")
+dispatch_output(task_id="<task_id_charlie>")
+```
+
+**Pass criteria**:
+1. Three background tasks were dispatched successfully (3 task IDs returned).
+2. During the waiting window, the TUI sidebar (if visible) showed running tasks.
+3. All three tasks completed and their outputs contain the respective OK markers.
+
+---
+
+### Test 66: TUI Visibility — Collaboration Graph Activity
+
+This test verifies that the TUI sidebar shows graph execution activity when the collaboration graph is active.
+
+**Step 1**: Dispatch the Processor subagent as a background task (so the graph state persists long enough for the TUI to show it):
+
+```
+dispatch(subagent="rolebox-tester--processor", prompt="Process this payload: GRAPH_TUI_TEST. Append [PROCESSED] and write a detailed 200-word analysis. End with GRAPH_TUI_PROCESSOR_OK", run_in_background=true)
+```
+
+**Step 2**: While that task is running, the graph state file should show an active session. Wait 5 seconds for the TUI to refresh.
+
+**Step 3**: After the Processor task completes, dispatch the Checker as a background task:
+
+```
+dispatch(subagent="rolebox-tester--checker", prompt="Review the following: GRAPH_TUI_TEST [PROCESSED]. Verify it contains [PROCESSED]. If yes, reply APPROVED and GRAPH_TUI_CHECKER_OK", run_in_background=true)
+```
+
+**Step 4**: Wait for the Checker's `<system-reminder>`, then collect both results.
+
+**Pass criteria**:
+1. Both dispatches returned task IDs.
+2. The Processor's output contains "GRAPH_TUI_PROCESSOR_OK".
+3. The Checker's output contains "APPROVED" and "GRAPH_TUI_CHECKER_OK".
+4. During execution, the TUI sidebar (if visible) showed the dispatch activity.
+
+---
+
+### Test 67: TUI Visibility — Loop Execution
+
+This test verifies that the TUI sidebar shows loop round progress when a loop is executing.
+
+**Step 1**: Activate the loop function and execute a 3-round loop with a simple task:
+
+```
+|loop:3| Write a short 3-line poem about testing. Each round should produce a different poem.
+```
+
+**Step 2**: The loop system will dispatch 3 sequential worker sessions. Each round's dispatch creates state that the TUI sidebar should show:
+- Loop progress bar (1/3, 2/3, 3/3)
+- Running dispatch row for the active worker
+
+**Step 3**: Wait for all 3 rounds to complete. The loop orchestrator will produce a summary.
+
+**Pass criteria**:
+1. The loop function was activated (check for `<active_functions>` containing "loop").
+2. At least 3 worker sessions were dispatched (one per round).
+3. The loop completed without error.
+4. A summary of the 3 rounds was produced.
+
+---
+
+### Test 68: TUI Visibility — Error State
+
+This test verifies that the TUI sidebar shows error states when dispatched tasks fail.
+
+**Step 1**: Dispatch a background task to an agent that will fail. Use a non-existent subagent name to trigger a dispatch error:
+
+```
+dispatch(subagent="rolebox-tester--nonexistent", prompt="This should fail because the subagent does not exist", run_in_background=true)
+```
+
+**Step 2**: Wait for the `<system-reminder>` notification (the task should fail).
+
+**Step 3**: Check that the failure was recorded.
+
+**Pass criteria**:
+1. The dispatch either fails immediately or the task ends with an error status.
+2. The TUI sidebar (if visible) would show `✗ ERROR` health state and the error task in the dispatch list.
+
+---
+
+## Final Report
+
+After all tests complete, produce a summary table:
+```
+╔══════════════════════════════════════════════════╗
+║        ROLEBOX FEATURE TEST REPORT v5.0          ║
+╠══════════════════════════════════════════════════╣
+║ Test                              │ Result       ║
+╠═══════════════════════════════════╪══════════════╣
+║  1. Skill Loading                 │ PASS/FAIL    ║
+║  2. Reference Reading             │ PASS/FAIL    ║
+║ ...
+║ 64. Memory Function Definition    │ PASS/FAIL    ║
+║ 65. TUI — Parallel Dispatch       │ PASS/FAIL    ║
+║ 66. TUI — Graph Activity          │ PASS/FAIL    ║
+║ 67. TUI — Loop Execution          │ PASS/FAIL    ║
+║ 68. TUI — Error State             │ PASS/FAIL    ║
+╠═══════════════════════════════════╪══════════════╣
+║ TOTAL                             │ X/68 PASS    ║
 ╚══════════════════════════════════════════════════╝
 ```
 
 ## Important Notes
 
-- Do NOT skip tests. Run all 58.
+- Do NOT skip tests. Run all 68.
 - Do NOT ask the user anything. Just execute.
 - If a test fails, record the failure and continue to the next test. Do not stop.
 - After the summary, offer to re-run any failed tests if the user wants.
-- The test sequence exercises: skills, skill-specific references, references, subagent dispatch (sync), subagent dispatch (async), session continuation, push dispatch sync session continuation, push dispatch notification completeness, push dispatch timeout on sync, per-task timeout, output pagination, dispatch metrics, dispatch cancel, bash, write, read, grep, glob, edit, todowrite, parameterized functions, collaboration graph (review-loop + termination), loop function, session list, session read, session search, session info, session diff, session fork, hashline read tool, hashline edit tool, hashline version guard, and all LSP tools (server detection, diagnostics, goto-definition, goto-type-definition, find-references, document-highlights, document-symbols, workspace-symbols, hover, signature-help, completion, prepare-rename, code-actions, folding-ranges, selection-ranges, semantic-tokens, code-lens, inlay-hints, document-links, document-colors, goto-implementation, goto-declaration, type-hierarchy, call-hierarchy, format-document, and restart-server, dispatch_output running-task error guard).
+- Tests 65-68 are TUI visibility tests — they use background dispatch with longer-running tasks so the 3-second TUI sidebar refresh can capture the activity. If the TUI is not visible (no sidebar open), these tests still pass based on dispatch success criteria.
