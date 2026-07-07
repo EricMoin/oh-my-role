@@ -51,3 +51,4 @@ permission:
     - Read
     - Grep
     - Glob
+    - WebFetch

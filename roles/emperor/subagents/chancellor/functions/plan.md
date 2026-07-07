@@ -44,6 +44,16 @@ When in doubt, classify as `high`. Destructive subtasks always force `risk: high
 
 The `risk` field is a scalar — `low` or `high` — NOT a list. See `references/schemas.md` for the field constraint.
 
+### 2b. Classify Research Needs
+
+After classifying risk, evaluate each subtask's need for evidence-backed research:
+
+- Set `research_required: true` on a subtask when it involves any of: an external API or SDK, an unfamiliar library or framework, platform-specific behavior (e.g., macOS vs. Linux differences, version-sensitive integrations), or a dependency whose current semantics are uncertain.
+- When `research_required` is true, the executor MUST consult Context7, official documentation, or authoritative source code before implementing. Findings MUST be cited in the execution report's `### Research Evidence` section.
+- Default is `false` (no external research needed). Be conservative — when in doubt about a dependency or platform surface, set it to `true` rather than assume familiarity.
+
+This classification happens during strategy production, before subtasks are finalized.
+
 ### 3. Produce the Strategy
 
 Emit your structured strategy inside a `plan` fenced block. The block must contain valid YAML conforming exactly to the Strategy contract in `references/schemas.md`. Every field is required unless marked optional. No extras.
@@ -61,6 +71,7 @@ Key field summary (canonical definition is in `references/schemas.md`):
 | `subtasks[].acceptance` | string | Tool-verifiable done-condition. Required. |
 | `risk` | string | `low` or `high`. Scalar — NOT a list. Required. |
 | `notes` | string | Optional additional context for the orchestrator. |
+| `research_required` | boolean | Optional, defaults `false`. Set `true` when subtask needs external research. |
 
 **FORBIDDEN FIELDS**: Do NOT emit `risks` (list form), `final_notes`, or `subtasks[].id` as a string. These are schema violations — see `references/schemas.md` Forbidden Fields table.
 
@@ -74,11 +85,13 @@ subtasks:
     target: jinyiwei
     dependencies: []
     acceptance: "lsp_diagnostics clean, go build ./... exits 0"
+    research_required: false
   - id: 2
     description: "Wire rate limiter into the router in cmd/server/main.go"
     target: jinyiwei
     dependencies: [1]
     acceptance: "lsp_diagnostics clean, go test ./internal/middleware/... passes"
+    research_required: false
 risk: low
 notes: "Default limit should be 100 req/s per IP"
 ```

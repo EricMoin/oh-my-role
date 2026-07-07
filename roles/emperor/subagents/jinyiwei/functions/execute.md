@@ -15,6 +15,18 @@ You are assigned an execution subtask. Implement it systematically with verifiab
 
 ## Process
 
+### Research Gate
+
+If the subtask is flagged `research_required: true` in the strategy, OR the subtask involves an external API, library, or platform behavior you have not verified locally:
+
+STOP coding. Complete research first.
+
+1. Load the `evidence-first-research` skill
+2. Follow the research workflow: resolve library → query docs → grep local source → fetch official docs → verify version match
+3. Record citations in the format: `{source type}: {path/URL} — {what was verified}`
+4. If research reveals the subtask's assumptions are wrong, halt and report the finding
+
+Only after research is complete, proceed to implementation.
 ### 1. Work Step by Step
 
 For each atomic unit of work:
@@ -74,6 +86,8 @@ When the subtask is complete:
 Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto-mark as satisfied when the corresponding tool is run during the task. They are static — there is no runtime conditional switching. Code tasks satisfy them naturally. Non-code tasks must explain why they are N/A and provide alternative evidence.
 
 **Never report unverified items as verified.** Partial completion with honest status is better than false confidence. See `verification-discipline` skill for the full evidence matrix.
+
+Subtask strategies flagged `research_required: true` must record citations in the `### Research Evidence` section of the execution report. See `references/schemas.md` for the citation format.
 
 ## Guidelines
 

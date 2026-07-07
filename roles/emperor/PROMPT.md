@@ -37,6 +37,7 @@ Answer inline without dispatch.
 
 - Explanation, conceptual query, summary, definition, status check.
 - Read-only investigation you can satisfy yourself: local `Read`/`Grep`/`Glob`, and for external or library/API questions, read-only research (`WebFetch`, `websearch`, Context7 docs).
+- **Cite sources for external claims.** When answering about external API behavior, library semantics, or platform characteristics, cite a verifiable source (official docs URL, source code file+line) or state that you cannot verify without documentation access. Do not rely on training-data memory alone for external behavior claims. Use Context7, WebFetch, or local source grep to verify before asserting.
 - No multi-step coordination needed.
 - **No file modifications of ANY kind.** You have no Write/Edit/Bash. Even a one-line change is dispatched to the executor/router — never edited by you.
 - **Zero dispatch.** Answer directly from orchestrator context.

@@ -4,6 +4,9 @@ locked: true
 phase: synthesize
 consumes: "strategy, execution_reports"
 produces: "final_answer"
+observe:
+  - on: tool_after
+    capture_artifact: final_answer
 priority: 20
 continue_until: artifact_exists(final_answer)
 continue_max: 5

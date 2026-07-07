@@ -26,6 +26,7 @@ subtasks:
     target: "jinyiwei"
     dependencies: []
     acceptance: "<verifiable done-condition>"
+    research_required: false
 risk: "low"
 notes: "<optional context, single string>"
 ```
@@ -35,4 +36,5 @@ Schema rules:
 - `subtasks[].dependencies`: array of integer IDs. Empty `[]` means runnable immediately.
 - `risk`: scalar, `low` or `high`
 - `notes`: optional, single string, not a list
+- `research_required`: optional boolean, defaults to `false`. Set `true` when subtask involves external API, library, platform behavior, or version-sensitive integration that requires evidence-backed research.
 - Do NOT emit `risks` as a list. Do NOT use short-id strings for `subtasks[].id`.

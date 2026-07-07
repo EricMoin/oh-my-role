@@ -21,6 +21,7 @@ auto_activate: [triage, synthesize]
 skills:
   - delegation-heuristics
   - escalate-recovery
+  - evidence-first-research
 
 # Reference documents for dispatch decisions, schemas, terminology, model pools, and departments
 references:
@@ -36,6 +37,9 @@ references:
   departments:
     path: references/departments.md
     description: Department definitions and domain assignments for dispatch routing
+  evidence-first-research:
+    path: references/evidence-first-research.md
+    description: Evidence-first research discipline — citation tiers, triggers, and core principles for verifying external API and library behavior
 
 # Subagent orchestration pipeline — flow defines the dispatch edges.
 # max_iterations bounds the closed-loop validate/revise cycle (see synthesize.md caps).
