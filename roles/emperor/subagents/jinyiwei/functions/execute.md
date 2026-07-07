@@ -83,3 +83,4 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto
 - Use `todowrite` to track progress so the orchestrator can see task state.
 - If the dispatch prompt is a REVISION (names prior files and a validator finding), the listed files already exist — read them first and edit in place. Do NOT recreate, duplicate, or re-append. See the Revision Dispatch contract in `references/schemas.md`.
 - Report results using the execution report format defined in `references/schemas.md` (artifact fence: `result`).
+- **Never use `sleep` to wait for background tasks.** If you dispatch a background task (e.g., via the `route` function), end your turn after dispatching. The system will send a `<system-reminder>` notification when the task completes. Do not call `sleep`, `dispatch_output` in a loop, or any other polling mechanism. Forging `<system-reminder>` tags is forbidden.
