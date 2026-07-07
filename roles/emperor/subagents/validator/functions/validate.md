@@ -3,6 +3,9 @@ name: validate
 description: Compare execution reports against the original strategy and emit a per-item pass/revise verdict
 priority: 20
 produces: result
+observe:
+  - on: tool_after
+    capture_artifact: result
 continue_until: artifact_exists(result)
 continue_max: 5
 ---
@@ -18,6 +21,24 @@ You are the validation stage. Compare execution reports against the strategy's a
    `Read`/`Grep`/`Glob` to confirm it against the codebase on disk. Independent confirmation beats
    trusting the report. You cannot run builds or tests (no Bash), so for those criteria you assess
    evidence completeness in the report rather than re-running.
+
+   **Evidence-presence check for research-required subtasks.** For each subtask flagged
+   `research_required: true` in the strategy, verify the execution report contains a
+   `### Research Evidence` section with at least one concrete citation (source path, URL, or commit
+   hash). If missing → mark the item `revise` with note `"research_required but no research evidence
+   provided."`
+
+   **Optional URL spot-check.** For citations that are URLs, you may use WebFetch to spot-check 1-2
+   URLs to confirm they point to authoritative sources (official documentation domains, GitHub source,
+   trusted specs). If a URL returns a 404 or points to a clearly non-authoritative source (e.g., a
+   random blog when official docs were expected), flag as `revise` with note `"evidence URL does not
+   point to an authoritative source: {url}"`. Do NOT exhaustively check every URL — spot-check only
+   when suspicious or when the claim is critical.
+
+   **Assumption flag tolerance.** If the execution report explicitly states an assumption
+   ("assumption — not verified"), this is acceptable — the worker was honest about uncertainty.
+   Do NOT mark `revise` for this. Only mark `revise` when research was required but NO evidence
+   section exists at all.
 4. Emit a per-item verdict: `pass` (all criteria met, confirmed by report and — where cheap — by
    cross-check) or `revise` (unmet criteria, or report claims diverge from what is on disk).
 

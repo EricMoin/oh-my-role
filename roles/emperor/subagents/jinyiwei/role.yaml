@@ -22,6 +22,7 @@ skills:
   - scope-guard
   - verification-discipline
   - domain-routing
+  - evidence-first-research
 
 # Dispatch configuration for department worker routing
 dispatch:

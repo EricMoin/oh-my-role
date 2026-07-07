@@ -33,6 +33,7 @@
 | `subtasks[].acceptance` | string | yes | — | Verifiable done-condition. Must be checkable with tools (lsp_diagnostics clean, build exits 0, grep for patterns). Not "looks good" or "should work." |
 | `risk` | string | yes | `low` \| `high` | Overall execution risk. `high` triggers user approval gate before dispatch. |
 | `notes` | string | no | — | Optional additional context for the emperor. Single string, not a list. |
+| `subtasks[].research_required` | boolean | no | `true` \| `false` (default `false`) | When true, the subtask requires evidence-backed research into external API/library/platform behavior before implementation. Overrides default execution workflow. |
 
 #### Forbidden Fields
 
@@ -153,6 +154,7 @@ The execution report is a markdown document with the following fixed section hea
 | `### Verification Evidence` | yes | Tool-level verification results. Subsections: `lsp_diagnostics`, `build/tests`, `Other evidence`. |
 | `### Incomplete / Open Items` | yes | Bulleted list of unfinished items with reasons. Use `None` if nothing is pending. |
 | `### Summary` | yes | One to two sentence verdict: what was done, final state. |
+| `### Research Evidence` | no | Bulleted list of research citations in format: `- {source type}: {citation} — {what was verified}`. Included only when research was conducted as part of the subtask. |
 
 #### Section Details
 
@@ -178,6 +180,15 @@ The execution report is a markdown document with the following fixed section hea
 Use `None` if nothing is pending. Never omit this section.
 
 **`### Summary`**: Plain text. One to two sentences. No fluff.
+
+**`### Research Evidence`**: Optional section. Bulleted list of citations in format:
+```
+- {source type}: {citation} — {what was verified}
+```
+`{source type}` is one of: `docs` (official library/framework docs), `source` (source code), `experiment` (local reproduction), `issue` (issue tracker), `discussion` (forum/discussion), `blog` (engineering blog).
+`{citation}` is a URL, file path, or reference to the specific source consulted.
+`{what was verified}` is a short statement of what was confirmed or disproven.
+Include only when the subtask involved evidence-backed research. Omit entirely for standard implementation subtasks.
 
 #### Forbidden Patterns
 
@@ -206,9 +217,11 @@ Use `None` if nothing is pending. Never omit this section.
 
 ### Summary
 Created rate_limiter.go with token-bucket algorithm. All tests pass, diagnostics clean. Ready for router wiring in subtask 2.
-```
 
----
+### Research Evidence
+- **docs**: https://pkg.go.dev/golang.org/x/time/rate — confirmed token-bucket API signatures
+- **source**: internal/middleware/rate_limiter.go — verified exported interface matches docs
+```
 
 ## Revision Dispatch (Re-Execution Input)
 
@@ -249,6 +262,8 @@ The worker treats the listed files as existing state: it reads them first, then 
 | reviewer | emits `severity` (not `risk`) | Conforms — enforced in `review.md` and `veto-criteria` skill |
 | validator | English-only output | Conforms — enforced in the validator's `validate.md` |
 | jinyiwei | canonical execution-report section structure | Conforms — enforced in `report.md` / `route.md` |
+| jinyiwei | `research_required` subtask field | Conforms — optional boolean, schema updated in schemas.md §1 |
+| jinyiwei | `### Research Evidence` report section | Conforms — optional section, schema updated in schemas.md §4 |
 
 If any future edit reintroduces a divergence, the reviewer's `veto-criteria` skill and this table are the enforcement points. **If a consumer receives a field not in this document**: reject it. Unknown fields are a producer error.
 

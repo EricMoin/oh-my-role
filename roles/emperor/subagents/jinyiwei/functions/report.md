@@ -31,6 +31,20 @@ The execution report uses these fixed section headings. See `references/schemas.
 - **build/tests**: passed — include command and result summary
 - **Other evidence**: manual verification, non-code checks, or None
 
+### Research Evidence
+
+Conditional — include this section only when research was conducted (i.e., the subtask was flagged `research_required: true` or research was triggered by the Research Gate).
+
+Format citations as:
+- `{source type}: {citation} — {what was verified}`
+
+Source types: `docs` (official documentation URL), `source` (filepath:line), `commit` (hash), `issue` (tracker URL), `spec` (specification URL)
+
+Example:
+- docs: https://developer.android.com/jetpack/compose/state — accessed 2026-07-07 — verified that rememberSaveable persists across configuration changes
+- source: node_modules/react/index.js:142 — verified that useState batch updates in React 18
+- assumption: not verified — could not access official docs for this API
+
 ### Incomplete / Open Items
 - None
 - Or: {item}: {reason not yet done}
