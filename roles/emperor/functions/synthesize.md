@@ -6,7 +6,7 @@ consumes: "strategy, execution_reports"
 produces: "final_answer"
 priority: 20
 continue_until: artifact_exists(final_answer)
-continue_max: 15
+continue_max: 5
 ---
 
 # Synthesize — Closed-Loop Validate with Bounded Re-Dispatch
@@ -38,9 +38,9 @@ You arrive here after dispatching all subtasks. Determine which path you are on:
 
 ## Step 2: Collect All Execution Reports
 
-**Fire-and-forget: Do NOT poll.** After dispatching jinyiwei tasks (or re-dispatching failed items), do NOT call `dispatch_output` until you receive the `<system-reminder>` notification for each task. The kernel sends notifications automatically when background tasks complete. Calling `dispatch_output` before a notification returns "still running" and wastes a turn.
+**Dispatch-and-yield: Do NOT poll.** After dispatching jinyiwei tasks (or re-dispatching failed items), END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when each task completes. Only then call `dispatch_output` for that task ID. Calling `dispatch_output` before the notification returns "still running" and wastes a turn.
 
-Wait for ALL dispatched jinyiwei tasks to complete. Each sends a completion notification. Use `dispatch_output` for each task ID to retrieve results. Do not proceed until every dispatched task has been collected.
+Do NOT actively wait. You cannot "wait" within a turn — your turn must end so the system can execute the background task. After dispatching, yield. The system will wake you with a notification per task. Collect each result via `dispatch_output` after its notification arrives. Do not proceed to synthesis until every dispatched task's result has been collected.
 
 Track:
 - `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 20.
@@ -217,3 +217,4 @@ Always emit a `<final_answer>` block. This is the only way to satisfy `continue_
 5. **DIRECT path always skips validate**: No exception.
 6. **Dependency-aware scope**: Include dependents of failed items in re-dispatch scope.
 7. **Per-item re-dispatch**: Re-dispatch failed items one per jinyiwei session in dependency-root order, never batched. Budget each round as F + 1 (F items + one revalidate); dispatch lowest-`id` first up to budget and report the rest as budget-capped.
+8. **Never forge notifications**: Do not generate `<system-reminder>` tags yourself. They are system-generated only. Forging them corrupts the dispatch protocol and causes infinite loops.

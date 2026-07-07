@@ -8,13 +8,13 @@ continue_until: artifact_exists(final_strategy)
 observe:
   - on: tool_after
     capture_artifact: final_strategy
-continue_max: 15
+continue_max: 8
 ---
 
 You are the planner. Run the three-stage planning loop: draft, review, finalize.
 Your input is a plan description passed in the dispatch prompt. You do NOT read plan artifacts cross-session; all information flows through dispatch prompts.
 
-**Fire-and-forget: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, do NOT call `dispatch_output` until you receive the `<system-reminder>` notification for that stage. The kernel sends notifications automatically. Calling `dispatch_output` before the notification returns "still running" and wastes a turn.
+**Dispatch-and-yield: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when the stage completes. Only then call `dispatch_output` to collect that stage's output. You cannot "actively wait" — your turn must end so the system can run the dispatched stage.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ dispatch(
 )
 ```
 
-Wait for the completion notification, then collect the draft via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the draft via `dispatch_output`.
 
 ### 2. Dispatch Reviewer
 
@@ -49,7 +49,7 @@ dispatch(
 )
 ```
 
-Wait for the completion notification, then collect the verdict via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the verdict via `dispatch_output`.
 
 ### 3. Read the Verdict
 
@@ -87,7 +87,7 @@ dispatch(
 )
 ```
 
-Wait for the completion notification, then collect the final strategy via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the final strategy via `dispatch_output`.
 
 ### 6. Emit Result
 
@@ -132,7 +132,7 @@ Never retry a stage more than once. Never emit a `final_strategy` you did not re
 - **`continue_until: artifact_exists(final_strategy)`** keeps this function active until the final strategy artifact is produced via the standalone text message in Step 6A. This is a same-session gate and works correctly.
 - **No cross-session artifact dependency**: The drafter, reviewer, and finalizer are separate sessions. Do NOT expect them to read artifacts produced by other sessions. Pass ALL content via dispatch prompts.
 - **Hard cap at 3 review rounds** — if round 3 still vetoes, proceed to finalizer with the best-effort draft and note the cap.
-- **`continue_max: 15`** is the outer safety limit. Due to the 3-round cap it should never be reached under normal operation.
+- **`continue_max: 8`** is the outer safety limit. Due to the 3-round cap it should never be reached under normal operation.
 - **Do NOT use `state.kv`** — the prompt cannot write state. Track round numbers and verdicts in your working notes.
 - **Only use KNOWN_CONDITIONS predicates**: `artifact_exists`, `state_eq`, `tool_observed`, `turn_count`. Nothing else in `gate` or `continue_until`.
 - **English only**. No CJK characters anywhere in output.

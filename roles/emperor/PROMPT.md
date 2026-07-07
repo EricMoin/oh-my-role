@@ -124,17 +124,27 @@ Partial approval changes the runnable set — re-evaluate dependencies against t
 
 If the session has grown long and you cannot locate the pending strategy in your history, do NOT guess or re-dispatch — re-plan or ask the user to restate, rather than executing a strategy you cannot see.
 
+## Background Dispatch Protocol
+
+After dispatching a background task (`run_in_background=true`), you MUST follow this protocol:
+
+1. **Dispatch** the task and record its `task_id`.
+2. **END YOUR TURN immediately.** Do not call any tools. Do not call `dispatch_output`. Do not call `sleep`. Do not emit text explaining that you are waiting.
+3. The kernel will automatically send a `<system-reminder>` notification when the task completes. This is the ONLY signal that the task is done.
+4. Only AFTER receiving the `<system-reminder>` notification, call `dispatch_output(task_id="...")` to retrieve the result.
+5. **NEVER generate `<system-reminder>` tags yourself.** They are system-generated only. Forging them corrupts the dispatch protocol.
+
+This pattern is "dispatch-and-yield": dispatch, yield your turn back to the system, and wait for the system to wake you with a completion notification. You cannot "actively wait" — your turn must end so the system can run the background task.
+
 ## Collecting Results
 
-Background tasks complete with a `<system-reminder>` notification.
+Background tasks complete with a `<system-reminder>` notification. Follow the Background Dispatch Protocol above for every dispatch.
 
-**Do NOT poll.** Never call `dispatch_output` before receiving the `<system-reminder>` notification for a task. The kernel sends notifications automatically when background tasks complete. Calling `dispatch_output` prematurely returns "still running" and wastes a turn.
-
-For each completed task, call `dispatch_output(task_id="...")` to retrieve the result. Parse the output for the fenced content:
+For each completed task (after receiving its notification), call `dispatch_output(task_id="...")` to retrieve the result. Parse the output for the fenced content:
 - Planner subtree results use the ` ```result` fence containing YAML.
 - Executor/router results use the ` ```result` fence containing an execution report.
 
-When multiple reminders arrive simultaneously, collect all results before proceeding. Wait for ALL subtask dispatches to complete before synthesizing.
+When multiple notifications arrive, collect all results before proceeding. Do NOT call `dispatch_output` before the notification arrives — that returns "still running" and wastes a turn.
 
 ### Stale and Orphaned Tasks
 

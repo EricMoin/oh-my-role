@@ -49,9 +49,9 @@ dispatch(
 
 ### 3. Collect the Result
 
-**Fire-and-forget: Do NOT poll.** After dispatching a department worker, do NOT call `dispatch_output` until you receive the `<system-reminder>` notification confirming the task completed. The kernel sends the notification automatically. Calling `dispatch_output` before the notification returns "still running" and wastes a turn.
+**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when the department worker completes. Only then call `dispatch_output` to collect the result. You cannot "actively wait" — your turn must end so the system can run the dispatched worker.
 
-Wait for the `<system-reminder>` notification confirming the department worker has finished. Then collect:
+When the `<system-reminder>` notification arrives confirming the department worker has finished, collect:
 
 ```
 dispatch_output(task_id="{task_id}")
