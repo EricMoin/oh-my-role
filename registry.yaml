@@ -57,11 +57,13 @@ roles:
       resolution-sim → deploy-health → behavioral eval)
     tags: [meta, role-creation, verification, scaffolding]
   rolebox-tester:
-    version: "2.3.0"
-    description: Comprehensive functional tester for rolebox features — executes
-      a full test suite covering skills, dispatch, functions, references, tools,
-      sessions, collaboration graph, hashline edit, LSP tools, and memory tools
-    tags: [testing, qa, dispatch, hashline, lsp, sessions, memory]
+    version: "2.6.0"
+    description: Comprehensive functional tester for rolebox features.
+      Executes a full test suite covering skills, dispatch, functions,
+      references, tools, permissions, MCP, collaboration graph, hashline
+      edit, LSP, sessions, memory tools, search tools, hot reload, and
+      test report artifact generation.
+    tags: [testing, qa, dispatch, hashline, lsp, sessions, memory, permissions, collaboration]
   git-master:
     version: "1.0.0"
     description: Expert Git version control operations specialist — covers working

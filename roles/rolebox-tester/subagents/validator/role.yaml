@@ -1,0 +1,4 @@
+name: Validator
+description: Third-stage graph agent that validates approved output and completes the flow
+model: provider/tier-3-fast
+prompt_file: prompt.md
