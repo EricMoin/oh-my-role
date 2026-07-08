@@ -1,0 +1,13 @@
+name: Restricted
+description: Subagent with denied tool permissions for testing permission enforcement
+model: provider/tier-3-fast
+prompt_file: prompt.md
+permission:
+  deny:
+    - bash
+    - write
+    - edit
+tools:
+  Bash: false
+  Write: false
+  Edit: false
