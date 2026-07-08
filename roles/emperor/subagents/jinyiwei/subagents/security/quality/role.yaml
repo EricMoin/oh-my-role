@@ -35,6 +35,4 @@ functions:
   - loop
 skills:
   - quality-scope
-opencode_skills:
-  - software-architecture-antipatterns
-  - review-work
+

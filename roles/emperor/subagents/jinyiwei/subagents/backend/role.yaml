@@ -36,9 +36,4 @@ functions:
   - loop
 skills:
   - backend-scope
-opencode_skills:
-  - software-architecture-core
-  - software-architecture-patterns
-  - software-architecture-data
-  - software-architecture-distributed
-  - software-architecture-infrastructure
+

@@ -35,9 +35,4 @@ functions:
   - loop
 skills:
   - ui-scope
-opencode_skills:
-  - react
-  - tailwindcss
-  - vercel-react-best-practices
-  - frontend-ui-ux
-  - zustand
+

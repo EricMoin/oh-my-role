@@ -1,7 +1,7 @@
 name: Rolebox Tester
-description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), and push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard). and memory tools (write, recall, list, update), memory injection, and |memory| function definition."
-version: "2.3.0"
-model: provider/tier-1-flagship
+description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard), memory tools (write, recall, list, update), memory injection, |memory| function definition, the search/tool suite (task search, budget, graph, retry, concurrency, chronology, export, asset search, inspect, validate, skill compose, function state, function graph, reference search, context assemble, asset hot reload), hot reload effectiveness tests (new role discovery, deleted role cleanup, new subagent dispatchable, file watcher auto-trigger, failure reporting), and test report artifact generation (persistent structured JSON test report at a known path for orchestrator/agent consumption)."
+version: "2.6.0"
+model: provider/tier-2-reasoning
 mode: primary
 prompt_file: PROMPT.md
 
@@ -10,6 +10,9 @@ functions:
   - transform
   - loop
   - memory
+  - state-machine
+  - observe-probe
+  - broken-dep
 
 skills:
   - test-skill
@@ -55,20 +58,70 @@ subagents:
       2. Verify the input contains "[PROCESSED]". If it does, respond with "APPROVED" and "GRAPH_FLOW_OK".
       3. If it does not contain "[PROCESSED]", respond with "REVISION_NEEDED" and "GRAPH_FLOW_FAIL".
       Always respond concisely. Keep responses under 3 sentences.
+  - name: Validator
+    description: Third-stage graph agent that validates approved output and completes the flow
+    prompt: |
+      You are Validator, a graph participant agent.
+      When you receive a message:
+      1. Confirm you are Validator by including "VALIDATOR_RECEIVED" in your response.
+      2. Verify the input contains "APPROVED". If it does, respond with "VALIDATED" and "GRAPH_FLOW_COMPLETE".
+      3. If it does not contain "APPROVED", respond with "VALIDATION_FAILED".
+      Always respond concisely. Keep responses under 3 sentences.
+  - name: Restricted
+    description: Subagent with denied tool permissions for testing permission enforcement
+    permission:
+      bash: deny
+      write: deny
+      edit: deny
+    prompt: |
+      You are Restricted, a subagent with tool restrictions for permission enforcement testing.
+      When you receive a message:
+      1. Try to run the bash command: echo "PERMISSION_BLOCKED"
+      2. If bash is blocked, reply with: PERMISSION_DENIED_OK. This is the expected outcome.
+      3. If bash succeeds, reply with: PERMISSION_GRANTED_UNEXPECTED.
+      Always respond concisely.
+  - name: Nester
+    description: Subagent for testing 3-level deeply nested dispatch (parent->child->grandchild)
+    prompt: |
+      You are Nester, a nesting test subagent.
+      When you receive a message:
+      1. Confirm you are Nester by including "NESTER_RECEIVED" in your response.
+      2. Dispatch to your Grandchild subagent using:
+         task(subagent_type="rolebox-tester--nester--grandchild", prompt="[the input you received]", description="dispatch to grandchild")
+      3. Wait for the grandchild's response and forward it, including "NESTER_FORWARDED".
+      Always respond concisely.
+    subagents:
+      - name: Grandchild
+        description: Third-level nested subagent for depth testing
+        prompt: |
+          You are Grandchild, a third-level nested test subagent.
+          When you receive a message:
+          1. Confirm you are Grandchild by including "GRANDCHILD_RECEIVED" in your response.
+          2. Reply with: GRANDCHILD_OK
+          Always respond concisely.
 
 collaboration:
-  topology: review-loop
-  agents: [processor, checker]
-  max_iterations: 3
+  topology: pipeline
+  agents: [processor, checker, validator]
+  max_iterations: 2
   termination:
     any_of:
-      - { max_iterations: 3 }
+      - max_iterations: 2
       - result_matches:
-          agent: checker
-          contains: "APPROVED"
+          agent: validator
+          contains: "VALIDATED"
 
 memory:
   inject: true
   max_inject: 10
   min_relevance: medium
   scope: both
+
+dispatch:
+  maxConcurrent: 2
+  maxActivePerParent: 2
+  maxTotalSessionsPerRequest: 8
+
+auto_activate:
+  - test-all
+locked: true

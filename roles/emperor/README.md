@@ -33,10 +33,12 @@ emperor (tier-1-flagship)
     ├── test (tier-2-reasoning)          — tests, mocking, coverage
     ├── data (tier-2-reasoning)          — schema, migrations, queries
     ├── docs (tier-2-reasoning)          — documentation, guides
-    └── quality (tier-2-reasoning)       — lint, format, static analysis
+    ├── quality (tier-2-reasoning)       — lint, format, static analysis
+    ├── devops (tier-2-reasoning)        — CI/CD, infrastructure, deployment
+    └── security (tier-2-reasoning)      — vulnerability scanning, auth audit
 ```
 
-The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, up to 3 rounds), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator is a dedicated read-only judge: after execution it compares each subtask's report against the strategy's acceptance criteria and returns a per-item pass/revise verdict.
+The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, up to 3 rounds), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator independently verifies execution reports by running tests, builds, and linters, then returns a per-item pass/revise verdict.
 
 ## Live risk gate
 
@@ -88,7 +90,7 @@ Three independent pools, each with a 5-slot semaphore. Cross-pool dispatch doesn
 | Pool | Model | Members |
 |------|-------|---------|
 | tier-1-flagship | `provider/tier-1-flagship` | Emperor, Reviewer |
-| tier-2-reasoning | `provider/tier-2-reasoning` | Chancellor, Drafter, Finalizer, Validator, UI, Backend, Test, Data, Docs, Quality |
+| tier-2-reasoning | `provider/tier-2-reasoning` | Chancellor, Drafter, Finalizer, Validator, UI, Backend, Test, Data, Docs, Quality, DevOps, Security |
 | tier-3-fast | `provider/tier-3-fast` | Jinyiwei |
 
 The reviewer shares the tier-1-flagship pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
@@ -128,7 +130,7 @@ Full instructions and existing department definitions are in [departments.md](re
 | [schemas.md](references/schemas.md) | Inter-agent contract schemas (strategy, review verdict, validate result, execution report) |
 | [terminology-and-style.md](references/terminology-and-style.md) | De-theming glossary, language rules, style guide |
 | [model-pool-and-budget.md](references/model-pool-and-budget.md) | Three model pools, budget caps, worst-case session tables, dispatch config |
-| [departments.md](references/departments.md) | All 6 departments with scope, evidence tags, and recommended skills |
+| [departments.md](references/departments.md) | All 8 departments with scope, evidence tags, and recommended skills |
 
 ## Kernel compatibility
 
