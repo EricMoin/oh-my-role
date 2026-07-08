@@ -36,5 +36,4 @@ functions:
   - loop
 skills:
   - test-scope
-opencode_skills:
-  - test-script-generation
+

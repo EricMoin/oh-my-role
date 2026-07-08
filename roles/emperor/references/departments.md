@@ -1,6 +1,6 @@
 # Departments
 
-All 6 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope, evidence requirements, and optional opencode skills.
+All 8 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope skill, internal skills, and evidence requirements.
 
 ## Department registry
 
@@ -12,6 +12,8 @@ All 6 departments are live and routable. Each runs as a dispatch subagent under 
 | Data | emperor--jinyiwei--data | Schema, migrations, queries, persistence | lsp_diagnostics, test | schema, migration, query, persistence, database |
 | Docs | emperor--jinyiwei--docs | README, API docs, guides, comments | lsp_diagnostics | doc, readme, guide, comment, changelog |
 | Quality | emperor--jinyiwei--quality | Lint, format, static analysis, review | lsp_diagnostics | lint, format, static analysis, quality |
+| DevOps | emperor--jinyiwei--devops | CI/CD, Docker, Kubernetes, IaC, deployment, observability | lsp_diagnostics | devops, ci, cd, pipeline, docker, kubernetes, deploy, infrastructure, iac, container |
+| Security | emperor--jinyiwei--security | Vulnerability scanning, auth audit, dependency security, hardening | lsp_diagnostics | security, vulnerability, auth, owasp, cve, scan, hardening, secret |
 
 All departments use model pool `tier-2-reasoning`.
 
@@ -22,34 +24,27 @@ All departments use model pool `tier-2-reasoning`.
 
 Departments that produce prose only (Docs) or whose output IS diagnostics (Quality) skip the test tag.
 
-## opencode_skills per department
 
-The `opencode_skills` field in each department's `role.yaml` is optional. The table
-below lists what each department loads by default — a stack-agnostic set that ships
-with the role. Skill names must be bare (e.g. `software-architecture-data`), never
-namespace-prefixed.
+## Skills per department
 
-| Department | Default (loaded) skills |
+Each department loads emperor-internal skills only. The emperor role is self-contained — it does not depend on skills from other roles being installed.
+
+| Department | Internal skills |
 |---|---|
-| UI | react, tailwindcss, vercel-react-best-practices, frontend-ui-ux, zustand |
-| Backend | software-architecture-core, software-architecture-patterns, software-architecture-data, software-architecture-distributed, software-architecture-infrastructure |
-| Test | test-script-generation |
-| Data | software-architecture-data, flutter-implement-persistence-offline, software-architecture-ddd |
-| Docs | humanizer, paper-writer |
-| Quality | software-architecture-antipatterns, review-work |
+| UI | ui-scope |
+| Backend | backend-scope |
+| Test | test-scope |
+| Data | data-scope |
+| Docs | docs-scope |
+| Quality | quality-scope |
+| DevOps | devops-scope, devops-practices |
+| Security | security-scope, security-practices |
 
-### Optional stack-specific additions
+Each department has at minimum a `{name}-scope` skill defining boundaries, grey zones, and destructive-operation HALT rules. DevOps and Security additionally carry practitioner-knowledge skills (`devops-practices`, `security-practices`) with domain expertise for implementation guidance.
 
-The default set is intentionally stack-agnostic. For projects on a specific stack,
-add matching skills to the department's `opencode_skills` list. Examples:
+### Adding external skills (optional)
 
-| Department | Add for Dart/Flutter projects |
-|---|---|
-| Test | dart-add-unit-test, dart-generate-test-mocks, dart-flutter-test-quality-gate |
-| Quality | dart-flutter-test-quality-gate, dart-run-static-analysis |
-
-Keep this table and the actual `role.yaml` `opencode_skills` lists in sync. If you
-add a skill to a department, add it here; if you remove one, remove it here.
+If the user has installed additional roles (e.g., `software-architecture`, `react-frontend`, `dart-flutter`), their skills can be added to a department's `opencode_skills` list for stack-specific enhancement. This is optional — the emperor works fully without any external role installed.
 
 ## How to add a new department
 

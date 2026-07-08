@@ -60,18 +60,7 @@ tools:
   Edit: false
   Bash: false
 
-permission:
-  allow:
-    - Read
-    - Grep
-    - Glob
-    - WebFetch
-    - websearch_web_search_exa
-    - context7_resolve-library-id
-    - context7_query-docs
-    - dispatch
-    - dispatch_output
-    - dispatch_cancel
+permission: allow
 
 # Dispatch configuration for subagent orchestration
 dispatch:

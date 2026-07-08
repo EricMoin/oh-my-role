@@ -9,7 +9,7 @@ Single source of truth for mapping a subtask's domain to the correct department 
 
 ## Domain Routing Table
 
-All six departments are active and routable. Every row maps a domain to a live department worker.
+All eight departments are active and routable. Every row maps a domain to a live department worker.
 
 | Domain | ID | Scope Description | Evidence Tags |
 |--------|----|-------------------|---------------|
@@ -19,6 +19,8 @@ All six departments are active and routable. Every row maps a domain to a live d
 | data | emperor--jinyiwei--data | Data layer: schemas, migrations, queries, persistence | `[lsp_diagnostics, test]` |
 | docs | emperor--jinyiwei--docs | Documentation: README, API docs, inline comments, guides | `[lsp_diagnostics]` |
 | quality | emperor--jinyiwei--quality | Quality assurance: linting, formatting, static analysis, review | `[lsp_diagnostics]` |
+| devops | emperor--jinyiwei--devops | DevOps/Infra: CI/CD, Docker, Kubernetes, Terraform, deployment | `[lsp_diagnostics]` |
+| security | emperor--jinyiwei--security | Security: vulnerability scanning, auth audit, dependency security, hardening | `[lsp_diagnostics]` |
 
 ## Domain Detection Heuristics
 
@@ -34,6 +36,8 @@ When no domain is explicitly tagged in the subtask, infer from keywords in the t
 | `schema`, `migration`, `query`, `database`, `model`, `entity`, `repository`, `persist` | data |
 | `readme`, `docs`, `comment`, `jsdoc`, `guide`, `tutorial`, `explanation` | docs |
 | `lint`, `format`, `prettier`, `eslint`, `review`, `type-check`, `analyze` | quality |
+| `ci`, `cd`, `pipeline`, `docker`, `kubernetes`, `k8s`, `helm`, `terraform`, `deploy`, `deployment`, `infrastructure`, `iac`, `container`, `compose`, `kubectl`, `ansible` | devops |
+| `security`, `vulnerability`, `auth`, `authentication`, `authorization`, `owasp`, `cve`, `scan`, `penetration`, `pentest`, `secret`, `hardening`, `csrf`, `xss`, `injection` | security |
 
 ### Detection Priority
 
@@ -74,6 +78,8 @@ Evidence tags describe the verification artifacts a department worker is expecte
 | data | `[lsp_diagnostics, test]` | Schema changes must be valid and queries must execute |
 | docs | `[lsp_diagnostics]` | Documentation only needs to pass markdown/type checks |
 | quality | `[lsp_diagnostics]` | Linting and analysis produce diagnostics as evidence |
+| devops | `[lsp_diagnostics]` | Infrastructure configs must pass syntax validation and dry-run checks |
+| security | `[lsp_diagnostics]` | Security changes must pass type-checking and security scans |
 
 Tags are selected by the `route` function when dispatching. If falling back to direct execution, default to `[lsp_diagnostics, test]` unless the task is read-only (then `[lsp_diagnostics]` alone suffices).
 
@@ -92,4 +98,4 @@ dispatch:
 | `maxActivePerParent` | 3 | At most 3 background department workers running concurrently per executor/router session |
 | `maxTotalSessionsPerRequest` | 20 | Hard per-parent-session cap — each direct parent session (orchestrator, planner, executor/router) gets its own independent ≤20 budget |
 
-**Implication for routing:** When routing splits a task into multiple subtasks, the executor/router can dispatch at most 3 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own independent budget, ensuring fair allocation across the request tree. With all six departments active and the `maxTotalSessionsPerRequest: 20` cap now explicitly set, the executor/router has headroom for up to 6 department dispatches plus 14 slots for re-dispatch or execution overhead within a single request.
+**Implication for routing:** When routing splits a task into multiple subtasks, the executor/router can dispatch at most 3 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own independent budget, ensuring fair allocation across the request tree. With all eight departments active and the `maxTotalSessionsPerRequest: 20` cap now explicitly set, the executor/router has headroom for up to 8 department dispatches plus 12 slots for re-dispatch or execution overhead within a single request.

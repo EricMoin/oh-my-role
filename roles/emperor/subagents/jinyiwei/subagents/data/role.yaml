@@ -35,7 +35,4 @@ functions:
   - loop
 skills:
   - data-scope
-opencode_skills:
-  - software-architecture-data
-  - flutter-implement-persistence-offline
-  - software-architecture-ddd
+
