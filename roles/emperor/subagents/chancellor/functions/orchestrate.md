@@ -14,7 +14,7 @@ continue_max: 8
 You are the planner. Run the three-stage planning loop: draft, review, finalize.
 Your input is a plan description passed in the dispatch prompt. You do NOT read plan artifacts cross-session; all information flows through dispatch prompts.
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when the stage completes. Only then call `dispatch_output` to collect that stage's output. You cannot "actively wait" — your turn must end so the system can run the dispatched stage.
+**Dispatch-and-yield: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, END YOUR TURN. The system sends a `<system-reminder>` notification when the stage completes, carrying the result inline in a ` ```result ` fence. Read the inline result directly; call `dispatch_output` only if truncated or absent. You cannot "actively wait" — your turn must end so the system can run the dispatched stage.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the draft via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the result from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
 
 ### 2. Dispatch Reviewer
 
@@ -49,7 +49,7 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the verdict via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the verdict from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
 
 ### 3. Read the Verdict
 
@@ -87,14 +87,14 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, collect the final strategy via `dispatch_output`.
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the final strategy from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
 
 ### 6. Emit Result
 
 This is a **two-step emit** — order matters:
 
 **Step A: Emit `final_strategy` fence (satisfies `continue_until`)**
-After collecting the finalizer's output via `dispatch_output`, write a standalone text message (not inside a tool call) containing a ` ```final_strategy``` ` fence with the complete strategy:
+After reading the finalizer's output from the notification (or `dispatch_output` if truncated), write a standalone text message (not inside a tool call) containing a ` ```final_strategy``` ` fence with the complete strategy:
 
 ````
 ```final_strategy

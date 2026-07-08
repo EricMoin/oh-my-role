@@ -41,9 +41,9 @@ You arrive here after dispatching all subtasks. Determine which path you are on:
 
 ## Step 2: Collect All Execution Reports
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching jinyiwei tasks (or re-dispatching failed items), END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when each task completes. Only then call `dispatch_output` for that task ID. Calling `dispatch_output` before the notification returns "still running" and wastes a turn.
+**Dispatch-and-yield.** After dispatching jinyiwei tasks (or re-dispatching failed items), END YOUR TURN. The system sends a `<system-reminder>` notification per completed task, carrying the result inline in a ` ```result ` fence. Read the inline result directly. Call `dispatch_output` only if the result is truncated or absent. If `dispatch_output` fails, use the inline result. Do NOT poll `dispatch_status` in a loop — if neither the inline result nor `dispatch_output` is available, treat the task as failed and proceed to Step 8.
 
-Do NOT actively wait. You cannot "wait" within a turn — your turn must end so the system can execute the background task. After dispatching, yield. The system will wake you with a notification per task. Collect each result via `dispatch_output` after its notification arrives. Do not proceed to synthesis until every dispatched task's result has been collected.
+Do NOT actively wait within a turn. After dispatching, yield. The system wakes you with a `<system-reminder>` notification per completed task. Read the inline result from the notification. Do not proceed to synthesis until every dispatched task's result has been read (either inline or via `dispatch_output`).
 
 Track:
 - `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 20.
