@@ -49,13 +49,9 @@ dispatch(
 
 ### 3. Collect the Result
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. Do not call `dispatch_output`, do not call `sleep`, do not emit "waiting" text. The kernel sends a `<system-reminder>` notification automatically when the department worker completes. Only then call `dispatch_output` to collect the result. You cannot "actively wait" — your turn must end so the system can run the dispatched worker.
+**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. The system sends a `<system-reminder>` notification when the worker completes, carrying the result inline in a ` ```result ` fence. Read the inline result directly; call `dispatch_output` only if the result is truncated or absent. You cannot "actively wait" — your turn must end so the system can run the dispatched worker.
 
-When the `<system-reminder>` notification arrives confirming the department worker has finished, collect:
-
-```
-dispatch_output(task_id="{task_id}")
-```
+When the `<system-reminder>` notification arrives, read the ` ```result ` fence from the notification body. If the result is truncated, call `dispatch_output(task_id="{task_id}")` for the full content.
 
 Extract the ` ```result ` fence content from the worker's output. All department results arrive inside this fence.
 

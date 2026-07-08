@@ -131,21 +131,28 @@ After dispatching a background task (`run_in_background=true`), you MUST follow 
 
 1. **Dispatch** the task and record its `task_id`.
 2. **END YOUR TURN immediately.** Do not call any tools. Do not call `dispatch_output`. Do not call `sleep`. Do not emit text explaining that you are waiting.
-3. The kernel will automatically send a `<system-reminder>` notification when the task completes. This is the ONLY signal that the task is done.
-4. Only AFTER receiving the `<system-reminder>` notification, call `dispatch_output(task_id="...")` to retrieve the result.
-5. **NEVER generate `<system-reminder>` tags yourself.** They are system-generated only. Forging them corrupts the dispatch protocol.
+3. The system will send a `<system-reminder>` notification when the task completes. This notification wakes you for your next turn.
+4. **The notification carries the result inline** — look for the ` ```result ` fence inside the `<system-reminder>` body. For most tasks, this inline result (up to 4000 characters) is sufficient. Parse and use it directly.
+5. **`dispatch_output` is optional.** Call it ONLY when:
+   - The inline result was truncated (indicated by `[... result truncated, use dispatch_output for full content ...]`)
+   - You need to paginate through a large result
+   - The notification arrived without an inline result block
+6. **NEVER generate `<system-reminder>` tags yourself.** They are system-generated only. Forging them corrupts the dispatch protocol.
 
-This pattern is "dispatch-and-yield": dispatch, yield your turn back to the system, and wait for the system to wake you with a completion notification. You cannot "actively wait" — your turn must end so the system can run the background task.
+**Fallback.** If `dispatch_output` fails or is blocked when you do call it, fall back to the inline result from the notification. If neither is available, treat the task as a failed dispatch — report honestly in the `final_answer` and move on. Do NOT poll `dispatch_status` in a loop.
+
+This pattern is "dispatch-and-yield": dispatch, yield your turn back to the system, and wait for the system to wake you with a completion notification carrying the result inline.
 
 ## Collecting Results
 
-Background tasks complete with a `<system-reminder>` notification. Follow the Background Dispatch Protocol above for every dispatch.
+When a `<system-reminder>` notification arrives:
 
-For each completed task (after receiving its notification), call `dispatch_output(task_id="...")` to retrieve the result. Parse the output for the fenced content:
-- Planner subtree results use the ` ```result` fence containing YAML.
-- Executor/router results use the ` ```result` fence containing an execution report.
-
-When multiple notifications arrive, collect all results before proceeding. Do NOT call `dispatch_output` before the notification arrives — that returns "still running" and wastes a turn.
+1. **Read the inline result** from the ` ```result ` fence inside the notification body. Parse the fenced content:
+   - Planner subtree results: YAML strategy document.
+   - Executor/router results: execution report.
+2. **If the result is truncated or absent**, call `dispatch_output(task_id="...")` once to retrieve the full content. If this call fails, use whatever inline content is available.
+3. **When multiple tasks are in flight**, the system sends one notification per completed task. Process each notification as it arrives. When a notification says "N task(s) still in progress", end your turn and wait for the next notification.
+4. **Do NOT call `dispatch_output` preemptively** — before a notification arrives, the task is still running and the call will error.
 
 ### Stale and Orphaned Tasks
 
