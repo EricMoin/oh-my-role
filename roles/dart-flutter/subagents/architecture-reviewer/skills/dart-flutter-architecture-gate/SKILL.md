@@ -21,7 +21,7 @@ Confirm that the proposed Flutter change fits the existing architecture and does
 
 ## References
 
-Use `roles/dart-flutter/references/guides/architecture.md`, `state-management.md`, and `networking-data.md` when relevant.
+Use `roles/dart-flutter/references/flutter-architecture.md`, `references/state-management.md`, and `references/networking-and-data.md` when relevant.
 
 ## Output
 
