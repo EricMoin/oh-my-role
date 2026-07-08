@@ -20,7 +20,7 @@ Confirm that the change is verifiable at the right level and that regressions ar
 
 ## References
 
-Use `roles/dart-flutter/references/guides/testing.md`.
+Use `roles/dart-flutter/references/testing-and-quality.md`.
 
 ## Output
 

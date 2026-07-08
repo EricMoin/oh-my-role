@@ -12,7 +12,7 @@ Use this skill to keep larger Flutter work deliberate without slowing down small
 
 - For state shape, read `roles/dart-flutter/references/templates/engineering-state.md`.
 - For internal reports, read `roles/dart-flutter/references/templates/gate-report.md`.
-- For gate-specific checks, read only the relevant guide in `roles/dart-flutter/references/guides/`.
+- For gate-specific checks, read only the relevant guide in `roles/dart-flutter/references/`.
 
 ## Workflow
 

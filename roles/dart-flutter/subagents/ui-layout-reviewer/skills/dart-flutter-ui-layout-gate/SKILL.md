@@ -21,7 +21,7 @@ Confirm that the proposed UI behaves correctly across constraints, inputs, and a
 
 ## References
 
-Use `roles/dart-flutter/references/guides/accessibility.md`, `performance.md`, and `testing.md` when relevant.
+Use `roles/dart-flutter/references/ui-and-accessibility.md`, `platform-and-performance.md`, and `testing-and-quality.md` when relevant.
 
 ## Output
 

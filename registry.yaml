@@ -34,10 +34,11 @@ roles:
       Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
-    version: "2.1.1"
-    description: Dart/Flutter engineering lead — builds, reviews, tests,
-      profiles, and ships cross-platform apps
-    tags: [dart, flutter, mobile, cross-platform, testing, performance]
+    version: "3.0.0"
+    description: Dart/Flutter engineering lead with evidence-first research,
+      engineering state machines, and specialist gate reviews — builds, tests,
+      profiles, and ships cross-platform Flutter and Dart applications
+    tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
     version: "1.0.0"
     description: Expert Jetpack Compose and Android engineer — builds modern

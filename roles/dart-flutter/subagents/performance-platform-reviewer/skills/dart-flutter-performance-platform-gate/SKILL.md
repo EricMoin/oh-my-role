@@ -20,7 +20,7 @@ Confirm that performance or platform-sensitive work is evidence-led and compatib
 
 ## References
 
-Use `roles/dart-flutter/references/guides/performance.md` and `platform-release.md` when relevant.
+Use `roles/dart-flutter/references/platform-and-performance.md` when relevant.
 
 ## Output
 

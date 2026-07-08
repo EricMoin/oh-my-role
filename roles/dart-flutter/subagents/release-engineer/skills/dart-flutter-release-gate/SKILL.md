@@ -20,7 +20,7 @@ Confirm that platform and release changes are complete, least-privilege, and bui
 
 ## References
 
-Use `roles/dart-flutter/references/guides/platform-release.md`.
+Use `roles/dart-flutter/references/platform-and-performance.md`.
 
 ## Output
 
