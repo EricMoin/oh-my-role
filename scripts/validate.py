@@ -95,6 +95,7 @@ def validate_top_level_role(role_dir: Path, data: dict):
             err(yaml_rel, f"'prompt_file' points to missing file '{data['prompt_file']}'")
 
     validate_temperature(yaml_rel, data)
+    validate_model_field(yaml_rel, data)
 
     if "skills" in data:
         validate_skills_field(yaml_rel, data["skills"])
@@ -121,9 +122,12 @@ def validate_subagent_role(subagent_dir: Path, data: dict):
     rel = str(subagent_dir.relative_to(REPO_ROOT))
     yaml_rel = f"{rel}/role.yaml"
 
-    for field in ["name", "description", "prompt"]:
+    for field in ["name", "description"]:
         if field not in data:
             err(yaml_rel, f"Missing required field: '{field}'")
+
+    if "prompt" not in data and "prompt_file" not in data:
+        err(yaml_rel, "Missing required field: 'prompt' or 'prompt_file'")
 
     if "name" in data and not isinstance(data["name"], str):
         err(yaml_rel, f"'name' must be a string, got {type(data['name']).__name__}")
@@ -143,7 +147,14 @@ def validate_subagent_role(subagent_dir: Path, data: dict):
     if "prompt" in data and not isinstance(data["prompt"], str):
         err(yaml_rel, f"'prompt' must be a string, got {type(data['prompt']).__name__}")
 
+    if "prompt_file" in data:
+        if not isinstance(data["prompt_file"], str):
+            err(yaml_rel, f"'prompt_file' must be a string, got {type(data['prompt_file']).__name__}")
+        elif not (subagent_dir / data["prompt_file"]).is_file():
+            err(yaml_rel, f"'prompt_file' points to missing file '{data['prompt_file']}'")
+
     validate_temperature(yaml_rel, data)
+    validate_model_field(yaml_rel, data)
 
     if "skills" in data:
         validate_skills_field(yaml_rel, data["skills"])
@@ -166,6 +177,16 @@ def validate_temperature(yaml_rel: str, data: dict):
     elif not (0 <= t <= 2):
         warn(yaml_rel, f"'temperature' value {t} is outside typical range [0, 2]")
 
+def validate_model_field(yaml_rel: str, data: dict):
+    """Check model field uses abstract provider/ prefix, not concrete model IDs."""
+    model = data.get("model")
+    if model is None:
+        return
+    if not isinstance(model, str):
+        err(yaml_rel, f"'model' must be a string, got {type(model).__name__}")
+        return
+    if not model.startswith("provider/"):
+        err(yaml_rel, f"'model' value '{model}' is a concrete model identifier; use 'provider/tier-N-name' format")
 
 def validate_skills_field(yaml_rel: str, skills):
     if not isinstance(skills, list):
@@ -579,6 +600,30 @@ def validate_no_legacy_software_architect_refs():
                 )
 
 
+def scan_for_model_leaks():
+    """Scan all YAML files under roles/ and registry.yaml for known concrete model patterns.
+    This is a safety net beyond the model: field check."""
+    MODEL_LEAK_RE = re.compile(
+        r"(?:hfai|openai|anthropic|google|meta|mistral|cohere|deepseek)/[a-zA-Z0-9._-]+",
+        re.IGNORECASE,
+    )
+
+    scan_targets = [REGISTRY_FILE]
+    for yaml_file in ROLES_DIR.rglob("*.yaml"):
+        if yaml_file.is_file():
+            scan_targets.append(yaml_file)
+
+    for filepath in scan_targets:
+        if not filepath.is_file():
+            continue
+        try:
+            content = filepath.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        rel = str(filepath.relative_to(REPO_ROOT))
+        for match in MODEL_LEAK_RE.finditer(content):
+            err(rel, f"Concrete model identifier found: '{match.group()}'; use 'provider/...' format")
+
 def main():
     print("Validating oh-my-role registry...\n")
 
@@ -649,6 +694,7 @@ def main():
         find_orphan_functions(role_dir, referenced_functions, f"roles/{role_name}/role.yaml")
 
     validate_no_legacy_software_architect_refs()
+    scan_for_model_leaks()
 
     report_and_exit()
 
