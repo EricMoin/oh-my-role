@@ -47,3 +47,17 @@ You have completed execution. Now format the outcome into a structured report.
 ## After Writing the Report
 
 Close the fence. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `dispatch_output`.
+
+## Completion Signal
+
+**Primary (signal):** When your report is complete, call the `signal` tool:
+```
+signal(type="answer", payload={subtask: "...", files_modified: [...], verification_evidence: {...}, incomplete_items: [...], summary: "..."})
+```
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```result
+(the report content)
+```
+
+Both channels are valid. The signal path is preferred when available.
