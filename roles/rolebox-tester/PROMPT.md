@@ -2452,19 +2452,20 @@ This test verifies that the session-start system prompt contains a `<collaborati
 
 ---
 
-### Test 110: System Prompt — `<available_functions>` Lists All 6 Functions
+### Test 110: System Prompt — `<available_functions>` Lists All 7 Functions
 
-This test verifies that the session-start system prompt contains an `<available_functions>` XML block listing all 6 registered functions with correct names, descriptions, and parameter declarations.
+This test verifies that the session-start system prompt contains an `<available_functions>` XML block listing all 7 registered functions with correct names, descriptions, and parameter declarations.
 
 **Step 1**: Inspect your system prompt for the `<available_functions>` block. Look for `<function>` child elements.
 
-**Step 2**: Verify that exactly 6 `<function>` entries are present, matching the `functions:` list in `role.yaml`:
+**Step 2**: Verify that exactly 7 `<function>` entries are present, matching the `functions:` list in `role.yaml`:
    - `test-all` — master test function
    - `transform` — parameterized function with action and separator params
    - `loop` — loop function with iterations and mode params
    - `memory` — memory consolidation function with scope param
    - `state-machine` — state machine lifecycle function
    - `observe-probe` — observe/probe function
+   - `signal-probe` — signal architecture lifecycle function
 
 **Step 3**: For each function, verify it has the required child elements:
    - `<name>` — the function name
@@ -2475,15 +2476,16 @@ This test verifies that the session-start system prompt contains an `<available_
 
 **Pass criteria (all must be true)**:
 1. The system prompt contains `<available_functions>` tags.
-2. Exactly 6 `<function>` child elements are present.
+2. Exactly 7 `<function>` child elements are present.
 3. A `<function>` with `<name>test-all</name>` exists, with a description containing "master test" or "test sequence".
 4. A `<function>` with `<name>transform</name>` exists, with a `<params>` element containing `action=uppercase` and `separator=-`.
 5. A `<function>` with `<name>loop</name>` exists, with a `<params>` element containing `iterations=` and `mode=`.
 6. A `<function>` with `<name>memory</name>` exists, with a `<params>` element containing `scope=all`.
 7. A `<function>` with `<name>state-machine</name>` exists, with a description referencing state machine functionality.
 8. A `<function>` with `<name>observe-probe</name>` exists, with a description referencing observe or probe functionality.
-9. Each `<function>` has a `<content>` child element (the function body is injected as CDATA).
-10. This proves the function loader discovered all 6 function files in `functions/`, parsed their YAML frontmatter, and injected them into the agent context as `<available_functions>`.
+9. A `<function>` with `<name>signal-probe</name>` exists, with a description referencing signal tool lifecycle or signal_observed.
+10. Each `<function>` has a `<content>` child element (the function body is injected as CDATA).
+11. This proves the function loader discovered all 7 function files in `functions/`, parsed their YAML frontmatter, and injected them into the agent context as `<available_functions>`.
 
 ---
 
@@ -2583,7 +2585,7 @@ This test verifies that the session-start system prompt contains an `<available_
 After all tests complete, produce a summary table:
 ```
 ╔══════════════════════════════════════════════════╗
-║        ROLEBOX FEATURE TEST REPORT v6.1          ║
+║        ROLEBOX FEATURE TEST REPORT v7.0          ║
 ╠══════════════════════════════════════════════════╣
 ║ Test                              │ Result       ║
 ╠═══════════════════════════════════╪══════════════╣
@@ -2646,8 +2648,36 @@ After all tests complete, produce a summary table:
 ║112. SP — Available Skills          │ PASS/FAIL    ║
 ║113. SP — Available Subagents       │ PASS/FAIL    ║
 ║114. SP — Available Memory          │ PASS/FAIL    ║
+║115. Signal Tool — Basic Call      │ PASS/FAIL    ║
+║116. Signal Tool — Payload Capture  │ PASS/FAIL    ║
+║117. BD — function_graph Detection  │ PASS/FAIL    ║
+║118. BD — asset_validate Reporting  │ PASS/FAIL    ║
+║119a. Nested 3-Level Dispatch      │ PASS/FAIL    ║
+║120. DO — tail Parameter           │ PASS/FAIL    ║
+║121. BG Session Continuation       │ PASS/FAIL    ║
+║122. HL — Windowed Read            │ PASS/FAIL    ║
+║123. HL — Batch Multiple Ops       │ PASS/FAIL    ║
+║124. DM — Export to File           │ PASS/FAIL    ║
+║125. DS — All-Tasks Summary        │ PASS/FAIL    ║
+║126. CG — max_iterations           │ PASS/FAIL    ║
+║127. Web Search Tool               │ PASS/FAIL    ║
+║128. Web Read Tool                 │ PASS/FAIL    ║
+║129. MCP Resource Listing          │ PASS/FAIL    ║
+║130. TE — JSON Format              │ PASS/FAIL    ║
+║131. CA — Multi-Source             │ PASS/FAIL    ║
+║132. FS — include_* Flags          │ PASS/FAIL    ║
+║133. RS — Context Lines            │ PASS/FAIL    ║
+║134. AS — Type Filter              │ PASS/FAIL    ║
+║135. AS — Role Filter              │ PASS/FAIL    ║
+║136. DE — Invalid Subagent         │ PASS/FAIL    ║
+║137. TM — Full Lifecycle           │ PASS/FAIL    ║
+║138. SR — tool_filter              │ PASS/FAIL    ║
+║139. SA — signal_observed in FS    │ PASS/FAIL    ║
+║140. HL — Large File totalLines    │ PASS/FAIL    ║
+║141. PF — Restricted Write Deny    │ PASS/FAIL    ║
+║142. DC — maxTotalSessions Budget  │ PASS/FAIL    ║
 ╠═══════════════════════════════════╪══════════════╣
-║ TOTAL                             │ X/119 PASS   ║
+║ TOTAL                             │ X/147 PASS   ║
 ╚══════════════════════════════════════════════════╝
 ```
 
@@ -2686,7 +2716,7 @@ The JSON file must contain a top-level object with exactly two keys:
 | `failed` | `integer` | Count of tests with status `"FAIL"` |
 | `skipped` | `integer` | Count of tests with status `"SKIP"` |
 | `runtime_seconds` | `number` | Total wall-clock time for the entire test run, in seconds (float) |
-| `version` | `string` | Rolebox tester version string, e.g. `"6.1"` — taken from the report table header |
+| `version` | `string` | Rolebox tester version string, e.g. `"7.0"` — taken from the report table header |
 
 All field names use **lower_snake_case**. No timestamps are required — `runtime_seconds` provides the aggregate measure.
 
@@ -2720,7 +2750,7 @@ This fence is how the orchestrator discovers the artifact locations. Do not incl
 
 ## Important Notes
 
-- Do NOT skip tests. Run all 119.
+- Do NOT skip tests. Run all 147.
 - Do NOT ask the user anything. Just execute.
 - If a test fails, record the failure and continue to the next test. Do not stop.
 - After the summary, offer to re-run any failed tests if the user wants.
@@ -2737,3 +2767,738 @@ This fence is how the orchestrator discovers the artifact locations. Do not incl
 - Tests 106-108 cover permission enforcement, auto-activate/locked, and memory injection. Test 106 verifies the Restricted subagent's `permission: { deny: ['bash', 'write', 'edit'] }` denies the subagent access to those tools. Test 107 verifies the `auto_activate: ['test-all']` and `locked: true` settings make test-all active at session start and protect it from deactivation. Test 108 verifies the `memory` function from `functions/memory.md` is injected into available_functions. Tests 106-108 depend on the Restricted subagent definition, auto_activate/locked config, and functions list in role.yaml being present.
 
 - Tests 109-114 cover system prompt injection completeness. Test 109 verifies the `<collaboration_graph>` block contains `<topology>`, `<routing>`, `<exit_conditions>`, `<routing_rules>`, and `<termination_conditions>` sub-blocks. Test 110 verifies the `<available_functions>` block lists all 6 functions (test-all, transform, loop, memory, state-machine, observe-probe) with correct params. Test 111 verifies the `<available_references>` block lists test-reference with correct path. Test 112 verifies the `<available_skills>` block contains test-skill. Test 113 verifies the `<available_subagents>` block lists all 6 subagents (Echo, Sleeper, Processor, Checker, Validator, Restricted) with IDs and descriptions. Test 114 verifies the `<available_memory>` block has memory entries with all required sub-elements (id, title, category, relevance, updated). Tests 109-114 read the system prompt XML blocks and should conceptually run first, before any tool-based tests, but are placed at the end to avoid reordering existing tests.
+
+- Tests 115-116 cover the signal tool (requires the signal tool to be registered in the session).
+- Tests 117-118 cover the broken-dep function probe (dependency graph/validation).
+- Test 119a covers nested 3-level dispatch (parent→nester→grandchild).
+- Tests 120-125 cover dispatch advanced features (tail parameter, background session continuation, metrics export to file, status all-tasks summary).
+- Tests 127-129 cover web/MCP tools (web_search, web_read, list_mcp_resources).
+- Tests 130-142 cover remaining gaps (task export JSON format, context assemble multi-source, function state include_* flags, reference search context lines, asset search type/role filters, dispatch error on invalid subagent, todo full lifecycle, session read tool_filter, signal_observed in function_state, hashline large file totalLines, permission write deny, maxTotalSessions budget tracking).
+
+---
+
+### Test 115: Signal Tool — Basic Call
+
+This test verifies that the `signal` tool is registered and callable. The signal tool is part of the rolebox kernel's out-of-band signaling architecture for function state-machine completion.
+
+**Step 1**: Activate the `signal-probe` function:
+
+```
+|signal-probe|
+```
+
+**Step 2**: Call the `signal` tool with type `"answer"`:
+
+```
+signal(type="answer")
+```
+
+**Step 3**: Verify the tool response.
+
+**Pass criteria (all must be true)**:
+1. The `signal` tool is available in the tool list (not "tool not found").
+2. The tool returns without error.
+3. The response contains confirmation text (e.g., "Signal 'answer' recorded" or "signal received" or similar acknowledgment).
+4. This proves the signal tool is registered by the rolebox kernel and accepts the `answer` type from the 8-type signal taxonomy.
+
+---
+
+### Test 116: Signal Tool — Payload Capture
+
+This test verifies that the `signal` tool accepts an optional JSON payload alongside the signal type, and that the payload is recorded for downstream consumption.
+
+**Step 1**: Call `signal` with a payload containing a test marker:
+
+```
+signal(type="answer", payload={"test_key": "SIGNAL_PAYLOAD_OK", "numeric": 42, "nested": {"inner": true}})
+```
+
+**Step 2**: Check the tool response for payload acknowledgment.
+
+**Step 3**: Call `function_state()` to verify the signal-probe function's state reflects the signal:
+
+```
+function_state()
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error (payload is accepted).
+2. The response acknowledges the payload was recorded (not just the type).
+3. `function_state()` shows the `signal-probe` function with evidence `✅ signal_answer_observed` — proving the observe spec with `when_args: {match: {type: "answer"}}` fired and set the evidence tag.
+4. This proves the signal tool accepts structured payloads and that the `capture_payload_as: signal_test_payload` mechanism captured the payload for artifact consumption.
+
+---
+
+### Test 117: Broken Dependency — function_graph Detection
+
+This test verifies that the `function_graph` tool correctly identifies and displays broken/unsatisfied dependency edges. The `broken-dep` function declares `requires: [nonexistent-function]` — a function that does not exist.
+
+**Step 1**: Call `function_graph` in dependencies mode:
+
+```
+function_graph(focus="dependencies")
+```
+
+**Step 2**: Inspect the output graph for the `broken-dep` node and its edges.
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The output contains a node named `broken-dep` — proving the function was loaded into the graph.
+3. The output contains `nonexistent-function` as a dependency target — proving the `requires` edge is tracked even when the target does not exist.
+4. The edge is marked as broken, missing, or unresolved (e.g., with a `⚠`, `❌`, `[missing]`, or `(unresolved)` indicator) — proving the graph distinguishes satisfied from unsatisfied dependencies.
+5. This proves `function_graph(focus="dependencies")` performs reachability analysis and reports disconnected/missing nodes in the requires DAG.
+
+---
+
+### Test 118: Broken Dependency — asset_validate Reporting
+
+This test verifies that the `asset_validate` tool reports the `broken-dep` function's unsatisfied dependency as a validation issue.
+
+**Step 1**: Call `asset_validate()`:
+
+```
+asset_validate()
+```
+
+**Step 2**: Inspect the validation results for issues related to `broken-dep`.
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The output contains a validation issue (error or warning) that references `broken-dep`.
+3. The issue mentions `nonexistent-function` or describes a "missing dependency" / "unsatisfied requires".
+4. The issue is categorized as a "missing dependency" type (the first of the three categories: missing dependencies, broken reference paths, unknown transition conditions).
+5. This proves `asset_validate` performs dependency resolution checking and reports functions whose `requires` field references non-existent functions.
+
+---
+
+### Test 119a: Nested Dispatch — 3-Level Deep (Parent→Nester→Grandchild)
+
+This test verifies that dispatch supports 3-level nesting: the tester dispatches to Nester, which dispatches to Grandchild, which responds. This exercises the full depth of the dispatch tree.
+
+**Step 1**: Dispatch synchronously to the Nester subagent:
+
+```
+dispatch(subagent="rolebox-tester--nester", prompt="Forward this to grandchild: NESTED_DEPTH_TEST. Reply with the grandchild's response.", run_in_background=false)
+```
+
+**Step 2**: Inspect the response for markers from all three levels.
+
+**Pass criteria (all must be true)**:
+1. The response contains "NESTER_RECEIVED" — proving the Nester (level 2) received the dispatch.
+2. The response contains "GRANDCHILD_RECEIVED" — proving the Grandchild (level 3) received the forwarded dispatch.
+3. The response contains "GRANDCHILD_OK" — proving the Grandchild executed its task.
+4. The response contains "NESTER_FORWARDED" — proving Nester relayed the Grandchild's response back up.
+5. This proves 3-level dispatch nesting works: tester (level 1) → nester (level 2) → grandchild (level 3) → response bubbles back through nester → tester.
+
+---
+
+### Test 120: Dispatch Output — tail Parameter
+
+This test verifies that `dispatch_output` supports the `tail` parameter, which returns the last N characters of the result instead of reading from an offset.
+
+**Step 1**: Use the task_id from Test 4 (Synchronous Dispatch) or Test 5 (Async Dispatch) — any completed task with known output.
+
+**Step 2**: Call `dispatch_output` with `tail=true` and a small `max_chars`:
+
+```
+dispatch_output(task_id="<task_id from Test 4 or 5>", tail=true, max_chars=20)
+```
+
+**Step 3**: Compare the returned content with the full output from the original test.
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The returned content is ≤20 characters.
+3. The returned content matches the LAST portion of the task's full output (not the first portion) — proving the `tail` parameter reverses the read direction.
+4. This proves `dispatch_output`'s `tail` parameter is wired and functional, enabling efficient retrieval of result endings without paginating through the full output.
+
+---
+
+### Test 121: Background Session Continuation
+
+This test verifies that background dispatch (`run_in_background=true`) supports session continuation via `session_id`, preserving context across separate async dispatch calls.
+
+**Step 1**: Dispatch a background task to Echo:
+
+```
+dispatch(subagent="rolebox-tester--echo", prompt="Remember this secret code: GAMMA-9921. Confirm you stored it.", run_in_background=true)
+```
+
+Capture the `task_id`. Wait for the `<system-reminder>` completion notification.
+
+**Step 2**: Re-dispatch to the SAME session using `session_id`, also in background mode:
+
+```
+dispatch(subagent="rolebox-tester--echo", session_id="<task_id from step 1>", prompt="What secret code did I ask you to remember? Reply with just the code.", run_in_background=true)
+```
+
+Wait for the `<system-reminder>` completion notification. Collect via `dispatch_output`.
+
+**Pass criteria (all must be true)**:
+1. Step 1 completes successfully (Echo confirms it stored the code).
+2. Step 2 completes successfully.
+3. The Step 2 response contains "GAMMA-9921" — proving session context was preserved across two separate background dispatches to the same session.
+4. This proves `session_id` continuation works for background tasks (`run_in_background=true`), not just synchronous tasks. This is distinct from Test 6 which only tests sync continuation and Test 32 which tests sync-to-sync continuation.
+
+---
+
+### Test 122: Hashline Read — Windowed Read (offset/limit)
+
+This test verifies that `hashline_read` supports windowed reads via the `offset` and `limit` parameters, returning only a subset of lines while still reporting the total line count.
+
+**Step 1**: Create a 10-line file:
+
+```
+write(filePath="/tmp/opencode/hashline-windowed-test.txt", content="line01\nline02\nline03\nline04\nline05\nline06\nline07\nline08\nline09\nline10\n")
+```
+
+**Step 2**: Call `hashline_read` with offset and limit to read only lines 3-6:
+
+```
+hashline_read(filePath="/tmp/opencode/hashline-windowed-test.txt", offset=3, limit=4)
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The output contains exactly 4 annotated lines (lines 3, 4, 5, 6) in `LINE#HASH|content` format.
+3. The output contains `startLine: 3` (or equivalent field indicating the window start).
+4. The output contains `endLine: 6` (or equivalent field indicating the window end).
+5. The output contains `totalLines: 10` — proving the total file size is reported even for windowed reads.
+6. Lines outside the window (1, 2, 7-10) are NOT present in the output.
+7. This proves `hashline_read` supports efficient partial file reads for large files, enabling token-saving windowed operations.
+
+---
+
+### Test 123: Hashline Edit — Batch Multiple Operations
+
+This test verifies that `hashline_edit` supports multiple operations in a single `edits[]` array, applying them atomically in one call.
+
+**Step 1**: Create a 5-line file:
+
+```
+write(filePath="/tmp/opencode/hashline-batch-test.txt", content="alpha\nbeta\ngamma\ndelta\nepsilon\n")
+```
+
+**Step 2**: Call `hashline_read` to get line anchors and version:
+
+```
+hashline_read(filePath="/tmp/opencode/hashline-batch-test.txt")
+```
+
+Extract the `version` and line anchors for lines 2 ("beta") and 4 ("delta").
+
+**Step 3**: Call `hashline_edit` with TWO operations in the same edits array — replace line 2 with "BRAVO" and line 4 with "DELTA_REPLACED":
+
+```
+hashline_edit(
+  expected_version="<version from step 2>",
+  files=[{
+    filePath: "/tmp/opencode/hashline-batch-test.txt",
+    edits: [
+      { op: "replace", pos: "<anchor for line 2>", lines: "BRAVO" },
+      { op: "replace", pos: "<anchor for line 4>", lines: "DELTA_REPLACED" }
+    ]
+  }]
+)
+```
+
+**Step 4**: Read the file back:
+
+```
+read(filePath="/tmp/opencode/hashline-batch-test.txt")
+```
+
+**Pass criteria (all must be true)**:
+1. Step 3 returns without error (both operations accepted).
+2. Step 4 shows line 2 is now "BRAVO" (was "beta") — proving the first operation succeeded.
+3. Step 4 shows line 4 is now "DELTA_REPLACED" (was "delta") — proving the second operation succeeded.
+4. Lines 1 ("alpha"), 3 ("gamma"), and 5 ("epsilon") are unchanged — proving batch edits are surgical.
+5. Both edits used the same `expected_version` from a single read — proving they reference the same snapshot (SNAPSHOT SEMANTICS: all edits reference the ORIGINAL file state).
+6. This proves `hashline_edit` supports batch operations with bottom-up application for correct index handling.
+
+---
+
+### Test 124: Dispatch Metrics — Export to File
+
+This test verifies that `dispatch_metrics` supports the `export_path` parameter, writing the metrics snapshot to a JSON file on disk.
+
+**Step 1**: Call `dispatch_metrics` with an export path:
+
+```
+dispatch_metrics(format="json", export_path="/tmp/opencode/metrics-export-test.json")
+```
+
+**Step 2**: Read the exported file:
+
+```
+read(filePath="/tmp/opencode/metrics-export-test.json")
+```
+
+**Pass criteria (all must be true)**:
+1. Step 1 returns without error.
+2. The file at `/tmp/opencode/metrics-export-test.json` exists (Step 2 does not return "file not found").
+3. The file contents are valid JSON (parseable, not empty or truncated).
+4. The JSON contains metrics fields (e.g., `active`, `queued`, `completed`, or equivalent counters).
+5. This proves the `export_path` parameter triggers an atomic file write of the metrics snapshot, enabling external monitoring or CI consumption of dispatch subsystem state.
+
+---
+
+### Test 125: Dispatch Status — All-Tasks Summary
+
+This test verifies `dispatch_status()` called without a `task_id` argument returns a summary table of all tasks dispatched from the current session.
+
+**Step 1**: Call `dispatch_status()` with no arguments:
+
+```
+dispatch_status()
+```
+
+**Step 2**: Inspect the output format and content.
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The output is a markdown table (contains `|` delimiters and header separators).
+3. The table contains columns for Task ID, Agent (or Subagent), and Status at minimum.
+4. At least one task row is present (tasks from earlier tests 4-10 should appear).
+5. The tool does NOT throw even when some tasks are still running — proving the "never throws" contract documented in the tool description.
+6. This proves the session-summary mode of `dispatch_status` provides a non-blocking overview of all dispatch activity for the current session.
+
+---
+
+### Test 126: Collaboration Graph — max_iterations Termination
+
+This test verifies that the collaboration graph's `max_iterations: 2` setting is correctly loaded and visible in the system prompt, providing a hard cap on graph iteration cycles.
+
+**Step 1**: Inspect your system prompt for the `<collaboration_graph>` block. Look for `max_iterations` or `iteration` references.
+
+**Step 2**: Verify the `<exit_conditions>` section mentions the iteration limit:
+
+```
+Look for text like: "max 2 iteration(s) reached" or "max_iterations: 2"
+```
+
+**Step 3**: Verify the `<collaboration_state>` block (if present) shows the current iteration counter:
+
+```
+Look for: "iteration: 0/2" or similar
+```
+
+**Pass criteria (all must be true)**:
+1. The system prompt's `<collaboration_graph>` block contains a reference to `max_iterations` or iteration limits — proving the termination config from `role.yaml` was loaded.
+2. The `<exit_conditions>` section mentions reaching the iteration limit as a termination condition.
+3. If a `<collaboration_state>` block is present, it shows an iteration counter with the max (e.g., "0/2" or "iteration 0 of 2").
+4. This proves the collaboration graph engine respects the `max_iterations: 2` setting from `role.yaml` `collaboration.termination.any_of[].max_iterations`.
+
+---
+
+### Test 127: Web Search Tool
+
+This test verifies that the `web_search` tool is available and can perform internet searches.
+
+**Step 1**: Call `web_search` with a test query:
+
+```
+web_search(query="example.com", max_results=3, source="duckduckgo")
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error (not "tool not found" or crash).
+2. The response contains at least one search result with a title and URL.
+3. If no results are found (network unavailable), the response says "No results" rather than throwing an error — proving graceful degradation.
+4. This proves the `web_search` tool is registered and callable, with `source`, `query`, and `max_results` parameters accepted.
+
+---
+
+### Test 128: Web Read Tool
+
+This test verifies that the `web_read` tool can fetch and convert web pages to markdown.
+
+**Step 1**: Call `web_read` on a stable, simple URL:
+
+```
+web_read(url="https://example.com")
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The response contains markdown-formatted content (headings, paragraphs, or links).
+3. The content contains "Example Domain" or similar text from the example.com page — proving the page was actually fetched and converted.
+4. If the fetch fails (network issue), the error message is descriptive rather than a raw crash — proving graceful error handling.
+5. This proves `web_read` performs URL fetching and markdown conversion for LLM consumption.
+
+---
+
+### Test 129: MCP Resource Listing
+
+This test verifies that the `list_mcp_resources` tool is available and callable, regardless of whether MCP servers are connected.
+
+**Step 1**: Call `list_mcp_resources()`:
+
+```
+list_mcp_resources()
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error (not "tool not found").
+2. The response is either: (a) a list of resources from connected MCP servers, or (b) an empty list / "no MCP servers connected" message.
+3. If resources ARE listed, each has a `uri` and optionally a `name` and `description`.
+4. This proves the MCP resource discovery mechanism is wired and callable, even when no MCP servers are configured.
+
+---
+
+### Test 130: Task Export — JSON Format
+
+This test verifies that `task_export` supports the `format="json"` option, producing a JSON file containing the task result.
+
+**Step 1**: Dispatch a sync task to Echo to get a completed task:
+
+```
+dispatch(subagent="rolebox-tester--echo", prompt="Reply with the exact phrase: EXPORT_JSON_FORMAT_OK", run_in_background=false)
+```
+
+Capture the `task_id`.
+
+**Step 2**: Export the task in JSON format:
+
+```
+task_export(task_id="<task_id from step 1>", format="json", output_path="/tmp/opencode/task-export-json-test.json")
+```
+
+**Step 3**: Read the exported file:
+
+```
+read(filePath="/tmp/opencode/task-export-json-test.json")
+```
+
+**Pass criteria (all must be true)**:
+1. Step 2 returns without error.
+2. The file at `/tmp/opencode/task-export-json-test.json` exists.
+3. The file contains valid JSON (starts with `{` or `[`).
+4. The JSON contains the task result text including "EXPORT_JSON_FORMAT_OK".
+5. This proves `task_export` supports JSON format export in addition to the markdown format tested in Test 75.
+
+---
+
+### Test 131: Context Assemble — Multi-Source
+
+This test verifies that `context_assemble` searches across multiple specified source domains and assembles a token-bounded context block.
+
+**Step 1**: Call `context_assemble` with explicit source list:
+
+```
+context_assemble(topic="dispatch test rolebox", sources=["memory", "asset", "session"], max_tokens=3000)
+```
+
+**Step 2**: Inspect the assembled context block.
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. The response is a markdown-formatted context block.
+3. The response draws from at least 2 of the 3 specified sources (memory, asset, session) — evidenced by section headers or source attribution in the output.
+4. The response respects the `max_tokens` budget (output is not excessively long).
+5. This proves `context_assemble` performs cross-domain search with configurable source selection and token budgeting.
+
+---
+
+### Test 132: Function State — include_artifacts and include_evidence Flags
+
+This test verifies that `function_state` respects the `include_artifacts` and `include_evidence` boolean flags, producing richer or leaner output accordingly.
+
+**Step 1**: Call `function_state` with all display options enabled:
+
+```
+function_state(include_artifacts=true, include_evidence=true)
+```
+
+**Step 2**: Call `function_state` with all display options disabled:
+
+```
+function_state(include_artifacts=false, include_evidence=false)
+```
+
+**Step 3**: Compare the two outputs.
+
+**Pass criteria (all must be true)**:
+1. Both calls return without error.
+2. Step 1's output includes an Evidence column with ✅/❌ indicators or evidence tag names.
+3. Step 1's output includes artifact status (produced/consumed markers or an "Artifacts" section).
+4. Step 2's output is shorter or lacks the Evidence column and artifact details.
+5. This proves the `include_artifacts` and `include_evidence` parameters control output verbosity, enabling callers to reduce token consumption when they only need basic phase/gate info.
+
+---
+
+### Test 133: Reference Search — Context Lines Parameter
+
+This test verifies that `reference_search` respects the `context_lines` parameter, returning surrounding context around each match.
+
+**Step 1**: Call `reference_search` with a high context_lines value:
+
+```
+reference_search(query="REFERENCE_LOAD_SUCCESS", context_lines=5, limit=5)
+```
+
+**Step 2**: Call `reference_search` with context_lines=0 for comparison:
+
+```
+reference_search(query="REFERENCE_LOAD_SUCCESS", context_lines=0, limit=5)
+```
+
+**Pass criteria (all must be true)**:
+1. Both calls return without error.
+2. Step 1 returns matches with surrounding lines (at least some lines before/after the matched line containing "REFERENCE_LOAD_SUCCESS").
+3. Step 2 returns matches with minimal or no surrounding context — just the matched line.
+4. Step 1's output is visibly longer than Step 2's (more lines per match).
+5. This proves `reference_search` respects the `context_lines` parameter for controlling match context granularity.
+
+---
+
+### Test 134: Asset Search — Type Filter
+
+This test verifies that `asset_search` respects the `type` parameter to filter results by asset category.
+
+**Step 1**: Call `asset_search` with `type="skill"`:
+
+```
+asset_search(query="test", type="skill", limit=10)
+```
+
+**Step 2**: Call `asset_search` with `type="function"`:
+
+```
+asset_search(query="test", type="function", limit=10)
+```
+
+**Pass criteria (all must be true)**:
+1. Both calls return without error.
+2. Step 1 results contain only skill-type assets (no functions or references in the results).
+3. Step 2 results contain only function-type assets (no skills or references in the results).
+4. Both result sets are non-empty (the "test" query matches assets in both categories — `test-skill` is a skill, `test-all` is a function).
+5. This proves `asset_search` correctly filters results by the `type` enum parameter.
+
+---
+
+### Test 135: Asset Search — Role Filter
+
+This test verifies that `asset_search` respects the `role_id` parameter to scope results to a specific role.
+
+**Step 1**: Call `asset_search` scoped to rolebox-tester:
+
+```
+asset_search(query="test", role_id="rolebox-tester", limit=10)
+```
+
+**Step 2**: Call `asset_search` without role_id for comparison:
+
+```
+asset_search(query="test", limit=10)
+```
+
+**Pass criteria (all must be true)**:
+1. Both calls return without error.
+2. Step 1 results contain ONLY assets from the `rolebox-tester` role (all result entries show `rolebox-tester` as their role ID).
+3. Step 2 results may contain assets from multiple roles (wider scope).
+4. Step 1's result count is ≤ Step 2's result count — proving the filter narrows the search.
+5. This proves `asset_search` correctly scopes results using the `role_id` filter.
+
+---
+
+### Test 136: Dispatch Error — Invalid Subagent Name
+
+This test verifies that dispatching to a non-existent subagent produces a clear error message rather than silently failing or hanging.
+
+**Step 1**: Attempt a synchronous dispatch to an invalid subagent name:
+
+```
+dispatch(subagent="rolebox-tester--definitely-nonexistent-subagent-xyz", prompt="This should fail", run_in_background=false)
+```
+
+**Pass criteria (all must be true)**:
+1. The dispatch call fails with an error (does not hang indefinitely).
+2. The error message contains text indicating the subagent was not found (e.g., "not found", "unknown subagent", "invalid", "does not exist", or "no such agent").
+3. The error message includes the invalid name "definitely-nonexistent-subagent-xyz" (helping debug which name failed).
+4. This proves the dispatch system validates subagent names against the resolved subagent registry before attempting execution, providing actionable error messages.
+
+---
+
+### Test 137: Todo Management — Full Lifecycle
+
+This test verifies that `todowrite` supports the complete todo lifecycle: create → in_progress → completed/cancelled, with multiple state transitions in sequence.
+
+**Step 1**: Create 3 pending todos:
+
+```
+todowrite(todos=[
+  {"content": "Todo Alpha — lifecycle test", "status": "pending", "priority": "high"},
+  {"content": "Todo Beta — lifecycle test", "status": "pending", "priority": "medium"},
+  {"content": "Todo Gamma — lifecycle test", "status": "pending", "priority": "low"}
+])
+```
+
+**Step 2**: Move first to in_progress:
+
+```
+todowrite(todos=[
+  {"content": "Todo Alpha — lifecycle test", "status": "in_progress", "priority": "high"},
+  {"content": "Todo Beta — lifecycle test", "status": "pending", "priority": "medium"},
+  {"content": "Todo Gamma — lifecycle test", "status": "pending", "priority": "low"}
+])
+```
+
+**Step 3**: Complete first, move second to in_progress:
+
+```
+todowrite(todos=[
+  {"content": "Todo Alpha — lifecycle test", "status": "completed", "priority": "high"},
+  {"content": "Todo Beta — lifecycle test", "status": "in_progress", "priority": "medium"},
+  {"content": "Todo Gamma — lifecycle test", "status": "pending", "priority": "low"}
+])
+```
+
+**Step 4**: Complete second, cancel third:
+
+```
+todowrite(todos=[
+  {"content": "Todo Alpha — lifecycle test", "status": "completed", "priority": "high"},
+  {"content": "Todo Beta — lifecycle test", "status": "completed", "priority": "medium"},
+  {"content": "Todo Gamma — lifecycle test", "status": "cancelled", "priority": "low"}
+])
+```
+
+**Pass criteria (all must be true)**:
+1. All 4 `todowrite` calls return without error.
+2. The final state reflects: Alpha=completed, Beta=completed, Gamma=cancelled.
+3. All valid status transitions were accepted: pending→in_progress, in_progress→completed, pending→cancelled.
+4. This proves `todowrite` supports the full todo lifecycle including all 4 states (pending, in_progress, completed, cancelled) and arbitrary transitions between them.
+
+---
+
+### Test 138: Session Read — tool_filter Parameter
+
+This test verifies that `session_read` supports the `tool_filter` parameter to show only messages containing specific tool calls.
+
+**Step 1**: Call `session_list` to get a valid session ID (use the current session if available):
+
+```
+session_list(limit=5)
+```
+
+**Step 2**: Call `session_read` with a `tool_filter`:
+
+```
+session_read(session_id="<id from step 1>", tool_filter="dispatch", limit=10)
+```
+
+**Step 3**: Call `session_read` with a different tool_filter for comparison:
+
+```
+session_read(session_id="<id from step 1>", tool_filter="skill", limit=10)
+```
+
+**Pass criteria (all must be true)**:
+1. Step 2 returns without error.
+2. If the session contains dispatch tool calls: only messages with dispatch tool calls are shown.
+3. If the session has no dispatch calls: the output says "No matching messages" or returns an empty transcript.
+4. Step 3 also returns without error (proves the parameter accepts any tool name substring).
+5. This proves `session_read`'s `tool_filter` parameter is accepted and applied to narrow transcript output.
+
+---
+
+### Test 139: Signal Architecture — signal_observed Condition in function_state
+
+This test verifies that after calling `signal(type="answer")` (in Test 115), the function state machine correctly reflects the signal observation through the `signal-probe` function's lifecycle.
+
+**Step 1**: Call `function_state()` after Test 115/116 have been executed:
+
+```
+function_state(include_evidence=true, include_artifacts=true)
+```
+
+**Step 2**: Locate the `signal-probe` function in the output and inspect its state.
+
+**Pass criteria (all must be true)**:
+1. The `signal-probe` function appears in the function state output.
+2. The Evidence column for `signal-probe` contains `✅ signal_answer_observed` — proving the observe spec `{on: tool_after, tool: signal, when_args: {match: {type: "answer"}}, set_evidence: signal_answer_observed}` fired when `signal(type="answer")` was called.
+3. The Phase column shows `complete` — proving the `continue_until: any:[signal_observed(answer), evidence_met]` condition was satisfied by either the signal or the evidence.
+4. If an Artifacts section is present, it lists `signal_test_payload` — proving `capture_payload_as: signal_test_payload` captured the signal's payload.
+5. This proves the full signal architecture pipeline works end-to-end: signal tool call → when_args filter → set_evidence → capture_payload_as → continue_until evaluation → phase completion.
+
+---
+
+### Test 140: Hashline Read — Large File totalLines
+
+This test verifies that `hashline_read` correctly reports `totalLines` for the full file even when only a small window is requested.
+
+**Step 1**: Create a 50-line file:
+
+```bash
+python3 -c "print('\n'.join([f'line_{i:03d}' for i in range(1, 51)]))" > /tmp/opencode/hashline-large-test.txt
+```
+
+Or use:
+
+```
+write(filePath="/tmp/opencode/hashline-large-test.txt", content="line_001\nline_002\nline_003\nline_004\nline_005\nline_006\nline_007\nline_008\nline_009\nline_010\nline_011\nline_012\nline_013\nline_014\nline_015\nline_016\nline_017\nline_018\nline_019\nline_020\nline_021\nline_022\nline_023\nline_024\nline_025\nline_026\nline_027\nline_028\nline_029\nline_030\nline_031\nline_032\nline_033\nline_034\nline_035\nline_036\nline_037\nline_038\nline_039\nline_040\nline_041\nline_042\nline_043\nline_044\nline_045\nline_046\nline_047\nline_048\nline_049\nline_050\n")
+```
+
+**Step 2**: Call `hashline_read` with a small limit:
+
+```
+hashline_read(filePath="/tmp/opencode/hashline-large-test.txt", limit=5)
+```
+
+**Pass criteria (all must be true)**:
+1. The tool returns without error.
+2. Exactly 5 annotated lines are returned (lines 1-5) in `LINE#HASH|content` format.
+3. The `totalLines` field equals `50` — proving the full file size is reported even for windowed reads.
+4. The `version` field is present (64-char SHA-256 hex) — proving the version token is always available.
+5. Lines 6-50 are NOT present in the output — proving the `limit` parameter restricts output.
+6. This proves `hashline_read` reports accurate metadata (`totalLines`) for the entire file while only returning the requested window, enabling callers to plan pagination.
+
+---
+
+### Test 141: Permission Enforcement — Restricted Cannot Write
+
+This test verifies that the Restricted subagent's `permission: { deny: ['bash', 'write', 'edit'] }` blocks ALL three denied tools, not just `bash` (which Test 106 already tested).
+
+**Step 1**: Dispatch to the Restricted subagent asking it to attempt a write operation:
+
+```
+dispatch(subagent="rolebox-tester--restricted", prompt="Attempt to write a file using the write tool. Call: write(filePath='/tmp/opencode/restricted-write-test.txt', content='SHOULD_NOT_EXIST'). Report whether the write tool was blocked or succeeded. If blocked, reply with PERMISSION_DENIED_OK. If it succeeded, reply with PERMISSION_GRANTED_UNEXPECTED.", run_in_background=false)
+```
+
+**Step 2**: Verify the file was NOT created:
+
+```
+read(filePath="/tmp/opencode/restricted-write-test.txt")
+```
+
+**Pass criteria (all must be true)**:
+1. The dispatch response contains "PERMISSION_DENIED_OK" — proving the write tool was blocked by the deny list.
+2. The dispatch response does NOT contain "PERMISSION_GRANTED_UNEXPECTED".
+3. Step 2 returns "file not found" or similar error — proving the write never executed and the file was not created on disk.
+4. This proves the `permission: { deny: ['bash', 'write', 'edit'] }` config blocks the `write` tool (complementing Test 106 which tested `bash` denial).
+
+---
+
+### Test 142: Dispatch Config — maxTotalSessionsPerRequest Tracking via task_budget
+
+This test verifies that `task_budget(detail=true)` provides per-task breakdown data showing session consumption, enabling budget monitoring.
+
+**Step 1**: Call `task_budget` with detail enabled:
+
+```
+task_budget(detail=true)
+```
+
+**Step 2**: Call `task_budget` without detail for comparison:
+
+```
+task_budget()
+```
+
+**Pass criteria (all must be true)**:
+1. Both calls return without error.
+2. Step 1's output contains per-child task entries with consumption data (task IDs, agent names, or session counts).
+3. Step 1's output is longer/richer than Step 2's output — proving the `detail` flag adds granularity.
+4. The output contains "maxTotalSessionsPerRequest" or equivalent budget limit reference — proving the budget cap is tracked.
+5. This proves `task_budget(detail=true)` provides sufficient visibility for budget-aware scheduling, enabling orchestrators to track cumulative dispatch consumption against the per-parent cap.
