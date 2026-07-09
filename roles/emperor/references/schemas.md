@@ -268,3 +268,171 @@ The worker treats the listed files as existing state: it reads them first, then 
 If any future edit reintroduces a divergence, the reviewer's `veto-criteria` skill and this table are the enforcement points. **If a consumer receives a field not in this document**: reject it. Unknown fields are a producer error.
 
 **If a producer needs a new field**: add it here first, then implement.
+
+
+---
+
+## Out-of-Band Signal Architecture
+
+**Purpose**: Define the signal-based state-machine driver for out-of-band transitions across functions — enabling declarative orchestration replace of imperative triage and text-fence parsing patterns.
+
+**Status**: Adopted in the function model. All function authors MUST understand signal mechanics before designing transitions. Signal semantics are defined here; individual functions wire them via `transitions[].when: signal_observed(type)`.
+
+### 1. Signal Tool Contract
+
+The `signal(type, payload?)` tool is a control-plane primitive for out-of-band state transitions.
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `type` | yes | string | One of: `answer`, `need_approval`, `blocked`, `need_clarification`, `handoff`, `progress`, `revise_needed`, `escalate` |
+| `payload` | no | JSON object | Structured data for the signal consumer. Schema is signal-type-specific (see taxonomy below). |
+
+**Behavior**:
+- Returns a confirmation string on call.
+- Triggers no side effects beyond the standard tool-after observation pipeline.
+- The signal is recorded in the session's signal ledger — a typed event log that the condition `signal_observed(type)` queries.
+- Multiple calls of the same type are tracked; `signal_observed` is satisfied by the first occurrence.
+- Payload from the most recent call of each type is captured (via `capture_payload_as`) and stored as a named artifact accessible to parent functions.
+
+### 2. Signal Type Taxonomy
+
+All eight signal types, their payload requirements, mechanism mapping, and canonical use cases:
+
+| Type | Payload Required? | Payload Schema | Mechanism | Canonical Use Case |
+|------|------------------|----------------|-----------|--------------------|
+| `answer` | No | — | Terminating | Function completes normally and returns its result. The standard "done" signal. |
+| `need_approval` | Yes | `{action: string, description: string, details?: object}` | Pausing | Function encounters a destructive or high-risk operation and pauses, awaiting user confirmation. |
+| `blocked` | Yes | `{reason: string, blocker_type: string, wait_for?: string}` | Pausing | Function cannot proceed due to an external dependency or missing resource. Parent may retry or skip. |
+| `need_clarification` | Yes | `{question: string, options: string[], context?: string}` | Pausing | Function finds the task description ambiguous and needs user input before continuing. |
+| `handoff` | Yes | `{target: string, context: object, reason: string}` | Non-terminating | Function hands a sub-context to another function or subagent without completing itself. |
+| `progress` | No | Free-form JSON | Non-terminating | Function reports intermediate status (e.g., "step 3 of 7 complete"). Informational only — does NOT satisfy a terminating continue_until. |
+| `revise_needed` | Yes | `{items: [{id: string, note: string}], original_task?: string}` | Terminating | Function determines that its output needs revision. Payload carries structured revision items. |
+| `escalate` | Yes | `{reason: string, failed_attempts: number, last_error: string}` | Terminating | Function encounters an unrecoverable error and escalates to the recovery handler or parent. |
+
+**Mechanism semantics**:
+- **Terminating**: The signal satisfies `continue_until` conditions and ends the function's execution loop.
+- **Pausing**: The signal deactivates the current function but does not end the loop; a parent or approval function must reactivate it.
+- **Non-terminating**: The signal provides information only; it does not affect `continue_until` evaluation.
+
+### 3. Transition-Driven Exemplars
+
+Each exemplar documents a real transition pattern. YAML fragments show the declarative state-machine wiring.
+
+#### Pattern A: Destructive approval gate via signal
+
+```yaml
+# In a hypothetical execute_destructive function:
+transitions:
+  - when: signal_observed(need_approval)
+    activate: [await_approval]
+    deactivate: [execute_destructive]
+
+# The await_approval function:
+gate: user_approval
+transitions:
+  - when: user_approval
+    activate: [execute_destructive]
+    deactivate: [await_approval]
+```
+
+**Explanation**: This replaces the current manual "check for approval in next turn's triage" flow with declarative state-machine orchestration. When `execute_destructive` calls `signal("need_approval", {action: "delete file", description: "..."})`, the `need_approval` transition fires: `execute_destructive` deactivates and `await_approval` activates. The user then approves or denies via the `user_approval` gate. On approval, `await_approval` deactivates and `execute_destructive` reactivates to continue. The model never needs to remember to check for pending approvals — the state machine enforces the flow.
+
+#### Pattern B: Escalate → recovery activation
+
+```yaml
+# In any executor function:
+transitions:
+  - when: signal_observed(escalate)
+    activate: [recovery_handler]
+    deactivate: [current_executor]
+```
+
+**Explanation**: Maps to the existing [`escalate-recovery`](/Users/mgl/.config/opencode/rolebox/emperor/references/escalate-recovery.md) skill but makes it state-machine driven. When an executor calls `signal("escalate", {reason: "...", failed_attempts: 2, last_error: "..."})`, the escalate transition fires: the executor deactivates and the `recovery_handler` activates. The recovery handler reads the escalate payload from the captured `latest_escalate` artifact, assesses retry viability, and either re-dispatches or reports terminal failure. Previously this was a manual check at the start of each turn; now it is automatic.
+
+#### Pattern C: Validator revise verdict
+
+```yaml
+# In validator function:
+observe:
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: revise_needed
+    capture_payload_as: revise_items
+continue_until:
+  any:
+    - signal_observed(answer)          # pass verdict
+    - signal_observed(revise_needed)   # revise verdict
+    - artifact_exists(result)          # fence fallback
+```
+
+**Explanation**: The validator signals `revise_needed` with a structured payload:
+```json
+{
+  "items": [
+    {"id": 2, "note": "main.go import references middleware.RateLimiter but the function is named NewRateLimiter"}
+  ]
+}
+```
+The parent function reads the `revise_items` artifact (captured by the observer), extracts the items, and re-dispatches the affected subtask. No text-fence parsing or string matching is required — the payload is structured data. The `artifact_exists(result)` clause remains as a backward-compatible fallback for non-signal-aware callers.
+
+#### Pattern D: Progress reporting (non-terminating signal)
+
+```yaml
+observe:
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: progress
+    capture_payload_as: latest_progress
+# Note: progress does NOT appear in continue_until — it is informational only
+continue_until: signal_observed(answer)
+```
+
+**Explanation**: An executor can report intermediate progress without triggering a state transition:
+```js
+signal("progress", {step: 3, total: 7, current_phase: "validation"})
+```
+The parent observes and optionally logs the progress, but the function continues executing normally. Only `signal_observed(answer)` (or another terminating signal) ends the loop. This is useful for long-running operations where the parent wants visibility into the current stage without interrupting execution.
+
+### 4. Dual-Channel Migration Guide
+
+As the system transitions from fence-only to signal-native orchestration, all functions pass through four phases:
+
+| Phase | Channel A | Channel B | When |
+|-------|-----------|-----------|------|
+| **1 — Current** | `signal_observed(answer)` | `artifact_exists(result)` | Both are valid in `continue_until`. Functions may fire either (or both). The fence is the dominant channel. |
+| **2 — Signal-primary** | `signal_observed(answer)` | `artifact_exists(result)` | New functions use signal-only. Old functions keep dual-channel for backward compatibility. Observers are added to capture signal payloads. |
+| **3 — Fence fallback** | `signal_observed(answer)` | `artifact_exists(result)` | The fence becomes a legacy fallback. Primary orchestration decisions use signal state. All new functions MUST emit `signal("answer")` on completion. |
+| **4 — Fence deprecation (optional/far future)** | `signal_observed(answer)` | — | The fence is removed from `continue_until`. All functions complete by signaling. The fence is used only for textual result delivery, never for completion detection. |
+
+**Example `continue_until` expressing the Phase 2 dual-channel pattern**:
+```yaml
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(result)
+```
+The `any` compositor means the function completes on the first of: signal answer received, or result fence materialized. Both paths are valid during migration.
+| Safeguard | Description |
+|-----------|-------------|
+| **Evidence-gated signal** | Two mechanisms prevent premature completion. (1) The `requires_evidence` field (event-handler.ts:199-206) hard-gates the function — if evidence is not yet met, the continuation engine skips this function entirely on the idle cycle. Neither continuation nor completion is evaluated until evidence arrives. (2) The `evidence_met()` condition (conditions.ts:51) can be composed with signal conditions via `all: [signal_observed(answer), evidence_met()]` for finer-grained control. Together these ensure a function cannot complete via signal before verification checks pass. |
+| **continue_max applies unconditionally** | The continuation engine's `blockingReason` (continuation.ts:39-46) runs BEFORE any condition evaluation. Per-fn cap, global cap, loop detection, and cooldown are computed independently of the completion condition type — whether `signal_observed`, `artifact_exists`, or any composite. A function cannot bypass caps by switching signal types. |
+| **Dual-channel `any:[...]`** | When using `any: [signal_observed(answer), artifact_exists(result)]`, EITHER path triggers completion. This handles two failure modes during migration: the model calls `signal("answer")` but never writes the result fence, OR the model writes the result fence but forgets to signal. The function completes on the first satisfied condition. |
+| **Multi-signal independence** | Each signal type is tracked independently in `kv["__signals_observed"]`. `signal_observed(progress)` does NOT satisfy `signal_observed(answer)`. The first signal of each type sets the observation; subsequent calls of the same type update the payload but do not re-trigger transitions. |
+| **Orphaned signal on completed function** | If a function is already in `"complete"` phase (e.g. the fence condition was satisfied on a prior idle cycle), any subsequent `signal(...)` call is inert for continuation. The observe handler (observe.ts:41-51) still records the signal in `__signals_observed`, but the continuation loop (event-handler.ts:197) skips functions in `"complete"` phase — the condition evaluation path never runs. This prevents stale signals from re-activating completed functions. |
+| **Unrecognized signal types** | If a model calls `signal` with a `type` not in the taxonomy, the tool returns an error and the signal is not recorded. No transition fires. Prevents silent misbehavior from typos or ad-hoc type creation. |
+---
+
+## Relationship to Existing Contracts
+
+The signal architecture does not replace any existing contract schema. It operates at a different layer — the **control plane** of the function model — whereas the contracts above (§1–4) are **data plane** schemas for inter-agent payloads. Key distinctions:
+
+| Layer | Scope | Mechanism | Examples |
+|-------|-------|-----------|----------|
+| Control plane | Function lifecycle | `signal` / observe / `transitions` | Activate/deactivate functions, gate continuations, capture payloads |
+| Data plane | Inter-agent contracts | `dispatch` / `result` fence | Strategy, Validate Result, Execution Report |
+
+The signal architecture controls WHEN and WHETHER a function transitions. The data plane contracts control WHAT information passes between agents. They are independent and composable.

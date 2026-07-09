@@ -3,7 +3,10 @@ name: review
 description: Audit a strategy draft and emit a pass/veto verdict
 consumes: draft
 produces: review_verdict
-continue_until: artifact_exists(review_verdict)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(review_verdict)
 observe:
   - on: tool_after
     capture_artifact: review_verdict

@@ -6,7 +6,10 @@ produces: result
 observe:
   - on: tool_after
     capture_artifact: result
-continue_until: artifact_exists(result)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(result)
 continue_max: 5
 ---
 

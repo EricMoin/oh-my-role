@@ -3,7 +3,10 @@ name: finalize
 description: Merge approved draft into the canonical final strategy
 consumes: draft
 produces: final_strategy
-continue_until: artifact_exists(final_strategy)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(final_strategy)
 observe:
   - on: tool_after
     capture_artifact: final_strategy
