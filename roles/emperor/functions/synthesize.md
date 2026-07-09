@@ -7,8 +7,17 @@ produces: "final_answer"
 observe:
   - on: tool_after
     capture_artifact: final_answer
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: answer
+    set_evidence: signal_answer
 priority: 20
-continue_until: artifact_exists(final_answer)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(final_answer)
 continue_max: 5
 ---
 

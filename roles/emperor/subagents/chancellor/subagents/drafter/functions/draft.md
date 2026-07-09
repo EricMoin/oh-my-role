@@ -2,7 +2,10 @@
 name: draft
 description: Research the codebase and produce a structured strategy draft
 produces: draft
-continue_until: artifact_exists(draft)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(draft)
 observe:
   - on: tool_after
     capture_artifact: draft

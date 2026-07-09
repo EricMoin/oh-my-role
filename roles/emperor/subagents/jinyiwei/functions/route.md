@@ -2,7 +2,10 @@
 name: route
 description: Route subtasks by domain to specialist department workers via background dispatch, collect results, and format for orchestrator handoff
 priority: 15
-continue_until: artifact_exists(result)
+continue_until:
+  any:
+    - signal_observed(answer)
+    - artifact_exists(result)
 continue_max: 10
 ---
 
