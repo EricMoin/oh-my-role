@@ -14,9 +14,9 @@ roles:
       and Tailwind
     tags: [react, frontend, typescript, tailwindcss]
   ai-designer:
-    version: "2.1.1"
-    description: AI Design Director — coordinates specialist subagents through
-      UX, visual, interaction, artifact, and review gates
+    version: "3.0.0"
+    description: AI Design Director — tiered-routing design director with
+      artifact-first output and severity-layered quality gates
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"
