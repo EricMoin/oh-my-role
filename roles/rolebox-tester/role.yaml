@@ -1,6 +1,6 @@
 name: Rolebox Tester
-description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard), memory tools (write, recall, list, update), memory injection, |memory| function definition, the search/tool suite (task search, budget, graph, retry, concurrency, chronology, export, asset search, inspect, validate, skill compose, function state, function graph, reference search, context assemble, asset hot reload), hot reload effectiveness tests (new role discovery, deleted role cleanup, new subagent dispatchable, file watcher auto-trigger, failure reporting), and test report artifact generation (persistent structured JSON test report at a known path for orchestrator/agent consumption)."
-version: "2.6.0"
+description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard), memory tools (write, recall, list, update), memory injection, |memory| function definition, the search/tool suite (task search, budget, graph, retry, concurrency, chronology, export, asset search, inspect, validate, skill compose, function state, function graph, reference search, context assemble, asset hot reload), hot reload effectiveness tests (new role discovery, deleted role cleanup, new subagent dispatchable, file watcher auto-trigger, failure reporting), signal architecture testing, and test report artifact generation (persistent structured JSON test report at a known path for orchestrator/agent consumption)."
+version: "3.0.0"
 model: provider/tier-2-reasoning
 mode: primary
 prompt_file: PROMPT.md
@@ -12,6 +12,7 @@ functions:
   - state-machine
   - observe-probe
   - broken-dep
+  - signal-probe
 
 skills:
   - test-skill
