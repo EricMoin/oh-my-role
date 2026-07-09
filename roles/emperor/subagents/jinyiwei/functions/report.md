@@ -64,3 +64,17 @@ One to two sentence verdict: what was done, what state things are in.
   - `Other evidence`: Manual checks, non-code evidence, or `None` if inapplicable.
 - **Incomplete / Open Items**: Must be present. Use `None` if nothing is pending. Never omit this section.
 - **Summary**: One to two sentences. No fluff.
+
+## Completion
+
+**Primary (signal):** When your report is complete, call the `signal` tool:
+```
+signal(type="answer", payload={subtask: "...", files_modified: [...], verification_evidence: {...}, incomplete_items: [...], summary: "..."})
+```
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```result
+...report content...
+```
+
+Either path satisfies the function's completion condition.

@@ -43,6 +43,20 @@ You have completed execution. Now format the outcome into a structured report.
 - **Incomplete / Open Items**: List anything you know is unfinished, plus the reason. If nothing is pending, write `None`.
 - **Summary**: One short verdict. No fluff.
 
+## Completion
+
+**Primary (signal):** When your report is complete, call the `signal` tool:
+```
+signal(type="answer", payload={subtask: "...", files_modified: [...], verification_evidence: {...}, incomplete_items: [...], summary: "..."})
+```
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```result
+...report content...
+```
+
+Either path satisfies the function's completion condition.
+
 ## After Writing the Report
 
 Close the fence. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `dispatch_output`.

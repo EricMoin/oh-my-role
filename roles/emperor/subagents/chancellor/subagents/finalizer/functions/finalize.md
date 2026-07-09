@@ -40,3 +40,17 @@ Critical field rules:
 - `notes` is optional. Use for unresolved concerns or additional orchestrator context
 
 Do NOT produce `risks` as a list. Do NOT produce `final_notes`.
+
+## Completion
+
+**Primary (signal):** When your final strategy is complete, call the `signal` tool:
+```
+signal(type="answer", payload={objective: "...", subtasks: [...], risk: "...", notes: "..."})
+```
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```final_strategy
+...YAML content...
+```
+
+Either path satisfies the function's completion condition.

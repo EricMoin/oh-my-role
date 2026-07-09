@@ -6,11 +6,24 @@ produces: result
 observe:
   - on: tool_after
     capture_artifact: result
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: answer
+    set_evidence: signal_answer
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: revise_needed
+    capture_payload_as: revise_items
+    set_evidence: signal_revise
 continue_until:
   any:
     - signal_observed(answer)
+    - signal_observed(revise_needed)
     - artifact_exists(result)
-continue_max: 5
 ---
 
 You are the validation stage. Compare execution reports against the strategy's acceptance criteria and emit a per-item pass/revise verdict.
@@ -46,24 +59,31 @@ You are the validation stage. Compare execution reports against the strategy's a
    independent verification) or `revise` (unmet criteria, or report claims diverge from what is
    on disk or from your independent test/buid result).
 
-## Output
+## Verdict Emission
 
-Emit the verdict inside a ` ```result ` fence in your response TEXT (not inside a tool call). The `continue_until: artifact_exists(result)` gate is satisfied only when this fence appears in your assistant message — the kernel scans the last text message for it.
+### Primary (signal)
+- If verdict is **pass**: `signal(type="answer", payload={verdict: "pass", items: [{id: N, status: "pass", note: "..."}, ...]})`
+- If verdict is **revise**: `signal(type="revise_needed", payload={verdict: "revise", items: [{id: N, status: "revise", note: "fix direction..."}, ...]})`
+
+### Fallback (fence)
+Also emit the result fence for backward compatibility:
 
 ```result
 verdict: pass|revise
 items:
   - id: 1
     status: pass|revise
-    note: "evidence or reason"
+    note: "..."
 ```
+
+Both the signal AND the fence should be emitted during the transition period. Either path satisfies the completion condition.
 
 - `verdict`: Aggregate result. `pass` means every item meets its acceptance criteria. `revise` means at least one item has unmet criteria.
 - `items[].id`: The subtask ID from the original strategy.
 - `items[].status`: Whether this subtask's acceptance criteria are fully met.
 - `items[].note`: For `pass`, confirmation of the evidence reviewed. For `revise`, what is missing and a suggested fix direction.
+- `revise_items`: When a `revise_needed` signal is emitted, the full payload is captured as `revise_items` for downstream processing.
 
-The payload conforms to the Validate Result contract in `references/schemas.md`. The ` ```result ` fence is the universal dispatch-return envelope; its payload here is the Validate Result schema.
 
 ## Independent Verification
 
