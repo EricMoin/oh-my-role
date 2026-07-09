@@ -336,6 +336,7 @@ transitions:
 ```
 
 **Explanation**: This replaces the current manual "check for approval in next turn's triage" flow with declarative state-machine orchestration. When `execute_destructive` calls `signal("need_approval", {action: "delete file", description: "..."})`, the `need_approval` transition fires: `execute_destructive` deactivates and `await_approval` activates. The user then approves or denies via the `user_approval` gate. On approval, `await_approval` deactivates and `execute_destructive` reactivates to continue. The model never needs to remember to check for pending approvals — the state machine enforces the flow.
+> **Caveat:** This pattern works for same-session function transitions only. For subagent→parent approval flows (the common case in emperor orchestration), see [Cross-Session Signal Isolation](#cross-session-signal-isolation) below. The pragmatic `dispatch_output`-based detection (subagent reports halt + `approval_request` artifact) is the current implementation.
 
 #### Pattern B: Escalate → recovery activation
 
@@ -397,6 +398,20 @@ signal("progress", {step: 3, total: 7, current_phase: "validation"})
 ```
 The parent observes and optionally logs the progress, but the function continues executing normally. Only `signal_observed(answer)` (or another terminating signal) ends the loop. This is useful for long-running operations where the parent wants visibility into the current stage without interrupting execution.
 
+#### Cross-Session Signal Isolation (Architectural Limitation)
+
+**Important:** `signal_observed(type)` is session-scoped. Signals emitted in a subagent session (e.g., a department worker calling `signal(need_approval)`) are NOT visible to the parent session's condition evaluator. The underlying state (`__signals_observed`) is written to the subagent's `FnState` — the parent session cannot read it.
+
+**Impact on Pattern A:** The transition-driven approval gate (`transitions: [{when: signal_observed(need_approval), ...}]`) works ONLY for same-session scenarios (e.g., a function within the emperor's own primary session). For subagent-to-parent communication, the pragmatic path is:
+
+1. Subagent calls `signal(need_approval, payload={action, risk, details})`
+2. The `approval_request` artifact is captured in the subagent's session (via `capture_payload_as` observe spec)
+3. Subagent HALTs and includes the approval request in its execution report text
+4. Parent (emperor synthesize.md) detects the `need_approval` flag when reading the execution report
+5. Parent presents the flagged operation to the user per the Pending Approval Protocol
+
+**Future kernel enhancement:** Cross-session signal propagation (bubbling signals from child to parent session) would enable the elegant Pattern A approach. This requires kernel-level changes to the signal observation pipeline and is tracked as a future enhancement, not a Phase 2 deliverable.
+
 ### 4. Dual-Channel Migration Guide
 
 As the system transitions from fence-only to signal-native orchestration, all functions pass through four phases:
@@ -424,6 +439,192 @@ The `any` compositor means the function completes on the first of: signal answer
 | **Multi-signal independence** | Each signal type is tracked independently in `kv["__signals_observed"]`. `signal_observed(progress)` does NOT satisfy `signal_observed(answer)`. The first signal of each type sets the observation; subsequent calls of the same type update the payload but do not re-trigger transitions. |
 | **Orphaned signal on completed function** | If a function is already in `"complete"` phase (e.g. the fence condition was satisfied on a prior idle cycle), any subsequent `signal(...)` call is inert for continuation. The observe handler (observe.ts:41-51) still records the signal in `__signals_observed`, but the continuation loop (event-handler.ts:197) skips functions in `"complete"` phase — the condition evaluation path never runs. This prevents stale signals from re-activating completed functions. |
 | **Unrecognized signal types** | If a model calls `signal` with a `type` not in the taxonomy, the tool returns an error and the signal is not recorded. No transition fires. Prevents silent misbehavior from typos or ad-hoc type creation. |
+
+#### Phase 3: Fence Downgrade (Signal-Only Paths Identified)
+
+##### Signal-Only Viable Paths (fence can be removed in future)
+
+| Producer | Consumer | Artifact | Reason |
+|----------|----------|----------|--------|
+| drafter → chancellor | orchestrate reads dispatch_output | `draft` | Machine-to-machine — parent never displays raw content |
+| reviewer → chancellor | orchestrate reads dispatch_output | `review_verdict` | Machine-to-machine — parent never displays raw content |
+| finalizer → chancellor | orchestrate reads dispatch_output | `final_strategy` | Machine-to-machine — parent never displays raw content |
+| validator → emperor | synthesize reads dispatch_output | `result` / `revise_items` | Machine-to-machine — structured items parsed programmatically |
+| jinyiwei → emperor | synthesize reads dispatch_output | `result` | Machine-to-machine — execution report parsed programmatically |
+| departments → jinyiwei | route reads dispatch_output | `result` | Machine-to-machine — execution report parsed programmatically |
+| plan (state-machine) → orchestrate | same-session transition | `artifact_exists(plan)` | Same-session artifact gate — always signal-driven via state machine |
+
+##### Fence-Required Paths (must keep indefinitely)
+
+| Producer | Consumer | Artifact | Reason |
+|----------|----------|----------|--------|
+| emperor → user | Terminal display | `final_answer` | Human-readable output — displayed in the user's terminal |
+
+##### Phase 3 Actions
+
+1. **Update `continue_until` for signal-only paths**: Change from `any:[signal_observed(answer), artifact_exists(X)]` to `signal_observed(answer)` only (dropping `artifact_exists` fallback).
+2. **Keep fence instruction in prompts** as "optional compatibility" rather than "required fallback" — the model may still emit a fence for backward compatibility, but the function no longer depends on it.
+3. **Verify via testing strategy §3.3** that all signal-only functions complete without fence emission — the `signal_observed` path is the only satisfaction mechanism.
+4. **Fence-required paths: no change ever** — the `final_answer` tag remains mandatory for user-facing terminal output. The `final_answer` fence will never be downgraded.
+
+##### Phase 3 Criteria (must be met before executing)
+
+- All signal-only path functions have been stable in production for ≥1 month with signal-primary.
+- Zero instances of fence-only completion in logs (i.e., signal path is consistently used for every function completion).
+- Testing strategy §3.3 smoke tests pass with signal-only (fence never written — function completes via `signal_observed(answer)` alone).
+- No open issues in the function graph where a signal-only path lacks a reliable signal emission path.
+
+---
+
+### 5. Signal Payload Schemas
+
+**Purpose**: Define the structured payload schema for each signal-emitting producer in the ecosystem. These payloads are captured as artifacts via the observer pipeline (`capture_payload_as`) and consumed by parent functions programmatically — no text parsing required.
+
+Payloads flow through the `signal(type, payload)` tool call. The parent observes the call via an ObserveSpec with `when_args: {match: {type: ...}}` and `capture_payload_as`. Each producer has exactly one payload schema. Consumers MUST NOT assume fields exist beyond those documented here.
+
+#### Chancellor `final_strategy` (emitted by orchestrate)
+
+**Signal**: `signal(type="answer", payload={...})`
+
+```json
+{
+  "type": "answer",
+  "payload": {
+    "objective": "<clear one-sentence goal>",
+    "subtasks": [
+      {
+        "id": 1,
+        "description": "<concrete, scoped instruction>",
+        "target": "jinyiwei",
+        "dependencies": [],
+        "acceptance": "<verifiable done-condition>",
+        "research_required": false
+      }
+    ],
+    "risk": "low|high",
+    "notes": "<optional context>"
+  }
+}
+```
+
+#### Validator Verdict — Pass
+
+**Signal**: `signal(type="answer", payload={...})`
+
+```json
+{
+  "type": "answer",
+  "payload": {
+    "verdict": "pass",
+    "items": [
+      {
+        "id": 1,
+        "status": "pass",
+        "note": "<confirmation of evidence reviewed>"
+      }
+    ]
+  }
+}
+```
+
+#### Validator Verdict — Revise
+
+**Signal**: `signal(type="revise_needed", payload={...})`
+
+Captured as `revise_items` artifact by the synthesize function's observer.
+
+```json
+{
+  "type": "revise_needed",
+  "payload": {
+    "verdict": "revise",
+    "items": [
+      {
+        "id": 1,
+        "status": "revise",
+        "note": "<what is missing and suggested fix direction>"
+      }
+    ]
+  }
+}
+```
+
+#### Jinyiwei Execution Report (emitted by route)
+
+**Signal**: `signal(type="answer", payload={...})`
+
+```json
+{
+  "type": "answer",
+  "payload": {
+    "subtask_id": 1,
+    "summary": "<1-2 sentence verdict>",
+    "files_modified": ["path/to/file"],
+    "verification": "<lsp_diagnostics clean, tests passed>"
+  }
+}
+```
+
+#### Drafter Draft Revision (emitted by draft)
+
+**Signal**: `signal(type="answer", payload={...})`
+
+```json
+{
+  "type": "answer",
+  "payload": {
+    "objective": "<clear one-sentence goal>",
+    "subtasks": [
+      { "id": 1, "description": "...", "target": "jinyiwei", "dependencies": [], "acceptance": "..." }
+    ],
+    "risk": "low|high",
+    "notes": "<optional>"
+  }
+}
+```
+
+#### Reviewer Verdict (emitted by review)
+
+**Signal** (pass): `signal(type="answer", payload={...})`
+**Signal** (veto): `signal(type="revise_needed", payload={...})`
+
+```json
+{
+  "type": "answer|revise_needed",
+  "payload": {
+    "verdict": "pass|veto",
+    "notes": "<revision notes or confirmation>",
+    "severity": "low|medium|high"
+  }
+}
+```
+
+#### Finalizer Final Strategy (emitted by finalize)
+
+**Signal**: `signal(type="answer", payload={...})`
+
+```json
+{
+  "type": "answer",
+  "payload": {
+    "objective": "<goal>",
+    "subtasks": [
+      { "id": 1, "description": "...", "target": "jinyiwei", "dependencies": [], "acceptance": "..." }
+    ],
+    "risk": "low|high",
+    "notes": "<optional>"
+  }
+}
+```
+
+### Decision Records
+
+**DR-001: Cross-session signal propagation deferred.**
+- **Decision**: Pattern A (transition-driven `need_approval`) is deferred to a future kernel enhancement.
+- **Rationale**: `signal_observed()` evaluates against session-local state (observe.ts:39 writes to session-scoped `FnState`). Propagating signals across session boundaries requires changes to the dispatch/completion pipeline.
+- **Current approach**: `dispatch_output`-based detection (subagent reports halt + `approval_request` artifact captured locally).
+- **Revisit when**: Kernel supports cross-session event bubbling or artifact visibility.
+
 ---
 
 ## Relationship to Existing Contracts

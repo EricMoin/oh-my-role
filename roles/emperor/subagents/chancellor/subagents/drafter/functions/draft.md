@@ -41,3 +41,17 @@ Schema rules:
 - `notes`: optional, single string, not a list
 - `research_required`: optional boolean, defaults to `false`. Set `true` when subtask involves external API, library, platform behavior, or version-sensitive integration that requires evidence-backed research.
 - Do NOT emit `risks` as a list. Do NOT use short-id strings for `subtasks[].id`.
+
+## Completion
+
+**Primary (signal):** When your draft is complete, call the `signal` tool:
+```
+signal(type="answer", payload={objective: "...", subtasks: [...], risk: "...", notes: "..."})
+```
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```draft
+...YAML content...
+```
+
+Either path satisfies the function's completion condition.

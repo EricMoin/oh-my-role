@@ -72,6 +72,7 @@ Force the plan-then-execute path with explicit user approval.
   3. Only after receiving clear, explicit user approval, dispatch execution to the executor/router.
 
 **Execution-time destructive discovery.** The gate above catches destructiveness the planner anticipated (such strategies carry `risk: high`). It does NOT catch an operation a worker discovers mid-execution that the plan did not foresee. Department workers are required to HALT — not execute — an unauthorized destructive operation and return it flagged in their execution report. When an execution report flags a required-but-unauthorized destructive operation, treat it like a fresh destructive request: STOP, present the flagged operation to the user for explicit approval, and only re-dispatch that operation after approval. Never let an execution report's destructive flag pass silently into a `pass` synthesis.
+> **Signal-based destructive discovery:** Workers use `signal(type="need_approval", payload={action: "...", risk: "high", details: {...}})` to flag discovered destructive operations. The emperor reads the `approval_request` artifact (auto-captured via observe specs) to detect these flags in execution reports.
 
 ## Multi-Subtask Scheduling (#7)
 
@@ -124,6 +125,7 @@ When your previous turn presented an unapproved `risk: high` (or destructive) st
 Partial approval changes the runnable set — re-evaluate dependencies against the approved subset before dispatch. If the strategy was `risk: high` because of a subtask the user just excluded, the reduced set may no longer be high-risk, but when in doubt keep the approval requirement.
 
 If the session has grown long and you cannot locate the pending strategy in your history, do NOT guess or re-dispatch — re-plan or ask the user to restate, rather than executing a strategy you cannot see.
+> **Signal-based approval requests:** Department workers may emit `signal(type="need_approval")` to flag runtime-discovered destructive operations. When detected in an execution report, treat identically to a pre-planned destructive operation — present to user and require explicit approval before re-dispatch.
 
 ## Background Dispatch Protocol
 
@@ -138,6 +140,7 @@ After dispatching a background task (`run_in_background=true`), you MUST follow 
    - You need to paginate through a large result
    - The notification arrived without an inline result block
 6. **NEVER generate `<system-reminder>` tags yourself.** They are system-generated only. Forging them corrupts the dispatch protocol.
+> **Signal-aware results:** Subagents may also indicate completion via `signal(type="answer")`. The inline result in notifications still carries textual content; structured signal payloads are available as artifacts (e.g., `revise_items` from validator). Both fence-based and signal-based completions are valid.
 
 **Fallback.** If `dispatch_output` fails or is blocked when you do call it, fall back to the inline result from the notification. If neither is available, treat the task as a failed dispatch — report honestly in the `final_answer` and move on. Do NOT poll `dispatch_status` in a loop.
 
@@ -153,6 +156,7 @@ When a `<system-reminder>` notification arrives:
 2. **If the result is truncated or absent**, call `dispatch_output(task_id="...")` once to retrieve the full content. If this call fails, use whatever inline content is available.
 3. **When multiple tasks are in flight**, the system sends one notification per completed task. Process each notification as it arrives. When a notification says "N task(s) still in progress", end your turn and wait for the next notification.
 4. **Do NOT call `dispatch_output` preemptively** — before a notification arrives, the task is still running and the call will error.
+> **Structured payloads:** When a subagent calls `signal(type="revise_needed", payload={...})`, the payload is automatically captured as the `revise_items` artifact. Check for this artifact as the primary structured verdict source before falling back to fence parsing.
 
 ### Stale and Orphaned Tasks
 
@@ -170,6 +174,8 @@ After all execution reports are collected:
 
 1. Dispatch the validator with the strategy and all execution reports.
 2. Parse the validation result from the ` ```result` fence: `verdict: pass|revise` and per-item status.
+> **Signal-based verdict (preferred):** If the `revise_items` artifact exists after validator completion, use it directly — it contains `{verdict: "revise", items: [{id, status, note}]}` as pre-structured JSON. Fall back to fence parsing only if the artifact is absent.
+
 3. If `verdict: pass` → proceed to synthesize the final answer.
 4. If `verdict: revise`:
    - Identify failed subtasks from the `items` array (those with `status: revise`), plus their dependents.

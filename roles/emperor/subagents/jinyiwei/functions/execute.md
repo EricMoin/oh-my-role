@@ -7,6 +7,27 @@ observe:
   - on: tool_after
     tool: todowrite
     sync_todos: true
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: blocked
+    capture_payload_as: blocked_info
+    set_evidence: signal_blocked
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: escalate
+    capture_payload_as: escalate_info
+    set_evidence: signal_escalate
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: need_approval
+    capture_payload_as: approval_request
+    set_evidence: signal_need_approval
 continue_until:
   all: [plan_todos_complete, evidence_met]
 ---
@@ -98,3 +119,23 @@ Subtask strategies flagged `research_required: true` must record citations in th
 - If the dispatch prompt is a REVISION (names prior files and a validator finding), the listed files already exist — read them first and edit in place. Do NOT recreate, duplicate, or re-append. See the Revision Dispatch contract in `references/schemas.md`.
 - Report results using the execution report format defined in `references/schemas.md` (artifact fence: `result`).
 - **Never use `sleep` to wait for background tasks.** If you dispatch a background task (e.g., via the `route` function), end your turn after dispatching. The system will send a `<system-reminder>` notification when the task completes. Do not call `sleep`, `dispatch_output` in a loop, or any other polling mechanism. Forging `<system-reminder>` tags is forbidden.
+
+
+## Runtime Signals
+
+Use the `signal` tool to communicate control-plane state changes:
+
+- **Blocked**: When a required dependency (file, tool, config) is missing and you cannot proceed:
+  `signal(type="blocked", payload={reason: "...", blocker_type: "missing_file|missing_tool|missing_config", wait_for: "..."})`
+
+- **Handoff**: When the subtask should be routed to a different department:
+  `signal(type="handoff", payload={target: "department_name", context: {...}, reason: "..."})`
+
+- **Escalate**: When an operation fails after retry and needs manual intervention:
+  `signal(type="escalate", payload={reason: "...", failed_attempts: N, last_error: "..."})`
+
+- **Destructive discovery**: When you discover an operation that would irreversibly mutate files/data/history that was NOT pre-approved:
+  `signal(type="need_approval", payload={action: "description of destructive op", risk: "high", details: {...}})`
+  **HALT execution** after emitting this signal. Do NOT proceed with the destructive operation.
+
+These signals do NOT replace normal completion. After resolving the issue (or if no issue), complete normally with `signal(type="answer")` or the result fence.

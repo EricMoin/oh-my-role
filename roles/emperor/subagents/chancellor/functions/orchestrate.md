@@ -23,7 +23,7 @@ continue_max: 8
 You are the planner. Run the three-stage planning loop: draft, review, finalize.
 Your input is a plan description passed in the dispatch prompt. You do NOT read plan artifacts cross-session; all information flows through dispatch prompts.
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, END YOUR TURN. The system sends a `<system-reminder>` notification when the stage completes, carrying the result inline in a ` ```result ` fence. Read the inline result directly; call `dispatch_output` only if truncated or absent. You cannot "actively wait" — your turn must end so the system can run the dispatched stage.
+**Dispatch-and-yield: Do NOT poll.** After dispatching the drafter, reviewer, or finalizer with `run_in_background=true`, END YOUR TURN. The system sends a `<system-reminder>` notification when the stage completes. The result may arrive as a ` ```result ` fence in the notification body, or as a signal tool call carrying the result payload. Read the result from whichever delivery method the worker used. Call `dispatch_output` only if the result was truncated or absent. You cannot actively wait — your turn must end so the system can run the dispatched stage.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, read the result from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the result from the inline ` ```result ` fence or from the worker's signal tool call (call `dispatch_output` only if truncated).
 
 ### 2. Dispatch Reviewer
 
@@ -58,7 +58,7 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, read the verdict from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the verdict from the inline ` ```result ` fence or from the worker's signal tool call (call `dispatch_output` only if truncated).
 
 ### 3. Read the Verdict
 
@@ -96,13 +96,18 @@ dispatch(
 )
 ```
 
-End your turn after dispatching. When the `<system-reminder>` notification arrives, read the final strategy from the inline ` ```result ` fence (call `dispatch_output` only if truncated).
+End your turn after dispatching. When the `<system-reminder>` notification arrives, read the final strategy from the inline ` ```result ` fence or from the worker's signal tool call (call `dispatch_output` only if truncated).
 
-### 6. Emit Result
 
-This is a **two-step emit** — order matters:
+**Primary (signal):** Call the signal tool to indicate completion:
 
-**Step A: Emit `final_strategy` fence (satisfies `continue_until`)**
+```
+signal(type="answer", payload={final_strategy: "<strategy content>"})
+```
+
+**Fallback (fence):** Also emit the strategy in a fenced block for backward compatibility. This is a **two-step fence emit** — order matters:
+
+**Step A: Emit `final_strategy` fence (satisfies `artifact_exists(final_strategy)`)**
 After reading the finalizer's output from the notification (or `dispatch_output` if truncated), write a standalone text message (not inside a tool call) containing a ` ```final_strategy``` ` fence with the complete strategy:
 
 ````
@@ -111,7 +116,7 @@ After reading the finalizer's output from the notification (or `dispatch_output`
 ```
 ````
 
-`runTextCapture` scans the assistant's last text message for ` ```final_strategy``` ` fences at idle time. It does NOT scan dispatch_output return values. Without this standalone text message, `continue_until: artifact_exists(final_strategy)` will never be satisfied and the function will loop up to `continue_max`.
+`runTextCapture` scans the assistant's last text message for ` ```final_strategy``` ` fences at idle time. It does NOT scan dispatch_output return values. Without this standalone text message, `artifact_exists(final_strategy)` will never be satisfied and the function will loop up to `continue_max`.
 
 **Step B: Emit `result` fence (for parent parsing)**
 After the `final_strategy` message, write a separate ` ```result``` ` fence containing the same strategy content. The parent orchestrator reads this from the synchronous dispatch return text:
@@ -122,7 +127,7 @@ After the `final_strategy` message, write a separate ` ```result``` ` fence cont
 ```
 ````
 
-The two fences contain identical content. `final_strategy` is for the kernel's same-session artifact capture; `result` is for the parent's dispatch output parsing.
+Both primary (signal) and fallback (fence) paths independently satisfy `continue_until`. The signal path is preferred because it is machine-checkable. The two fences contain identical content. `final_strategy` is for the kernel's same-session artifact capture; `result` is for the parent's dispatch output parsing.
 
 ## Failure Handling
 

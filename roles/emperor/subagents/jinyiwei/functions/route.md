@@ -52,15 +52,21 @@ dispatch(
 
 ### 3. Collect the Result
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. The system sends a `<system-reminder>` notification when the worker completes, carrying the result inline in a ` ```result ` fence. Read the inline result directly; call `dispatch_output` only if the result is truncated or absent. You cannot "actively wait" — your turn must end so the system can run the dispatched worker.
+**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. The system sends a `<system-reminder>` notification when the worker completes. The result may arrive as a ` ```result ` fence in the notification body, or as a signal tool call carrying the execution report. Read the result from whichever delivery method the worker used. Call `dispatch_output` only if the result is truncated or absent. You cannot actively wait — your turn must end so the system can run the dispatched worker.
 
-When the `<system-reminder>` notification arrives, read the ` ```result ` fence from the notification body. If the result is truncated, call `dispatch_output(task_id="{task_id}")` for the full content.
+When the `<system-reminder>` notification arrives, read the ` ```result ` fence from the notification body, or inspect the worker's signal tool call. If truncated, call `dispatch_output(task_id="{task_id}")` for the full content.
 
-Extract the ` ```result ` fence content from the worker's output. All department results arrive inside this fence.
+Extract the worker's result. If delivered via fence, read the ` ```result ` content. If delivered via signal, read the payload. Both paths carry the same structured report.
 
 ### 4. Format for Orchestrator Handoff
 
-Wrap the department result into the execution report fence (` ```result `) for consumption by the orchestrator. Follow the canonical execution report structure:
+**Primary (signal):** Call the signal tool with the execution report:
+
+```
+signal(type="answer", payload={subtask_id: N, summary: "...", files_modified: [...], verification: "..."})
+```
+
+**Fallback (fence):** Also emit the result fence for backward compatibility. Wrap the department result into the execution report fence (` ```result `) for consumption by the orchestrator. Follow the canonical execution report structure:
 
 - `## Subtask` — subtask identifier or description
 - `### Files Modified` — bulleted list of changed files with short descriptions
@@ -68,7 +74,9 @@ Wrap the department result into the execution report fence (` ```result `) for c
 - `### Incomplete / Open Items` — unfinished items with reasons, or `None`
 - `### Summary` — concise verdict: what was done, final state
 
+Either path satisfies completion. Signal is preferred because it is machine-checkable.
 If the department result is already well-structured, include it verbatim. If partial or incomplete, note this honestly in the Summary.
+
 
 ## Fallbacks
 
@@ -85,10 +93,9 @@ If `dispatch` fails with a budget, capacity, or queue-full error (not a logic er
 
 ## Failure Recovery
 
-Apply the one-retry escalation pattern (detect failure, retry once, then report honestly). This pattern is self-contained below — jinyiwei reports to its parent in a ` ```result ` ` fence, NOT a `final_answer` fence.
-
+Apply the one-retry escalation pattern (detect failure, retry once, then report honestly). This pattern is self-contained below — jinyiwei reports to its parent via signal (preferred) or a ` ```result ` fence (fallback).
 1. **Detect failure.** A dispatch result has failed if:
-   - The ` ```result ` ` fence is missing or empty
+   - Neither a signal tool call nor a ` ```result ` ` fence was produced
    - The output contains error text (stack traces, exception messages, or explicit failure language)
    - The task timed out
    - The result reports incomplete work with no substantive output
@@ -114,5 +121,5 @@ If a background dispatch never sends its completion notification within the stal
 
 - Dispatch to department workers only. All six departments (ui, backend, test, data, docs, quality) are active and dispatchable.
 - ALWAYS use `run_in_background=true` on every `dispatch` call.
-- The `continue_until: artifact_exists(result)` gate keeps this function active until the ` ```result ` ` fence is produced — whether from department dispatch or a failure report.
+- The `continue_until` dual gate (`signal_observed(answer)` or `artifact_exists(result)`) keeps this function active until either a signal tool call or a ` ```result ` ` fence is produced — whichever arrives first.
 - After writing the ` ```result ` ` fence, do not add content after the closing fence — everything after it is invisible to artifact capture.

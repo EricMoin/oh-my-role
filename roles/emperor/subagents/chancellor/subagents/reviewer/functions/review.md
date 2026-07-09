@@ -48,3 +48,16 @@ severity: "<low|medium|high>"
   `high` (blocks execution or introduces risk).
 - **Do NOT use the field name `risk`.** The verdict uses `severity` to avoid
   collision with the strategy contract's `risk` field.
+
+## Completion
+
+**Primary (signal):** When your review is complete, call the `signal` tool:
+- If verdict is **pass**: `signal(type="answer", payload={verdict: "pass", notes: "...", severity: "..."})`
+- If verdict is **veto/revise**: `signal(type="revise_needed", payload={verdict: "revise", items: [{id: 1, status: "revise", note: "..."}]})`
+
+**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
+```review_verdict
+...YAML content...
+```
+
+Either path satisfies the function's completion condition.

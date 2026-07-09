@@ -177,6 +177,22 @@ A lightweight end-to-end test that exercises the signal architecture through a r
 | 3.3.5 | Verify chancellor orchestrate completed | `function_state` on orchestrate function | `orchestrate` function in `"complete"` phase |
 | 3.3.6 | Verify validator validate completed | `function_state` on validate function | `validate` function in `"complete"` phase (when applicable — DIRECT path skips validation) |
 
+### 3.4 Phase 3 Verification
+
+**Scope**: Confirm that signal-only paths complete correctly without fence fallback, and that fence-required paths remain unaffected. These tests execute only after Phase 3 criteria are met (see schemas.md §4, Dual-Channel Migration Guide).
+
+| # | Test Case | Action | Expected Outcome |
+|---|-----------|--------|------------------|
+| 3.4.1 | Signal-only drafter completes without fence | Dispatch drafter with `continue_until: signal_observed(answer)` only (no `artifact_exists(draft)`). The draft fence may still appear in output but must NOT be the completion trigger. | Function completes via `signal_observed(answer)`; `artifact_exists(draft)` never evaluates. |
+| 3.4.2 | Signal-only reviewer completes without fence | Dispatch reviewer with `continue_until: signal_observed(answer)` only. | Function completes via `signal_observed(answer)`; `review_verdict` fence is optional output only. |
+| 3.4.3 | Signal-only finalizer completes without fence | Dispatch finalizer with `continue_until: signal_observed(answer)` only. | Function completes via `signal_observed(answer)`; `final_strategy` fence is optional output only. |
+| 3.4.4 | Signal-only validator completes without fence | Dispatch validator with `continue_until: any:[signal_observed(answer), signal_observed(revise_needed)]` only (no `artifact_exists(result)`). | Function completes via one of the two signal types; `result` fence is optional output only. |
+| 3.4.5 | Signal-only jinyiwei completes without fence | Dispatch jinyiwei with `continue_until: signal_observed(answer)` only (no `artifact_exists(result)`). | Function completes via signal; `result` fence is optional output only. |
+| 3.4.6 | Signal-only route completes without fence | Dispatch route with `continue_until: signal_observed(answer)` only (no `artifact_exists(result)`). | Function completes via signal; result fence is optional output only. |
+| 3.4.7 | Full pipeline: signal-only intermediate + fenced final_answer | Execute full emperor pipeline with all signal-only paths (drafter, reviewer, finalizer, jinyiwei, validator) but keep `artifact_exists(final_answer)` in synthesize's continue_until. | All intermediate functions complete via signal; final `final_answer` tag is written; synthesize completes via `artifact_exists(final_answer)`. |
+| 3.4.8 | `artifact_exists` removal causes no regression | Remove `artifact_exists(X)` from a signal-only path's continue_until, run 10 smoke-test cycles. | No false timeouts, no orphaned functions, no completion failures. |
+| 3.4.9 | `final_answer` fence-required path still works | Verify that the `final_answer` tag is still mandatory in synthesize. | Synthesize fails to complete without `final_answer` tag; user sees no terminal output. |
+
 ---
 
 ## 4. Regression Safety

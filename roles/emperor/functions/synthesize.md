@@ -79,7 +79,11 @@ Execution Reports:
 
 This validation dispatch consumes one session — increment `emperor_sessions_used` by 1. If `emperor_sessions_used > 20` after this, do not proceed past collection; go to Step 8 (budget cap).
 
-Collect the verdict with `dispatch_output`. The output contains a ```result fence with:
+Collect the verdict using one of two paths:
+
+**Primary (signal-based verdict):** Check if a `revise_items` artifact was captured (this happens automatically when the validator calls `signal(type="revise_needed")`). If present, parse it as JSON — it contains `{verdict: "revise", items: [{id, status, note}]}`. Use this structured data directly for re-dispatch decisions.
+
+**Fallback (fence-based verdict):** If `revise_items` artifact is absent, parse the ` ```result ` fence using `dispatch_output`. The output contains:
 
 ```yaml
 verdict: pass|revise
@@ -89,7 +93,8 @@ items:
     note: "..."
 ```
 
-**On parse failure or dispatch error**: Skip to Step 7 (validate-dispatch failure fallback).
+Either source provides the same information. The signal-based path is preferred because it's pre-structured JSON requiring no parsing.
+
 
 ---
 
@@ -106,6 +111,8 @@ Increment `revise_round`. If `revise_round > 2`, terminate — skip to Step 8 (c
 #### 4a. Identify Re-Dispatch Scope
 
 From the validate result, find all items with `status == revise`. These are the *failed items*.
+
+When reading from the `revise_items` artifact (signal path), items are already structured as `[{id: number, status: "revise", note: "..."}]` — extract directly without YAML parsing.
 
 For each failed item, find its *dependents* from the strategy's dependency graph: any subtask whose `dependencies` array includes the failed item's `id`.
 
@@ -180,6 +187,8 @@ If the validate dispatch (Step 3) errors, times out, or produces unparseable out
 ## Step 8: Emit Final Answer
 
 Always emit a `<final_answer>` block. This is the only way to satisfy `continue_until: artifact_exists(final_answer)`.
+
+**Signal completion:** Call `signal(type="answer")` to indicate synthesis is complete. The `<final_answer>` block is STILL REQUIRED for user-facing output — the signal only satisfies the machine-level completion condition. Always emit BOTH the signal AND the `<final_answer>` block.
 
 ### Structure
 
