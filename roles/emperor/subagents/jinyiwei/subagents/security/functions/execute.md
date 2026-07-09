@@ -7,6 +7,27 @@ observe:
   - on: tool_after
     tool: todowrite
     sync_todos: true
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: blocked
+    capture_payload_as: blocked_info
+    set_evidence: signal_blocked
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: escalate
+    capture_payload_as: escalate_info
+    set_evidence: signal_escalate
+  - on: tool_after
+    tool: signal
+    when_args:
+      match:
+        type: need_approval
+    capture_payload_as: approval_request
+    set_evidence: signal_need_approval
 continue_until:
   all: [plan_todos_complete, evidence_met]
 ---
@@ -93,3 +114,22 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics]`) auto-mark 
 - Be direct about failure. "X broke because Y" — not hedging.
 - Use `todowrite` to track progress so the orchestrator can see task state.
 - Stay within the security layer. If the fix belongs elsewhere, say so.
+
+## Runtime Signals
+
+Use the `signal` tool to communicate control-plane state changes:
+
+- **Blocked**: When a required dependency (file, tool, config) is missing and you cannot proceed:
+  `signal(type="blocked", payload={reason: "...", blocker_type: "missing_file|missing_tool|missing_config", wait_for: "..."})`
+
+- **Handoff**: When the subtask should be routed to a different department:
+  `signal(type="handoff", payload={target: "department_name", context: {...}, reason: "..."})`
+
+- **Escalate**: When an operation fails after retry and needs manual intervention:
+  `signal(type="escalate", payload={reason: "...", failed_attempts: N, last_error: "..."})`
+
+- **Destructive discovery**: When you discover an operation that would irreversibly mutate files/data/history that was NOT pre-approved:
+  `signal(type="need_approval", payload={action: "description of destructive op", risk: "high", details: {...}})`
+  **HALT execution** after emitting this signal. Do NOT proceed with the destructive operation.
+
+These signals do NOT replace normal completion. After resolving the issue (or if no issue), complete normally with `signal(type="answer")` or the result fence.
