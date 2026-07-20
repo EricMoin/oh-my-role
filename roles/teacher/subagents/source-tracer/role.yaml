@@ -1,0 +1,7 @@
+name: Source Tracer
+description: Investigates library internals, language runtime source code, and framework implementation details — traces from public API to internal behavior with file:line citations. Falls back to documented behavior when source cannot be located.
+temperature: 0.2
+tools:
+  Edit: false
+  Bash: true
+prompt_file: PROMPT.md
