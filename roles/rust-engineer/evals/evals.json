@@ -1,0 +1,199 @@
+{
+  "evals": [
+    {
+      "target": { "type": "role", "name": "rust-engineer" },
+      "cases": [
+        {
+          "id": "direct-borrow-checker-fix",
+          "description": "A small ownership error should receive a direct, idiomatic fix without workflow ceremony",
+          "prompt": "This function fails because I push into `values` while iterating over `values.iter()`. Fix the ownership problem with the smallest idiomatic change. Please do not clone the whole vector.",
+          "expectations": [
+            { "text": "Explains the conflicting immutable and mutable borrows and proposes a concrete minimal correction", "type": "capability", "weight": 2 },
+            { "text": "Does not delegate, introduce subagents, or replace the answer with a lengthy plan", "type": "boundary", "weight": 2 },
+            { "text": "Does not use cloning, unsafe code, leaking, or pervasive reference counting merely to bypass the borrow checker", "type": "boundary", "weight": 2 }
+          ],
+          "tags": ["positive", "ownership", "adaptive-effort"]
+        },
+        {
+          "id": "investigate-async-shutdown-deadlock",
+          "description": "A non-trivial Tokio shutdown deadlock should trigger focused investigation before modification",
+          "prompt": "Our Tokio service sometimes hangs during shutdown after a worker is aborted. You have repository access. Find and fix the defect.",
+          "expectations": [
+            { "text": "Inspects the actual call chain, spawn boundaries, lock or channel ownership, cancellation, drop behavior, and shutdown signaling before deciding on a fix", "type": "capability", "weight": 3 },
+            { "text": "Makes the smallest coherent root-cause correction rather than applying a generic Arc Mutex or broad rewrite", "type": "capability", "weight": 2 },
+            { "text": "Runs or proposes targeted regression checks appropriate to the discovered concurrency failure and accurately reports what was verified", "type": "capability", "weight": 2 },
+            { "text": "Does not delegate merely because the task is multi-step", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["positive", "async", "concurrency", "investigation"]
+        },
+        {
+          "id": "audit-unsafe-ffi-soundness",
+          "description": "Unsafe FFI review should treat soundness as an explicit proof obligation",
+          "prompt": "Review this Rust C-ABI wrapper for soundness. It accepts a nullable pointer and length from C, builds a mutable slice with `from_raw_parts_mut`, calls a Rust callback, then frees the pointer with `Vec::from_raw_parts`. It compiles and its unit test passes.",
+          "expectations": [
+            { "text": "Identifies and states the required pointer, alignment, initialization, bounds, aliasing, lifetime, provenance, and ownership invariants", "type": "capability", "weight": 3 },
+            { "text": "Checks ABI, allocator and deallocator compatibility, capacity knowledge, null handling, callback threading, and unwinding across the FFI boundary", "type": "capability", "weight": 3 },
+            { "text": "Does not infer soundness merely from compilation or passing tests and clearly identifies any unproven invariant", "type": "boundary", "weight": 2 },
+            { "text": "Suggests a minimal safe-boundary repair and risk-appropriate validation such as Miri or sanitizers where applicable", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "unsafe", "ffi", "soundness"]
+        },
+        {
+          "id": "ask-only-blocking-context",
+          "description": "Missing consequential context should result in one focused blocking question rather than an intake ceremony",
+          "prompt": "Change our public Rust library API so downstream users can process records asynchronously, but do not break compatibility.",
+          "expectations": [
+            { "text": "Inspects available repository code and manifests before asking for information already discoverable locally", "type": "capability", "weight": 2 },
+            { "text": "When a consequential ambiguity remains, asks only the smallest question needed to avoid an unsafe compatibility guess", "type": "capability", "weight": 3 },
+            { "text": "Does not launch a broad questionnaire, fixed gate sequence, or ceremonial planning workflow", "type": "boundary", "weight": 2 },
+            { "text": "Continues any useful non-blocked investigation rather than stopping all progress", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["edge", "clarification", "api", "adaptive-effort"]
+        },
+        {
+          "id": "handle-adjacent-tauri-boundary",
+          "description": "Rust-adjacent frontend work should be handled pragmatically without pretending broad unrelated expertise",
+          "prompt": "Our Tauri command now returns a Rust enum. Update the TypeScript boundary types and invocation handling so the frontend handles every variant safely.",
+          "expectations": [
+            { "text": "Treats the TypeScript binding and invocation boundary as directly relevant to the Rust and Tauri contract and provides useful implementation help", "type": "capability", "weight": 3 },
+            { "text": "Checks serialization shape, command error behavior, exhaustiveness, and compatibility between Rust and TypeScript", "type": "capability", "weight": 2 },
+            { "text": "Does not mechanically reject the request merely because part of the change is TypeScript", "type": "rejection", "weight": 2 },
+            { "text": "Avoids claiming unrelated frontend-design expertise or expanding into an unnecessary UI redesign", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["boundary", "tauri", "typescript", "adjacent"]
+        },
+        {
+          "id": "quick-tier-borrow-fix",
+          "description": "A one-line borrow checker error \u2014 expects direct fix, zero dispatch, <500 token response",
+          "prompt": "Fix this: `fn first(v: &Vec<i32>) -> &i32 { &v[0] }` \u2014 the caller gets an error about temporary values.",
+          "expectations": [
+            { "text": "Produces a direct fix with an idiomatic lifetime annotation without delegation, planning, or tool use", "type": "capability", "weight": 2 },
+            { "text": "Response is under 500 tokens and contains no ceremony or gate workflow", "type": "boundary", "weight": 2 },
+            { "text": "Does not dispatch to any subagent or create an EngineeringState", "type": "boundary", "weight": 2 }
+          ],
+          "tags": ["positive", "borrow-checker", "lifetime", "complexity-tier", "quick"]
+        },
+        {
+          "id": "standard-tier-module-add",
+          "description": "Adding a module to an existing crate \u2014 expects Standard tiering, dispatch exactly 1 gate (api-reviewer), no EngineeringState",
+          "prompt": "Our crate has `src/main.rs` and `src/cli.rs`. Add a `src/config.rs` module that reads TOML configuration from a file path provided via CLI args. Expose a public `Config` struct with `host`, `port`, and `log_level` fields.",
+          "expectations": [
+            { "text": "Rates the task as Standard complexity tier (not Quick, not Deep)", "type": "capability", "weight": 2 },
+            { "text": "Dispatches exactly one gate (api-reviewer) before implementing the module", "type": "capability", "weight": 2 },
+            { "text": "Does not create an EngineeringState (reserved for Deep tier)", "type": "boundary", "weight": 2 },
+            { "text": "Implements the config module with proper error handling and serde deserialization", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "module", "api-design", "serde", "complexity-tier", "standard"]
+        },
+        {
+          "id": "deep-tier-unsafe-refactor",
+          "description": "Refactoring an unsafe abstraction that involves FFI + concurrency \u2014 expects Deep tier, EngineeringState creation, dispatch safety-reviewer + async-auditor",
+          "prompt": "Our `SharedRingBuffer` uses `UnsafeCell` and raw pointers for a lock-free SPSC channel. We need to refactor it to use a sound safe wrapper with a `Receiver::recv_timeout(&self, Duration)` method. The C-side producer calls into a `extern \"C\" fn write_bytes(ptr: *mut u8, len: usize)` callback. The consumer runs on an async Tokio task.",
+          "expectations": [
+            { "text": "Rates the task as Deep complexity tier", "type": "capability", "weight": 2 },
+            { "text": "Creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
+            { "text": "Dispatches both safety-reviewer and async-auditor gates during the workflow", "type": "capability", "weight": 2 },
+            { "text": "Does not shortcut safety analysis by skipping formal invariant documentation", "type": "boundary", "weight": 2 },
+            { "text": "Verifies soundness with at least one concrete tool recommendation (Miri, loom, or sanitizer)", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "unsafe", "ffi", "async", "concurrency", "complexity-tier", "deep"]
+        },
+        {
+          "id": "quick-tier-doc-only",
+          "description": "Fixing a doc comment \u2014 expects direct edit, zero dispatch, no gate, no classification ceremony",
+          "prompt": "The doc comment on `fn parse_config(path: &str) -> Result<Config, ConfigError>` says 'Parses the configuration file' but the actual behavior panics on invalid paths instead of returning an Err. Fix the doc comment to match the real behavior.",
+          "expectations": [
+            { "text": "Edits the doc comment directly without delegation, gate dispatch, or complexity classification", "type": "capability", "weight": 2 },
+            { "text": "Response is under 300 tokens and contains no workflow ceremony", "type": "boundary", "weight": 2 },
+            { "text": "Does not create a plan, EngineeringState, or dispatch any subagent", "type": "boundary", "weight": 2 }
+          ],
+          "tags": ["positive", "documentation", "minimal", "complexity-tier", "quick"]
+        },
+        {
+          "id": "effort-override-force-standard",
+          "description": "User prefix |effort:standard| overrides Quick-tier content \u2014 expects exactly 1 gate dispatch despite task simplicity",
+          "prompt": "|effort:standard| Add a doc comment to the public `connect()` function explaining the retry behaviour when the TCP handshake fails.",
+          "expectations": [
+            { "text": "Recognizes the |effort:standard| prefix as a user override and respects it despite the task being doc-only Quick-tier", "type": "capability", "weight": 2 },
+            { "text": "Dispatches exactly one gate (api-reviewer) before making the edit", "type": "capability", "weight": 2 },
+            { "text": "Does not escalate to Deep tier or create an EngineeringState", "type": "boundary", "weight": 2 },
+            { "text": "The final doc comment is accurate and includes a # Panics or # Errors section as appropriate", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["edge", "effort-override", "directive", "complexity-tier", "standard"]
+        },
+        {
+          "id": "standard-verify-fix-micro-loop",
+          "description": "Standard tier verify-fix micro-loop success \u2014 a gate finds an issue, engineer fixes it, second review passes within the 2-round cap",
+          "prompt": "Our crate has an existing Config struct with host, port, and log_level fields. Add a `timeout_seconds` field with a default of 30, validate that it is positive, and update the serde deserialization to use `#[serde(default = \"default_timeout\")]`.",
+          "expectations": [
+            { "text": "Rates the task as Standard complexity tier and dispatches exactly one gate (api-reviewer) before implementing", "type": "capability", "weight": 2 },
+            { "text": "When the gate identifies a missing validation edge case (e.g. zero is accepted), applies the fix and requests a re-review", "type": "capability", "weight": 2 },
+            { "text": "Completes the verify-fix micro-loop within 2 rounds (initial review + one revise cycle) without escalating to the user", "type": "capability", "weight": 2 },
+            { "text": "Does not create an EngineeringState or dispatch multiple gates for a single-module Standard-tier task", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["positive", "verify-fix-micro-loop", "gate-review", "complexity-tier", "standard"]
+        },
+        {
+          "id": "standard-bounded-revise-exhaustion",
+          "description": "Standard tier bounded revise exhaustion \u2014 gate finds an issue twice; engineer reports residual risk instead of looping indefinitely",
+          "prompt": "Implement a `retry_with_backoff` function that takes a closure, retries it up to 3 times with exponential backoff, and returns the first successful result or the last error. The function must be public and have a doc comment explaining the retry strategy.",
+          "expectations": [
+            { "text": "Rates the task as Standard complexity tier and dispatches exactly one gate (api-reviewer) before writing the implementation", "type": "capability", "weight": 2 },
+            { "text": "When the gate rejects the same concern twice (e.g. a specific documentation requirement not being met across two revisions), does not attempt a third revision cycle", "type": "boundary", "weight": 2 },
+            { "text": "Reports the residual risk acceptably and documents the known gap rather than looping indefinitely or silently ignoring the gate", "type": "capability", "weight": 2 },
+            { "text": "Makes the best-effort implementation available despite the known gap; does not refuse to produce output", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["edge", "bounded-revise", "exhaustion", "gate-review", "complexity-tier", "standard"]
+        },
+        {
+          "id": "deep-parallel-dispatch",
+          "description": "Deep tier parallel dispatch \u2014 two independent gates dispatched with run_in_background=true; engineer waits for both before implementation",
+          "prompt": "We have a `CrossPlatformPath` type that normalizes path separators on all three major OS families. It uses conditional compilation with `#[cfg(target_os)]` and stores raw bytes via `unsafe` for zero-copy interop with a C library that manages its own allocation. Add a `fn relativize(&self, base: &CrossPlatformPath) -> Result<CrossPlatformPath, RelativizeError>` method.",
+          "expectations": [
+            { "text": "Rates the task as Deep complexity tier and creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
+            { "text": "Dispatches both safety-reviewer and async-auditor (or platform-auditor) gates with run_in_background=true; does not dispatch them serially", "type": "capability", "weight": 2 },
+            { "text": "Waits for both background gates to complete before beginning implementation; does not start coding before all gate results are available", "type": "capability", "weight": 2 },
+            { "text": "Incorporates findings from both gates into the implementation and documents soundness and platform-behavior obligations", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "parallel-dispatch", "background-gates", "unsafe", "conditional-compilation", "complexity-tier", "deep"]
+        },
+        {
+          "id": "deep-serial-dependency",
+          "description": "Deep tier serial dependency \u2014 safety-reviewer triggers on unsafe-FFI; its output feeds another gate serially after it completes",
+          "prompt": "A C library exposed via FFI provides a `compute_checksum(const uint8_t* data, size_t len, uint32_t* out)` function. Write a safe Rust wrapper `pub fn checksum(data: &[u8]) -> Result<u32, ChecksumError>` that handles null-pointer safety, zero-length input, and panicking across the FFI boundary. The C function is documented as thread-safe.",
+          "expectations": [
+            { "text": "Rates the task as Deep complexity tier and creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
+            { "text": "Dispatches safety-reviewer first (since unsafe-FFI triggers it); does not dispatch the second gate before the first completes", "type": "capability", "weight": 2 },
+            { "text": "After safety-reviewer reports, dispatches a second gate (api-reviewer or async-auditor) that consumes the first gate's findings as input", "type": "capability", "weight": 2 },
+            { "text": "Documents the FFI safety invariants (null, alignment, provenance, unwind safety) and produces Miri-compatible test validation", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "serial-dependency", "unsafe", "ffi", "chained-gates", "complexity-tier", "deep"]
+        },
+        {
+          "id": "mechanical-downgrade-quick",
+          "description": "Mechanical downgrade \u2014 zero grep matches on a borderline task; engineer downgrades to Quick",
+          "prompt": "Our codebase has a `settings` module somewhere. Find it and add a `Debug` derive to the struct that holds the configuration fields. I do not know the struct name.",
+          "expectations": [
+            { "text": "Searches the codebase with grep for plausible struct definitions in a settings or config module", "type": "capability", "weight": 2 },
+            { "text": "When grep returns zero matches (no settings module exists), classifies the task as effectively mechanical and downgrades to Quick tier", "type": "capability", "weight": 2 },
+            { "text": "Reports the absence of the expected module to the user and offers an alternative minimal action rather than dispatching a gate or creating a plan", "type": "capability", "weight": 2 },
+            { "text": "Response contains no EngineeringState, no gate dispatch, and no workflow ceremony", "type": "boundary", "weight": 1 }
+          ],
+          "tags": ["edge", "downgrade", "mechanical", "minimal", "negative-search", "complexity-tier", "quick"]
+        },
+        {
+          "id": "mechanical-upgrade-mid-edit",
+          "description": "Mechanical upgrade mid-edit \u2014 a Quick-tier task unexpectedly touches unsafe; engineer upgrades tier",
+          "prompt": "Remove a now-unused `#[inline(always)]` annotation from a function in our public API crate. The annotation was left over from an old hot-path optimisation.",
+          "expectations": [
+            { "text": "Initially classifies the task as Quick tier and begins work without gates or EngineeringState", "type": "capability", "weight": 2 },
+            { "text": "Upon discovering during the edit that the function contains or interacts with unsafe code (e.g. the inline wrapper wraps an unsafe FFI call)", "type": "capability", "weight": 2 },
+            { "text": "Upgrades the classification from Quick to Standard (or Deep) and dispatches at least one gate (safety-reviewer) before completing the edit", "type": "capability", "weight": 2 },
+            { "text": "Does not ignore the unsafe context and continue under Quick-tier rules without gate review", "type": "boundary", "weight": 2 }
+          ],
+          "tags": ["edge", "upgrade", "unsafe", "reclassification", "complexity-tier", "standard"]
+        }
+      ]
+    }
+  ]
+}

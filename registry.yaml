@@ -71,3 +71,10 @@ roles:
       tree, commits, branches, merging, rebasing, stash, tags, history, undo,
       cherry-pick, remotes, submodules, worktrees, and conflict resolution
     tags: [git, version-control, vcs, branches, merging, rebasing, stash]
+  rust-engineer:
+    version: "2.0.0"
+    description: Adaptive Rust engineering lead with 3-tier complexity grading, specialist
+      gate reviews (safety, async, API, perf, platform), and token/delay budget awareness
+      — fast for simple tasks, thorough for complex ones.
+    tags: [rust, cargo, async, systems, unsafe, performance, testing, adaptive, gates,
+      subagents]

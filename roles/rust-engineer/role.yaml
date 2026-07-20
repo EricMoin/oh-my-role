@@ -1,0 +1,67 @@
+name: rust-engineer
+description: Adaptive hybrid Rust engineer — complexity-aware tier routing (Quick/Standard/Deep) with mechanical signal detection, conditional gate dispatch, bounded verify-fix micro-loops, and self-verification
+version: "2.0.0"
+model: provider/tier-2-reasoning
+mode: primary
+temperature: 0.1
+prompt_file: PROMPT.md
+
+# Functions: auto-activate engineer brain, research available on demand
+functions:
+  - engineer
+  - research
+
+auto_activate: [engineer]
+
+# Reference documents for complexity, schema contracts, and domain classification
+references:
+  complexity-model:
+    path: references/complexity-model.md
+    description: Task complexity classification model — effort tiers, risk signals, blast radius, and verification depth
+  schemas:
+    path: references/schemas.md
+    description: Inter-agent contract schemas — gate report and engineering state field definitions
+  rust-domains:
+    path: references/rust-domains.md
+    description: Rust risk domain classification — detection signals, gate scope mappings, and verification tools
+
+# Skills: loaded on demand for adaptive engineering workflow
+skills:
+  - adaptive-rust-engineering
+
+# Subagent gate reviewers — each has a dedicated role.yaml in subagents/
+subagents:
+  - name: safety-reviewer
+    description: Reviews unsafe blocks, FFI boundaries, raw pointers, MaybeUninit, transmute, union, and global mutable state for Rust projects
+    prompt: See subagents/safety-reviewer/role.yaml for the full Safety Reviewer gate specification
+  - name: async-auditor
+    description: Reviews Tokio/async runtime usage, cancellation safety, backpressure, Send/Sync bounds, lock ordering, and task lifecycle for Rust projects
+    prompt: See subagents/async-auditor/role.yaml for the full Async Auditor gate specification
+  - name: api-reviewer
+    description: Reviews public API design, trait coherence, generics vs trait objects, error type design, semver compatibility, and documentation completeness for Rust projects
+    prompt: See subagents/api-reviewer/role.yaml for the full API Reviewer gate specification
+  - name: perf-profiler
+    description: Reviews allocation patterns, clone() calls, collection selection, cache locality, monomorphization bloat, and benchmark methodology for Rust projects
+    prompt: See subagents/perf-profiler/role.yaml for the full Perf Profiler gate specification
+  - name: cross-platform-checker
+    description: Reviews cfg-gated code, target_os/target_arch differences, conditional compilation, platform-specific dependencies, and build scripts for Rust projects
+    prompt: See subagents/cross-platform-checker/role.yaml for the full Cross-Platform Checker gate specification
+
+# Collaboration flow: tier-aware dispatch — Quick=zero, Standard=single sync, Deep=parallel with serial lead
+collaboration:
+  max_iterations: 3
+  flow:
+    - "parent -> safety-reviewer: dispatched when unsafe-ffi domain fires (serial lead when present)"
+    - "parent -> async-auditor: dispatched when async-concurrency domain fires"
+    - "parent -> api-reviewer: dispatched when public-api domain fires"
+    - "parent -> perf-profiler: dispatched when performance-hotpath domain fires"
+    - "parent -> cross-platform-checker: dispatched when cross-platform domain fires"
+    - "safety-reviewer -> parent: gate report (may feed other gates via engineering_state_patch)"
+    - "async-auditor -> parent: gate report"
+    - "api-reviewer -> parent: gate report"
+    - "perf-profiler -> parent: gate report"
+    - "cross-platform-checker -> parent: gate report"
+# Dispatch budget: maxActivePerParent=3 matches Deep tier's max 3 parallel gates
+dispatch:
+  maxActivePerParent: 3
+  maxTotalSessionsPerRequest: 15
