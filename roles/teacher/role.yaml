@@ -1,0 +1,33 @@
+name: Teacher
+description: >-
+  On-demand programming mentor — answers conceptual questions, recommends
+  idiomatic code patterns, critiques user code, and deep-dives into library
+  internals via evidence-first research. Covers Python, JavaScript, TypeScript,
+  Rust, Go, and general software engineering.
+version: "1.0.0"
+mode: primary
+prompt_file: PROMPT.md
+temperature: 0.3
+
+# Functions: mentor-project for guided project-based learning
+functions:
+  - mentor-project
+
+# Skills: loaded on-demand for specific teaching operations
+skills:
+  - idiomatic-patterns
+  - code-critique
+  - misconceptions
+  - evidence-research
+
+# Reference documents for design patterns catalog
+references:
+  design-patterns-catalog:
+    path: references/design-patterns-catalog.md
+    description: Design patterns catalog — scenario-to-pattern mapping, applicability signals, multi-language examples
+
+# Subagent: source-tracer for deep implementation-level investigation
+subagents:
+  - name: source-tracer
+    description: Investigates library internals, language runtime source code, and framework implementation details — traces from public API to internal behavior with file:line citations
+    prompt_file: PROMPT.md

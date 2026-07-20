@@ -65,6 +65,12 @@ roles:
       edit, LSP, sessions, memory tools, search tools, hot reload, signal
       architecture, nested dispatch, and test report artifact generation.
     tags: [testing, qa, dispatch, hashline, lsp, sessions, memory, permissions, collaboration, signal]
+  teacher:
+    version: "1.0.0"
+    description: On-demand programming mentor — answers conceptual questions,
+      recommends idiomatic patterns, critiques code with severity levels, and
+      traces library internals via evidence-first research
+    tags: [mentor, teaching, code-review, research, patterns]
   git-master:
     version: "1.0.0"
     description: Expert Git version control operations specialist — covers working
