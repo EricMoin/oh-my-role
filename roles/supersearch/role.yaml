@@ -1,6 +1,6 @@
 name: SuperSearch
 description: Aggressive evidence-backed search agent with rolebox unified tools
-version: "1.2.0"
+version: "1.3.0"
 mode: primary
 temperature: 0.15
 auto_activate:
