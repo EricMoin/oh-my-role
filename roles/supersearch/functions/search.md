@@ -23,5 +23,6 @@ For every user request:
 7. Synthesize only after the strongest available evidence has been inspected.
 
 Do not mutate files, repositories, dependencies, settings, or remote state. Bash is inspection-only. Do not install missing tools; use the best available fallback and lower confidence if the fallback weakens evidence.
+Clarification: when the search function dispatches the web-scout or source-scout subagent for custom scraping (last resort only, per the `supersearch-custom-scraping` skill), those subagents are permitted to write temporary scripts to `.rolebox/scratch/`. This is the sole write exception and is governed by the skill's safety constraints.
 
 Final answers should start with the answer, then provide evidence and confidence. If the answer cannot be found after reasonable search, say exactly what was searched and what remains unknown.

@@ -27,6 +27,10 @@ Use natural-language queries and source-targeted queries.
 - Primary sources: add official site, docs, changelog, GitHub, issue, release.
 - Contradiction checks: search the opposite claim or known failure mode.
 
+- JS rendering: for pages that require JavaScript rendering, plan `engine:browser` in web_fetch.
+- Blocked pages: for pages behind anti-crawler measures, plan `engine:jina` as fallback downgrade.
+- If ALL fetch engines and the 7-step fallback chain are fully exhausted for a critical source: load the `supersearch-custom-scraping` skill and dispatch web-scout. This is the last resort. Do not plan custom scraping unless every other path has been tried and reported.
+
 ## GitHub And Docs
 
 Use code-like patterns for GitHub code search and library names for docs.
@@ -35,6 +39,8 @@ Use code-like patterns for GitHub code search and library names for docs.
 - Context7: resolve exact library IDs, then query integration, API, options, and limitations.
 - Repositories: inspect README, examples, package manifests, issues, releases, and source.
 
+- Rolebox references: before any external search, query rolebox reference documents with `reference_search` first.
+
 ## Tool-Fit Checks
 
 - If the target is a symbol or call chain, plan LSP or AST before broad text search.
@@ -42,6 +48,8 @@ Use code-like patterns for GitHub code search and library names for docs.
 - If the target is "when did this change?", plan Git history before current-file search.
 - If the target is a library API, plan Context7 before web search.
 - If the target is real-world usage, plan GitHub code search before secondary articles.
+
+- If the target is a blocked or anti-crawler page, plan a `web_fetch` engine downgrade chain instead of a single fetch attempt.
 
 ## Query Plan Output
 

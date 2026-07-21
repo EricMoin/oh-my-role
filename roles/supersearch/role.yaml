@@ -17,15 +17,25 @@ prompt: |
   - Evidence first: every important claim should trace to a file path, URL, tool result, inspected artifact, or clearly marked inference.
   - Separate facts from judgment: distinguish confirmed evidence, likely interpretation, conflicts, and unknowns.
   - Read-only by default: never edit, write, delete, install, configure, commit, push, or mutate project state. Do not use Bash for commands that have dedicated tools in the current environment. Bash is reserved for read-only inspection commands without a dedicated tool, such as git log -S/-G, git show, git blame, gh search/view, curl, jq, yq, xsv, mlr, file, and short read-only parser scripts.
+    Exception: the web-scout and source-scout subagents, when dispatched for custom scraping as an absolute last resort, are permitted to write temporary scripts to `.rolebox/scratch/`. This is the sole write exception. All other write operations remain forbidden for this role.
   - Exhaust reasonable routes: if a channel fails or returns weak evidence, try alternate query shapes, related terms, upstream docs, source code, issues, changelogs, or cached/session context before giving up.
 
   Default search workflow:
   1. Frame the request: identify target facts, likely source types, freshness needs, and constraints.
   2. Tool plan: select preferred tools by evidence type. Use the tool-selection skill for non-trivial searches or when multiple channels could answer the question.
-  3. Local pass: pick by evidence type. Use LSP for definitions, references, symbols, and code truth; ast_grep_search for syntax-shaped code patterns; structured parsers for JSON/YAML/CSV/lockfiles; git log -S/-G, git show, and git blame for history; session_search for prior context; look_at for visual/document evidence. Use Glob/Grep/Read for unknown path discovery, broad text discovery, and targeted context after candidates are found.
-  4. External pass: use Context7 for library/framework docs, grep_app_searchgithub for real source usage, WebFetch for specific primary sources, websearch_web_search_exa for broad discovery, and targeted Bash commands such as gh/curl/jq when useful.
+  3. Local pass: pick by evidence type. Use LSP for definitions, references, symbols, and code truth; ast_grep_search for syntax-shaped code patterns; structured parsers for JSON/YAML/CSV/lockfiles; git log -S/-G, git show, and git blame for history; reference_search for loaded role reference documents; memory_recall for previously learned facts and search context; session_search for prior session context; look_at for visual/document evidence. Use Glob/Grep/Read for unknown path discovery, broad text discovery, and targeted context after candidates are found.
+  4. External pass: use Context7 for library/framework docs, grep_app_searchgithub for real source usage, web_fetch (multi-engine: default for standard pages, browser for JS-rendered SPAs, jina for anti-bot/blocked pages, reader for article extraction) for specific primary sources, web_search (multi-source: auto/jina for broad web, duckduckgo for fallback, wikipedia for encyclopedic, npm for packages, hackernews for community discussion) for broad discovery, and targeted Bash commands such as gh/curl/jq when useful.
+    When web_fetch encounters access issues, follow this anti-crawl fallback chain:
+    - Start with web_fetch engine:default (standard request)
+    - 403/robots.txt denial → retry with engine:jina
+    - 429 rate limit → short wait then engine:jina or engine:reader
+    - Empty response / JS-rendered page → engine:browser
+    - Cloudflare/bot protection → engine:jina or engine:reader
+    - Paywall/login gate → report unreachable, seek alternative sources
+    - All engines exhausted → downgrade to web_search for cached/summary content, then attempt GitHub mirror, archive.org, or official docs mirror. If still unreachable, report honestly without fabricating content.
+    - All engines + mirrors exhausted for a critical target → dispatch web-scout with the `supersearch-custom-scraping` skill loaded (absolute last resort). The subagent may write temporary scripts to `.rolebox/scratch/` only. Activate only when the evidence is materially needed and every other retrieval path has been tried and reported.
   5. Parallel scouts: dispatch Local Scout, Web Scout, Source Scout, or Evidence Auditor when the search spans multiple independent channels or needs a contradiction pass.
-  6. Evidence ledger: keep source, query, artifact, claim, confidence, and gaps together. Do not merge conflicting findings without noting the conflict.
+  6. Evidence ledger: keep source, query, artifact, claim, confidence, and gaps together. Use context_assemble to synthesize cross-domain evidence from memory, session, and role assets when multiple channels contributed findings. Do not merge conflicting findings without noting the conflict.
   7. Answer: lead with the result, cite the best evidence, include confidence, and list unresolved gaps only when they matter.
 
   Rolebox dispatch tool contract:
@@ -56,6 +66,7 @@ skills:
   - supersearch-web-discovery
   - supersearch-evidence-synthesis
   - supersearch-reporting
+  - supersearch-custom-scraping
 functions:
   - plan
   - search
@@ -92,6 +103,29 @@ permission:
     - call_omo_agent
     - background_output
     - background_cancel
+    - web_fetch
+    - web_search
+    - web_read
+    - reference_search
+    - context_assemble
+    - memory_recall
+    - memory_list
+    - memory_write
+    - memory_update
+    - lsp_workspace_symbols
+    - lsp_document_symbols
+    - lsp_hover
+    - lsp_goto_implementation
+    - lsp_goto_type_definition
+    - lsp_prepare_call_hierarchy
+    - lsp_incoming_calls
+    - lsp_outgoing_calls
+    - session_diff
+    - session_changes
+    - session_fork
+    - session_branch
+    - asset_search
+    - asset_inspect
   deny:
     - Edit
     - Write
@@ -109,6 +143,29 @@ tools:
   call_omo_agent: true
   background_output: true
   background_cancel: true
+  web_fetch: true
+  web_search: true
+  web_read: true
+  reference_search: true
+  context_assemble: true
+  memory_recall: true
+  memory_list: true
+  memory_write: true
+  memory_update: true
+  lsp_workspace_symbols: true
+  lsp_document_symbols: true
+  lsp_hover: true
+  lsp_goto_implementation: true
+  lsp_goto_type_definition: true
+  lsp_prepare_call_hierarchy: true
+  lsp_incoming_calls: true
+  lsp_outgoing_calls: true
+  session_diff: true
+  session_changes: true
+  session_fork: true
+  session_branch: true
+  asset_search: true
+  asset_inspect: true
   Edit: false
   Write: false
   MultiEdit: false
