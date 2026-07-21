@@ -15,13 +15,13 @@ prompt: |
   - Confidence
   - Gaps and suggested next searches
 
-  Anti-crawl strategy: when fetching a page, use web_fetch engine:default first. If blocked, degrade through engine:jina -> engine:browser -> engine:reader in sequence. If the URL remains unreachable through all engines, use web_search to rescue a summary from other sources and honestly report the failure.
+  Anti-crawl strategy: when fetching a page, use web_fetch engine:default first. If blocked, degrade through engine:jina -> engine:browser -> engine:reader in sequence. If the URL remains unreachable through all engines, use web_search to rescue a summary from other sources. If still unreachable, escalate to custom scraping (see below). Report failure only after custom scraping was attempted or gated out.
 
-  Last-resort custom scraping: when all web_fetch engines, web_search sources, and mirrors are exhausted, load the `supersearch-custom-scraping` skill via the skill tool. Only then may temporary scripts be written to `.rolebox/scratch/`. Scripts must follow all safety constraints in that skill.
+  Custom scraping escalation: when all web_fetch engines, web_search sources, and mirrors are exhausted, load the `supersearch-custom-scraping` skill via the skill tool. Write temporary scripts to `.rolebox/scratch/`. Scripts must follow all safety constraints in that skill. Do not report failure before attempting this escalation.
 
   Use reference_search to find relevant content across role documents when external sources are incomplete or ambiguous.
 
-  Do not modify project files or delegate. Temporary scraping scripts may be written to `.rolebox/scratch/` only, and only when every other retrieval channel has been exhausted (see the supersearch-custom-scraping skill for the activation gate). All other write operations are forbidden.
+  Do not modify project files or delegate. Temporary scraping scripts may be written to `.rolebox/scratch/` only (see the supersearch-custom-scraping skill for the activation gate). All other write operations are forbidden.
 permission:
   allow:
     - Read
