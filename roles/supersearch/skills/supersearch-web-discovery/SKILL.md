@@ -36,7 +36,6 @@ Choose the `web_fetch` engine based on page type and expected anti-crawl resista
 
 When a URL fetch fails, walk this chain in order. Stop at the first success.
 
-```
 Step 1: engine:default (format:auto)
     → If 403, 429, timeout, or empty body → continue
 
@@ -61,18 +60,20 @@ Step 6: Alternative sources
     → Official docs CDN (e.g. unpkg.com, cdn.jsdelivr.net, esm.sh)
     → Google cache (webcache.googleusercontent.com)
 
-Step 7: Honest report
-    → "URL {url} is unreachable. Reason: {reason}. Evidence degraded to {salvaged}."
-```
-Step 8: Custom scraping (last resort)
-    → When Steps 1-7 have been fully exhausted and the evidence is materially needed
+Step 7: Custom scraping escalation
+    → When Steps 1-6 are exhausted and the data is part of what the user needs
     → Load the `supersearch-custom-scraping` skill for constraints, decision gate, and safety rules
     → Dispatch web-scout with the skill loaded; scripts are written to `.rolebox/scratch/` only
     → Scripts must respect robots.txt, rate limits, and must not bypass authentication
     → After scraping, integrate the output file into the evidence ledger per supersearch-evidence-synthesis
-    → If the target site's robots.txt or ToS prohibits automated access, do NOT proceed; report the gap
+    → If the target site's robots.txt or ToS prohibits automated access, do NOT proceed; record the gate failure and continue to Step 8
 
-**Implementation rule:** Never silently return empty or stale data without a note. If all steps fail, report the URL with the failure reason and which fallback steps were attempted.
+Step 8: Honest report
+    → "URL {url} is unreachable. Reason: {reason}. Evidence degraded to {salvaged}."
+    → Only reached after custom scraping was attempted or its gate legitimately failed
+```
+
+**Implementation rule:** Never silently return empty or stale data without a note. Never report failure without first evaluating the custom scraping escalation and stating why it was or was not activated. If all steps fail, report the URL with the failure reason and which fallback steps were attempted.
 
 ## Error-Specific Recovery Table
 

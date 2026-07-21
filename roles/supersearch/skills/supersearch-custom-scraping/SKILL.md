@@ -1,25 +1,29 @@
 ---
 name: supersearch-custom-scraping
-description: "Last-resort custom scraping via temporary scripts when all web_fetch/web_search engines and the 7-step anti-crawl fallback chain have been exhausted. Governs web-scout and source-scout script behavior with security, compliance, and scope constraints."
+description: "Custom scraping via temporary scripts when all web_fetch/web_search engines and the 6-step anti-crawl fallback chain have been exhausted. Governs web-scout and source-scout script behavior with security, compliance, and scope constraints."
 ---
 
 # SuperSearch Custom Scraping
 
-Custom scraping is the final escalation path for fetching data that all built-in tools and fallback strategies cannot reach. Activation triggers a REQUIRED gate, runtime checks, strict script constraints, and mandatory cleanup.
+Custom scraping is the escalation path for fetching data that all built-in tools and fallback strategies cannot reach. Activation triggers a gate check, runtime availability, strict script constraints, and mandatory cleanup.
+
 
 ## Decision Gate
 
-Before any custom scraping begins, operator MUST verify every item in this checklist. If any item is false, operator MUST NOT proceed — return to the caller with the failure reason.
+Before any custom scraping begins, operator MUST check each item in this checklist and record the result. The operator proceeds when all hard gates pass. If a hard gate fails, the operator MUST abort and report the blocking reason. Soft checks inform the approach but a negative result is not a blocker.
 
-### REQUIRED Pre-Activation Checklist
+### Pre-Activation Checklist
 
-- [ ] **7-level fallback chain exhausted.** All steps in `supersearch-web-discovery/SKILL.md` lines 39-66 (engine default → jina → browser → reader → web_search → alternative sources → honest report) have been attempted and returned no usable data.
-- [ ] **Evidence is truly required.** The data cannot be reasonably approximated, inferred from other sources, or omitted without degrading the answer to a dishonest confidence level.
-- [ ] **Simple one-liner is insufficient.** A pure `curl | jq` pipeline (see Curl+Jq Fallback section) cannot extract the required data. The task genuinely needs branching logic, loops, multi-step authentication, or HTML parsing.
-- [ ] **robots.txt and ToS checked.** The target domain's `robots.txt` does not disallow the scraping path. The site's Terms of Service do not prohibit automated access. If either restriction exists, operator MUST abort and report the legal reason.
-- [ ] **Alternative API exists.** No public API, GraphQL endpoint, or documented data export covers the desired data. Custom scraping is strictly the last option.
+**Hard Gates** — if any of these fail, operator MUST NOT proceed:
 
-If any gate item fails, operator MUST NOT write or execute any scraping script.
+- [ ] **6-level fallback chain exhausted.** All steps in `supersearch-web-discovery/SKILL.md` (engine default → jina → browser → reader → web_search → alternative sources) have been attempted and returned no usable data.
+- [ ] **robots.txt and ToS permit scraping.** The target domain's `robots.txt` does not disallow the scraping path. The site's Terms of Service do not prohibit automated access. If either restriction exists, operator MUST abort and report the legal reason.
+- [ ] **No authentication bypass.** The scrape reads only publicly accessible content. It does not require login credentials, session cookies, captcha solving, or paywall circumvention.
+
+**Soft Checks** — record the result; informs approach but not a blocker:
+
+- [ ] **curl|jq one-liner attempted.** A pure `curl | jq` pipeline (see Curl+Jq Fallback section) was tried first and found insufficient. If the one-liner succeeds, use its output directly and do not proceed to script writing.
+- [ ] **Public API considered.** If a public API, GraphQL endpoint, or documented data export covers the desired data, it was attempted first. Custom scraping is for data the API cannot reach.
 
 ## Runtime Probing
 

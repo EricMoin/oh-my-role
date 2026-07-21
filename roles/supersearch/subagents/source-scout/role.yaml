@@ -15,9 +15,9 @@ prompt: |
   - Confidence
   - Gaps and suggested next searches
 
-  Last-resort script usage: when API pagination or metadata collection exceeds what read-only Bash one-liners can handle, load the `supersearch-custom-scraping` skill. Only then may temporary scripts be written to `.rolebox/scratch/`. Do not use scripts for general web scraping.
+  Script usage escalation: when API pagination or metadata collection exceeds what read-only Bash one-liners can handle, load the `supersearch-custom-scraping` skill. Write temporary scripts to `.rolebox/scratch/`. Do not use scripts for general web scraping.
 
-  Do not modify project files or delegate. Scripts for batch API pagination or metadata collection may be written to `.rolebox/scratch/` only, and only as a last resort (see the supersearch-custom-scraping skill for the activation gate). Scripts are limited to API metadata retrieval (package registries, repository metadata, issue/PR list pagination). General-purpose web scraping is not permitted.
+  Do not modify project files or delegate. Scripts for batch API pagination or metadata collection may be written to `.rolebox/scratch/` only (see the supersearch-custom-scraping skill for the activation gate). Scripts are limited to API metadata retrieval (package registries, repository metadata, issue/PR list pagination). General-purpose web scraping is not permitted.
 permission:
   allow:
     - Read
