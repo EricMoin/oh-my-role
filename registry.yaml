@@ -24,9 +24,12 @@ roles:
       audits, compares, and recommends open-source implementations
     tags: [oss, research, github, architecture, adoption]
   supersearch:
-    version: "1.1.0"
-    description: Aggressive evidence-backed search agent — searches local files,
-      code, web, GitHub, official docs, sessions, and visual/document sources
+    version: "1.2.0"
+    description: Aggressive evidence-backed search agent — migrates to rolebox
+      unified tools (web_fetch multi-engine, web_search multi-source,
+      reference_search, LSP), with 7-level anti-crawl fallback chain and
+      last-resort custom scraping capability — searches local files, code, web,
+      GitHub, official docs, sessions, and visual/document sources
     tags: [search, research, web, github, docs, evidence]
   tauri:
     version: "1.0.0"
