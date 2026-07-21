@@ -28,12 +28,13 @@ Local discovery is the first pass when the answer may be in the workspace or pre
 - Use package-manager or lockfile-aware tools only for inspection, never installation.
 - If a parser is unavailable, fall back to Grep with tight patterns and mark the evidence as weaker.
 
-## Code Intelligence
 
-- Use `lsp_goto_definition` and `lsp_find_references` for symbols.
-- Use `lsp_symbols` to map large files or unknown entrypoints.
-- Use `ast_grep_search` for syntax-aware patterns.
-- Use `lsp_diagnostics` only as evidence about code health, not as a general search substitute.
+- Use `lsp_goto_definition` and `lsp_find_references` for symbol navigation.
+- Use `lsp_workspace_symbols` for workspace-wide symbol search (types, functions, variables across files).
+- Use `lsp_document_symbols` to list all symbols in a file, useful for mapping large files or unknown entrypoints.
+- Use `lsp_hover` to inspect type signatures, documentation, and inferred types at a given position.
+- Use `lsp_goto_implementation` to find concrete implementations of interfaces, abstract classes, or traits.
+- Use `ast_grep_search` for syntax-aware pattern matching.
 
 ## Git And History
 
@@ -50,6 +51,13 @@ Use Bash only for inspection:
 
 - Use `session_search` for prior decisions or previous research.
 - Use `look_at` when images, screenshots, or PDFs are directly relevant.
+
+## Reference Documents
+
+- Use `reference_search` to search all loaded rolebox reference documents by full-text query.
+- Reference documents live under `references/` in each role and cover specialized knowledge: department definitions, schemas, model pool rules, design principles, etc.
+- When `reference_search` returns no relevant hits, check whether the query terms match document names or descriptions before declaring the gap unsolvable.
+- Only escalate to external search when both local code tools and reference documents have been exhausted.
 
 ## Local Discovery Output
 
