@@ -49,7 +49,7 @@ roles:
       source tracing — builds, tests, profiles, and ships Android applications
     tags: [android, kotlin, jetpack-compose, compose, mobile, research, source-tracing]
   emperor:
-    version: "2.6.0"
+    version: "2.7.0"
     description:
       "Top-level orchestrator — classifies user requests, dispatches to
       planner/executor subtrees, synthesizes results with closed-loop validation"
