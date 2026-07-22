@@ -21,8 +21,6 @@ auto_activate: [triage, synthesize]
 skills:
   - delegation-heuristics
   - escalate-recovery
-  - evidence-first-research
-
 # Reference documents for dispatch decisions, schemas, terminology, model pools, and departments
 references:
   schemas:

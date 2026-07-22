@@ -1,6 +1,6 @@
 ---
 name: delegation-heuristics
-description: Fine-grained delegation decision guidance beyond the triage tree
+description: Fine-grained delegation decision guidance — load when the triage tree produces an ambiguous classification, when a task falls between DIRECT and plan-first, or when a task's scope is unclear
 ---
 
 # Delegation Heuristics

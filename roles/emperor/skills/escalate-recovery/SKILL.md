@@ -1,6 +1,6 @@
 ---
 name: escalate-recovery
-description: Failure detection, retry, and honest escalation for dispatch results
+description: Failure detection, retry, and honest escalation for dispatch results — load when a dispatch result appears corrupted, empty, timed out, or error-bearing
 ---
 
 > **Why a skill, not a function?** The orchestrator cannot detect dispatch failure from prompt alone — there is no built-in failure event to observe. Escalate is therefore loaded on-demand when a dispatch result looks wrong, rather than wired as a fixed function.

@@ -1,3 +1,8 @@
+---
+name: departments
+description: Department definitions, domain assignments, evidence tags, and extension guide
+---
+
 # Departments
 
 All 8 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope skill, internal skills, and evidence requirements.

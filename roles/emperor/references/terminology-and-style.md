@@ -1,3 +1,8 @@
+---
+name: terminology-and-style
+description: De-theming glossary, language rules, and style guide for emperor role content
+---
+
 # Terminology and Style Guide
 
 This reference defines the de-theming glossary, language rules, and negative-constraint preservation checklist for the emperor role rewrite. Every contributor rewriting emperor prompts or subagent descriptions MUST follow this document.
