@@ -225,21 +225,20 @@ Created rate_limiter.go with token-bucket algorithm. All tests pass, diagnostics
 
 ## Revision Dispatch (Re-Execution Input)
 
-**Direction**: emperor → jinyiwei → department (closed-loop revise rounds only)
+**Direction**: emperor → jinyiwei (closed-loop revise rounds only)
 
-**Purpose**: Re-execute a failed subtask idempotently. The emperor re-dispatches to a NEW jinyiwei session, and the original department session cannot be resumed across the isolation boundary — so the prior work is invisible to the new worker unless the prompt carries it. Without this contract a revision would recreate or duplicate work already done.
+**Purpose**: Re-execute a failed subtask idempotently. The emperor uses `dispatch_retry(task_id)` to reopen the failed item's original session. The checkpoint context (including `### Files Modified` from the prior execution) is auto-injected into the retry prompt — the revision prompt no longer needs to carry prior file lists verbatim.
 
-Unlike the contracts above, this is an INPUT prompt shape (not a fenced return envelope). A revision dispatch prompt MUST carry:
+A revision dispatch prompt MUST carry:
 
 | Field | Source | Purpose |
 |-------|--------|---------|
 | subtask id + original description | strategy | identifies the unit |
-| prior `### Files Modified` + `### Summary` | the item's previous execution report | tells the worker what already exists |
 | validator note | validate result `items[].note` | what is wrong |
 | fix direction | emperor | the specific correction |
 | revision flag | emperor | explicit "this is a revision — edit in place; do NOT recreate, duplicate, or re-append" |
 
-The worker treats the listed files as existing state: it reads them first, then makes minimal corrective edits. One failed item per dispatch (see `functions/synthesize.md` Step 4b). This is how the closed loop stays idempotent across isolated sessions.
+The worker reads existing files first (from the reopened session's workspace state), then makes minimal corrective edits guided by the validator note and fix direction. One failed item per re-dispatch (see `functions/synthesize.md` Step 4b).
 
 ---
 
@@ -336,7 +335,7 @@ transitions:
 ```
 
 **Explanation**: This replaces the current manual "check for approval in next turn's triage" flow with declarative state-machine orchestration. When `execute_destructive` calls `signal("need_approval", {action: "delete file", description: "..."})`, the `need_approval` transition fires: `execute_destructive` deactivates and `await_approval` activates. The user then approves or denies via the `user_approval` gate. On approval, `await_approval` deactivates and `execute_destructive` reactivates to continue. The model never needs to remember to check for pending approvals — the state machine enforces the flow.
-> **Caveat:** This pattern works for same-session function transitions only. For subagent→parent approval flows (the common case in emperor orchestration), see [Cross-Session Signal Isolation](#cross-session-signal-isolation) below. The pragmatic `dispatch_output`-based detection (subagent reports halt + `approval_request` artifact) is the current implementation.
+> **Caveat:** This pattern works for same-session function transitions only. For subagent→parent approval flows (the common case in emperor orchestration), see [Cross-Session Signal Isolation](#cross-session-signal-isolation) below. The native kernel HITL flow (subagent signals `need_approval` → kernel pauses → parent approves/rejects via `dispatch_approve`/`dispatch_reject`) replaces the prior `dispatch_output`-based detection approach.
 
 #### Pattern B: Escalate → recovery activation
 
@@ -398,19 +397,21 @@ signal("progress", {step: 3, total: 7, current_phase: "validation"})
 ```
 The parent observes and optionally logs the progress, but the function continues executing normally. Only `signal_observed(answer)` (or another terminating signal) ends the loop. This is useful for long-running operations where the parent wants visibility into the current stage without interrupting execution.
 
-#### Cross-Session Signal Isolation (Architectural Limitation)
+#### Cross-Session Signal Isolation (Kernel-Enabled HITL)
 
-**Important:** `signal_observed(type)` is session-scoped. Signals emitted in a subagent session (e.g., a department worker calling `signal(need_approval)`) are NOT visible to the parent session's condition evaluator. The underlying state (`__signals_observed`) is written to the subagent's `FnState` — the parent session cannot read it.
+`signal_observed(type)` remains session-scoped — the parent session's condition evaluator cannot directly observe a subagent's signals. However, the kernel now natively supports HITL for the `need_approval` signal type at the dispatch level.
 
-**Impact on Pattern A:** The transition-driven approval gate (`transitions: [{when: signal_observed(need_approval), ...}]`) works ONLY for same-session scenarios (e.g., a function within the emperor's own primary session). For subagent-to-parent communication, the pragmatic path is:
+**Approval flow (subagent → parent):**
 
-1. Subagent calls `signal(need_approval, payload={action, risk, details})`
-2. The `approval_request` artifact is captured in the subagent's session (via `capture_payload_as` observe spec)
-3. Subagent HALTs and includes the approval request in its execution report text
-4. Parent (emperor synthesize.md) detects the `need_approval` flag when reading the execution report
-5. Parent presents the flagged operation to the user per the Pending Approval Protocol
+When a subagent calls `signal(type="need_approval", payload={action, risk, details})`:
 
-**Future kernel enhancement:** Cross-session signal propagation (bubbling signals from child to parent session) would enable the elegant Pattern A approach. This requires kernel-level changes to the signal observation pipeline and is tracked as a future enhancement, not a Phase 2 deliverable.
+1. The completion evaluator (`src/dispatch/completion/completion-evaluator.ts:40-109`) recognizes `need_approval` as a pausing signal and transitions the dispatch task to `awaiting_approval` state.
+2. The parent session receives a standard completion notification — the task is paused, not terminated. The `payload` from the signal is carried in the notification.
+3. The parent presents the flagged operation (action, risk, details from payload) to the user for explicit approval.
+4. On user approval, the parent calls `dispatch_approve(task_id)` — the original worker session resumes execution from where it paused.
+5. On user rejection, the parent calls `dispatch_reject(task_id, reason)` — the task transitions to a terminal error state and the destructive operation is never executed.
+
+**No re-dispatch needed on approval.** The original session continues, unlike the pre-planned destructive flow (chancellor → user approval → fresh jinyiwei dispatch). The `approval_request` artifact is still captured in the subagent's session as a structured record, but the parent uses the kernel notification + `dispatch_approve`/`dispatch_reject` tools rather than parsing execution report text.
 
 ### 4. Dual-Channel Migration Guide
 
@@ -619,11 +620,11 @@ Captured as `revise_items` artifact by the synthesize function's observer.
 
 ### Decision Records
 
-**DR-001: Cross-session signal propagation deferred.**
-- **Decision**: Pattern A (transition-driven `need_approval`) is deferred to a future kernel enhancement.
-- **Rationale**: `signal_observed()` evaluates against session-local state (observe.ts:39 writes to session-scoped `FnState`). Propagating signals across session boundaries requires changes to the dispatch/completion pipeline.
-- **Current approach**: `dispatch_output`-based detection (subagent reports halt + `approval_request` artifact captured locally).
-- **Revisit when**: Kernel supports cross-session event bubbling or artifact visibility.
+**DR-001: Cross-session signal propagation — partially resolved.**
+- **Decision**: The transition-driven `need_approval` gate (Pattern A) remains same-session only, but the kernel now supports HITL at the dispatch level via `awaiting_approval` state.
+- **Rationale**: The `signal_observed()` condition evaluator remains session-scoped. However, the completion evaluator (`completion-evaluator.ts:40-109`) intercepts `need_approval` signals at the dispatch boundary, enabling the parent to use `dispatch_approve`/`dispatch_reject` tools directly.
+- **Current approach**: Subagent signals `need_approval` → kernel transitions to `awaiting_approval` → parent approves via `dispatch_approve(task_id)` — original session resumes. No re-dispatch needed.
+- **Remaining gap**: `signal_observed()` in the parent's function conditions still cannot see subagent signals. Full cross-session event bubbling remains a future enhancement.
 
 ---
 

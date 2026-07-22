@@ -54,7 +54,7 @@ Tier-1-Flagship is more expensive per token than tier-2-reasoning. However:
 
 ### What Closed-Loop Validate Is
 
-After jinyiwei executes, the Validator validates execution reports. If validation reveals deficiencies, the emperor re-dispatches jinyiwei directly — one session per failed item — for a revise round, then the Validator re-validates. This repeats until validation passes or caps are hit.
+After jinyiwei executes, the Validator validates execution reports. If validation reveals deficiencies, the emperor retries jinyiwei via `dispatch_retry(task_id)` — one session per failed item — for a revise round, then the Validator re-validates. This repeats until validation passes or caps are hit. Falls back to a fresh `dispatch` when the original `task_id` is unavailable (see synthesize.md Step 4b).
 
 ### Caps
 
@@ -62,9 +62,9 @@ After jinyiwei executes, the Validator validates execution reports. If validatio
 |---|---|---|
 | Strategy subtask count | 10 maximum (≤8 recommended) | Initial execution dispatches — one per subtask |
 | Revise rounds | 2 maximum, budget permitting | Number of revise+validate cycles after initial execution |
-| Re-dispatch per round | 1 jinyiwei call per failed item (+ dependents) | Each failed item re-dispatched in its own session, dependency-root order |
+| Retries per round (via dispatch_retry) | 1 `dispatch_retry` call per failed item (+ dependents) | Each failed item retried in its own isolated session, dependency-root order |
 
-Initial execution consumes N sessions (one per subtask). Each revise round adds one re-dispatch session PER failed item plus one re-validate. All count against the emperor's `maxTotalSessionsPerRequest: 20`.
+Initial execution consumes N sessions (one per subtask). Each revise round adds one `dispatch_retry` session PER failed item plus one re-validate. All count against the emperor's `maxTotalSessionsPerRequest: 20`.
 
 ### Worst-Case Session Table
 
@@ -81,7 +81,7 @@ The per-parent budget counts dispatches SPAWNED FROM the emperor session; the em
 | Validate round 1 | 1 | 12 |
 | Final synthesize | (in emperor session) | 12 |
 
-At N=8 the budget covers re-dispatching multiple failed items; at N=10 (happy path = 12), 8 sessions remain for revise rounds.
+At N=8 the budget covers retrying multiple failed items; at N=10 (happy path = 12), 8 sessions remain for revise rounds.
 
 **Narrow plan (N = 5 subtasks, all fail once):**
 
@@ -94,15 +94,15 @@ At N=8 the budget covers re-dispatching multiple failed items; at N=10 (happy pa
 | Validate round 1 | 1 | 13 |
 | Final synthesize | (in emperor session) | 13 |
 
-Seven sessions remain — enough for another round of up to 3 failed items (3 re-dispatches + 1 revalidate = 4 sessions).
+Seven sessions remain — enough for another round of up to 3 failed items (3 retries + 1 revalidate = 4 sessions).
 
-Both fit the 20-session budget. General rule: the initial phase costs `1 (plan) + N (execute) + 1 (validate) = N + 2` sessions; each revise round adds `F + 1` (F per-item re-dispatches + one revalidate), where F is the number of failed items re-dispatched that round. The emperor tracks `emperor_sessions_used` and stops dispatching before the count would exceed 20, reporting any remaining items as budget-capped. This is why the planner caps strategies at 10 subtasks — ≤8 recommended, and ≤7 leaves room to re-dispatch more than one failed item in a revise round. The final synthesize step runs inside the emperor's own session and consumes no dispatch slot.
+Both fit the 20-session budget. General rule: the initial phase costs `1 (plan) + N (execute) + 1 (validate) = N + 2` sessions; each revise round adds `F + 1` (F per-item retries + one revalidate), where F is the number of failed items retried that round (via `dispatch_retry`). The emperor tracks `emperor_sessions_used` and stops dispatching before the count would exceed 20, reporting any remaining items as budget-capped. This is why the planner caps strategies at 10 subtasks — ≤8 recommended, and ≤7 leaves room to retry more than one failed item in a revise round. The final synthesize step runs inside the emperor's own session and consumes no dispatch slot.
 
 > **Note on the cap denominator**: These tables count only child dispatches, per the documented counting rule ("each spawn from a parent increments that parent's counter"). Correctness does not depend on this interpretation: the emperor's budget-aware scheduling (PROMPT.md #7) checks remaining budget before every dispatch and truncates gracefully. Even if a kernel also counted the parent's own session, the system would degrade to one fewer revise round — never a silent mid-execution drop.
 
-### Re-Dispatch Routing
+### Re-Dispatch Routing (via dispatch_retry)
 
-Re-dispatches go from emperor to jinyiwei directly. They never pass through the chancellor. This keeps the closed loop fast (emperor -> jinyiwei -> validate) and avoids inflating the chancellor's subtree budget with revise cycles.
+Re-dispatches use `dispatch_retry(task_id)` to reopen the original failed item's session, keeping the closed loop fast (emperor → jinyiwei → validate). They never pass through the chancellor. When the original `task_id` is unavailable, a fresh `dispatch` to `emperor--jinyiwei` serves as fallback (see synthesize.md Step 4b).
 
 ## Per-Parent Budget
 
@@ -110,7 +110,7 @@ Each direct parent session maintains an independent session counter. Budgets do 
 
 | Parent Subtree | Budget | Members Counted |
 |---|---|---|
-| Emperor | 20 | Emperor + chancellor + jinyiwei dispatches + validate dispatches + re-dispatches |
+| Emperor | 20 | Emperor + chancellor + jinyiwei dispatches + validate dispatches + retries (dispatch_retry) |
 | Chancellor | 20 | Chancellor + drafter + reviewer + finalizer sessions |
 | Jinyiwei | 20 | Jinyiwei + department worker dispatches |
 
@@ -145,7 +145,7 @@ The per-parent cap counts only dispatches spawned FROM the emperor; the emperor'
 
 **Chancellor path (emperor budget = N + 2 sessions):** Full orchestration. Emperor dispatches chancellor (1); the chancellor runs the three-stage loop (drafter+reviewer+finalizer) entirely within its OWN independent 20-budget; then the emperor dispatches ONE jinyiwei execution per subtask (N, one per subtask); then the Validator validates (1). Emperor-budget sessions: chancellor(1) + N execute + validate(1) = N + 2. With the ≤10 subtask cap this is at most 12. Chancellor-budget sessions (separate counter): chancellor(1) + drafter(1-3) + reviewer(1-3) + finalizer(1) = up to 7.
 
-**Chancellor + closed loop (up to 20 sessions):** The path above plus revise rounds. Each round adds one jinyiwei re-dispatch PER failed item plus one validate. A round is affordable while `used + F + 1 <= 20` (F = failed items that round). An 8-subtask plan leaves room for several failed items in a single round; a 5-subtask plan leaves room for several more. Wider plans afford fewer per-item re-dispatches — the isolation-per-item trade-off the design intends.
+**Chancellor + closed loop (up to 20 sessions):** The path above plus revise rounds. Each round adds one jinyiwei retry (via `dispatch_retry`) PER failed item plus one validate. A round is affordable while `used + F + 1 <= 20` (F = failed items that round). An 8-subtask plan leaves room for several failed items in a single round; a 5-subtask plan leaves room for several more. Wider plans afford fewer per-item retries — the isolation-per-item trade-off the design intends.
 
 **Destructive path (2 dispatches):** Emperor dispatches chancellor for risk assessment. Chancellor returns a strategy flagged `risk: high`. Emperor presents to user for approval. On approval, emperor dispatches jinyiwei. Child dispatches: chancellor(1) + jinyiwei(1) = 2 (the emperor's own session is free).
 

@@ -4,6 +4,31 @@ All notable changes to the Emperor role. Versioning follows semantic versioning;
 
 ## [Unreleased]
 
+### Added
+
+- **Checkpoint and progress discipline for department workers.** All 8 department `execute.md` files now guide workers to call `dispatch_checkpoint(task_id, phase, completed_items, remaining_items)` and `dispatch_progress(task_id, stage, percentage, message)` at phase boundaries during long multi-phase tasks, enabling mid-execution visibility and retry-with-context recovery.
+- **`dispatch_budget()` secondary quota check.** `functions/synthesize.md` and `PROMPT.md` now call `dispatch_budget()` before dispatch batches as a token/cost sanity check; `emperor_sessions_used` remains the authoritative session counter for budget enforcement.
+- **Stale-task detection via `dispatch_status()` and `dispatch_stream()`.** Beyond the existing 5-minute timeout, `skills/escalate-recovery/SKILL.md` now also probes liveness with `dispatch_status(task_id)` and inspects progress events with `dispatch_stream(task_id)` to distinguish hung tasks from slow-but-alive ones.
+
+### Changed
+
+- **Execution-time destructive discovery now uses `signal("need_approval")` + `dispatch_approve`/`dispatch_reject`.** Previously a department worker detecting a required-but-unauthorized destructive operation would HALT and flag the operation in its execution report; the orchestrator would then re-dispatch a new session to perform it. The new pattern: the worker emits `signal(type="need_approval")`, which suspends its task kernel-natively in `awaiting_approval` state; the orchestrator resolves via `dispatch_approve(task_id)` (resumes the *original* worker session) or `dispatch_reject(task_id, reason)`. Pre-planned destructive operations retain the existing chancellor→user-approval→execute `risk:high` gate (execution-time-only scope; plan-time approval is unchanged). Affected: `PROMPT.md`, `functions/triage.md`, `references/schemas.md`, all 8 department `execute.md` files.
+- **Closed-loop revise rounds use `dispatch_retry()` as the primary path.** Previously each failed item was re-dispatched to a fresh `jinyiwei` session. Now `dispatch_retry(task_id, modify_prompt, reset_budget=false)` reopens the failed item's original session with checkpoint context auto-injected, satisfying the Revision Dispatch contract (edit-in-place) natively. Fresh jinyiwei dispatch is retained as documented fallback when the original `task_id` is unavailable. Budget math unchanged (`reset_budget=false` counts against the same parent budget). Affected: `functions/synthesize.md`, `references/schemas.md`, `references/model-pool-and-budget.md`, `PROMPT.md`, `README.md`.
+- **Kernel compatibility bumped to rolebox v0.23.2+dev.** Tool-name migration from `task_*` → `dispatch_*` per rolebox commit 18e3f68 confirmed complete — no stale references found across emperor assets. (`README.md`)
+
+### Fixed
+
+- **Priority scheduling NOT adopted.** `DispatchInput.priority` exists in the kernel but the opencode-facing `dispatch` tool schema does not expose a `priority` argument; dependency-root ordering for revised items remains a prompt convention.
+
+### Evals
+
+- Updated 5 eval cases in `evals/evals.json` to signal-and-suspend / dispatch_retry semantics (rolebox v0.23.2+dev alignment):
+  - `execution-time-destructive-halt-routes-to-approval` → `execution-time-destructive-signal-suspend` — worker emits `signal("need_approval")`, task suspends in `awaiting_approval`, orchestrator uses `dispatch_approve`/`dispatch_reject` (no re-dispatch of a new session)
+  - `per-item-redispatch-one-per-session` — `dispatch_retry(task_id, modify_prompt, reset_budget=false)` per failed item; fresh dispatch retained as fallback only
+  - `jinyiwei-revision-edits-in-place` — checkpoint context auto-injected via dispatch_retry; modify_prompt carries only validator note + fix direction
+  - `data-scope-halts-unauthorized-destructive-migration` — `signal("need_approval")` suspension instead of terminate-and-report
+  - `closed-loop-validate-revise-synthesize` — `dispatch_retry` semantics in scenario output_hint
+
 ## [2.4.0] — 2026-07-03
 
 - **Budget caps relaxed to aggressive tier.** Subtask count cap raised from 5 to 10 (recommended ≤8). Per-parent session budget (`maxTotalSessionsPerRequest`) raised from 8 to 20 across emperor, chancellor, and jinyiwei. Concurrency (`maxActivePerParent`) raised from 2 to 3 across all three dispatch parents. This allows emperor to complete larger, more complete tasks without hitting budget walls mid-execution. Updated all worst-case session tables, budget expressions, and verification greps across 14 files.

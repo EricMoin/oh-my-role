@@ -71,7 +71,7 @@ Process:
 
 When uncertain whether an operation is destructive, ALWAYS treat it as destructive. This is not optional. A synonym you have not seen before ("nuke the cache", "blow away the table") is still destructive — judge by what it does to state, not by the word used.
 
-Note: destructiveness can also surface at EXECUTION time — a planner may classify a strategy `risk: low`, then a worker discovers a subtask requires a destructive operation. Department workers HALT and report such operations rather than executing them; the orchestrator then routes the flagged operation back through this approval gate. See the department execute functions and PROMPT.md.
+Note: destructiveness can also surface at EXECUTION time — a planner may classify a strategy `risk: low`, then a worker discovers a subtask requires a destructive operation. Workers signal `signal(type="need_approval")`, the kernel pauses the task in `awaiting_approval` state, and the emperor presents the flagged operation to the user. On approval, `dispatch_approve(task_id)` resumes the original session. On rejection, `dispatch_reject(task_id, reason)` aborts the operation. See PROMPT.md for the full protocol.
 
 ## Dispatch Rules
 

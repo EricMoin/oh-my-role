@@ -52,6 +52,15 @@ A timeout does not mean the work is impossible. It means the chunk was too big o
 
 A logic failure means the instructions were wrong or the subagent lacked context. Rewrite the prompt with better guardrails.
 
+## Stale-task detection
+
+Beyond the 5-minute `backgroundStaleTimeoutMs`, use these tools to assess whether a background task is genuinely busy or silently stalled:
+
+- `dispatch_status(task_id)` — non-throwing liveness check. A task with no recent activity and no status change is stale sooner than one steadily reporting progress.
+- `dispatch_stream(task_id)` — queries accumulated progress events. A task emitting no progress events while taking significant wall-clock time is likely stuck.
+
+Use these checks before deciding to cancel (`dispatch_cancel`) or retry a long-running task. Steady progress deserves more time; silence does not.
+
 ## Rules
 
 - Maximum 1 automatic retry per failed dispatch.
