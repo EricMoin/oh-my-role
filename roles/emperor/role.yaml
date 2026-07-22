@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.5.0"
+version: "2.6.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
