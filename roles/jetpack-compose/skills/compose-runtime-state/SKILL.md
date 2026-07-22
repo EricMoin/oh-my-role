@@ -97,11 +97,125 @@ fun AnalyticsScreen(
 5. Check effect keys and stale lambda/value captures.
 6. Validate with tests, manual interaction, and recomposition/performance tools when needed.
 
-## Validation Checklist
+## Common Mistakes (❌/✅)
 
-- [ ] Composable bodies are free of direct I/O, coroutine launches, and global mutation.
-- [ ] State ownership is explicit and minimal.
-- [ ] UI state exposed to composables is immutable from the UI perspective.
-- [ ] Effects use correct keys and clean up external listeners when needed.
-- [ ] `rememberSaveable` is used only for saveable UI state, not repositories or complex business objects.
-- [ ] Stability annotations are justified by actual immutability/stability contracts.
+### 1. `derivedStateOf` as default memoization
+
+❌ **Wrong** — wrapping a computation that is read every recomposition in `derivedStateOf`:
+```kotlin
+val price = derivedStateOf { item.basePrice * item.quantity }
+Text("${price.value}")
+```
+✅ **Correct** — `derivedStateOf` only pays off when the derived value changes less often than its inputs. Simple arithmetic read in every recomposition should be plain Kotlin:
+```kotlin
+val price = item.basePrice * item.quantity
+Text("$price")
+```
+The `derivedStateOf` overhead (allocation + snapshot observation) is wasted when the value is read unconditionally — the framework already knows when `basePrice` or `quantity` changes. Reserve `derivedStateOf` for cases where the derived value is a subset or aggregation that changes infrequently compared to its upstream sources.
+
+---
+
+### 2. `snapshotFlow` vs `LaunchedEffect` with key
+
+❌ **Wrong** — restarting a coroutine on every state change for fire-and-forget observation:
+```kotlin
+LaunchedEffect(scrollState.firstVisibleItemIndex) {
+    analytics.trackScrollPosition(scrollState.firstVisibleItemIndex)
+}
+```
+✅ **Correct** — use `snapshotFlow` when the effect should fire on each change without tearing down and relaunching the coroutine:
+```kotlin
+LaunchedEffect(Unit) {
+    snapshotFlow { scrollState.firstVisibleItemIndex }
+        .distinctUntilChanged()
+        .collect { position -> analytics.trackScrollPosition(position) }
+}
+```
+`LaunchedEffect(key)` cancels the coroutine and restarts it every time the key changes. For event-tracking, logging, or publishing to external systems, restarting drops buffered emissions and adds jank. `snapshotFlow` keeps the coroutine alive and emits values in-place.
+
+---
+
+### 3. Stale lambda captures without `rememberUpdatedState`
+
+❌ **Wrong** — a long-running `LaunchedEffect(Unit)` captures a callback lambda that becomes stale across recompositions:
+```kotlin
+LaunchedEffect(Unit) {
+    delay(30_000)
+    onTimeout() // calls the onTimeout from first composition forever
+}
+```
+✅ **Correct** — wrap mutable callbacks with `rememberUpdatedState` so long-lived effects always call the latest:
+```kotlin
+val latestOnTimeout by rememberUpdatedState(onTimeout)
+LaunchedEffect(Unit) {
+    delay(30_000)
+    latestOnTimeout()
+}
+```
+Without `rememberUpdatedState`, a `LaunchedEffect(Unit)` captures values from the first composition and never re-reads them. When the parent replaces `onTimeout` (e.g. due to a new navigation destination), the effect still invokes the stale reference.
+
+---
+
+### 4. Reading `State<T>` too high in the composition tree
+
+❌ **Wrong** — reading all ViewModel state at the screen root, forcing the entire subtree to recompose on any single change:
+```kotlin
+@Composable
+fun FeedScreen(viewModel: FeedViewModel) {
+    val posts by viewModel.posts.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    Scaffold {
+        Column {
+            FilterBar(filter)       // recomposed when posts change
+            PostList(posts, filter)  // recomposed when filter changes
+        }
+    }
+}
+```
+✅ **Correct** — push state reads down to the narrowest composable scope that needs them:
+```kotlin
+@Composable
+fun FeedScreen(viewModel: FeedViewModel) {
+    Scaffold {
+        Column {
+            FilterBar(viewModel)    // reads only filter internally
+            PostList(viewModel)     // reads only posts internally
+        }
+    }
+}
+```
+Compose recomposition granularity is bounded by the nearest restartable scope where a state read occurs. Reading all state at the screen level means every field change invalidates the entire screen tree.
+
+---
+
+### 5. `remember` with plain mutable collections
+
+❌ **Wrong** — caching a `mutableListOf` in `remember`; mutations are invisible to Compose:
+```kotlin
+val items = remember { mutableListOf<Item>() }
+items.add(newItem)  // no recomposition triggered — list reference unchanged
+```
+✅ **Correct** — use Compose's snapshot-aware collection wrappers so mutations trigger recomposition:
+```kotlin
+val items = remember { mutableStateListOf<Item>() }
+items.add(newItem)  // recomposition triggered — snapshot system observes the write
+```
+Plain `mutableListOf()` / `mutableMapOf()` are not Compose-aware. Mutating them does not notify the snapshot system. Use `mutableStateListOf`, `mutableStateMapOf`, or replace the collection wholesale through `mutableStateOf` so Compose observes the change.
+
+---
+
+### 6. `SideEffect` for coroutine-launching side work
+
+❌ **Wrong** — launching coroutines inside `SideEffect`, which runs on *every* successful recomposition:
+```kotlin
+SideEffect {
+    scope.launch { repository.sync() } // fires on every recomposition
+}
+```
+✅ **Correct** — `SideEffect` is for publishing Compose state to non-Compose objects. Use `LaunchedEffect` for lifecycle-tied coroutine work:
+```kotlin
+LaunchedEffect(Unit) {
+    repository.sync() // runs once per composition life, cancelled on leave
+}
+```
+`SideEffect` guarantees execution after every successful recomposition — not once per composition lifespan. Its block is non-cancellable and non-lifecycle-aware. Launching a coroutine there will fire repeatedly as the composition updates.
