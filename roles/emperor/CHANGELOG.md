@@ -2,7 +2,7 @@
 
 All notable changes to the Emperor role. Versioning follows semantic versioning; releases are tracked via git tags.
 
-## [Unreleased]
+## [2.6.0]
 
 ### Added
 
