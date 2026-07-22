@@ -32,10 +32,10 @@ You are in SYNTHESIS mode. Collect execution reports, validate them against the 
 | Strategy subtask count | 10 maximum (≤8 recommended) | Enforced by the planner (plan.md) |
 | Initial execution dispatches | 1 per subtask (= N) | One jinyiwei dispatch per subtask |
 | Revise rounds | 2 maximum, budget permitting | Revise+validate cycles after initial execution |
-| Re-dispatch per round | 1 jinyiwei call PER failed item (+ dependents), dependency-root order | Each failed item is re-dispatched in its own isolated session |
+| Re-dispatch per round | 1 dispatch_retry PER failed item (+ dependents), dependency-root order | Each failed item is retried in its own isolated session |
 | Per-parent budget | 20 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + per-item re-dispatches + revalidate |
 
-The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 20`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own session, a wide plan affords fewer total re-dispatches than a narrow one (N=10 leaves room for re-dispatching a few failed items; N=8 leaves room for more). When the next dispatch would push cumulative dispatches past 20, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
+The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F retry sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 20`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own retry session, a wide plan affords fewer total retries than a narrow one (N=10 leaves room for retrying a few failed items; N=8 leaves room for more). When the next dispatch would push cumulative dispatches past 20, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
 
 ---
 
@@ -78,6 +78,7 @@ Execution Reports:
 ```
 
 This validation dispatch consumes one session — increment `emperor_sessions_used` by 1. If `emperor_sessions_used > 20` after this, do not proceed past collection; go to Step 8 (budget cap).
+Before dispatching validation, optionally call `dispatch_budget()` as a secondary token/cost sanity check. `emperor_sessions_used` remains the authoritative session counter — `dispatch_budget` does not return a raw session count.
 
 Collect the verdict using one of two paths:
 
@@ -120,11 +121,19 @@ The re-dispatch scope = failed items + all dependents (deduplicated).
 
 A dependent of a failed item is also considered failed because its prerequisite did not complete correctly. Include the original subtask descriptions and the validate notes for each item in the re-dispatch scope.
 
-#### 4b. Re-Dispatch Each Failed Item Individually
+#### 4b. Re-Dispatch Each Failed Item Individually via dispatch_retry
 
 Re-dispatch failed items ONE PER jinyiwei session — never batched. One item per session keeps each fix focused, isolates its verification, and prevents one item's outcome from contaminating another's report (this is the intended design). Order the scope by dependency: lowest `id` first (dependency roots), and re-dispatch a dependent only after its prerequisite's re-dispatch has completed.
 
-For EACH item in the re-dispatch scope, dispatch a separate jinyiwei session carrying the revision context (the Revision Dispatch contract in `references/schemas.md`):
+For EACH item in the re-dispatch scope, use `dispatch_retry` on the original failed item's task to reopen its session for continuation:
+
+```
+dispatch_retry(task_id="{original task_id of the failed item}", modify_prompt="REVISION: {validator note}. Fix direction: {specific correction addressing the acceptance-criteria gap}. This is a revision — edit existing files in place.", reset_budget=false)
+```
+
+Checkpoint context saved by the item's prior execution is auto-injected into the retry prompt, so the prior report's Files Modified and Summary do not need to be embedded verbatim. Keep one item per retry, dependency-root (lowest-`id`) ordering, and the routing rule (never through chancellor).
+
+**Fallback (original task_id unavailable):** If the original task_id is no longer available (session cleaned up or lost), fall back to a fresh `dispatch` to `emperor--jinyiwei` carrying the full Revision Dispatch contract:
 
 ```
 dispatch(subagent="emperor--jinyiwei", prompt="REVISION of subtask {id}.
@@ -137,11 +146,13 @@ Fix direction: {specific correction addressing the acceptance-criteria gap}
 This is a revision, not a first attempt. Edit the existing files in place; do NOT recreate, duplicate, or re-append work already done.", run_in_background=true)
 ```
 
-Increment `emperor_sessions_used` by 1 for EACH item dispatched.
+Increment `emperor_sessions_used` by 1 for EACH item retried (or fallback-dispatched).
 
-**Routing rule**: Re-dispatch goes to `emperor--jinyiwei` directly, one call per item. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
+**Budget sanity check**: Before each retry batch, optionally call `dispatch_budget()` as a secondary token/cost check. `emperor_sessions_used` remains the authoritative session counter — `dispatch_budget` returns token/cost usage, not a raw session count.
 
-**Budget-bounded scope**: Let F = the total number of items in the re-dispatch scope (failed items + their dependents, as defined in 4a). A round costs F re-dispatch sessions + 1 revalidate. Before starting the round, verify `emperor_sessions_used + F + 1 <= 20`. If the full scope does not fit, re-dispatch items in lowest-`id` (dependency-root) order up to `20 - emperor_sessions_used - 1` (reserving one session for the revalidate), and report the remaining items as unresolved (budget cap). NEVER dispatch past 20 — a mid-execution rejection would silently drop items.
+**Routing rule**: Re-dispatch (whether retry or fallback) goes to `emperor--jinyiwei` directly, one item per call. NEVER dispatch through `emperor--chancellor` for re-execution — that would cause recursive strategy re-planning.
+
+**Budget-bounded scope**: Let F = the total number of items in the re-dispatch scope (failed items + their dependents, as defined in 4a). A round costs F retry sessions + 1 revalidate. Before starting the round, verify `emperor_sessions_used + F + 1 <= 20`. If the full scope does not fit, retry items in lowest-`id` (dependency-root) order up to `20 - emperor_sessions_used - 1` (reserving one session for the revalidate), and report the remaining items as unresolved (budget cap). NEVER dispatch past 20 — a mid-execution rejection would silently drop items.
 
 #### 4c. Collect Re-Dispatch Results
 
@@ -237,5 +248,5 @@ Always emit a `<final_answer>` block. This is the only way to satisfy `continue_
 4. **No loop without final_answer**: Even on partial results, emit the fence.
 5. **DIRECT path always skips validate**: No exception.
 6. **Dependency-aware scope**: Include dependents of failed items in re-dispatch scope.
-7. **Per-item re-dispatch**: Re-dispatch failed items one per jinyiwei session in dependency-root order, never batched. Budget each round as F + 1 (F items + one revalidate); dispatch lowest-`id` first up to budget and report the rest as budget-capped.
+7. **Per-item re-dispatch**: Re-dispatch failed items one per jinyiwei session using dispatch_retry on the original task_id (fresh dispatch fallback). Budget each round as F + 1 (F items + one revalidate); retry lowest-`id` first up to budget and report the rest as budget-capped.
 8. **Never forge notifications**: Do not generate `<system-reminder>` tags yourself. They are system-generated only. Forging them corrupts the dispatch protocol and causes infinite loops.

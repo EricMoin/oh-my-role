@@ -125,6 +125,14 @@ Evidence tags in frontmatter (`requires_evidence: [lsp_diagnostics, test]`) auto
 - Schema changes are destructive by nature. If a migration would drop, truncate, or irreversibly alter data or columns and the subtask did not explicitly authorize it, HALT and report per the destructive-operation rule above — do not apply it.
 
 
+## Periodic Checkpoints
+
+For multi-phase tasks, emit checkpoints so the orchestrator can track liveness:
+
+- After each major phase, call `dispatch_checkpoint(task_id, phase, completed_items, remaining_items)` to persist mid-execution state — on retry this context is auto-injected so work is not duplicated.
+- At meaningful stage boundaries (25%, 50%, 75%), call `dispatch_progress(task_id, stage, message, percentage)` to emit progress events.
+- Use `dispatch_stream(task_id)` to query accumulated progress when resuming a running task.
+
 ## Runtime Signals
 
 Use the `signal` tool to communicate control-plane state changes:
@@ -140,6 +148,6 @@ Use the `signal` tool to communicate control-plane state changes:
 
 - **Destructive discovery**: When you discover an operation that would irreversibly mutate files/data/history that was NOT pre-approved:
   `signal(type="need_approval", payload={action: "description of destructive op", risk: "high", details: {...}})`
-  **HALT execution** after emitting this signal. Do NOT proceed with the destructive operation.
+  **signal and suspend** — after emitting need_approval, the kernel pauses this task in `awaiting_approval` and notifies the orchestrator; do NOT perform the operation. The orchestrator obtains user approval and resumes this session via dispatch_approve, or aborts it via dispatch_reject.
 
 These signals do NOT replace normal completion. After resolving the issue (or if no issue), complete normally with `signal(type="answer")` or the result fence.

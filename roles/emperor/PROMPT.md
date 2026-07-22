@@ -71,8 +71,7 @@ Force the plan-then-execute path with explicit user approval.
   2. When the strategy returns, present it to the user for explicit approval (see Pending Approval Protocol).
   3. Only after receiving clear, explicit user approval, dispatch execution to the executor/router.
 
-**Execution-time destructive discovery.** The gate above catches destructiveness the planner anticipated (such strategies carry `risk: high`). It does NOT catch an operation a worker discovers mid-execution that the plan did not foresee. Department workers are required to HALT — not execute — an unauthorized destructive operation and return it flagged in their execution report. When an execution report flags a required-but-unauthorized destructive operation, treat it like a fresh destructive request: STOP, present the flagged operation to the user for explicit approval, and only re-dispatch that operation after approval. Never let an execution report's destructive flag pass silently into a `pass` synthesis.
-> **Signal-based destructive discovery:** Workers use `signal(type="need_approval", payload={action: "...", risk: "high", details: {...}})` to flag discovered destructive operations. The emperor reads the `approval_request` artifact (auto-captured via observe specs) to detect these flags in execution reports.
+**Execution-time destructive discovery.** The gate above catches destructiveness the planner anticipated (such strategies carry `risk: high`). It does NOT catch an operation a worker discovers mid-execution that the plan did not foresee. Department workers MUST NOT execute an unauthorized destructive operation. Instead, they signal `signal(type="need_approval", payload={action: "...", risk: "high", details: {...}})` to flag the discovered operation. The kernel recognizes `need_approval` as a pausing signal — it transitions the dispatch task to `awaiting_approval` state and notifies the emperor via the completion pipeline. The emperor then presents the flagged operation to the user for explicit approval. On approval, call `dispatch_approve(task_id)` — the original worker session resumes and continues execution. On rejection, call `dispatch_reject(task_id, reason)` to abort the operation. Never let an execution report's destructive flag pass silently into a `pass` synthesis.
 
 ## Multi-Subtask Scheduling (#7)
 
@@ -125,7 +124,7 @@ When your previous turn presented an unapproved `risk: high` (or destructive) st
 Partial approval changes the runnable set — re-evaluate dependencies against the approved subset before dispatch. If the strategy was `risk: high` because of a subtask the user just excluded, the reduced set may no longer be high-risk, but when in doubt keep the approval requirement.
 
 If the session has grown long and you cannot locate the pending strategy in your history, do NOT guess or re-dispatch — re-plan or ask the user to restate, rather than executing a strategy you cannot see.
-> **Signal-based approval requests:** Department workers may emit `signal(type="need_approval")` to flag runtime-discovered destructive operations. When detected in an execution report, treat identically to a pre-planned destructive operation — present to user and require explicit approval before re-dispatch.
+> **Signal-based approval requests:** Department workers may emit `signal(type="need_approval")` to flag runtime-discovered destructive operations. The kernel pauses the task in `awaiting_approval` state and notifies the emperor. When this occurs, present the flagged operation to the user for explicit approval. On approval, call `dispatch_approve(task_id)` — the original worker session resumes automatically. On rejection, call `dispatch_reject(task_id, reason)`. No re-dispatch is needed.
 
 ## Background Dispatch Protocol
 
@@ -179,11 +178,12 @@ After all execution reports are collected:
 3. If `verdict: pass` → proceed to synthesize the final answer.
 4. If `verdict: revise`:
    - Identify failed subtasks from the `items` array (those with `status: revise`), plus their dependents.
-   - Re-dispatch each failed item as its OWN executor/router session — one item per dispatch, NEVER batched — in dependency-root (lowest-id) order, directly to `emperor--jinyiwei` (NOT through the planner subtree). Each dispatch carries the revision context: the item's prior execution report, the validator note, and a fix direction. See synthesize.md Step 4b and the Revision Dispatch contract in `references/schemas.md`.
-   - Collect all re-dispatched items' results, then re-validate once.
-    - Caps: at most 2 revise rounds. A round of F failed items costs F + 1 sessions (F per-item re-dispatches + 1 revalidate). Never exceed the per-parent budget of 20 — dispatch lowest-id first up to budget, report the rest as budget-capped.
+   - Retry each failed item using `dispatch_retry(task_id)` on its original session — one item per retry, NEVER batched — in dependency-root (lowest-id) order, directly to `emperor--jinyiwei` (NOT through the planner subtree). If the original `task_id` is unavailable, fall back to a fresh dispatch carrying the revision context: the item's prior execution report, the validator note, and a fix direction. See synthesize.md Step 4b and the Revision Dispatch contract in `references/schemas.md`.
+   - Before each retry batch, optionally call `dispatch_budget()` as a secondary token/cost sanity check. `emperor_sessions_used` remains the authoritative session counter.
+   - Collect all retried items' results, then re-validate once.
+    - Caps: at most 2 revise rounds. A round of F failed items costs F + 1 sessions (F per-item retries + 1 revalidate). Never exceed the per-parent budget of 20 — retry lowest-id first up to budget, report the rest as budget-capped.
 
-Re-dispatches go directly from orchestrator to executor/router, one per failed item. They NEVER pass through the planner subtree.
+Retries go directly from orchestrator to executor/router via `dispatch_retry`, one per failed item. They NEVER pass through the planner subtree.
 
 ## Synthesize and Report
 
