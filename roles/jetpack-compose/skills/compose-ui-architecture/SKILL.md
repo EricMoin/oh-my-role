@@ -116,11 +116,200 @@ Collect one-off effects in a `LaunchedEffect(Unit)` and keep lifecycle behavior 
 5. Add previews for content states and tests for ViewModel state transitions.
 6. Verify lifecycle collection and process/configuration recreation behavior.
 
-## Validation Checklist
+## Common Mistakes (❌/✅)
 
-- [ ] UI state flows down and events flow up.
-- [ ] Composables render state and delegate business work.
-- [ ] ViewModel exposes immutable state and hides mutable implementation.
-- [ ] One-off effects are not stored as permanent UI state.
-- [ ] Navigation uses stable arguments and handles recreation.
-- [ ] The implementation follows existing project architecture and DI conventions.
+### 1. One giant ViewModel shared across unrelated screens
+
+❌ **Wrong** — a single ViewModel accumulating state for many screens, coupling them through a shared dependency graph:
+```kotlin
+@HiltViewModel
+class AppViewModel @Inject constructor(
+    private val userRepo: UserRepository,
+    private val feedRepo: FeedRepository,
+    private val settingsRepo: SettingsRepository,
+) : ViewModel() {
+    val userState: StateFlow<UserUiState>
+    val feedState: StateFlow<FeedUiState>
+    val settingsState: StateFlow<SettingsUiState>
+    // grows without bound; every screen pays the DI cost for every dependency
+}
+```
+✅ **Correct** — one ViewModel per screen (or per tightly related screen group when state genuinely overlaps):
+```kotlin
+@HiltViewModel
+class FeedViewModel @Inject constructor(
+    private val feedRepo: FeedRepository,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(FeedUiState.Loading)
+    val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+}
+```
+A mega-ViewModel becomes a coupling nexus: changing one screen's logic risks breaking another, every screen pays the injection cost for every dependency, and removed screens leave dead entangled code. Screen-scoped ViewModels bound scope, simplify testing, and keep navigation/recreation semantics predictable.
+
+---
+
+### 2. Leaking DTOs or network-layer models into UI state
+
+❌ **Wrong** — raw API response types exposed directly to composables, forcing display logic into the UI layer:
+```kotlin
+data class FeedUiState(
+    val posts: List<PostResponseDto>,  // network field names, nullable wrapper types, raw timestamps
+    val pageInfo: PaginationMetaDto,
+)
+```
+✅ **Correct** — map to flat, display-ready UI models at the ViewModel boundary:
+```kotlin
+data class FeedUiState(
+    val posts: List<PostUiModel>,
+    val nextPageCursor: String?,
+)
+
+data class PostUiModel(
+    val id: String,
+    val authorName: String,
+    val relativeTime: String,
+    val bodySnippet: String,
+)
+```
+DTOs carry network concerns (snake_case, nullable wrappers, raw timestamps) that pollute composable code with mapping, null checks, and formatting. A ViewModel's job is to convert domain/data-layer models into UI models that composables display without transformation.
+
+---
+
+### 3. Injecting repositories directly into composables
+
+❌ **Wrong** — resolving a data-layer dependency inside the composable tree, bypassing the ViewModel layer:
+```kotlin
+@Composable
+fun PostDetailRoute(
+    postId: String,
+    repository: PostRepository = hiltViewModel(), // or entryPoint.get()
+) {
+    val post by repository.getPost(postId).collectAsStateWithLifecycle(null)
+    // composable now owns data fetching, error handling, and async lifecycle
+}
+```
+✅ **Correct** — inject repositories into a ViewModel; composables consume only immutable UiState:
+```kotlin
+@HiltViewModel
+class PostDetailViewModel @Inject constructor(
+    private val repository: PostRepository,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow<PostDetailUiState>(PostDetailUiState.Loading)
+    val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
+}
+
+@Composable
+fun PostDetailRoute(
+    postId: String,
+    viewModel: PostDetailViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    PostDetailScreen(state)
+}
+```
+Composables should not own async lifecycle, error recovery, or data-layer dependencies. A ViewModel survives configuration changes and provides a process-death safety boundary; a composable does neither.
+
+---
+
+### 4. Storing one-shot events as persistent `UiState` fields
+
+❌ **Wrong** — a navigation or snackbar event stored as a `Boolean`/`String?` field that the composable must reset:
+```kotlin
+data class CheckoutUiState(
+    val navigateToReceipt: Boolean = false,   // composable must mutate state to clear it
+    val snackbarMessage: String? = null,
+)
+```
+✅ **Correct** — use `SharedFlow` or `Channel` for one-off effects that are consumed exactly once:
+```kotlin
+// In ViewModel
+private val _events = Channel<CheckoutEvent>(Channel.BUFFERED)
+val events = _events.receiveAsFlow()
+
+// In composable
+LaunchedEffect(Unit) {
+    viewModel.events.collect { event ->
+        when (event) {
+            is CheckoutEvent.NavigateToReceipt -> onNavigateToReceipt(event.orderId)
+        }
+    }
+}
+```
+One-shot signals stored in state break the state-equals-UI contract: after the composable acts on `navigateToReceipt = true`, it must set it back to `false`, creating a race condition and an untruthful state snapshot. Events are not state — use a flow or channel so they are consumed once and discarded.
+
+---
+
+### 5. Navigation logic embedded deep inside composables
+
+❌ **Wrong** — a nested composable directly invokes `navController.navigate()`, coupling it to a specific navigation library:
+```kotlin
+@Composable
+fun ProductCard(product: Product, navController: NavController) {
+    Card(onClick = { navController.navigate("detail/${product.id}") }) { /* ... */ }
+}
+```
+✅ **Correct** — bubble intent up via a callback; let the route-level composable decide navigation:
+```kotlin
+@Composable
+fun ProductCard(product: Product, onClick: () -> Unit) {
+    Card(onClick = onClick) { /* ... */ }
+}
+
+// At route level:
+ProductCard(product = product, onClick = { onNavigateToDetail(product.id) })
+```
+A composable that receives `NavController` is tied to a specific navigation library and route graph. Callbacks keep leaf composables reusable across screens, previewable without a NavHost, and testable in isolation. Navigation decisions belong at the outermost route layer.
+
+---
+
+### 6. Skipping per-screen state holders for complex local state
+
+❌ **Wrong** — business logic and multiple `remember` blocks scattered directly in a composable body with no extraction:
+```kotlin
+@Composable
+fun SearchRoute() {
+    var query by rememberSaveable { mutableStateOf("") }
+    var suggestions by remember { mutableStateOf(emptyList<String>()) }
+    var isSearching by remember { mutableStateOf(false) }
+
+    LaunchedEffect(query) {
+        if (query.length >= 3) {
+            isSearching = true
+            suggestions = searchRepo.search(query)
+            isSearching = false
+        }
+    }
+    // layout mixed with state management
+}
+```
+✅ **Correct** — extract state and logic into a plain Kotlin class with `@Stable`, instantiated via `remember`:
+```kotlin
+@Stable
+class SearchStateHolder(
+    private val searchRepo: SearchRepository,
+    private val scope: CoroutineScope,
+) {
+    var query by mutableStateOf("")
+        private set
+    var suggestions by mutableStateOf(emptyList<String>())
+        private set
+    var isSearching by mutableStateOf(false)
+        private set
+
+    fun onQueryChanged(newQuery: String) {
+        query = newQuery
+        if (query.length >= 3) {
+            scope.launch {
+                isSearching = true
+                suggestions = searchRepo.search(query)
+                isSearching = false
+            }
+        }
+    }
+}
+
+@Composable
+fun rememberSearchStateHolder(searchRepo: SearchRepository): SearchStateHolder =
+    remember(searchRepo) { SearchStateHolder(searchRepo, rememberCoroutineScope()) }
+```
+Not every screen needs a full ViewModel, but complex local state with business logic should still be extracted into a plain Kotlin state holder class. This keeps the composable body declarative, makes the logic unit-testable without Compose tooling, and survives recomposition cleanly through `remember`.
