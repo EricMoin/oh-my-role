@@ -35,9 +35,15 @@ You are in SYNTHESIS mode. Collect execution reports, validate them against the 
 | Re-dispatch per round | 1 dispatch_retry PER failed item (+ dependents), dependency-root order | Each failed item is retried in its own isolated session |
 | Per-parent budget | 20 maximum (HARD) | Every dispatch from the emperor: chancellor + N execute + validate + per-item re-dispatches + revalidate |
 
-The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). Under per-item re-dispatch, a revise round of F failed items costs F retry sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 20`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own retry session, a wide plan affords fewer total retries than a narrow one (N=10 leaves room for retrying a few failed items; N=8 leaves room for more). When the next dispatch would push cumulative dispatches past 20, terminate immediately and report unresolved items as budget-capped. Hitting any cap terminates the loop.
+The per-parent budget is the OUTER hard stop. Initial execution already consumes N sessions (one per subtask). The per-parent counter tracks dispatches spawned from the emperor; the emperor's own session is not counted. The chancellor caps strategies at 10 dependency-ordered subtasks (see plan.md). The emperor dispatches ONE jinyiwei call per subtask (PROMPT.md #7/#8). Under per-item re-dispatch, a revise round of F failed items costs F retry sessions (one per item) plus 1 revalidate, so a round is affordable only while `emperor_sessions_used + F + 1 <= 20`. Revise rounds are bounded by BOTH the 2-round cap AND remaining budget. Because each failed item now costs its own retry session, a wide plan affords fewer total retries than a narrow one (N=10 leaves room for retrying a few failed items; N=8 leaves room for more). Before EVERY subsequent dispatch, verify `emperor_sessions_used + 1 <= 20`; if not, stop and report remaining items as budget-capped (Step 8). The upcoming validation dispatch and each revise round also consume sessions. Hitting any cap terminates the loop.
 
 ---
+
+## Dispatch-and-Yield Protocol
+
+After dispatching background tasks (jinyiwei or validator), END YOUR TURN. The system sends a `<system-reminder>` notification per completed task, carrying the result inline. Read the inline result directly. Call `dispatch_output` only if the result is truncated or absent. If `dispatch_output` fails and no inline result is available, the task result is unrecoverable. Do NOT poll `dispatch_status` in a loop.
+
+Do NOT actively wait within a turn. After dispatching, yield. The system wakes you with a `<system-reminder>` notification per completed task. Read the inline result from the notification. Do not proceed until every dispatched task's result has been read (either inline or via `dispatch_output`).
 
 ## Step 1: Determine Path
 
@@ -50,16 +56,14 @@ You arrive here after dispatching all subtasks. Determine which path you are on:
 
 ## Step 2: Collect All Execution Reports
 
-**Dispatch-and-yield.** After dispatching jinyiwei tasks (or re-dispatching failed items), END YOUR TURN. The system sends a `<system-reminder>` notification per completed task, carrying the result inline in a ` ```result ` fence. Read the inline result directly. Call `dispatch_output` only if the result is truncated or absent. If `dispatch_output` fails, use the inline result. Do NOT poll `dispatch_status` in a loop — if neither the inline result nor `dispatch_output` is available, treat the task as failed and proceed to Step 8.
-
-Do NOT actively wait within a turn. After dispatching, yield. The system wakes you with a `<system-reminder>` notification per completed task. Read the inline result from the notification. Do not proceed to synthesis until every dispatched task's result has been read (either inline or via `dispatch_output`).
+Collect all dispatched results per the dispatch-and-yield protocol above. If a dispatched task's result is unrecoverable (neither inline nor via `dispatch_output`), treat it as failed and proceed to Step 8.
 
 Track:
 - `emperor_sessions_used`: cumulative count of dispatches made from THIS emperor session so far. Initialize to `1 (chancellor plan) + N (one jinyiwei dispatch per subtask during initial execution)`. Each subtask dispatch counts as one session against the per-parent cap of 20.
 - `revise_round`: 0 (initialize)
 - `all_reports`: aggregated output from all collected reports
 
-> **Budget accounting**: The chancellor caps strategies at 10 dependency-ordered subtasks (see plan.md). The emperor dispatches ONE jinyiwei call per subtask (PROMPT.md #7/#8), so initial execution consumes N sessions — NOT 1. The upcoming validation dispatch and each revise round also consume sessions (see the caps table). Before EVERY subsequent dispatch, verify `emperor_sessions_used + 1 <= 20`; if not, stop and report remaining items as budget-capped (Step 8). The per-parent counter is keyed on dispatches spawned from the emperor; the emperor's own session is not a spawn and is not counted.
+> See Caps section above for budget accounting rules.
 
 ---
 
@@ -156,7 +160,7 @@ Increment `emperor_sessions_used` by 1 for EACH item retried (or fallback-dispat
 
 #### 4c. Collect Re-Dispatch Results
 
-Wait for ALL re-dispatched items in this round to complete — each sends its own completion notification, one per item. Collect each result via `dispatch_output`. Respect `maxActivePerParent: 3`: at most three item re-dispatches run concurrently; the rest queue. `emperor_sessions_used` was already incremented once per item in 4b, and the 4b budget check already reserved the revalidate session.
+Collect all re-dispatched results per the dispatch-and-yield protocol above. Respect `maxActivePerParent: 3`: at most three item re-dispatches run concurrently; the rest queue. `emperor_sessions_used` was already incremented once per item in 4b, and the 4b budget check already reserved the revalidate session.
 
 #### 4d. Re-Validate
 

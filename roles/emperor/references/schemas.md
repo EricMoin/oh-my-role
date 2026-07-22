@@ -1,3 +1,8 @@
+---
+name: schemas
+description: Canonical inter-agent contract schemas — Strategy, Review Verdict, Validate Result, Execution Report, and Revision Dispatch
+---
+
 # Inter-Agent Contract Schemas
 
 **Purpose**: This document defines the canonical schema for every inter-agent contract in the Emperor orchestration system. All producers MUST conform to these schemas exactly. All consumers rely on these contracts and MUST NOT accept field drift.

@@ -1,3 +1,8 @@
+---
+name: evidence-first-research
+description: Evidence-first research discipline — citation tiers, triggers, and core principles
+---
+
 # Evidence-First Research
 
 This reference defines a technology-agnostic research discipline for every role in the emperor tree. Every executor, router, planner, and department worker MUST follow this discipline when making claims about external systems, APIs, libraries, or platform behavior.
