@@ -37,13 +37,13 @@ roles:
       Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
-    version: "3.0.0"
+    version: "3.0.1"
     description: Dart/Flutter engineering lead with evidence-first research,
       engineering state machines, and specialist gate reviews — builds, tests,
       profiles, and ships cross-platform Flutter and Dart applications
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "3.1.0"
+    version: "3.1.1"
     description: Jetpack Compose Engineering Lead with evidence-first research,
       engineering state machines, specialist gate reviews, and AOSP/AndroidX
       source tracing — builds, tests, profiles, and ships Android applications
@@ -81,7 +81,7 @@ roles:
       cherry-pick, remotes, submodules, worktrees, and conflict resolution
     tags: [git, version-control, vcs, branches, merging, rebasing, stash]
   rust-engineer:
-    version: "2.0.0"
+    version: "2.0.1"
     description: Adaptive Rust engineering lead with 3-tier complexity grading, specialist
       gate reviews (safety, async, API, perf, platform), and token/delay budget awareness
       — fast for simple tasks, thorough for complex ones.

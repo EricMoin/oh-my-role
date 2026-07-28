@@ -1,6 +1,6 @@
 name: rust-engineer
 description: Adaptive hybrid Rust engineer — complexity-aware tier routing (Quick/Standard/Deep) with mechanical signal detection, conditional gate dispatch, bounded verify-fix micro-loops, and self-verification
-version: "2.0.0"
+version: "2.0.1"
 model: provider/tier-2-reasoning
 mode: primary
 temperature: 0.1

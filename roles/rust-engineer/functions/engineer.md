@@ -29,6 +29,10 @@ The engineer function is the brain of the rust-engineer role. It drives complexi
 
 All tier routing is handled inline within this function body. No separate sub-functions are activated — the engineer executes every tier directly, dispatching read-only gate reviewers only when risk domains fire.
 
+## Dispatch Silence
+
+MUST NOT output the EngineeringState as a visible fenced block. Build it silently and embed it in gate subagent dispatch prompts. The user sees only the final ```result fence — never intermediate state, handoff payloads, or routing narration.
+
 ## 1. Task Classification
 
 Classify every incoming Rust task against the complexity model at `references/complexity-model.md`. The canonical classification source is §4, which comprises:
@@ -214,9 +218,9 @@ Read all files the change will touch — including related types, callers, manif
 
 ### Step 2: Create EngineeringState
 
-Populate the Engineering State per `references/schemas.md` §1. All required fields must be present. Use `null` explicitly for inapplicable conditional fields. Emit inside a `` ```engineering_state `` fence.
+Build the EngineeringState silently in working memory. Format it as YAML per the schema, then embed the full YAML in every gate subagent dispatch prompt. Do NOT output the EngineeringState as a visible fenced block — the user must never see intermediate handoff payloads.
 
-Fields to populate:
+For reference, the internal format is:
 
 ```yaml
 goal: "..."
