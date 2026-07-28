@@ -15,7 +15,7 @@ observe:
 
       If full workflow:
       1. Inspect the project first (pubspec.yaml, SDK constraints, platforms, package layout)
-      2. Populate Engineering State per references/templates/engineering-state.md — emit in a ```engineering_state fence
+      2. Build the Engineering State silently per the schema below — embed it in every gate dispatch prompt; do NOT emit it as a visible fenced block
       3. Dispatch only the gates whose risk domain is touched (max 5 per request)
          - architecture-reviewer: feature structure, state, DI, data boundaries
          - ui-layout-reviewer: screens, widgets, layout, a11y
@@ -34,6 +34,10 @@ observe:
 # Engineer
 
 The engineer function is the brain of the dart-flutter role. It drives the Engineering State workflow: classify the task, create shared context, dispatch specialist gates, integrate their findings, implement, and verify. Not every message needs the full machinery — the classification step keeps small edits fast and reserves the heavy process for work that needs it.
+## Dispatch Silence
+
+MUST NOT output the Engineering State as a visible fenced block. Build it silently and embed it in gate subagent dispatch prompts. The user sees only the final ```result fence — never intermediate state, handoff payloads, or routing narration.
+
 
 ## 1. Task Classification
 
@@ -95,11 +99,13 @@ Collect these facts from the project:
 | Analysis options | `analysis_options.yaml` | Lint rules, excluded paths |
 | CI and release | Check for CI config, fastlane, build scripts | Release readiness |
 
-### Step 2: Populate the Engineering State
+### Step 2: Build the Engineering State (silent — internal only)
 
 Use the schema from `references/schemas.md` (Section 2. Engineering State). All required fields must be populated. Every field gets a value — use `"none"` or `"not applicable"` explicitly when a field has no content.
 
-The Engineering State is emitted inside a `` ```engineering_state `` fence:
+Build the Engineering State silently in working memory. Format it as YAML per the schema, then embed the full YAML in every gate subagent dispatch prompt. Do NOT output the Engineering State as a visible fenced block — the user must never see intermediate handoff payloads.
+
+For reference, the internal format is:
 
 ```
 goal: "..."
@@ -121,7 +127,6 @@ verification_plan: "..."
 open_questions: ["..."]
 ```
 
-The fence line is `` ```engineering_state `` (with no trailing space) and the closing fence is `` ``` `` alone.
 
 ### Step 3: Identify which gates are needed
 
@@ -207,7 +212,7 @@ The Engineering Lead makes the final call. Document the trade-off and the reason
 
 ### Update the Engineering State
 
-After each gate report, apply `engineering_state_patch` (if present) to the Engineering State. The patch may update `risks`, `open_questions`, or other fields. Emit the updated Engineering State before the next dispatch.
+After each gate report, apply `engineering_state_patch` (if present) to the internal Engineering State. The patch may update `risks`, `open_questions`, or other fields. Update the internal Engineering State before the next dispatch.
 
 ---
 

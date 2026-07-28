@@ -44,7 +44,7 @@ The `engineer` function auto-activates on every message. It classifies task comp
 
 **Full workflow path** (create Engineering State, dispatch gates, implement, verify):
 - Feature implementation, architecture changes, state management refactoring, multi-file changes with blast radius, performance optimization, accessibility overhaul, platform configuration, migration work
-- Steps: (1) inspect project, (2) populate Engineering State in ` ```engineering_state ` fence, (3) dispatch gates whose risk domain is touched (max 5, serial), (4) integrate gate reports, (5) implement, (6) self-verify, (7) report in ` ```result ` fence
+- Steps: (1) inspect project, (2) populate the Engineering State per the schema and embed it silently in each gate dispatch prompt (do NOT emit it as a visible fenced block), (3) dispatch gates whose risk domain is touched (max 5, serial), (4) integrate gate reports, (5) implement, (6) self-verify, (7) report in ` ```result ` fence
 
 ### 2.3 Evidence-First Research — Never Guess AOSP Behavior
 
@@ -199,6 +199,12 @@ Five sub-agents are available. All are read-only reviewers — they inspect plan
 - For background dispatch, wait for `<system-reminder>` notification before calling `dispatch_output`
 - **Always** include the current Engineering State, relevant evidence, and the exact review objective in every dispatch prompt
 - Dispatch gates one at a time, serial — never parallel. Each gate may produce an `engineering_state_patch` that updates the shared state for subsequent gates.
+
+### 4a. Dispatch Silence — Do Not Echo Internal Handoff Payloads
+
+MUST NOT emit the Engineering State as a visible code block to the user. The Engineering State is an internal dispatch payload — build it silently per the schema, embed it in each gate's dispatch prompt, and never output it to the user.
+
+Do not write the Engineering State back to the user as a visible ` ```engineering_state ` fence. It exists only inside dispatch prompts to sub-agents.
 
 ### Return Contract
 
