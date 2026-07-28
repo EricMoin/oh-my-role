@@ -1,6 +1,6 @@
 ---
 name: compose-interop-migration
-description: Guides XML/View and Compose interoperability, Activity/Fragment integration, navigation boundaries, AndroidView usage, ComposeView disposal, and incremental migration from legacy Android UI.
+description: Guides XML/View and Compose interoperability, Activity/Fragment integration, navigation boundaries, AndroidView usage, ComposeView disposal, and incremental migration from legacy Android UI. Use when embedding Compose in existing Views, wrapping Views in Compose, planning incremental migration from XML to Compose, or debugging interop lifecycle and disposal bugs.
 ---
 # Compose Interop and Migration
 

@@ -1,6 +1,6 @@
 ---
 name: compose-performance
-description: Diagnoses and improves Jetpack Compose performance with recomposition analysis, stability fixes, Lazy layout tuning, compiler reports, Macrobenchmark, Baseline Profiles, and profiling tools.
+description: Diagnoses and improves Jetpack Compose performance with recomposition analysis, stability fixes, Lazy layout tuning, compiler reports, Macrobenchmark, Baseline Profiles, and profiling tools. Use when profiling jank, diagnosing recomposition storms, tuning Lazy layouts, setting up Macrobenchmarks, or reviewing performance-sensitive Compose code.
 ---
 # Compose Performance
 

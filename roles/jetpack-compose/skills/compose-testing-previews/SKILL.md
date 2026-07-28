@@ -1,6 +1,6 @@
 ---
 name: compose-testing-previews
-description: Adds and reviews Compose previews, UI tests, semantics assertions, screenshot strategy, Robolectric/device test split, ViewModel tests, and Android test coverage.
+description: Adds and reviews Compose previews, UI tests, semantics assertions, screenshot strategy, Robolectric/device test split, ViewModel tests, and Android test coverage. Use when writing Compose UI tests, adding multi-state previews, setting up screenshot tests, organizing Robolectric vs. instrumented tests, or reviewing test coverage for Compose features.
 ---
 # Compose Testing and Previews
 

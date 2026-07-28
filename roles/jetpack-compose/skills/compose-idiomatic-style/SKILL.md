@@ -1,10 +1,16 @@
 ---
 name: compose-idiomatic-style
-description: Kotlin and Jetpack Compose idiomatic style reference — ❌/✅ comparative examples for state, side effects, modifiers, lists, composable structure, naming, Slot API, CompositionLocal, remember, derivedStateOf, lifecycle-aware collection, and Previews. Use whenever writing or modifying any @Composable code, Compose UI, composable functions, or reviewing Compose pull requests.
+description: Kotlin and Jetpack Compose idiomatic style reference — ❌/✅ comparative examples for state, side effects, modifiers, lists, composable structure, naming, Slot API, CompositionLocal, remember, derivedStateOf, lifecycle-aware collection, and Previews. Use when reviewing Compose code for idiomatic correctness, refactoring composable functions for readability, designing Slot-based component APIs, or establishing project style conventions. Do NOT load for single-line edits, new feature implementation (use a domain-specific skill instead), or bug fixes where style is not the primary concern.
 ---
 # Compose Idiomatic Style
 
 Quick-reference for Jetpack Compose Kotlin idiomatic patterns. Each entry shows the naive or incorrect approach (❌) vs the idiomatic approach (✅) with explanation.
+
+**When NOT to load this skill:**
+- Single-line edits or trivial changes — the cost of loading reference content outweighs the benefit.
+- New feature implementation — use the domain-specific skill (e.g., `compose-runtime-state`, `compose-layout-material-adaptive`) instead.
+- Bug fixes where style is not the primary concern — fix the bug first; apply style guidance only in a follow-up refinement pass.
+- Writing or modifying non-Compose Kotlin code (this skill is specific to `@Composable` patterns).
 
 ## State
 

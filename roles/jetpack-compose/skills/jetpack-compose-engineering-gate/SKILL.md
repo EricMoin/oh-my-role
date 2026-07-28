@@ -1,6 +1,6 @@
 ---
 name: jetpack-compose-engineering-gate
-description: Build a Jetpack Compose Engineering State and route non-trivial work through architecture, UI/layout/accessibility, test-quality, performance, or source-tracing gates. Use before broad feature work, refactors, platform changes, performance work, or source-sensitivity tasks on Android Compose projects.
+description: Build a Jetpack Compose Engineering State and route non-trivial work through architecture, UI/layout/accessibility, test-quality, performance, or source-tracing gates. Use when starting broad feature work, significant refactors, platform changes, performance optimization rounds, or source-sensitivity tasks on Android Compose projects.
 ---
 # Jetpack Compose Engineering Gate
 

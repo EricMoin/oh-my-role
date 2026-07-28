@@ -1,6 +1,6 @@
 ---
 name: compose-runtime-state
-description: Guides Jetpack Compose runtime, recomposition, snapshots, state hoisting, remember APIs, side effects, and stability decisions. Use when writing or reviewing Compose state, effects, or recomposition-sensitive UI.
+description: Guides Jetpack Compose runtime, recomposition, snapshots, state hoisting, remember APIs, side effects, and stability decisions. Use when writing or reviewing Compose state, side effects, recomposition-sensitive UI, or debugging unexpected recompositions and snapshot state loss.
 ---
 # Compose Runtime and State
 

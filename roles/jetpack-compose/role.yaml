@@ -68,4 +68,30 @@ skills:
   - compose-idiomatic-style
   - jetpack-compose-engineering-gate
 
+# Subagent collaboration flow — parent dispatches specialist gate reviewers
+# for risk-domain review. Gates are dispatched serially, one at a time.
+# Each gate returns a gate report to the parent for integration.
+# Sub-agents emit signal(type="answer") on completion; the engineer
+# function awaits gate reports via the dispatch output mechanism.
+collaboration:
+  max_iterations: 2
+  flow:
+    - "parent -> architecture-reviewer: architecture, state, DI, module, navigation gate"
+    - "parent -> ui-layout-reviewer: UI, layout, modifiers, Material 3, accessibility gate"
+    - "parent -> test-quality-reviewer: test strategy, coverage, CI verification gate"
+    - "parent -> performance-reviewer: recomposition, stability, benchmarks, startup gate"
+    - "parent -> source-tracer: AOSP/AndroidX source verification gate"
+    - "architecture-reviewer -> parent: gate report"
+    - "ui-layout-reviewer -> parent: gate report"
+    - "test-quality-reviewer -> parent: gate report"
+    - "performance-reviewer -> parent: gate report"
+    - "source-tracer -> parent: gate report"
+
+# Dispatch configuration for subagent orchestration
+dispatch:
+  maxActivePerParent: 2
+  maxConcurrent: 5
+  syncPromptTimeoutMs: 600000
+  backgroundStaleTimeoutMs: 300000
+  maxTotalSessionsPerRequest: 10
 

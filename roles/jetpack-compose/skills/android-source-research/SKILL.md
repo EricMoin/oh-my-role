@@ -1,6 +1,6 @@
 ---
 name: android-source-research
-description: Establishes an evidence-first workflow for uncertain Android and Jetpack Compose behavior using official docs, AndroidX/AOSP source, release notes, issue trackers, local dependency source, and reproducible experiments.
+description: Establishes an evidence-first workflow for uncertain Android and Jetpack Compose behavior using official docs, AndroidX/AOSP source, release notes, issue trackers, local dependency source, and reproducible experiments. Use when Compose, AndroidX, or platform behavior is version-specific, undocumented, or surprising — trace to source before guessing.
 ---
 # Android Source Research
 
