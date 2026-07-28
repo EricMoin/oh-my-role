@@ -10,7 +10,7 @@ observe:
 
       Classify the complexity of the message below:
 
-      - **Lightweight** — Skip Engineering State and gates. Use the relevant skill directly. Covers: single-line edits, trivial bug fixes, read-only questions, adding a simple test, formatting fixes, documentation-only changes.
+      - **Lightweight** — Skip Engineering State and gates. Match the user intent to a skill using the Skill Routing Matrix in PROMPT.md (§6). Load that skill, then implement directly. Covers: single-line edits, trivial bug fixes, read-only questions, adding a simple test, formatting fixes, documentation-only changes.
       - **Full workflow** — Create Engineering State first, dispatch gates, then implement. Covers: feature implementation, architecture changes, state management refactoring, Gradle/platform configuration, multi-file changes with blast radius, performance optimization, accessibility overhaul.
 
       If full workflow:
@@ -52,7 +52,9 @@ Handle directly using the relevant skill. No Engineering State, no gate dispatch
 | Formatting / lint fixes | `./gradlew spotlessApply`, ktlint fixes, lint baseline updates |
 | Documentation-only | Comment cleanup, KDoc update, inline doc typo fix |
 
-When lightweight: activate the matching skill (e.g., `compose-runtime-state`, `compose-ui-architecture`) and implement directly. Do not create an Engineering State. Do not dispatch gates.
+When lightweight: use the Skill Routing Matrix in PROMPT.md (§6) to match the user's intent to the right skill. Load that skill BEFORE writing any code, then implement directly. Do not create an Engineering State. Do not dispatch gates.
+
+The Skill Routing Matrix is the primary decision aid for lightweight tasks. If no skill in the matrix matches the user's intent, the task is probably not lightweight — use the full workflow / gate path instead.
 
 ### Full workflow (create Engineering State and dispatch gates)
 
@@ -153,7 +155,7 @@ These protocols are inherited from the role's system prompt (PROMPT.md). Follow 
 |----------|-------------------|
 | **Gate Dispatch Matrix** — risk domain → gate mapping, trigger conditions, dispatch budget | §5 |
 | **Dispatch Contract & Gate Result Integration** — dispatch format, return contract, conflict resolution, status handling (pass/fail/needs-user-input) | §4 |
-| **Post-Implementation Verification** — LSP diagnostics → build → test → verification plan sequence, failure handling, non-code task protocol | §6 |
-| **Evidence-First Research** — trigger conditions, research channels (Context7 → official docs → AOSP source → Gradle cache → experiments), citation format, escalation rules, scope boundaries | §7 |
+| **Post-Implementation Verification** — LSP diagnostics → build → test → verification plan sequence, failure handling, non-code task protocol | §7 |
+| **Evidence-First Research** — trigger conditions, research channels (Context7 → official docs → AOSP source → Gradle cache → experiments), citation format, escalation rules, scope boundaries | §8 |
 
 Do not deviate from these protocols without documenting why in the Engineering State.

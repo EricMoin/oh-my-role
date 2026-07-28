@@ -1,6 +1,6 @@
 ---
 name: android-platform-engineering
-description: Applies senior Android platform engineering practices covering lifecycle, resources, configuration changes, permissions, background work, storage, notifications, Gradle, build variants, app startup, and platform compatibility.
+description: Applies senior Android platform engineering practices covering lifecycle, resources, configuration changes, permissions, background work, storage, notifications, Gradle, build variants, app startup, and platform compatibility. Use when handling Android lifecycle in Compose, requesting runtime permissions, scheduling background work with WorkManager, configuring Gradle build variants, or ensuring platform-version compatibility.
 ---
 # Android Platform Engineering
 

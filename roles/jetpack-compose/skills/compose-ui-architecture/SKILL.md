@@ -1,6 +1,6 @@
 ---
 name: compose-ui-architecture
-description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, dependency injection, navigation boundaries, and feature/module organization.
+description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, dependency injection, navigation boundaries, and feature/module organization. Use when structuring Compose screens, wiring ViewModels, setting up navigation graphs, organizing feature modules, or architecting new Compose features.
 ---
 # Compose UI Architecture
 

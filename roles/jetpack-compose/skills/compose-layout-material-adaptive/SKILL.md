@@ -1,6 +1,6 @@
 ---
 name: compose-layout-material-adaptive
-description: Builds and reviews Compose layouts with modifiers, constraints, Lazy layouts, Material 3, theming, adaptive layouts, window size classes, and accessibility.
+description: Builds and reviews Compose layouts with modifiers, constraints, Lazy layouts, Material 3, theming, adaptive layouts, window size classes, and accessibility. Use when creating or reviewing Compose UI layouts, applying Material 3 theming, building responsive/adaptive screens, or fixing layout overflow and sizing issues.
 ---
 # Compose Layout, Material, and Adaptive UI
 
