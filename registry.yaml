@@ -14,7 +14,7 @@ roles:
       and Tailwind
     tags: [react, frontend, typescript, tailwindcss]
   ai-designer:
-    version: "3.0.0"
+    version: "3.1.0"
     description: AI Design Director — tiered-routing design director with
       artifact-first output and severity-layered quality gates
     tags: [design, ux, research, prototyping, subagents]
