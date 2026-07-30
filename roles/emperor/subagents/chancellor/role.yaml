@@ -20,7 +20,7 @@ functions:
 skills:
   - task-decomposition
   - dependency-ordering
-# The round-3 convergence cap (orchestrate.md) is enforced by the graph loop group's
+# The review convergence cap (orchestrate.md) is enforced by the graph loop group's
 # max_traversals bound (see orchestrate.md) — the drafter/reviewer/finalizer cycle is
 # bounded by the engine, not by prompt instructions alone.
 tools:

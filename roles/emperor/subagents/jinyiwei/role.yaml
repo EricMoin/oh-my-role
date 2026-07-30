@@ -28,9 +28,8 @@ skills:
   - evidence-first-research
 
 # Graph orchestration for department worker routing. Legacy dispatch:
-# block (maxActivePerParent / maxTotalSessionsPerRequest) is replaced by the
-# graph engine — concurrency is engine-managed and the request-wide session cap
-# is self-accounted in route.md / execute.md (emperor_sessions_used).
+# config is replaced by the graph engine — concurrency is engine-managed;
+# budget/capacity rejection is handled by the engine (see route.md Fallback 2).
 
 # Jinyiwei routes domain work to departments via graph nodes and executes directly otherwise
 # Legacy dispatch_*/loop_* removed (Phase C) — department nodes run via graph_*.

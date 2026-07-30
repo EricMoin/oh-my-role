@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.7.0"
+version: "2.8.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -29,9 +29,9 @@ references:
   terminology-and-style:
     path: references/terminology-and-style.md
     description: Terminology conventions and English style guide for all emperor-facing output
-  model-pool-and-budget:
-    path: references/model-pool-and-budget.md
-    description: Model pool configuration — three independent pools (tier-1-flagship, tier-2-reasoning, tier-3-fast) each with 5-slot semaphore, and budget allocation rules
+  model-pool:
+    path: references/model-pool.md
+    description: Model pool configuration — three independent pools (tier-1-flagship, tier-2-reasoning, tier-3-fast) each with 5-slot semaphore
   departments:
     path: references/departments.md
     description: Department definitions and domain assignments for dispatch routing
@@ -43,7 +43,10 @@ references:
 # This declarative edge list is the authoring source of truth; at runtime the
 # graph engine executes it via graph_create → graph_add_node / graph_add_edge
 # (graph_add_loop) → graph_run (see PROMPT.md / functions/synthesize.md).
-# max_iterations bounds the closed-loop validate/revise cycle (see synthesize.md caps).
+# Legacy v1 declarative config: max_iterations feeds only the legacy
+# rolebox/src/graph/collaboration-bridge.ts bridge and does NOT bound the
+# imperative graph_add_loop revise/review cycles (see synthesize.md /
+# orchestrate.md). Kept only for schema compatibility; the engine enforces loop bounds.
 collaboration:
   max_iterations: 3
   flow:
@@ -68,12 +71,10 @@ tools:
 
 permission: allow
 
-# Graph orchestration configuration. The legacy dispatch: block (maxActivePerParent /
-# maxConcurrent / syncPromptTimeoutMs / backgroundStaleTimeoutMs / maxTotalSessionsPerRequest)
-# is replaced by the graph engine: per-request session/token/cost ceilings are carried on
-# graph_create(budget), per-node limits on graph_add_node(budget/timeout_ms/max_retries),
-# and concurrency is engine-managed. The request-wide 20-session cap is self-accounted in
-# synthesize.md (emperor_sessions_used); graph_status(include_budget) corroborates it.
+# Graph orchestration configuration. The legacy dispatch: block (parent-scoped concurrency
+# ceiling / maxConcurrent / syncPromptTimeoutMs / backgroundStaleTimeoutMs) is replaced by the graph
+# engine: per-node limits are carried on graph_add_node(timeout_ms/max_retries).
+# Resource ceilings, if any, are owned and enforced by the rolebox engine; concurrency is engine-managed.
 graph:
   orchestration: graph_v2
   # Declarative edge list above mirrors what graph_add_edge wires at runtime.

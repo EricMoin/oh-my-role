@@ -38,7 +38,7 @@ emperor (tier-1-flagship)
     └── security (tier-2-reasoning)      — vulnerability scanning, auth audit
 ```
 
-The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, up to 3 rounds), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator independently verifies execution reports by running tests, builds, and linters, then returns a per-item pass/revise verdict.
+The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, bounded by the review cycle's `max_traversals`), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator independently verifies execution reports by running tests, builds, and linters, then returns a per-item pass/revise verdict.
 
 ## Live risk gate
 
@@ -63,12 +63,9 @@ Caps prevent infinite loops:
 
 | Cap | Limit |
 |-----|-------|
-| Strategy subtask count | 10 maximum (≤8 recommended, ≤7 to retry more than one failure) |
-| Revise rounds | 2 maximum, budget permitting |
 | Retries per round (via graph_run retry) | one `graph_run(node_id, retry=true)` re-run per failed node (never batched) |
-| Per-parent session budget | 20 (chancellor + N execute + validate + per-item retries) |
 
-Because each failed item is retried in its own isolated session, a revise round costs `F + 1` sessions (F failed items + one revalidate). Wider plans therefore afford fewer retries — a deliberate trade of breadth for per-item focus. See [model-pool-and-budget.md](references/model-pool-and-budget.md).
+The revise loop itself is bounded by qualitative termination (a `pass` verdict, stalled progress, engine rejection, or validate failure) with the loop group's `max_traversals` as the engine-side backstop.
 
 Validation only runs on the plan-execute path. Direct answers skip it entirely.
 
@@ -95,8 +92,6 @@ Three independent pools, each with a 5-slot semaphore. Cross-pool dispatch doesn
 
 The reviewer shares the tier-1-flagship pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
 
-Per-parent session budget is 20 across all subtrees. See [model-pool-and-budget.md](references/model-pool-and-budget.md) for worst-case session tables and cost patterns.
-
 ## End-to-end sequence
 
 A typical complex request flows like this:
@@ -106,11 +101,11 @@ A typical complex request flows like this:
 3. Chancellor runs the three-stage loop: drafter produces a strategy, reviewer audits it (veto sends it back, pass advances it), finalizer locks the final strategy.
 4. Chancellor returns the `final_strategy` to the emperor. Strategy includes `subtasks[]` with dependency ordering and a `risk` field.
 5. If `risk: high`, emperor presents the strategy to the user and waits for approval.
-6. Emperor reads the dependency graph. Dispatches depth-0 subtasks (empty dependencies) to jinyiwei — one dispatch per subtask — bounded by `maxActivePerParent: 3` (concurrency) and remaining per-parent budget. Strategies are capped at 10 subtasks so the fan-out fits the 20-session budget; if budget can't cover all runnable subtasks, emperor dispatches lowest-id first and reports the rest as budget-capped.
+6. Emperor reads the dependency graph. Dispatches depth-0 subtasks (empty dependencies) to jinyiwei — one dispatch per subtask — with dispatch concurrency managed by the graph engine's frontier scheduling. If the engine can't run all runnable subtasks, emperor dispatches lowest-id first and reports any items the engine rejects as unresolved.
 7. Jinyiwei routes each subtask to the appropriate department (ui, backend, test, etc.). Department executes and returns a structured execution report.
 8. As subtasks complete, emperor dispatches newly-unblocked subtasks until all are done.
 9. Emperor dispatches validation to the validator with all execution reports.
-10. If validation passes, emperor synthesizes a final answer. If it fails, emperor re-runs failed subtasks one per session via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` (up to 2 rounds, budget permitting), then synthesizes regardless.
+10. If validation passes, emperor synthesizes a final answer. If it fails, emperor re-runs failed subtasks one per session via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` until the revise loop terminates (pass verdict, stalled progress, engine rejection, or validate failure), then synthesizes regardless.
 11. Emperor emits a `final_answer` fence. Always. Even on partial failure.
 
 ## Extension guide
@@ -129,7 +124,7 @@ Full instructions and existing department definitions are in [departments.md](re
 |----------|---------------|
 | [schemas.md](references/schemas.md) | Inter-agent contract schemas (strategy, review verdict, validate result, execution report) |
 | [terminology-and-style.md](references/terminology-and-style.md) | De-theming glossary, language rules, style guide |
-| [model-pool-and-budget.md](references/model-pool-and-budget.md) | Three model pools, budget caps, worst-case session tables, dispatch config |
+| [model-pool.md](references/model-pool.md) | Three model pools, each with a 5-slot semaphore |
 | [departments.md](references/departments.md) | All 8 departments with scope, evidence tags, and recommended skills |
 
 ## Kernel compatibility
