@@ -36,7 +36,9 @@ A unit is delegatable when it satisfies all three:
 
 ## Common Mistakes
 
-**Over-splitting** creates a swarm of trivial subtasks. Each dispatch carries overhead: context loading, verification, reporting. If ten subtasks could be three, prefer three.
+**Over-splitting** creates a swarm of trivial fragments — merge steps only when they share one concern, one verification, and could never run in parallel.
+
+**Over-merging** is the graph-engine anti-pattern: collapsing distinct concerns into one monolithic subtask "to save dispatches" defeats the engine. The engine schedules, parallelizes, retries, and validates PER NODE — a monolithic subtask serializes parallelizable work, and one failed part forces the whole unit to re-run in the revise loop. Dispatch cost is the engine's problem, not the planner's. When in doubt between merging and splitting distinct concerns, split.
 
 **Under-splitting** produces subtasks where the executor must make architectural decisions that belong to the planner. If a subtask requires "figure out the right approach," it is too broad. The planner should have already figured that out.
 

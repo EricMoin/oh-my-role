@@ -159,13 +159,13 @@
         },
         {
           "id": "review-round-cap-3",
-          "description": "Chancellor enforces best-effort at review round 3 cap — no infinite loops",
+          "description": "Chancellor enforces best-effort when the review loop's engine-side bound is reached — no infinite loops",
           "prompt": "Architect a microservices migration plan for the monolith",
           "expectations": [
-            { "text": "Review loop terminates after at most 3 rounds — procedural cap prevents runaway", "type": "classification", "weight": 2 },
-            { "text": "After cap is reached, best-effort output proceeds to finalizer rather than looping indefinitely", "type": "boundary", "weight": 1 }
+            { "text": "Review loop is bounded and terminates — the engine-enforced loop bound prevents runaway rather than a fixed round count", "type": "classification", "weight": 2 },
+            { "text": "When the bound is reached with an unresolved veto, best-effort output proceeds to the finalizer rather than looping indefinitely", "type": "boundary", "weight": 1 }
           ],
-          "tags": ["planner", "loop", "budget"]
+          "tags": ["planner", "loop"]
         },
         {
           "id": "strategy-schema-conformance",
@@ -281,24 +281,13 @@
         },
         {
           "id": "revise-rounds-capped-at-2",
-          "description": "Closed-loop validation stops at ≤2 revise rounds — hard cap prevents infinite re-dispatch",
+          "description": "Closed-loop validation is bounded and terminates — the revise loop ends on a pass verdict, stalled progress, engine rejection, or validate failure, with the engine-enforced loop bound as the backstop",
           "prompt": "Implement a complex data pipeline with ETL stages that are interdependent",
           "expectations": [
-            { "text": "At most 2 revise rounds after initial execution — terminates even if items remain unresolved", "type": "classification", "weight": 2 },
-            { "text": "After cap is hit, emits final_answer noting caps exhausted with unresolved item details", "type": "boundary", "weight": 1 }
+            { "text": "Revise loop is bounded and terminates — ends on a pass verdict, a stalled/no-new-findings round, engine rejection, or validate failure rather than a fixed round count", "type": "classification", "weight": 2 },
+            { "text": "When the loop stops without full convergence, emits final_answer noting unresolved items with details rather than looping indefinitely — the engine-enforced max_traversals backstops it", "type": "boundary", "weight": 1 }
           ],
-          "tags": ["closed-loop", "budget", "cap"]
-        },
-        {
-          "id": "revise-rounds-bounded-by-budget",
-          "description": "Revise rounds are bounded by the 20-session per-parent budget: initial execution consumes one session per subtask, so wider plans afford fewer revise rounds",
-          "prompt": "Add a feature that touches UI, backend, and database layers with interdependent checks",
-          "expectations": [
-            { "text": "Counts one emperor session per subtask dispatched — not 1 for the whole initial execution", "type": "classification", "weight": 2 },
-            { "text": "Stops re-dispatching when the next dispatch would exceed the 20-session per-parent budget, with a budget-cap note in final_answer", "type": "boundary", "weight": 2 },
-            { "text": "Does not exceed 2 revise rounds even when budget would otherwise allow more", "type": "boundary", "weight": 1 }
-          ],
-          "tags": ["closed-loop", "budget", "cap"]
+          "tags": ["closed-loop", "cap"]
         },
         {
           "id": "validate-dispatch-failure-fallback",
@@ -328,11 +317,11 @@
       "cases": [
         {
           "id": "dispatch-failure-retry-once",
-          "description": "On dispatch failure or timeout, emperor retries exactly once with same parameters, then reports honestly",
+          "description": "On dispatch failure or timeout, emperor applies qualitative retry discipline — retries a transient or uncertain failure, does not blind-retry an unchanged input, and escalates honestly",
           "prompt": "Generate a comprehensive 50-page architecture document covering all system components",
           "expectations": [
-            { "text": "On dispatch failure (timeout or error), retries exactly once — not zero, not two", "type": "classification", "weight": 2 },
-            { "text": "On retry, uses narrower more specific prompt or breaks work into smaller pieces", "type": "classification", "weight": 1 }
+            { "text": "Retries a transient or uncertain dispatch failure — does not blind-retry an unchanged failing input", "type": "classification", "weight": 2 },
+            { "text": "On retry, uses narrower more specific prompt or breaks work into smaller pieces; escalates honestly instead of looping", "type": "classification", "weight": 1 }
           ],
           "tags": ["recovery", "retry"]
         },
@@ -395,24 +384,13 @@
           "expectations": [
             { "text": "Dispatches only depth-0 subtasks (empty dependencies) first, not all subtasks at once", "type": "classification", "weight": 2 },
             { "text": "Dispatches a dependent subtask only after all its prerequisites report completion", "type": "boundary", "weight": 2 },
-            { "text": "Respects maxActivePerParent concurrency while walking the dependency graph", "type": "boundary", "weight": 1 }
+            { "text": "Relies on engine-managed concurrency (frontier scheduling) rather than a self-imposed parent-scoped dispatch cap", "type": "boundary", "weight": 1 }
           ],
           "tags": ["scheduling", "dag", "dependencies", "boundary"]
         },
         {
-          "id": "budget-aware-wide-plan-truncation",
-          "description": "When a strategy has more runnable subtasks than the per-parent session budget allows, emperor dispatches within budget (lowest-id priority) and reports the rest as budget-capped",
-          "prompt": "Execute a strategy whose subtask count would exceed the 20-session per-parent budget once validation and revise headroom are reserved",
-          "expectations": [
-            { "text": "Never dispatches past the maxTotalSessionsPerRequest cap — no silent mid-execution drop", "type": "boundary", "weight": 2 },
-            { "text": "Dispatches dependency-root (lowest-id) subtasks first when budget cannot cover all", "type": "classification", "weight": 1 },
-            { "text": "Reports undispatched subtasks as budget-capped in the final_answer fence", "type": "classification", "weight": 2 }
-          ],
-          "tags": ["budget", "cap", "scheduling", "boundary"]
-        },
-        {
           "id": "chancellor-round3-best-effort-surfaced",
-          "description": "When the planner returns a best-effort strategy after the round-3 review cap with unresolved concerns in notes, emperor surfaces those concerns rather than hiding them",
+          "description": "When the planner returns a best-effort strategy after the review bound is reached with an unresolved veto, emperor surfaces the unresolved concerns in notes rather than hiding them",
           "prompt": "Plan and execute an under-specified migration where the reviewer cannot fully clear its veto within the round cap",
           "expectations": [
             { "text": "Proceeds with the best-effort strategy but surfaces unresolved review concerns from the strategy notes", "type": "classification", "weight": 2 },
@@ -437,15 +415,15 @@
       "cases": [
         {
           "id": "drafter-schema-and-budget-conformance",
-          "description": "The drafter emits a schema-conforming strategy draft within the subtask budget",
+          "description": "The drafter emits a schema-conforming strategy draft decomposed graph-natively: one concern per node, independently verifiable, parallel where independent",
           "prompt": "Produce a strategy draft for adding pagination to the list API endpoint",
           "expectations": [
             { "text": "subtasks[].id are monotonic integers from 1; no string IDs", "type": "capability", "weight": 2 },
             { "text": "risk is a scalar (low|high), never a risks list; no final_notes field", "type": "boundary", "weight": 2 },
-            { "text": "subtasks count is within budget (<= 10, ideally <= 8)", "type": "boundary", "weight": 1 },
+            { "text": "subtasks decompose graph-natively — one concern per node with its own tool-checkable acceptance, independent work split into parallel depth-0 nodes, only trivial same-concern fragments merged; asserts no numeric ceiling", "type": "boundary", "weight": 1 },
             { "text": "every subtask has a tool-verifiable acceptance condition", "type": "capability", "weight": 1 }
           ],
-          "tags": ["subagent", "drafter", "schema", "budget", "conformance"]
+          "tags": ["subagent", "drafter", "schema", "conformance"]
         }
       ]
     },
@@ -624,15 +602,14 @@
         },
         {
           "id": "per-item-redispatch-one-per-session",
-          "description": "On a revise verdict with multiple failed items, emperor retries each via graph_run(graph_id, node_id=…, retry=true, modify_prompt=…) — one per retry, dependency-root order, within budget; fresh dispatch only as fallback",
+          "description": "On a revise verdict with multiple failed items, emperor retries each via graph_run(graph_id, node_id=…, retry=true, modify_prompt=…) — one per retry, dependency-root order; fresh dispatch only as fallback",
           "prompt": "Add validation to the registration form and its API handler with tests; two subtasks come back failing validation.",
           "expectations": [
             { "text": "Retries each failed item via graph_run(graph_id, node_id=…, retry=true, modify_prompt=REVISION + validator note + fix direction), not a fresh emperor--jinyiwei dispatch", "type": "classification", "weight": 2 },
-            { "text": "Retries one item per call in dependency-root (lowest-id) order; budgets the round as F + 1 sessions (F retries + one revalidate, same as before)", "type": "boundary", "weight": 2 },
-            { "text": "Fresh graph_add_node is retained only as documented fallback when the original node is unavailable; never used as the primary path", "type": "boundary", "weight": 1 },
-            { "text": "Never exceeds the per-parent budget of 20; reports any remaining failed items as budget-capped", "type": "boundary", "weight": 1 }
+            { "text": "Retries one item per call in dependency-root (lowest-id) order", "type": "boundary", "weight": 2 },
+            { "text": "Fresh graph_add_node is retained only as documented fallback when the original node is unavailable; never used as the primary path", "type": "boundary", "weight": 1 }
           ],
-          "tags": ["closed-loop", "revise", "per-item", "budget"]
+          "tags": ["closed-loop", "revise", "per-item"]
         },
         {
           "id": "direct-research-path",
@@ -755,11 +732,11 @@
       "cases": [
         {
           "id": "finalizer-emits-conformant-final-strategy",
-          "description": "The finalizer merges the approved draft into a schema-conforming final_strategy and surfaces unresolved round-3 concerns in notes",
-          "prompt": "Finalize this approved draft for adding pagination; the reviewer left one unresolved concern about default page size at the round-3 cap.",
+          "description": "The finalizer merges the approved draft into a schema-conforming final_strategy and surfaces unresolved review concerns in notes when the review bound is reached with an unresolved veto",
+          "prompt": "Finalize this approved draft for adding pagination; the reviewer left one unresolved concern about default page size when the review bound was reached with an unresolved veto.",
           "expectations": [
             { "text": "Emits a final_strategy with scalar risk, integer monotonic ids, and no risks/final_notes forbidden fields", "type": "capability", "weight": 2 },
-            { "text": "Surfaces the unresolved round-3 concern in the notes field rather than dropping it", "type": "boundary", "weight": 1 }
+            { "text": "Surfaces the unresolved review concern in the notes field rather than dropping it", "type": "boundary", "weight": 1 }
           ],
           "tags": ["subagent", "finalizer", "schema", "best-effort"]
         }
@@ -770,10 +747,10 @@
       "cases": [
         {
           "id": "orchestrate-stage-failure-degrades-gracefully",
-          "description": "When a planning stage fails after one retry, the chancellor degrades gracefully instead of fabricating a strategy",
-          "prompt": "Plan a rate-limiting middleware; the drafter dispatch fails and its single retry also fails.",
+          "description": "When a planning stage fails and a retry does not recover it, the chancellor degrades gracefully instead of fabricating a strategy",
+          "prompt": "Plan a rate-limiting middleware; the drafter dispatch fails and its retry also fails.",
           "expectations": [
-            { "text": "Retries the failed stage exactly once, then stops \u2014 no unbounded retry loop", "type": "classification", "weight": 2 },
+            { "text": "Applies qualitative retry discipline \u2014 retries a transient or uncertain failure, does not blind-retry an unchanged failing input, and escalates honestly instead of looping", "type": "classification", "weight": 2 },
             { "text": "On drafter failure after retry, emits an error result and does NOT fabricate a strategy", "type": "boundary", "weight": 2 },
             { "text": "On reviewer failure after retry, proceeds to finalize as a non-blocking pass and records that review was unavailable in notes", "type": "capability", "weight": 1 }
           ],

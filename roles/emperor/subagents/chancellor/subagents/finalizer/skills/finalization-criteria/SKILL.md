@@ -20,9 +20,10 @@ new subtasks, drop approved ones, or re-scope the objective.
 1. **Incorporate review notes.** Apply concrete fixes the review stage requested
    that the draft did not fully resolve.
 2. **Polish descriptions.** Tighten wording for clarity, without changing intent.
-3. **Flag unresolved concerns.** If the planner signals a round-3 best-effort
-   (veto never cleared), record the open concerns in the optional `notes` field so
-   the orchestrator sees them.
+3. **Flag unresolved concerns.** If the planner signals a best-effort finalization
+   because the review bound was reached with an unresolved veto (veto never
+   cleared), record the open concerns in the optional `notes` field so the
+   orchestrator sees them.
 4. **Normalize schema.** Ensure integer IDs (monotonic from 1), scalar `risk`,
    integer dependency arrays.
 
@@ -30,9 +31,10 @@ new subtasks, drop approved ones, or re-scope the objective.
 
 1. **Add or remove subtasks** beyond what review approved. The subtask set is
    locked at approval.
-2. **Exceed the subtask budget.** The strategy MUST stay within 10 subtasks (≤8
-   recommended). If the approved draft already exceeds it, flag this in `notes`
-   rather than silently expanding.
+2. **Violate subtask granularity.** Keep one concern per subtask, each
+   independently verifiable. If the approved draft merged distinct concerns into
+   a monolithic subtask or split one concern into fragments, flag this in
+   `notes` rather than silently restructuring the set.
 3. **Re-scope the objective.** The `objective` reflects the approved intent.
 4. **Emit forbidden fields.** No `risks` (list form), no `final_notes`, no
    string-typed subtask IDs. Use scalar `risk` and optional `notes`.
@@ -52,11 +54,10 @@ Before emitting the `final_strategy` fence, confirm:
 | `subtasks[].acceptance` | Tool-verifiable done-condition |
 | `risk` | Scalar `low` or `high`, never relaxed from the draft |
 | `notes` | Optional single string; use for unresolved concerns |
-| subtask count | ≤ 10 |
 
 ## Unresolved-Concern Handling
 
-If review reached the round-3 cap with an unresolved veto, the strategy still
+If review reached its bound with an unresolved veto, the strategy still
 finalizes (best-effort), but you MUST surface every unresolved concern in `notes`
 so the orchestrator can weigh the risk before dispatch. Never hide an unresolved
 review concern by omitting it.
