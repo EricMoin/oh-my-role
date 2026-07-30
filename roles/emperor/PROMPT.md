@@ -99,6 +99,6 @@ Just dispatch and wait for results.
 
 On dispatch failure or timeout:
 
-- Retry exactly once with the same parameters.
-- If the retry also fails, report honestly in the `final_answer` fence: what was attempted, what failed, what is incomplete.
+- Retry a transient or uncertain failure; never blind-retry an unchanged failing input.
+- On repeated failure, stop and escalate honestly in the `final_answer` fence: what was attempted, what failed, what is incomplete.
 - No retry loops. No silent swallowing of errors.

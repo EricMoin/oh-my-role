@@ -96,29 +96,29 @@ If `graph_run`/`graph_add_node` fails with a budget, capacity, or queue-full err
 
 ## Failure Recovery
 
-Apply the one-retry escalation pattern (detect failure, retry once, then report honestly). This pattern is self-contained below — jinyiwei reports to its parent via signal (preferred) or a ` ```result ` fence (fallback).
+Apply the retry-then-escalate discipline (detect failure, retry a transient or uncertain failure, then report honestly). This pattern is self-contained below — jinyiwei reports to its parent via signal (preferred) or a ` ```result ` fence (fallback).
 1. **Detect failure.** A graph-node result has failed if:
    - Neither a signal tool call nor a ` ```result ` ` fence was produced
    - The output contains error text (stack traces, exception messages, or explicit failure language)
    - The node timed out (`graph_status(graph_id, node_id=…)` shows `timeout`/`escalate`)
    - The result reports incomplete work with no substantive output
 
-2. **Retry once.** Re-run the node with a sharper prompt:
+2. **Retry.** Re-run the node with a sharper prompt:
    - `graph_run(graph_id, node_id=…, retry=true, modify_prompt="…")` preserves conversation context (checkpoint auto-injected)
    - Narrow the scope if the original was too broad
    - Add explicit guardrails or format constraints if the output was malformed
    - If the original timed out, break the work into smaller pieces
 
-3. **Still fails: honest report.** After one retry, stop. Produce a ` ```result ` ` fence that explains:
+3. **Still fails: honest report.** On repeated failure, stop. Produce a ` ```result ` ` fence that explains:
    - What failed (worker name, task, failure signal)
    - What was attempted in the retry
    - Recommended next step
 
-**MUST NOT retry more than once. MUST NOT pretend success. MUST NOT mask failure behind vague language.**
+**MUST NOT blind-retry an unchanged failing input. MUST NOT pretend success. MUST NOT mask failure behind vague language.**
 
 ### Stale or hung node
 
-If a department node never materializes an output within its `timeout_ms` (the engine maps a vanished task to `timeout`, or the node stays `running` with no progress), treat it as failed: cancel it with `graph_cancel(graph_id, node_id="<dept>-<n>")` to free the engine/model-pool slot, then apply the one-retry rule above. NEVER leave an orphaned graph node running after you emit your ` ```result ` fence.
+If a department node never materializes an output within its `timeout_ms` (the engine maps a vanished task to `timeout`, or the node stays `running` with no progress), treat it as failed: cancel it with `graph_cancel(graph_id, node_id="<dept>-<n>")` to free the engine/model-pool slot, then apply the retry discipline above. NEVER leave an orphaned graph node running after you emit your ` ```result ` fence.
 
 ## Rules
 

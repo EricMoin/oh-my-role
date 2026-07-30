@@ -64,4 +64,4 @@ If the user has installed additional roles (e.g., `software-architecture`, `reac
 
 ## Cost and capacity
 
-See `references/model-pool-and-budget.md` for budget limits, concurrency caps, and model selection guidance.
+See `references/model-pool.md` for the model pool topology, procedural caps, and model selection guidance.

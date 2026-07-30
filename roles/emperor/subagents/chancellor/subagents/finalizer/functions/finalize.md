@@ -18,7 +18,7 @@ Steps:
 
 1. Parse the approved draft and review context from the prompt
 2. Merge the draft into the canonical final strategy, incorporating review notes where relevant
-3. If review identified unresolved concerns (round-3 best-effort after a veto), flag them in the optional `notes` field
+3. If review reached its bound with an unresolved veto (best-effort finalization), flag the unresolved concerns in the optional `notes` field
 4. Emit in a ```final_strategy``` fence following the canonical YAML schema:
 
 ```yaml

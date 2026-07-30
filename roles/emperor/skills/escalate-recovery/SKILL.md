@@ -16,9 +16,9 @@ A graph node result has failed if any of these are true:
 
 If none of these signals fire, the result is presumed good. Do not invent failures.
 
-## Retry once
+## Retry discipline
 
-You get exactly one automatic retry. Not two. Not three. One.
+Retry a transient or uncertain failure; never blind-retry an unchanged failing input.
 
 When retrying:
 
@@ -27,7 +27,7 @@ When retrying:
 - If the original timed out, break the work into smaller pieces for the retry.
 - If it was a logic error, fix the prompt wording before re-running.
 
-After one retry, stop. Do not loop.
+On repeated failure, stop. Do not loop.
 
 ## Still fails: honest report
 
@@ -37,7 +37,7 @@ If the retry also fails, write a `final_answer` fence that explains:
 2. **What was attempted.** Describe the retry: what you changed in the prompt, whether you used node continuation.
 3. **Recommended next step.** Suggest what the user (or a different agent) could do. Maybe the task needs manual intervention, a different tool, or a fundamentally different approach.
 
-Never pretend success. Never silently drop the failure. Never retry a third time.
+Never pretend success. Never silently drop the failure. Never blind-retry an unchanged failing input.
 
 ## Timeout vs logic failure
 
@@ -63,8 +63,8 @@ Use these checks before deciding to cancel (`graph_cancel(graph_id, node_id?)`) 
 
 ## Rules
 
-- Maximum 1 automatic retry per failed node.
+- Retry a transient or uncertain failure; never blind-retry an unchanged failing input.
 - Always write `final_answer` on unrecoverable failure.
 - Never mask a failure behind vague language ("partial results" when you got nothing).
 - Never rely on internal gate or state machinery. This is pure prompt disposition.
-- Cost explosion prevention: the one-retry cap exists because unbounded retries burn tokens and time with no convergence guarantee.
+- Cost explosion prevention: unbounded retries burn tokens and time with no convergence guarantee; stop retrying once a failure has been fairly retried and still recurs.

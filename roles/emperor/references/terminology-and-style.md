@@ -48,7 +48,7 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | (Personnel Ministry) | quality department | domain: quality (lint, format, static analysis) |
 | (three modes) | operating modes | section heading |
 | (validation loop) | validation step | post-execution check |
-| (planner sync slot + background sub-departments + executor headroom) | (rewrite as plain English comment explaining concurrency budget) | YAML comment |
+| (planner sync slot + background sub-departments + executor headroom) | (rewrite as plain English comment explaining concurrency limits) | YAML comment |
 | (covers full three-stage nested loop duration) | (rewrite as plain English comment explaining timeout scope) | YAML comment |
 
 ### Compound Phrases
@@ -116,7 +116,7 @@ Every rewrite of the emperor prompt or its subagent prompts MUST preserve these 
 
 6. **No unverified results.** NEVER report unverified results as verified. If validation was not run, say so. If validation failed, say so.
 
-7. **One retry maximum.** On dispatch failure, retry exactly once with the same parameters. If the retry fails, report honestly to the user. No retry loops. No silent swallowing of errors.
+7. **Qualitative retry discipline.** Retry a transient or uncertain failure; never blind-retry an unchanged failing input. On repeated failure, stop and escalate honestly to the user. No retry loops. No silent swallowing of errors.
 
 8. **Always emit final_answer.** Every request MUST produce a `final_answer` fence, even on partial failure or complete failure. The fence contains whatever was accomplished plus an honest accounting of what failed.
 

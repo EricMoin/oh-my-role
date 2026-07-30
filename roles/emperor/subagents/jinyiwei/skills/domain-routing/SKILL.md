@@ -58,9 +58,9 @@ If domain detection produces no confident match:
 - This preserves forward progress — an unclear domain must not block execution.
 - Report the unresolved domain in the result so the orchestrator can refine routing over time.
 
-### Budget Exhaustion / Dispatch Failure
+### Engine Rejection / Dispatch Failure
 
-If `dispatch` fails due to budget exhaustion, concurrency limits, or worker unavailability:
+If `graph_add_node`/`graph_run` fails due to budget exhaustion, concurrency limits, or worker unavailability:
 
 - **Route falls back to direct execution.** The executor/router handles the task inline rather than blocking.
 - The task may take longer (synchronous execution), but it will not be dropped.
@@ -83,19 +83,6 @@ Evidence tags describe the verification artifacts a department worker is expecte
 
 Tags are selected by the `route` function when dispatching. If falling back to direct execution, default to `[lsp_diagnostics, test]` unless the task is read-only (then `[lsp_diagnostics]` alone suffices).
 
-## Parallel Dispatch Limits
+## Concurrency
 
-The executor/router's dispatch configuration in `role.yaml` enforces concurrency gates:
-
-```yaml
-dispatch:
-  maxActivePerParent: 3
-  maxTotalSessionsPerRequest: 20
-```
-
-| Field | Value | Meaning |
-|-------|-------|---------|
-| `maxActivePerParent` | 3 | At most 3 background department workers running concurrently per executor/router session |
-| `maxTotalSessionsPerRequest` | 20 | Hard per-parent-session cap — each direct parent session (orchestrator, planner, executor/router) gets its own independent ≤20 budget |
-
-**Implication for routing:** When routing splits a task into multiple subtasks, the executor/router can dispatch at most 3 workers in parallel. Any additional workers must wait in the queue. The per-parent-session cap means each of the three direct parent sessions gets its own independent budget, ensuring fair allocation across the request tree. With all eight departments active and the `maxTotalSessionsPerRequest: 20` cap now explicitly set, the executor/router has headroom for up to 8 department dispatches plus 12 slots for re-dispatch or execution overhead within a single request.
+Concurrency is engine-managed. If the engine rejects a `graph_add_node`/`graph_run` for budget, capacity, or queue-full, fall back to direct execution (see route.md Fallback 2).
