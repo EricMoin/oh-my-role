@@ -9,11 +9,11 @@ You have completed execution. Now format the outcome into a structured report co
 
 ## Report Rules
 
-1. Place the report inside a ` ```result ` fence (dispatch_output extracts the last `result` block from the session transcript).
+1. Place the report inside a ` ```result ` fence (the parent reads the last `result` block from the node's materialized output via `graph_status(graph_id, node_id=…, include_output=true)`).
 2. Be precise and honest: unverified items remain unverified. Do not exaggerate.
 3. If verification failed, clearly mark it — do not claim success.
 4. **Never report unverified items as verified.** Partial completion with honest status is better than false confidence.
-5. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to dispatch_output.
+5. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `graph_status(include_output=true)` extraction.
 
 ## Report Structure
 

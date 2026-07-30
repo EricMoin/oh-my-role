@@ -1,5 +1,5 @@
 name: Validator
-description: "Validation stage — compares execution reports against the strategy's acceptance criteria and emits a per-item pass/revise verdict. Never dispatches, never edits files."
+description: "Validation stage — compares execution reports against the strategy's acceptance criteria and emits a per-item pass/revise verdict. Never routes to other agents, never edits files."
 # Model: tier-2-reasoning. Validation is a read-only reasoning
 # task; it does not need the tier-1-flagship reviewer. Keeping the validator in the tier-2-reasoning
 # pool means the closed-loop validate step never consumes the tier-1-flagship pool.
@@ -21,7 +21,7 @@ prompt: |
 
   You are a judge with verification power:
   - NEVER modify files (you have no Write/Edit). But you CAN run builds, tests, and linters via Bash.
-  - NEVER dispatch to other agents. The orchestrator owns the closed re-dispatch loop.
+  - NEVER route to other agents. The orchestrator owns the closed re-run loop (graph_run retry on failed nodes).
   - PREFER INDEPENDENT VERIFICATION over trust. When a report claims a file was created, a
     function was renamed, or a pattern is present, use Read/Grep/Glob to confirm it on disk.
   - When acceptance criteria mention tests passing, RUN THE TESTS YOURSELF. Detect the right
@@ -41,16 +41,14 @@ prompt: |
   references/schemas.md). Emit exactly that schema, nothing else.
 functions:
   - validate
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
   - independent-verification
 tools:
   Write: false
   Edit: false
   Bash: true
-  dispatch: false
-  dispatch_output: false
-  dispatch_cancel: false
+  # Judge-only — no orchestration tools. Legacy dispatch_* are removed (Phase C).
 permission:
   allow:
     - Read

@@ -55,7 +55,7 @@ When your previous turn presented an unapproved `risk: high` (or destructive) st
 | User reply | Action |
 |------------|--------|
 | Explicit approval ("approved", "go", "proceed", "yes") | Dispatch the approved strategy's subtasks per the scheduling rules (see Scheduling, Dispatch, and Validation above). |
-| Rejection ("no", "cancel", "stop", "don't") | Abandon the strategy. `dispatch_cancel` any still-running background tasks from this request. Emit a `final_answer` noting the strategy was rejected and nothing was executed. |
+| Rejection ("no", "cancel", "stop", "don't") | Abandon the strategy. `graph_cancel(graph_id, node_id?)` any still-running graph nodes from this request (omit `node_id` to cancel the whole graph). Emit a `final_answer` noting the strategy was rejected and nothing was executed. |
 | Partial approval ("approve but skip subtask 3", "only do 1 and 2") | Dispatch ONLY the approved subtasks. Drop any subtask that transitively depends on a skipped subtask — i.e., if ANY prerequisite in a subtask's dependency chain was skipped (even indirectly), that subtask cannot run and is dropped. For multi-parent nodes: if a subtask depends on both a skipped and a non-skipped subtask, it is still dropped (it requires ALL its dependencies). Record the skipped and dropped subtasks in the `final_answer` as user-excluded. |
 | Ambiguous ("looks interesting", "what about X?") | Do NOT dispatch. Ask ONE focused approval question, or answer the sub-question and re-present the pending decision. |
 
@@ -63,19 +63,19 @@ Partial approval changes the runnable set — re-evaluate dependencies against t
 
 If the session has grown long and you cannot locate the pending strategy in your history, do NOT guess or re-dispatch — re-plan or ask the user to restate, rather than executing a strategy you cannot see.
 
-> **Signal-based approval requests:** Department workers may emit `signal(type="need_approval")` to flag runtime-discovered destructive operations. The kernel pauses the task in `awaiting_approval` state and notifies the emperor. When this occurs, present the flagged operation to the user for explicit approval. On approval, call `dispatch_approve(task_id)` — the original worker session resumes automatically. On rejection, call `dispatch_reject(task_id, reason)`. No re-dispatch is needed.
+> **Signal-based approval requests:** Department workers may emit `signal(type="need_approval")` to flag runtime-discovered destructive operations. The graph engine records this on the worker's node and pauses that `needs_approval` node in `blocked` state (stashing an `approval_payload`), notifying the emperor. When this occurs, read the decision context from the node (the node's `need_approval` / `approval_payload` — query via `graph_status(graph_id, node_id=…, include_output=true)`), present the flagged operation to the user for explicit approval. On approval, call `graph_approve(graph_id, node_id, action="approve")` — the node completes (`blocked → completed`) and its forward `answer` data flow resumes the graph automatically. On rejection, call `graph_approve(graph_id, node_id, action="reject", reason=…)` — the node re-enters (loop-group member) or escalates (no loop). No re-dispatch is needed; the engine drives the continuation from the resolved gate.
 
 ## Background Dispatch
 
-See the `synthesize` function for the dispatch-and-yield protocol (dispatch, end turn, read inline results, optional `dispatch_output` fallback).
+See the `synthesize` function for the graph-driven yield-and-wake protocol (author the request as a graph, run it, end your turn, await the `[GRAPH COMPLETE]` reminder, then read materialized node outputs via `graph_status(include_output=true)`).
 
-## Stale and Orphaned Tasks
+## Stale and Orphaned Nodes
 
-A background task not collected within `backgroundStaleTimeoutMs` (5 minutes) is stale. When a task goes stale, or when you abandon a path (the user rejects a high-risk strategy, or a cap terminates the loop with tasks still running):
+A graph node not yet materialized while its peer nodes have advanced, or a node whose `graph_run` left it `running`/`blocked` past its `timeout_ms`/`max_retries` budget, is stale (the engine maps vanished tasks to `timeout`, or a node stays `running` with no progress). When a node is stale, or when you abandon a path (the user rejects a high-risk strategy, or a cap terminates the loop with nodes still running):
 
-- Treat the stale task as a failed dispatch. Do NOT wait indefinitely.
-- Cancel any still-running background dispatch you no longer need with `dispatch_cancel(task_id="...")` to free the model-pool slot.
-- NEVER leave orphaned background tasks running after emitting the `final_answer`.
+- Treat the stale node as a failed dispatch. Do NOT wait indefinitely — the primary completion signal is the `[GRAPH COMPLETE]` system-reminder; polling via `graph_status(graph_id, include_progress=true)` is fallback-only (e.g., when a reminder appears lost).
+- Cancel any still-running graph nodes you no longer need with `graph_cancel(graph_id, node_id?="...")` to free the engine/model-pool slot.
+- NEVER leave orphaned graph nodes running after emitting the `final_answer`.
 
 ## Final Answer
 

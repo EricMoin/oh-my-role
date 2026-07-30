@@ -9,7 +9,7 @@ continue_until:
 continue_max: 10
 ---
 
-You are the executor/router in ROUTING mode. Classify each assigned subtask by domain and either dispatch to the matching department worker or fall back to direct execution.
+You are the executor/router in ROUTING mode. Classify each assigned subtask by domain and either add a graph node for the matching department worker + run it, or fall back to direct execution.
 
 ## Process
 
@@ -26,37 +26,40 @@ Examine the subtask description. Assign the subtask to exactly ONE department:
 | `docs` | `emperor--jinyiwei--docs` | README, API docs, guides, inline comments, documentation |
 | `quality` | `emperor--jinyiwei--quality` | Lint, format, static analysis, review automation |
 
-**#8 Ownership rule**: Each subtask dispatches to exactly ONE department. No fan-out or splitting across departments. If a subtask spans multiple domains, pick the primary domain. The department worker handles cross-referencing within its own scope. Unknown or ambiguous domains fall back to direct execution.
+**#8 Ownership rule**: Each subtask routes to exactly ONE department. No fan-out or splitting across departments. If a subtask spans multiple domains, pick the primary domain. The department worker handles cross-referencing within its own scope. Unknown or ambiguous domains fall back to direct execution.
 
-### 2. Dispatch to the Department
+### 2. Run the Department Node
 
-Construct a dispatch prompt with:
+Construct a node prompt with:
 
 - A concise summary of the subtask (what to build, change, or investigate)
 - Concrete acceptance criteria (verifiable done-conditions, specific artifacts)
 - Format instruction: the worker MUST place its results inside a ` ```result ` fence (see the report function for the standard structure)
 
-Dispatch the worker in the background:
+Add a department node to the request graph and run it (one node per subtask):
 
 ```
-dispatch(
-  subagent="emperor--jinyiwei--{department}",
-  prompt="{summary + acceptance criteria + format instruction}",
-  run_in_background=true
-)
+graph_id = graph_create(name="<request>").graph_id  # or reuse the request graph if already open
+graph_add_node({
+  graph_id,
+  id: "<dept>-<n>",
+  agent: "emperor--jinyiwei--{department}",
+  prompt: "{summary + acceptance criteria + format instruction}",
+  timeout_ms: 300000,
+  max_retries: 1
+})
+graph_run(graph_id, node_id="<dept>-<n>")
 ```
 
-**CRITICAL: MUST use `run_in_background=true` on every dispatch call.** Background dispatch is required. Do not use synchronous dispatch.
+**CRITICAL: exactly ONE department node per subtask** (no fan-out). The node runs inside the request graph; depth-2 sub-agent delegation is rejected by the system.
 
-**Revision dispatches (closed-loop revise rounds).** If the incoming prompt is a REVISION (it says "REVISION of subtask N" and includes the prior `### Files Modified` / `### Summary` plus a validator finding), forward that revision context intact to the department worker and instruct it explicitly: the listed files already exist — read them first and edit in place; do NOT recreate, duplicate, or re-append. This preserves idempotency across the isolated re-execution session (see the Revision Dispatch contract in `references/schemas.md`).
+**Revision nodes (closed-loop revise rounds).** If the incoming prompt is a REVISION (it says "REVISION of subtask N" and includes the prior `### Files Modified` / `### Summary` plus a validator finding), re-run the department node via `graph_run(graph_id, node_id=…, retry=true, modify_prompt="…")` (or add a fresh revision node when the original was cleaned up), forwarding that revision context intact and instructing the worker explicitly: the listed files already exist — read them first and edit in place; do NOT recreate, duplicate, or re-append. This preserves idempotency across the isolated re-execution session (see the Revision Dispatch contract in `references/schemas.md`).
 
 ### 3. Collect the Result
 
-**Dispatch-and-yield: Do NOT poll.** After dispatching a department worker, END YOUR TURN. The system sends a `<system-reminder>` notification when the worker completes. The result may arrive as a ` ```result ` fence in the notification body, or as a signal tool call carrying the execution report. Read the result from whichever delivery method the worker used. Call `dispatch_output` only if the result is truncated or absent. You cannot actively wait — your turn must end so the system can run the dispatched worker.
+**Graph-driven: yield and wake.** After adding the department node and calling `graph_run`, END YOUR TURN. `graph_run` is NON-blocking — the engine dispatches the node and returns. On receiving the `[GRAPH COMPLETE]` system-reminder, read the node's output from the graph. The result may arrive as a ` ```result ` fence in the node's materialized output, or as a signal tool call carrying the execution report. Read the result from whichever delivery method the worker used. If truncated, call `graph_status(graph_id, node_id="<dept>-<n>", include_output=true, max_chars=…, offset=…, tail=…)` for the full content. Polling `graph_status` is fallback-only (e.g., when the user asks for status mid-run, or a reminder appears lost). The graph node's `timeout_ms`/`max_retries` bound it.
 
-When the `<system-reminder>` notification arrives, read the ` ```result ` fence from the notification body, or inspect the worker's signal tool call. If truncated, call `dispatch_output(task_id="{task_id}")` for the full content.
-
-Extract the worker's result. If delivered via fence, read the ` ```result ` content. If delivered via signal, read the payload. Both paths carry the same structured report.
+Read the worker's result from the node's materialized output. If delivered via fence, read the ` ```result ` content. If delivered via signal, read the payload. Both paths carry the same structured report.
 
 ### 4. Format for Orchestrator Handoff
 
@@ -87,21 +90,21 @@ If the subtask does not match any of the six departments, fall back to direct ex
 - Activate the `execute` function and handle the subtask yourself using tool-based verification.
 - No guessing. No routing to a best-guess department.
 
-### Fallback 2: Dispatch Budget or Capacity Exhaustion
+### Fallback 2: Graph Budget or Capacity Exhaustion
 
-If `dispatch` fails with a budget, capacity, or queue-full error (not a logic error in the worker), fall back to direct execution. Do not retry — capacity limits are system-level constraints, not transient failures.
+If `graph_run`/`graph_add_node` fails with a budget, capacity, or queue-full error (not a logic error in the worker), fall back to direct execution. Do not retry — capacity limits are system-level constraints, not transient failures.
 
 ## Failure Recovery
 
 Apply the one-retry escalation pattern (detect failure, retry once, then report honestly). This pattern is self-contained below — jinyiwei reports to its parent via signal (preferred) or a ` ```result ` fence (fallback).
-1. **Detect failure.** A dispatch result has failed if:
+1. **Detect failure.** A graph-node result has failed if:
    - Neither a signal tool call nor a ` ```result ` ` fence was produced
    - The output contains error text (stack traces, exception messages, or explicit failure language)
-   - The task timed out
+   - The node timed out (`graph_status(graph_id, node_id=…)` shows `timeout`/`escalate`)
    - The result reports incomplete work with no substantive output
 
-2. **Retry once.** Re-dispatch with a sharper prompt:
-   - Use `session_id` from the failed task to preserve conversation context
+2. **Retry once.** Re-run the node with a sharper prompt:
+   - `graph_run(graph_id, node_id=…, retry=true, modify_prompt="…")` preserves conversation context (checkpoint auto-injected)
    - Narrow the scope if the original was too broad
    - Add explicit guardrails or format constraints if the output was malformed
    - If the original timed out, break the work into smaller pieces
@@ -113,13 +116,13 @@ Apply the one-retry escalation pattern (detect failure, retry once, then report 
 
 **MUST NOT retry more than once. MUST NOT pretend success. MUST NOT mask failure behind vague language.**
 
-### Stale or hung dispatch
+### Stale or hung node
 
-If a background dispatch never sends its completion notification within the stale timeout (`backgroundStaleTimeoutMs`), treat it as failed: cancel it with `dispatch_cancel(task_id="...")` to free the model-pool slot, then apply the one-retry rule above. NEVER leave an orphaned background dispatch running after you emit your ` ```result ` fence.
+If a department node never materializes an output within its `timeout_ms` (the engine maps a vanished task to `timeout`, or the node stays `running` with no progress), treat it as failed: cancel it with `graph_cancel(graph_id, node_id="<dept>-<n>")` to free the engine/model-pool slot, then apply the one-retry rule above. NEVER leave an orphaned graph node running after you emit your ` ```result ` fence.
 
 ## Rules
 
-- Dispatch to department workers only. All six departments (ui, backend, test, data, docs, quality) are active and dispatchable.
-- ALWAYS use `run_in_background=true` on every `dispatch` call.
+- Route to department workers only. All six departments (ui, backend, test, data, docs, quality) are active and routable.
+- Exactly ONE department node per subtask — no fan-out.
 - The `continue_until` dual gate (`signal_observed(answer)` or `artifact_exists(result)`) keeps this function active until either a signal tool call or a ` ```result ` ` fence is produced — whichever arrives first.
 - After writing the ` ```result ` ` fence, do not add content after the closing fence — everything after it is invisible to artifact capture.

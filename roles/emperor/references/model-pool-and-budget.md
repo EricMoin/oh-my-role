@@ -54,7 +54,7 @@ Tier-1-Flagship is more expensive per token than tier-2-reasoning. However:
 
 ### What Closed-Loop Validate Is
 
-After jinyiwei executes, the Validator validates execution reports. If validation reveals deficiencies, the emperor retries jinyiwei via `dispatch_retry(task_id)` — one session per failed item — for a revise round, then the Validator re-validates. This repeats until validation passes or caps are hit. Falls back to a fresh `dispatch` when the original `task_id` is unavailable (see synthesize.md Step 4b).
+After jinyiwei executes, the Validator validates execution reports. If validation reveals deficiencies, the emperor re-runs the failed jinyiwei node via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` — one session per failed node — for a revise round, then the Validator re-validates. This repeats until validation passes or caps are hit. Falls back to a fresh `graph_add_node` when the original node is unavailable (see synthesize.md Step 4b).
 
 ### Caps
 
@@ -62,9 +62,9 @@ After jinyiwei executes, the Validator validates execution reports. If validatio
 |---|---|---|
 | Strategy subtask count | 10 maximum (≤8 recommended) | Initial execution dispatches — one per subtask |
 | Revise rounds | 2 maximum, budget permitting | Number of revise+validate cycles after initial execution |
-| Retries per round (via dispatch_retry) | 1 `dispatch_retry` call per failed item (+ dependents) | Each failed item retried in its own isolated session, dependency-root order |
+| Retries per round (via graph_run retry) | 1 `graph_run(node_id, retry=true)` re-run per failed node (+ dependents) | Each failed node re-run in its own isolated session, dependency-root order |
 
-Initial execution consumes N sessions (one per subtask). Each revise round adds one `dispatch_retry` session PER failed item plus one re-validate. All count against the emperor's `maxTotalSessionsPerRequest: 20`.
+Initial execution consumes N sessions (one per subtask). Each revise round adds one `graph_run(node_id, retry=true)` session PER failed node plus one re-validate. All count against the emperor's self-accounted `emperor_sessions_used` cap of 20.
 
 ### Worst-Case Session Table
 
@@ -96,13 +96,13 @@ At N=8 the budget covers retrying multiple failed items; at N=10 (happy path = 1
 
 Seven sessions remain — enough for another round of up to 3 failed items (3 retries + 1 revalidate = 4 sessions).
 
-Both fit the 20-session budget. General rule: the initial phase costs `1 (plan) + N (execute) + 1 (validate) = N + 2` sessions; each revise round adds `F + 1` (F per-item retries + one revalidate), where F is the number of failed items retried that round (via `dispatch_retry`). The emperor tracks `emperor_sessions_used` and stops dispatching before the count would exceed 20, reporting any remaining items as budget-capped. This is why the planner caps strategies at 10 subtasks — ≤8 recommended, and ≤7 leaves room to retry more than one failed item in a revise round. The final synthesize step runs inside the emperor's own session and consumes no dispatch slot.
+Both fit the 20-session budget. General rule: the initial phase costs `1 (plan) + N (execute) + 1 (validate) = N + 2` sessions; each revise round adds `F + 1` (F per-item retries + one revalidate), where F is the number of failed nodes re-run that round (via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)`). The emperor tracks `emperor_sessions_used` and stops dispatching before the count would exceed 20, reporting any remaining items as budget-capped. This is why the planner caps strategies at 10 subtasks — ≤8 recommended, and ≤7 leaves room to retry more than one failed item in a revise round. The final synthesize step runs inside the emperor's own session and consumes no dispatch slot.
 
 > **Note on the cap denominator**: These tables count only child dispatches, per the documented counting rule ("each spawn from a parent increments that parent's counter"). Correctness does not depend on this interpretation: the emperor's budget-aware scheduling (PROMPT.md #7) checks remaining budget before every dispatch and truncates gracefully. Even if a kernel also counted the parent's own session, the system would degrade to one fewer revise round — never a silent mid-execution drop.
 
-### Re-Dispatch Routing (via dispatch_retry)
+### Re-Run Routing (via graph_run retry)
 
-Re-dispatches use `dispatch_retry(task_id)` to reopen the original failed item's session, keeping the closed loop fast (emperor → jinyiwei → validate). They never pass through the chancellor. When the original `task_id` is unavailable, a fresh `dispatch` to `emperor--jinyiwei` serves as fallback (see synthesize.md Step 4b).
+Re-runs use `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` to reopen the original failed node's session, keeping the closed loop fast (emperor → jinyiwei → validate). They never pass through the chancellor. When the original node is unavailable, a fresh `graph_add_node` for `emperor--jinyiwei` serves as fallback (see synthesize.md Step 4b).
 
 ## Per-Parent Budget
 
@@ -110,7 +110,7 @@ Each direct parent session maintains an independent session counter. Budgets do 
 
 | Parent Subtree | Budget | Members Counted |
 |---|---|---|
-| Emperor | 20 | Emperor + chancellor + jinyiwei dispatches + validate dispatches + retries (dispatch_retry) |
+| Emperor | 20 | Emperor + chancellor + jinyiwei nodes + validate nodes + re-runs (graph_run retry) |
 | Chancellor | 20 | Chancellor + drafter + reviewer + finalizer sessions |
 | Jinyiwei | 20 | Jinyiwei + department worker dispatches |
 
@@ -118,12 +118,12 @@ Each direct parent session maintains an independent session counter. Budgets do 
 
 - The dispatch system keys session counts by the caller's session ID. Each spawn from a parent increments that parent's counter.
 - When the emperor dispatches chancellor, the emperor's counter increments. When chancellor dispatches drafter, the chancellor's counter increments. The emperor's counter is unaffected by chancellor's internal dispatches.
-- The `maxTotalSessionsPerRequest: 20` field is set explicitly on each role that dispatches: emperor, chancellor, and jinyiwei.
+- The request-wide session cap (20) is self-accounted by each orchestrating role (emperor, chancellor, jinyiwei) via its `emperor_sessions_used` counter — the engine's `graph_status(include_budget=true)` corroborates per-graph consumption.
 - When a parent's counter reaches 20, further dispatch from that parent is rejected. This is a hard stop, not a warning.
 
 ### Jinyiwei Budget
 
-Jinyiwei sets `maxTotalSessionsPerRequest: 20` explicitly in its `role.yaml`, alongside `maxActivePerParent: 3`. This caps jinyiwei's department-worker dispatches at 20 cumulative sessions per request, independent of the emperor's own per-parent budget. Without this field, jinyiwei's department dispatches would have no per-parent cap.
+Jinyiwei self-accounts its department-worker node sessions (max 20 per request) independent of the emperor's own per-parent budget. The graph engine enforces per-node `timeout_ms`/`max_retries` and engine-managed concurrency; the request-wide cap is the jinyiwei `emperor_sessions_used` counter.
 
 ## Cost Intuition
 
@@ -145,41 +145,29 @@ The per-parent cap counts only dispatches spawned FROM the emperor; the emperor'
 
 **Chancellor path (emperor budget = N + 2 sessions):** Full orchestration. Emperor dispatches chancellor (1); the chancellor runs the three-stage loop (drafter+reviewer+finalizer) entirely within its OWN independent 20-budget; then the emperor dispatches ONE jinyiwei execution per subtask (N, one per subtask); then the Validator validates (1). Emperor-budget sessions: chancellor(1) + N execute + validate(1) = N + 2. With the ≤10 subtask cap this is at most 12. Chancellor-budget sessions (separate counter): chancellor(1) + drafter(1-3) + reviewer(1-3) + finalizer(1) = up to 7.
 
-**Chancellor + closed loop (up to 20 sessions):** The path above plus revise rounds. Each round adds one jinyiwei retry (via `dispatch_retry`) PER failed item plus one validate. A round is affordable while `used + F + 1 <= 20` (F = failed items that round). An 8-subtask plan leaves room for several failed items in a single round; a 5-subtask plan leaves room for several more. Wider plans afford fewer per-item retries — the isolation-per-item trade-off the design intends.
+**Chancellor + closed loop (up to 20 sessions):** The path above plus revise rounds. Each round adds one jinyiwei re-run (`graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)`) PER failed node plus one validate. A round is affordable while `used + F + 1 <= 20` (F = failed items that round). An 8-subtask plan leaves room for several failed items in a single round; a 5-subtask plan leaves room for several more. Wider plans afford fewer per-item retries — the isolation-per-item trade-off the design intends.
 
 **Destructive path (2 dispatches):** Emperor dispatches chancellor for risk assessment. Chancellor returns a strategy flagged `risk: high`. Emperor presents to user for approval. On approval, emperor dispatches jinyiwei. Child dispatches: chancellor(1) + jinyiwei(1) = 2 (the emperor's own session is free).
 
-## Dispatch Configuration Reference
+## Orchestration Configuration Reference
 
-The canonical dispatch configuration for the emperor role, as declared in `role.yaml`:
+The legacy `dispatch:` block (`maxActivePerParent` / `maxConcurrent` / `syncPromptTimeoutMs` / `backgroundStaleTimeoutMs` / `maxTotalSessionsPerRequest`) was **removed** in the Phase C graph-engine migration. Orchestration now runs on the graph engine:
 
-```yaml
-dispatch:
-  maxActivePerParent: 3
-  maxConcurrent: 5
-  syncPromptTimeoutMs: 600000
-  backgroundStaleTimeoutMs: 300000
-  maxTotalSessionsPerRequest: 20
-```
+- **Concurrency** is engine-managed (the graph dispatches `ready` nodes within its frontier; no per-parent `maxActivePerParent` hand-tuning).
+- **Per-node timeouts / retries** are carried on `graph_add_node(…, timeout_ms, max_retries)`; per-graph ceilings on `graph_create(…, budget={ max_total_sessions: 20 })`.
+- **The request-wide 20-session cap** is self-accounted by each orchestrating role via `emperor_sessions_used` (a working-note counter), corroborated per-graph by `graph_status(graph_id, include_budget=true)` (reports `sessionsSpawned`). This counter is the authoritative enforcement gate — `include_budget` is advisory per-graph data, not a cross-graph hard stop.
+- **Stale/orphaned nodes** are handled by the engine (vanished task → `timeout`/`escalate`) and reclaimed with `graph_cancel(graph_id, node_id?)`.
 
-**Field semantics:**
-
-| Field | Meaning |
-|---|---|
-| `maxActivePerParent: 3` | A single parent may have at most 3 active child sessions concurrently. Prevents fan-out storms. |
-| `maxConcurrent: 5` | Per-model-pool semaphore. Each of the three model pools has its own independent 5-slot limit. Background tasks use at most 4 slots (5 minus 1 reserved for sync). |
-| `syncPromptTimeoutMs: 600000` | Synchronous dispatch timeout. Set to 10 minutes to cover the full three-department nested loop (draft -> review -> finalize). |
-| `backgroundStaleTimeoutMs: 300000` | Background task staleness timeout. Tasks not collected within 5 minutes are considered stale. |
-| `maxTotalSessionsPerRequest: 20` | Hard per-parent-session cap. Counts all sessions dispatched from one parent. Independent per subtree. |
+**Session-cap semantics (unchanged model, new surface):** Each orchestrating role maintains an independent session counter. A node session spawned from a parent increments that parent's counter; budgets do not stack or share across trees. When a parent's counter reaches 20, the emperor stops adding nodes and reports remaining items as budget-capped (a hard stop, not a warning).
 
 ## Cost Defense: Why DIRECT Is the Default
 
-Every dispatch spawns a subagent session that consumes tokens for context loading, tool calls, and reasoning. A DIRECT response uses zero additional sessions — the emperor answers inline, paying only its own generation cost. Roughly 80% of incoming requests need a single focused answer, not orchestration. Dispatching those wastes budget on session overhead that produces no extra value. DIRECT is the cheap path; dispatch is the expensive path. Choose expensive only when the work genuinely requires a separate execution context.
+Every graph node spawns a subagent session that consumes tokens for context loading, tool calls, and reasoning. A DIRECT response uses zero additional sessions — the emperor answers inline, paying only its own generation cost. Roughly 80% of incoming requests need a single focused answer, not orchestration. Routing those through the graph wastes budget on session overhead that produces no extra value. DIRECT is the cheap path; graph orchestration is the expensive path. Choose expensive only when the work genuinely requires a separate execution context.
 
 Three layers of cost defense keep spend bounded:
 
-1. **Default DIRECT.** If a request can be answered without spawning children, it is. Covers questions, read-only lookups, research, and anything the emperor's own read-only tools can satisfy. A request that modifies files — even one line — is a single jinyiwei dispatch, not DIRECT.
-2. **Per-session concurrency caps.** `maxActivePerParent: 3` caps a single parent to three concurrent children (prevents fan-out storms); `maxConcurrent: 5` is a per-model-pool semaphore. Even aggressive dispatching cannot exceed a bounded cost envelope per time-slice.
-3. **Per-parent-session hard cap.** `maxTotalSessionsPerRequest: 20` — each direct parent (emperor, chancellor, jinyiwei) gets at most 20 cumulative child dispatches. A hard stop, not a warning. Combined with the planner's ≤10 subtask cap and budget-aware scheduling, this prevents deep recursion or wide fan-out from compounding into unbounded spend.
+1. **Default DIRECT.** If a request can be answered without spawning children, it is. Covers questions, read-only lookups, research, and anything the emperor's own read-only tools can satisfy. A request that modifies files — even one line — is a single jinyiwei graph node, not DIRECT.
+2. **Engine-managed concurrency.** The graph engine bounds how many `ready` nodes dispatch concurrently (frontier scheduling), preventing fan-out storms from exceeding a bounded cost envelope per time-slice.
+3. **Self-accounted session hard cap.** Each orchestrating role enforces `emperor_sessions_used <= 20` — a hard stop, not a warning — before adding another node (`graph_add_node`/`graph_run`). Combined with the planner's ≤10 subtask cap and budget-aware scheduling, this prevents deep recursion or wide fan-out from compounding into unbounded spend.
 
 This document is the single authoritative source for model pools and budget.

@@ -13,7 +13,7 @@ functions:
   - triage
   - synthesize
   - effort
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 
 auto_activate: [triage, synthesize]
 
@@ -39,7 +39,10 @@ references:
     path: references/evidence-first-research.md
     description: Evidence-first research discipline — citation tiers, triggers, and core principles for verifying external API and library behavior
 
-# Subagent orchestration pipeline — flow defines the dispatch edges.
+# Subagent orchestration — collaboration flow declares the graph edges.
+# This declarative edge list is the authoring source of truth; at runtime the
+# graph engine executes it via graph_create → graph_add_node / graph_add_edge
+# (graph_add_loop) → graph_run (see PROMPT.md / functions/synthesize.md).
 # max_iterations bounds the closed-loop validate/revise cycle (see synthesize.md caps).
 collaboration:
   max_iterations: 3
@@ -52,19 +55,25 @@ collaboration:
     - "validator -> parent: validation result"
     - "parent -> jinyiwei: re-dispatch failed subtasks"
 
-# Emperor never writes code directly — delegates all implementation to subagents
+# Emperor never writes code directly — delegates all implementation to subagents.
+# Orchestration runs on the graph engine (graph_create / graph_add_node /
+# graph_add_edge / graph_add_loop / graph_run / graph_status / graph_cancel /
+# graph_approve). signal stays available (vocabulary-preserved, not deprecated).
 tools:
   Write: false
   Edit: false
   Bash: false
+  # The legacy dispatch_*/loop_*/function_state family is removed (Phase C).
+  # Emitted as explicit denials so no asset accidentally re-introduces them.
 
 permission: allow
 
-# Dispatch configuration for subagent orchestration
-dispatch:
-  maxActivePerParent: 3
-  maxConcurrent: 5  # Shared across 3 model pools: chancellor sync slot + background sub-agents + jinyiwei margin
-  syncPromptTimeoutMs: 600000  # Covers full nested loop across all 3 model pools
-  backgroundStaleTimeoutMs: 300000
-  maxTotalSessionsPerRequest: 20
-  # Counted by direct parent session, not cumulative tree total. The emperor's own session is free (not a spawn).
+# Graph orchestration configuration. The legacy dispatch: block (maxActivePerParent /
+# maxConcurrent / syncPromptTimeoutMs / backgroundStaleTimeoutMs / maxTotalSessionsPerRequest)
+# is replaced by the graph engine: per-request session/token/cost ceilings are carried on
+# graph_create(budget), per-node limits on graph_add_node(budget/timeout_ms/max_retries),
+# and concurrency is engine-managed. The request-wide 20-session cap is self-accounted in
+# synthesize.md (emperor_sessions_used); graph_status(include_budget) corroborates it.
+graph:
+  orchestration: graph_v2
+  # Declarative edge list above mirrors what graph_add_edge wires at runtime.

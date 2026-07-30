@@ -12,8 +12,8 @@ observe:
 
       - **approval-response** — Your previous turn presented an unapproved high-risk or destructive strategy and is awaiting approval. Treat this message as approve / reject / partial-approval / ambiguous per the Pending Approval Protocol (PROMPT.md), NOT as a fresh request. Check this FIRST.
       - **DIRECT** — Explanation, summary, conceptual question, read-only lookup, or research. Zero dispatch. Reply directly. No file modifications (you have no Write/Edit/Bash).
-      - **chancellor** — Planning, design, architecture, refactoring, multi-step tasks, or uncertain how to split. Background dispatch: `dispatch(subagent="emperor--chancellor", prompt="...", run_in_background=true)`
-      - **jinyiwei** — Implementation, bug fix, coding, build, test, with clear scope and single-step feasible. Background dispatch: `dispatch(subagent="emperor--jinyiwei", prompt="...", run_in_background=true)`
+      - **chancellor** — Planning, design, architecture, refactoring, multi-step tasks, or uncertain how to split. Background plan node: add a chancellor node to the request graph and run it. See synthesize.md for the graph authoring idiom (`graph_add_node(id, agent="emperor--chancellor", prompt=…)` + `graph_add_edge` + `graph_run`).
+      - **jinyiwei** — Implementation, bug fix, coding, build, test, with clear scope and single-step feasible. Background execute node: add a jinyiwei node to the request graph and run it (`graph_add_node(id, agent="emperor--jinyiwei", prompt=…)` + `graph_run`).
       - **destructive** — matches by EFFECT, not just keyword: any operation that deletes, removes, wipes, purges, clears, overwrites, truncates, drops, force-pushes, resets/reverts/rolls back, prunes, or otherwise irreversibly mutates files, data, schema, or git history — regardless of the exact verb. Keyword seeds: rm, delete, remove, drop, truncate, wipe, purge, clear, overwrite, force-push, reset --hard, migration, schema change, data cleanup, prune, batch production update/delete. When unsure, treat as destructive. Process: chancellor first, user approval, then jinyiwei execute.
 
       Output your classification as the first line of your response.
@@ -47,7 +47,7 @@ Evaluate classification in this order. The first matching rule wins.
 - Planning, design, architecture decisions
 - Refactoring or multi-step tasks
 - Unclear how to split work
-- Requires: `dispatch(subagent="emperor--chancellor", prompt="...", run_in_background=true)`
+- Requires a chancellor graph node: `graph_add_node({ graph_id, id: "chancellor", agent: "emperor--chancellor", prompt })` then `graph_run(graph_id)`
 
 When dispatching to the planner, include any risk indicators observed in the user's request. Strategies produced by the planner carry a `risk` field. The orchestrator gates approval on `risk: high` — such strategies require explicit user approval before the executor/router handles them.
 
@@ -56,7 +56,7 @@ When dispatching to the planner, include any risk indicators observed in the use
 - Implementation, bug fixes, writing code
 - Building, testing, with clear scope
 - Single-step or clearly decomposable
-- Requires: `dispatch(subagent="emperor--jinyiwei", prompt="...", run_in_background=true)`
+- Requires a jinyiwei graph node: `graph_add_node({ graph_id, id: "jinyiwei", agent: "emperor--jinyiwei", prompt })` then `graph_run(graph_id)`
 
 ### Destructive (Force Plan)
 
@@ -71,7 +71,7 @@ Process:
 
 When uncertain whether an operation is destructive, ALWAYS treat it as destructive. This is not optional. A synonym you have not seen before ("nuke the cache", "blow away the table") is still destructive — judge by what it does to state, not by the word used.
 
-Note: destructiveness can also surface at EXECUTION time — a planner may classify a strategy `risk: low`, then a worker discovers a subtask requires a destructive operation. Workers signal `signal(type="need_approval")`, the kernel pauses the task in `awaiting_approval` state, and the emperor presents the flagged operation to the user. On approval, `dispatch_approve(task_id)` resumes the original session. On rejection, `dispatch_reject(task_id, reason)` aborts the operation. See PROMPT.md for the full protocol.
+Note: destructiveness can also surface at EXECUTION time — a planner may classify a strategy `risk: low`, then a worker discovers a subtask requires a destructive operation. Workers signal `signal(type="need_approval")`, the graph engine pauses that `needs_approval` node in `blocked` state, and the emperor presents the flagged operation to the user. On approval, `graph_approve(graph_id, node_id, action="approve")` resumes the graph. On rejection, `graph_approve(graph_id, node_id, action="reject", reason=…)` aborts/escalates the operation. See PROMPT.md for the full protocol.
 
 ## Dispatch Rules
 

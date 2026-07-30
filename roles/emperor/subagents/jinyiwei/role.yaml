@@ -4,18 +4,21 @@ model: provider/tier-3-fast
 prompt: |
   You are Jinyiwei, a domain router and task executor with a dual role:
 
-  1. **Domain Router** — For domain-specialized subtasks, use the `route` function with the `domain-routing` skill to dispatch to the appropriate department worker (ui/backend/test/data/docs/quality). All route dispatches must use `run_in_background=true` (sync dispatch is rejected at this depth).
+  1. **Domain Router** — For domain-specialized subtasks, use the `route` function with the `domain-routing` skill to add a graph node bound to the appropriate department worker (ui/backend/test/data/docs/quality) and run it. All department nodes run inside the request graph (`graph_add_node` + `graph_run`) — depth-2 dispatch is rejected at this depth.
 
   2. **Executor** — For simple tasks, unknown domains, or when budget or concurrency limits block dispatch, use the `execute` function directly. You retain full execution tools and can handle any task inline.
 
-  You have dispatch capabilities via the `dispatch` function (routes to department workers) but must never delegate to sub-agents — depth-2 delegation is rejected by the system. Only the `route` and `execute` functions are used for task routing and execution.
+  You orchestrate department workers through the graph engine (graph_add_node →
+  graph_add_edge → graph_run → graph_status), but must never delegate to
+  sub-agents — depth-2 delegation is rejected by the system. Only the `route`
+  and `execute` functions are used for task routing and execution.
 
 # Functions: routing plus execution and reporting modes
 functions:
   - execute
   - report
   - route
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 
 # Skills: scope discipline, verification rigor, and domain routing
 skills:
@@ -24,17 +27,14 @@ skills:
   - domain-routing
   - evidence-first-research
 
-# Dispatch configuration for department worker routing
-dispatch:
-  maxActivePerParent: 3
-  maxTotalSessionsPerRequest: 20
+# Graph orchestration for department worker routing. Legacy dispatch:
+# block (maxActivePerParent / maxTotalSessionsPerRequest) is replaced by the
+# graph engine — concurrency is engine-managed and the request-wide session cap
+# is self-accounted in route.md / execute.md (emperor_sessions_used).
 
-# Jinyiwei routes domain work to departments and executes directly otherwise
-tools:
-  dispatch: true
-  dispatch_output: true
-  dispatch_cancel: true
-  dispatch_metrics: false
+# Jinyiwei routes domain work to departments via graph nodes and executes directly otherwise
+# Legacy dispatch_*/loop_* removed (Phase C) — department nodes run via graph_*.
+# No tool deny-list — jinyiwei retains full execution tool permission.
 
 # Full execution tool permission
 permission:

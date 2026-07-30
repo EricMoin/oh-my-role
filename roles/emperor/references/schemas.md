@@ -201,7 +201,7 @@ Include only when the subtask involved evidence-backed research. Omit entirely f
 |---------|--------|
 | Empty `### Incomplete / Open Items` section | Must explicitly state `None` if nothing is pending. |
 | Unverified claims in `### Verification Evidence` | Never guess. If a check was not run, say so. |
-| Content after the closing fence | Everything after the ` ```result ` fence is invisible to `dispatch_output`. |
+| Content after the closing fence | Everything after the ` ```result ` fence is invisible to `graph_status(include_output=true)` extraction. |
 
 #### Example
 
@@ -232,9 +232,9 @@ Created rate_limiter.go with token-bucket algorithm. All tests pass, diagnostics
 
 **Direction**: emperor → jinyiwei (closed-loop revise rounds only)
 
-**Purpose**: Re-execute a failed subtask idempotently. The emperor uses `dispatch_retry(task_id)` to reopen the failed item's original session. The checkpoint context (including `### Files Modified` from the prior execution) is auto-injected into the retry prompt — the revision prompt no longer needs to carry prior file lists verbatim.
+**Purpose**: Re-execute a failed subtask idempotently. The emperor re-runs the failed node via `graph_run(graph_id, node_id=…, retry=true, modify_prompt="REVISION: …")` to reopen the failed item's original session (migrated from `dispatch_retry` in Phase C). The checkpoint context (including `### Files Modified` from the prior execution) is auto-injected into the retry prompt — the revision prompt no longer needs to carry prior file lists verbatim. The retry is bounded by the loop group's `max_traversals` (no unbounded retry loops).
 
-A revision dispatch prompt MUST carry:
+A revision node prompt MUST carry:
 
 | Field | Source | Purpose |
 |-------|--------|---------|
@@ -243,7 +243,7 @@ A revision dispatch prompt MUST carry:
 | fix direction | emperor | the specific correction |
 | revision flag | emperor | explicit "this is a revision — edit in place; do NOT recreate, duplicate, or re-append" |
 
-The worker reads existing files first (from the reopened session's workspace state), then makes minimal corrective edits guided by the validator note and fix direction. One failed item per re-dispatch (see `functions/synthesize.md` Step 4b).
+The worker reads existing files first (from the reopened session's workspace state), then makes minimal corrective edits guided by the validator note and fix direction. One failed node per re-run (see `functions/synthesize.md` Step 4b).
 
 ---
 
@@ -340,7 +340,7 @@ transitions:
 ```
 
 **Explanation**: This replaces the current manual "check for approval in next turn's triage" flow with declarative state-machine orchestration. When `execute_destructive` calls `signal("need_approval", {action: "delete file", description: "..."})`, the `need_approval` transition fires: `execute_destructive` deactivates and `await_approval` activates. The user then approves or denies via the `user_approval` gate. On approval, `await_approval` deactivates and `execute_destructive` reactivates to continue. The model never needs to remember to check for pending approvals — the state machine enforces the flow.
-> **Caveat:** This pattern works for same-session function transitions only. For subagent→parent approval flows (the common case in emperor orchestration), see [Cross-Session Signal Isolation](#cross-session-signal-isolation) below. The native kernel HITL flow (subagent signals `need_approval` → kernel pauses → parent approves/rejects via `dispatch_approve`/`dispatch_reject`) replaces the prior `dispatch_output`-based detection approach.
+> **Caveat:** This pattern works for same-session function transitions only. For subagent→parent approval flows (the common case in emperor orchestration), see [Cross-Session Signal Isolation](#cross-session-signal-isolation) below. The native engine HITL flow (subagent signals `need_approval` → the graph pauses a `needs_approval` node → parent approves/rejects via `graph_approve`) replaces the prior `dispatch_output`-based detection approach.
 
 #### Pattern B: Escalate → recovery activation
 
@@ -404,19 +404,19 @@ The parent observes and optionally logs the progress, but the function continues
 
 #### Cross-Session Signal Isolation (Kernel-Enabled HITL)
 
-`signal_observed(type)` remains session-scoped — the parent session's condition evaluator cannot directly observe a subagent's signals. However, the kernel now natively supports HITL for the `need_approval` signal type at the dispatch level.
+`signal_observed(type)` remains session-scoped — the parent session's condition evaluator cannot directly observe a subagent's signals. However, the graph engine now natively supports HITL for the `need_approval` signal type: a `needs_approval` node pauses in `blocked` state and the emperor resolves it via `graph_approve` (migrated from `dispatch_approve`/`dispatch_reject` in Phase C).
 
 **Approval flow (subagent → parent):**
 
 When a subagent calls `signal(type="need_approval", payload={action, risk, details})`:
 
-1. The completion evaluator (`src/dispatch/completion/completion-evaluator.ts:40-109`) recognizes `need_approval` as a pausing signal and transitions the dispatch task to `awaiting_approval` state.
-2. The parent session receives a standard completion notification — the task is paused, not terminated. The `payload` from the signal is carried in the notification.
+1. The graph engine's advancement critical section (`_pauseForApproval`, `src/graph/engine/engine-advance.ts`) recognizes `need_approval` on a declared `needs_approval` node and transitions it to `blocked` (`awaiting_approval` equivalent), stashing an `approval_payload`.
+2. The parent session reads the node's paused state — the `approval_payload` / `need_approval` summary is carried in the node's signal ledger (query via `graph_status(graph_id, node_id=…, include_output=true)`).
 3. The parent presents the flagged operation (action, risk, details from payload) to the user for explicit approval.
-4. On user approval, the parent calls `dispatch_approve(task_id)` — the original worker session resumes execution from where it paused.
-5. On user rejection, the parent calls `dispatch_reject(task_id, reason)` — the task transitions to a terminal error state and the destructive operation is never executed.
+4. On user approval, the parent calls `graph_approve(graph_id, node_id, action="approve")` — the node completes (`blocked → completed`) and its forward `answer` data flow resumes the graph from where it paused.
+5. On user rejection, the parent calls `graph_approve(graph_id, node_id, action="reject", reason=…)` — the node re-enters (loop-group member) or escalates (no loop); the destructive operation is never executed.
 
-**No re-dispatch needed on approval.** The original session continues, unlike the pre-planned destructive flow (chancellor → user approval → fresh jinyiwei dispatch). The `approval_request` artifact is still captured in the subagent's session as a structured record, but the parent uses the kernel notification + `dispatch_approve`/`dispatch_reject` tools rather than parsing execution report text.
+**No re-dispatch needed on approval.** The graph continues, unlike the pre-planned destructive flow (chancellor → user approval → fresh jinyiwei node). The `approval_request` artifact is still captured in the subagent's session as a structured record, but the parent resolves the blocked node via `graph_approve` rather than parsing execution report text.
 
 ### 4. Dual-Channel Migration Guide
 
@@ -452,12 +452,12 @@ The `any` compositor means the function completes on the first of: signal answer
 
 | Producer | Consumer | Artifact | Reason |
 |----------|----------|----------|--------|
-| drafter → chancellor | orchestrate reads dispatch_output | `draft` | Machine-to-machine — parent never displays raw content |
-| reviewer → chancellor | orchestrate reads dispatch_output | `review_verdict` | Machine-to-machine — parent never displays raw content |
-| finalizer → chancellor | orchestrate reads dispatch_output | `final_strategy` | Machine-to-machine — parent never displays raw content |
-| validator → emperor | synthesize reads dispatch_output | `result` / `revise_items` | Machine-to-machine — structured items parsed programmatically |
-| jinyiwei → emperor | synthesize reads dispatch_output | `result` | Machine-to-machine — execution report parsed programmatically |
-| departments → jinyiwei | route reads dispatch_output | `result` | Machine-to-machine — execution report parsed programmatically |
+| drafter → chancellor | orchestrate reads graph_status(include_output=true) | `draft` | Machine-to-machine — parent never displays raw content |
+| reviewer → chancellor | orchestrate reads graph_status(include_output=true) | `review_verdict` | Machine-to-machine — parent never displays raw content |
+| finalizer → chancellor | orchestrate reads graph_status(include_output=true) | `final_strategy` | Machine-to-machine — parent never displays raw content |
+| validator → emperor | synthesize reads graph_status(include_output=true) | `result` / `revise_items` | Machine-to-machine — structured items parsed programmatically |
+| jinyiwei → emperor | synthesize reads graph_status(include_output=true) | `result` | Machine-to-machine — execution report parsed programmatically |
+| departments → jinyiwei | route reads graph_status(include_output=true) | `result` | Machine-to-machine — execution report parsed programmatically |
 | plan (state-machine) → orchestrate | same-session transition | `artifact_exists(plan)` | Same-session artifact gate — always signal-driven via state machine |
 
 ##### Fence-Required Paths (must keep indefinitely)
@@ -626,9 +626,9 @@ Captured as `revise_items` artifact by the synthesize function's observer.
 ### Decision Records
 
 **DR-001: Cross-session signal propagation — partially resolved.**
-- **Decision**: The transition-driven `need_approval` gate (Pattern A) remains same-session only, but the kernel now supports HITL at the dispatch level via `awaiting_approval` state.
-- **Rationale**: The `signal_observed()` condition evaluator remains session-scoped. However, the completion evaluator (`completion-evaluator.ts:40-109`) intercepts `need_approval` signals at the dispatch boundary, enabling the parent to use `dispatch_approve`/`dispatch_reject` tools directly.
-- **Current approach**: Subagent signals `need_approval` → kernel transitions to `awaiting_approval` → parent approves via `dispatch_approve(task_id)` — original session resumes. No re-dispatch needed.
+- **Decision**: The transition-driven `need_approval` gate (Pattern A) remains same-session only, but the graph engine now supports HITL: a `needs_approval` node pauses in `blocked` state and the emperor resolves it via `graph_approve`.
+- **Rationale**: The `signal_observed()` condition evaluator remains session-scoped. However, the graph engine's advancement critical section (`_pauseForApproval`) intercepts `need_approval` signals on a `needs_approval` node, enabling the parent to use the `graph_approve` tool directly.
+- **Current approach**: Subagent signals `need_approval` → the graph blocks the `needs_approval` node → parent approves via `graph_approve(graph_id, node_id, action="approve")` — the graph resumes. No re-dispatch needed.
 - **Remaining gap**: `signal_observed()` in the parent's function conditions still cannot see subagent signals. Full cross-session event bubbling remains a future enhancement.
 
 ---
