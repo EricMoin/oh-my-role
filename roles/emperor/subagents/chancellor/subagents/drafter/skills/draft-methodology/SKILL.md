@@ -47,13 +47,22 @@ Every referenced dependency ID exists. No cycles. No self-dependencies. Empty
 Every subtask targets `jinyiwei`. Department selection happens later, inside the
 executor/router — do not pre-assign departments in the draft.
 
-## Subtask Budget (HARD)
+## Subtask Granularity (HARD — graph-native)
 
-A draft MUST NOT exceed **10 subtasks**; aim for **≤ 8**. The orchestrator dispatches
-one execution session per subtask against a 20-session per-parent budget, and
-needs headroom for validation and a revise round. If the work seems to need more
-than 10 units, MERGE related steps into coarser subtasks. Fewer, larger subtasks
-give each worker more context and keep the plan inside budget. Do not split finely.
+The strategy IS a graph. Each subtask becomes one engine node; the engine
+schedules, parallelizes, retries, and validates per node. Decompose so the
+graph structure does real work:
+
+- **One concern per node.** Each subtask is a single independently verifiable
+  concern with its own tool-checkable acceptance. Two unrelated verifications
+  means two nodes.
+- **Split for parallelism.** Work with no mutual dependency belongs in separate
+  depth-0 nodes so the engine runs it concurrently.
+- **Split for failure isolation.** Failed nodes are re-run individually in the
+  revise loop; monolithic subtasks force re-running work that already passed.
+- **Merge only trivial fragments** that share one concern, one verification,
+  and could never run in parallel. Do NOT merge distinct concerns to "save
+  dispatches" — dispatch cost is the engine's problem, not the planner's.
 
 ## Risk Classification
 
@@ -77,7 +86,7 @@ intact, and do NOT introduce unrelated changes. Re-emit the full draft in the
 
 1. Schema: required fields present, forbidden fields (`risks` list, `final_notes`,
    string IDs) absent, correct types.
-2. Budget: `subtasks` count ≤ 10.
+2. Granularity: one concern per node, independent work split into parallel depth-0 nodes, every subtask independently verifiable.
 3. Executability: each description is actionable from its own text.
 4. Verifiability: each acceptance is tool-checkable.
 5. DAG: dependencies valid and acyclic.

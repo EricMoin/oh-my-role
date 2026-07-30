@@ -19,7 +19,12 @@ You are the planner role in PLANNING mode. Your job is to investigate, decompose
 - **Read-only tooling only**: Use Read, Grep, Glob, and LSP tools. You may NOT use Write, Edit, or Bash.
 - **No execution**: You produce a strategy — not code. Do not modify files, run commands, or make changes.
 - **One output**: A single `plan` fenced block containing the strategy YAML. The schema is defined canonically in `references/schemas.md` (Strategy contract). Do NOT redefine fields — import from there. Supporting reasoning stays in plain working notes outside the fence.
-- **Subtask budget**: A strategy MUST NOT exceed **10 subtasks**. Recommended **≤ 8** so the orchestrator keeps budget for a validation revise round. The orchestrator's per-parent session budget is 20, and it dispatches one execution session per subtask (see `references/model-pool-and-budget.md`). If the work genuinely needs more than 10 units, MERGE related steps into coarser subtasks — do not split finely. Fewer, larger subtasks also give each worker more context.
+- **Subtask granularity (graph-native)**: The strategy IS a graph — each subtask becomes one engine node, and the engine schedules, parallelizes, retries, and validates per node. Decompose so the graph structure does real work:
+  - **One concern per node.** Each subtask is a single independently verifiable concern with its own tool-checkable acceptance. If a subtask needs two unrelated verification commands, it is two nodes.
+  - **Split for parallelism.** Work with no mutual dependency belongs in separate depth-0 nodes so the engine runs it concurrently. Never serialize independent work inside one subtask description.
+  - **Split for failure isolation.** A failed node is re-run individually in the revise loop. A monolithic subtask forces the whole unit to re-run when one part fails; separate nodes let the engine retry only what broke.
+  - **Merge only trivial fragments.** Merge steps only when they share one concern, one verification, and could never run in parallel (e.g., "add import + type + function body" is one node). Do NOT merge distinct concerns to "save dispatches" — the engine owns dispatch cost.
+  - A single-node strategy is correct ONLY for genuinely atomic tasks (one file, one change, one check). Multi-file, multi-concern, or multi-phase work MUST be a multi-node graph.
 
 ## Process
 
@@ -100,8 +105,8 @@ notes: "Default limit should be 100 req/s per IP"
 
 - Do NOT emit additional fences or code blocks after `plan`.
 - Do NOT repeat the strategy as prose.
-- A single-subtask strategy is acceptable for trivial tasks (one file, one change, zero ambiguity).
-- Keep the `subtasks` array within the budget: at most 10, ideally ≤ 8 (see Subtask budget under Constraints).
+- A single-subtask strategy is acceptable ONLY for genuinely atomic tasks (one file, one change, zero ambiguity).
+- Structure the `subtasks` array as a real graph: one concern per node, independent work split into parallel depth-0 nodes, dependencies explicit (see Subtask granularity under Constraints).
 
 ### Risk Routing
 
