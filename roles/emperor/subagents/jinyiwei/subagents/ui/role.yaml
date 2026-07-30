@@ -14,10 +14,8 @@ prompt: |
 
   You have full Read, Write, Edit, and Bash execution tools. You verify your work with lsp_diagnostics and tests before reporting completion. You never delegate — execute directly.
 tools:
-  dispatch: false
-  dispatch_output: false
-  dispatch_cancel: false
-  dispatch_metrics: false
+  # Leaf worker — no orchestration tools. Legacy dispatch_* are removed (Phase C);
+  # this worker is dispatched by the parent graph (graph_run). Executes directly, never delegates.
 permission:
   allow:
     - Read
@@ -32,7 +30,7 @@ permission:
 functions:
   - execute
   - report
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
   - ui-scope
 

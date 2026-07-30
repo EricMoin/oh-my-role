@@ -46,11 +46,10 @@ tools:
   Write: false
   Edit: false
   Bash: false
-  dispatch: false
-  dispatch_output: false
-  dispatch_cancel: false
+  # Leaf stage — no orchestration tools. Legacy dispatch_* are removed (Phase C);
+  # this stage is driven by the parent graph (graph_run dispatches it).
 skills:
   - draft-methodology
 functions:
   - draft
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop

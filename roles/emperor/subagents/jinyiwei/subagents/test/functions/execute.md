@@ -118,11 +118,11 @@ Evidence tags in frontmatter (`requires_evidence: [test]`) auto-mark as satisfie
 
 ## Periodic Checkpoints
 
-For multi-phase tasks, emit checkpoints so the orchestrator can track liveness:
+For multi-phase tasks, emit progress so the orchestrator can track liveness (the engine materializes these on the node; they are read via graph_status, never via the removed dispatch_*):
 
-- After each major phase, call `dispatch_checkpoint(task_id, phase, completed_items, remaining_items)` to persist mid-execution state — on retry this context is auto-injected so work is not duplicated.
-- At meaningful stage boundaries (25%, 50%, 75%), call `dispatch_progress(task_id, stage, message, percentage)` to emit progress events.
-- Use `dispatch_stream(task_id)` to query accumulated progress when resuming a running task.
+- After each major phase, emit `signal(type="progress", payload={stage, message, percentage})` so the graph node records a lifecycle progress event. The engine also auto-saves checkpoints on lifecycle transitions — query them via `graph_status(graph_id, node_id=…, include_checkpoint=true)` on retry so work is not duplicated.
+- At meaningful stage boundaries (25%, 50%, 75%), emit `signal(type="progress", payload={stage, message, percentage})`.
+- To inspect accumulated progress when resuming, the orchestrator queries `graph_status(graph_id, node_id=…, include_progress=true, stream=true)`.
 
 ## Runtime Signals
 
@@ -139,6 +139,6 @@ Use the `signal` tool to communicate control-plane state changes:
 
 - **Destructive discovery**: When you discover an operation that would irreversibly mutate files/data/history that was NOT pre-approved:
   `signal(type="need_approval", payload={action: "description of destructive op", risk: "high", details: {...}})`
-  **signal and suspend** — after emitting need_approval, the kernel pauses this task in `awaiting_approval` and notifies the orchestrator; do NOT perform the operation. The orchestrator obtains user approval and resumes this session via dispatch_approve, or aborts it via dispatch_reject.
+  **signal and suspend** — after emitting need_approval, the engine pauses this `needs_approval` node in `blocked` state (stashing an `approval_payload`); do NOT perform the operation. The orchestrator obtains user approval and resumes the node via `graph_approve(graph_id, node_id, action="approve")`, or aborts/re-enters it via `graph_approve(graph_id, node_id, action="reject", reason=…)`.
 
 These signals do NOT replace normal completion. After resolving the issue (or if no issue), complete normally with `signal(type="answer")` or the result fence.

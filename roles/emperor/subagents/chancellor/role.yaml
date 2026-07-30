@@ -16,23 +16,20 @@ subagents:
 functions:
   - plan
   - orchestrate
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
   - task-decomposition
   - dependency-ordering
-# System-enforces the round-3 convergence cap (orchestrate.md) at the kernel level.
-# Without this, the drafter/reviewer/finalizer loop is bounded only by prompt instructions.
-dispatch:
-  maxActivePerParent: 3
-  maxTotalSessionsPerRequest: 20
+# The round-3 convergence cap (orchestrate.md) is enforced by the graph loop group's
+# max_traversals bound (see orchestrate.md) — the drafter/reviewer/finalizer cycle is
+# bounded by the engine, not by prompt instructions alone.
 tools:
   Write: false
   Edit: false
   Bash: false
-  dispatch: true
-  dispatch_output: true
-  dispatch_cancel: true
-  dispatch_metrics: false
+  # Legacy dispatch_*/loop_*/function_state removed (Phase C). Orchestration of the
+  # drafter/reviewer/finalizer cycle is graph-driven (graph_add_node / graph_run /
+  # graph_status); see functions/orchestrate.md.
 permission:
   allow:
     - Read

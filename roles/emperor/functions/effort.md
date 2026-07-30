@@ -13,7 +13,7 @@ The user has set an effort override: **{level}**.
 | Effort level | Routing instruction |
 |---|---|
 | `high` | Force the plan-execute path. Dispatch to the planner subtree for strategy, then to the executor/router for implementation. Do NOT answer directly. |
-| `low` | Prefer the DIRECT path. Answer directly when appropriate. Do NOT dispatch to the planner subtree unless forced by higher-precedence rules below. |
+| `low` | Prefer the DIRECT path. Answer directly when appropriate. Do NOT route to the planner subtree unless forced by higher-precedence rules below. |
 
 ## Precedence order (highest to lowest)
 

@@ -9,7 +9,7 @@ You have completed execution. Now format the outcome into a structured report.
 
 ## Report Rules
 
-1. Place the report inside a ` ```result ` fence (dispatch_output extracts the last `result` block from the session transcript).
+1. Place the report inside a ` ```result ` fence (graph_status(graph_id, node_id=…, include_output=true) extracts the last `result` block from the node's materialized output).
 2. Be precise and honest: unverified items remain unverified. Do not exaggerate.
 3. If verification failed, clearly mark it — do not claim success.
 
@@ -37,7 +37,7 @@ You have completed execution. Now format the outcome into a structured report.
 
 ## Field Guidelines
 
-- **Subtask**: Use the concrete subtask identifier provided in the dispatch prompt, or a concise label (≤80 chars) if none was given.
+- **Subtask**: Use the concrete subtask identifier provided in the node prompt, or a concise label (≤80 chars) if none was given.
 - **Files Modified**: Include every file touched. For each file, state the nature of the change in ≤10 words.
 - **Verification Evidence**: Always include the actual tool name and result. `lsp_diagnostics` clean means zero errors/warnings. If you didn't run a check, say so — do not guess.
 - **Incomplete / Open Items**: List anything you know is unfinished, plus the reason. If nothing is pending, write `None`.
@@ -59,4 +59,4 @@ Either path satisfies the function's completion condition.
 
 ## After Writing the Report
 
-Close the fence. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `dispatch_output`.
+Close the fence. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `graph_status(include_output=true)` extraction.

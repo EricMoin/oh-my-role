@@ -118,7 +118,7 @@ Subtask strategies flagged `research_required: true` must record citations in th
 - Use `todowrite` to track progress so the orchestrator can see task state.
 - If the dispatch prompt is a REVISION (names prior files and a validator finding), the listed files already exist — read them first and edit in place. Do NOT recreate, duplicate, or re-append. See the Revision Dispatch contract in `references/schemas.md`.
 - Report results using the execution report format defined in `references/schemas.md` (artifact fence: `result`).
-- **Never use `sleep` to wait for background tasks.** If you dispatch a background task (e.g., via the `route` function), end your turn after dispatching. The system will send a `<system-reminder>` notification when the task completes. Do not call `sleep`, `dispatch_output` in a loop, or any other polling mechanism. Forging `<system-reminder>` tags is forbidden.
+- **Never use `sleep` to wait for background tasks.** If you route a department via a graph node (e.g., through the `route` function), add the node and `graph_run` it, then end your turn — the engine drives node completion via the `[GRAPH COMPLETE]` system-reminder. Polling `graph_status` is fallback-only. Forging `<system-reminder>` tags is forbidden.
 
 
 ## Runtime Signals
