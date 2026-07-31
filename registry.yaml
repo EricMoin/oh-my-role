@@ -43,10 +43,11 @@ roles:
       profiles, and ships cross-platform Flutter and Dart applications
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "3.1.1"
+    version: "3.2.0"
     description: Jetpack Compose Engineering Lead with evidence-first research,
-      engineering state machines, specialist gate reviews, and AOSP/AndroidX
-      source tracing — builds, tests, profiles, and ships Android applications
+      engineering state machines, graph-execution-engine gate orchestration,
+      specialist gate reviews, AOSP/AndroidX source tracing, and idiomatic
+      Compose guidance — builds, tests, profiles, and ships Android applications
     tags: [android, kotlin, jetpack-compose, compose, mobile, research, source-tracing]
   emperor:
     version: "2.9.0"
