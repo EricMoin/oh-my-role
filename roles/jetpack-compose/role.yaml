@@ -68,11 +68,13 @@ skills:
   - compose-idiomatic-style
   - jetpack-compose-engineering-gate
 
-# Subagent collaboration flow — parent dispatches specialist gate reviewers
-# for risk-domain review. Gates are dispatched serially, one at a time.
-# Each gate returns a gate report to the parent for integration.
-# Sub-agents emit signal(type="answer") on completion; the engineer
-# function awaits gate reports via the dispatch output mechanism.
+# Subagent collaboration flow — the declarative edge list is the authoring
+# source of truth; at runtime the graph engine executes it via graph_create →
+# graph_add_node / graph_add_edge (graph_add_loop) → graph_run (see PROMPT.md).
+# Legacy v1 declarative config: max_iterations feeds only the legacy
+# collaboration bridge and does NOT bound the imperative graph_add_loop
+# revise/review cycles. Kept only for schema compatibility; the engine
+# enforces loop bounds via graph_add_loop.
 collaboration:
   max_iterations: 2
   flow:
@@ -87,11 +89,11 @@ collaboration:
     - "performance-reviewer -> parent: gate report"
     - "source-tracer -> parent: gate report"
 
-# Dispatch configuration for subagent orchestration
-dispatch:
-  maxActivePerParent: 2
-  maxConcurrent: 5
-  syncPromptTimeoutMs: 600000
-  backgroundStaleTimeoutMs: 300000
-  maxTotalSessionsPerRequest: 10
-
+# Graph orchestration configuration. The legacy dispatch: block (parent-scoped
+# concurrency ceilings and timeout fields) is replaced by the graph engine:
+# per-node limits are carried on graph_add_node(timeout_ms / max_retries).
+# Resource ceilings, if any, are owned and enforced by the rolebox engine;
+# concurrency is engine-managed.
+graph:
+  orchestration: graph_v2
+  # Declarative edge list above mirrors what graph_add_edge wires at runtime.

@@ -12,6 +12,28 @@ Quick-reference for Jetpack Compose Kotlin idiomatic patterns. Each entry shows 
 - Bug fixes where style is not the primary concern — fix the bug first; apply style guidance only in a follow-up refinement pass.
 - Writing or modifying non-Compose Kotlin code (this skill is specific to `@Composable` patterns).
 
+## Quick Routing — Symptom to Skill
+
+When a symptom points to a different concern, route to the skill that owns it instead of forcing the fix here.
+
+| Symptom / Signal | Load this skill |
+| --- | --- |
+| janky `LazyColumn` scrolling | `compose-performance` |
+| state resets on rotation | `compose-runtime-state` |
+| text overflows at large font scale | `compose-layout-material-adaptive` |
+| hardcoded colors or ad-hoc styling | `compose-idiomatic-style` |
+| preview missing or broken | `compose-testing-previews` |
+| `AndroidView` leaks or disposal bugs | `compose-interop-migration` |
+| unstable lambda causing recomposition | `compose-runtime-state` |
+| stability warning in compiler report | `compose-performance` |
+| god composable with too many responsibilities | `compose-idiomatic-style` |
+| ViewModel collecting while backgrounded | `compose-runtime-state` |
+| XML screen being migrated to Compose | `compose-interop-migration` |
+| docs disagree with observed behavior | `android-source-research` |
+| screen architecture or state ownership unclear | `compose-ui-architecture` |
+| platform lifecycle, permissions, or background work | `android-platform-engineering` |
+| broad feature work spanning multiple concerns | `jetpack-compose-engineering-gate` |
+
 ## State
 
 ### Immutable UI state over scattered var + mutableStateOf
@@ -183,7 +205,7 @@ fun MyCard(
 }
 ```
 
-Every public composable must accept a `modifier` parameter and apply it to the root element so callers can control positioning, sizing, and click handling from the outside.
+Every public composable **MUST** accept a `modifier: Modifier = Modifier` parameter and apply it to the root element so callers can control positioning, sizing, and click handling from the outside. A public composable **MUST NOT** be called from non-composable contexts — `@Composable` calls are only valid inside a composable (or composable lambda) scope; work that must run outside composition belongs in the effect APIs or a plain, non-composable function.
 
 ### Modifier ordering
 
@@ -346,6 +368,139 @@ fun UserAvatar(userId: String) {
 ```
 
 Composable functions are PascalCase nouns or noun phrases. They return `Unit` implicitly — do not write `: Unit`. Never prefix with `get`.
+
+## Composable API Design Contract
+
+### 1. Full parameter ordering rule
+
+```kotlin
+// ❌ modifier buried mid-signature, callbacks before data, content slot not last
+@Composable
+fun UserCard(
+    onEditClick: () -> Unit,
+    modifier: Modifier,
+    user: User,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onDeleteClick: () -> Unit,
+    header: @Composable () -> Unit,
+) { /* ... */ }
+
+// ✅ modifier first, then required data, optional styling, callbacks, content slot last
+@Composable
+fun UserCard(
+    modifier: Modifier = Modifier,
+    user: User,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    header: @Composable () -> Unit,
+) { /* ... */ }
+```
+
+Parameters follow a fixed order: `modifier: Modifier = Modifier` first, required data, optional styling, callback lambdas, trailing `@Composable` content slots last.
+
+### 2. Emit UI or return a value, never both
+
+```kotlin
+// ❌ Renders UI and returns the computed string
+@Composable
+fun FormatPrice(amount: Double): String {
+    val text = "$" + amount.toInt()
+    Text(text)
+    return text
+}
+
+// ✅ Pure function computes; composable only renders
+fun formatPrice(amount: Double): String = "$" + amount.toInt()
+
+@Composable
+fun PriceLabel(amount: Double) {
+    Text(formatPrice(amount))
+}
+```
+
+A composable either emits UI or computes/returns a value, never both. Hoist value computation into a plain function.
+
+### 3. Emit 0 or 1 layout node
+
+```kotlin
+// ❌ Multiple sibling root nodes
+@Composable
+fun UserRow(user: User) {
+    Text(user.name)
+    Text(user.email)
+}
+
+// ✅ Single root node wraps the children
+@Composable
+fun UserRow(user: User) {
+    Column {
+        Text(user.name)
+        Text(user.email)
+    }
+}
+```
+
+A composable emits 0 or 1 layout node. Multiple sibling roots break reuse and parent layout; wrap them in a `Column` or `Box`.
+
+### 4. Do not reuse Modifier instances across children
+
+```kotlin
+// ❌ One Modifier instance shared by every child
+@Composable
+fun LabelList(items: List<String>) {
+    val sharedModifier = Modifier.padding(8.dp)
+    Column {
+        items.forEach { item ->
+            Text(item, modifier = sharedModifier)
+        }
+    }
+}
+
+// ✅ Fresh Modifier chain per child
+@Composable
+fun LabelList(items: List<String>) {
+    Column {
+        items.forEach { item ->
+            Text(item, modifier = Modifier.padding(8.dp))
+        }
+    }
+}
+```
+
+Do not reuse Modifier instances across children — each child gets its own Modifier chain so per-child state and ordering stay independent.
+
+### 5. Caller owns layout modifiers
+
+```kotlin
+// ❌ Component hard-codes layout on its own root
+@Composable
+fun ErrorBanner(message: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+    ) {
+        Text(message)
+    }
+}
+
+// ✅ Root takes caller's modifier; layout stays with the caller
+@Composable
+fun ErrorBanner(message: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(message)
+    }
+}
+
+// Caller applies its own layout
+ErrorBanner(
+    message = "Something went wrong",
+    modifier = Modifier.fillMaxWidth().padding(16.dp),
+)
+```
+
+The caller owns layout modifiers — a component must not apply size/padding/fillMaxWidth to its root internally; those belong to the caller through the `modifier` parameter.
 
 ## Slot API
 
@@ -604,3 +759,11 @@ private fun sampleUser() = User(id = "1", displayName = "Jane Doe", avatarUrl = 
 ```
 
 Previews are the fastest Compose iteration loop. Each public composable should have at least one `@Preview` using fake data — never inject a ViewModel into a Preview. Provide dark-mode and multi-locale previews for critical screens.
+
+## Cite the Source
+
+When this skill asserts an idiomatic contract or API behavior, back the claim with the androidx source: `[source: GitHub — androidx/androidx/{path}:L{line} — {what was verified}]`. For platform or framework source, cite cs.android.com instead.
+
+When behavior is uncertain or version-sensitive, do not guess. Route through the `android-source-research` skill workflow, which traces behavior to source before the claim is written. For deep source navigation, use the `jetpack-compose--source-tracer` subagent.
+
+NEVER assert API behavior from training data alone.

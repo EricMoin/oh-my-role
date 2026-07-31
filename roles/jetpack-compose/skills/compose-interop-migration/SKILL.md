@@ -85,7 +85,7 @@ Rules:
 
 - Bridge legacy theme attributes to Compose tokens when the app still uses XML themes.
 - Keep typography, color, shapes, and elevation visually consistent during partial migration.
-- Do not hard-code colors in Compose to match old XML screens; map them into theme/design tokens.
+- **NEVER** hard-code colors to match legacy XML screens; map them into theme/design tokens.
 
 ## Workflow
 

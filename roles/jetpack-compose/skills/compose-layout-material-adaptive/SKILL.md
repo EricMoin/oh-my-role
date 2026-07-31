@@ -52,6 +52,8 @@ LazyColumn {
 
 ## Material 3 and Design Systems
 
+**NEVER** use Material 2 `MaterialTheme.colors.*` (colors / typography / shapes properties) in new code — Material 3 exposes `colorScheme` / `typography` / `shapes`.
+
 - Use Material 3 components and tokens unless the app has a custom design system.
 - Centralize colors, typography, shapes, elevation, spacing, and iconography.
 - Prefer semantic tokens (`colorScheme.primary`, app design tokens) over one-off colors.
@@ -73,6 +75,8 @@ Use adaptive UI when the screen appears on phones, foldables, tablets, ChromeOS,
 - Switch navigation patterns intentionally: bottom navigation, navigation rail, permanent drawer, two-pane layouts.
 - Keep state and navigation consistent when layout changes.
 - Avoid separate codepaths that duplicate business logic.
+
+**Versions and experimental APIs:** the window size class types used in the examples (`WindowWidthSizeClass`, `WindowSizeClass`) come from `androidx.compose.material3:material3-window-size-class`, which tracks the material3 line of the Compose BOM (e.g. BOM 2025.06.00 ships 1.3.2; BOM 2026.06.01 ships 1.4.0) — check the project's Compose BOM before use. The successor library `androidx.compose.material3.adaptive:adaptive` (BOM 2025.06.00 ships 1.1.0; BOM 2026.06.01 ships 1.2.0) provides `currentWindowAdaptiveInfo()` and `WindowAdaptiveInfo`; its window-size and posture APIs are marked `@ExperimentalMaterial3AdaptiveApi` since 1.2.0-beta01 (e.g. `currentWindowDpSize`), and `currentWindowAdaptiveInfo()` is deprecated in the 1.3.0 line in favor of `currentWindowAdaptiveInfoV2()` — verify the status for the project's exact adaptive version. In `material3-window-size-class`, `calculateWindowSizeClass()` requires `@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)`. EXPERIMENTAL — confirm with the user before @OptIn: never add these opt-in annotations just to silence the compiler; confirm the experimental/deprecated status for the project's exact version first.
 
 ## Accessibility
 
@@ -174,7 +178,7 @@ Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBFE)))
 Text("Error", color = MaterialTheme.colorScheme.error)
 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant))
 ```
-Hard-coded colors ignore the active `ColorScheme`, breaking dark mode, Material You dynamic color, and any project-level theme customization. If a custom color is genuinely outside the token set, define it in the theme as a semantic extension — never as a literal in screen code.
+**NEVER** hardcode colors as literals in composable code — route everything through `MaterialTheme.colorScheme`. Hard-coded colors ignore the active `ColorScheme`, breaking dark mode, Material You dynamic color, and any project-level theme customization. If a custom color is genuinely outside the token set, define it in the theme as a semantic extension — never as a literal in screen code.
 
 ---
 
