@@ -17,6 +17,23 @@ git commit -am "<message>"             # combined: stage tracked + commit
 
 `git commit -a` skips `git add` for already-tracked files. It does NOT stage new (untracked) files. Prefer explicit `git add` for clarity.
 
+## Commit Composition
+
+A commit is one logical unit — never bundle unrelated changes together. Small, focused commits keep history reviewable and bisect-friendly.
+
+Split workflow:
+1. Run `git status` to see everything that changed.
+2. Identify the logical groups (fix vs. feature vs. refactor).
+3. Stage per group: `git add <file>` or `git add -p <file>` for mixed files.
+4. Commit each group separately with its own message.
+
+When one file mixes two concerns, follow the working-tree skill's "Split a mixed file across two commits" pattern (`git add -p` per concern).
+
+Message quality checklist (details in the Rules block below):
+- **Subject**: imperative mood, lowercase, no trailing period, ≤50 chars.
+- **Body**: explain *why*, wrapped at ~72 chars.
+- **Footer**: reference issues (`Closes #123`) and breaking changes (`BREAKING CHANGE:`).
+
 ## Conventional Commits Format
 
 Default to this format. It enables changelogs, semantic versioning, and readable history.
