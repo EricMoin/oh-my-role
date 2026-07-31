@@ -13,7 +13,7 @@ Compose UI is a function of state. Correct Compose code makes state ownership ex
 - Use `remember` for composition-local object retention, not for business state that must survive process death.
 - Use `rememberSaveable` for small UI state that should survive configuration changes and process recreation when a `Saver` is available.
 - Use `ViewModel` or another lifecycle owner for screen state, async work, repositories, and business rules.
-- Never start coroutines, perform I/O, mutate global state, or call impure APIs directly from a composable body.
+- **NEVER** call impure APIs or start side effects (coroutines, I/O, global-state mutation) directly in a composable body — use the effect APIs.
 - Prefer stable, immutable inputs. Avoid passing mutable collections or unstable wrapper types through large parts of the UI.
 
 ## State Ownership
@@ -80,13 +80,73 @@ fun AnalyticsScreen(
 }
 ```
 
-## Stability Guidance
+## Stability and Strong Skipping
+
+Stability decides whether the Compose runtime can skip a composable during recomposition. Strong skipping — enabled by default with Kotlin 2.0.20 — marks nearly all restartable composables as skippable and memoizes lambdas, but stability still governs the skip decision: unstable parameters are compared by instance identity (`===`), stable ones by object equality.
 
 - Prefer Kotlin immutable data classes for UI state.
 - Use `List<T>` in public UI state, but avoid mutating the backing collection in place.
 - Avoid passing large mutable models directly to composables. Map domain models to UI models when it clarifies stability and display behavior.
-- Do not add `@Stable` or `@Immutable` to silence compiler reports unless the contract is actually true.
 - Enable Compose compiler reports for hard recomposition/stability questions.
+
+### 1. Primitive-state specializations
+
+`mutableIntStateOf` and `mutableFloatStateOf` (along with `mutableLongStateOf` and `mutableDoubleStateOf`) store the value as an unboxed primitive. Plain `mutableStateOf` remains correct for every other type — there is no Boolean specialization, and no specialization for `String` or reference types.
+
+**Version requirement:** the primitive state API requires Compose runtime 1.6+ — a Compose BOM of 2024.05.00 or later (BOM 2024.05.00 maps to runtime 1.6.7). On the 1.6+ line `mutableIntStateOf`/`mutableFloatStateOf` are stable APIs and need no `@OptIn`. EXPERIMENTAL — confirm with the user before @OptIn: if the project is pinned to an older runtime these functions do not exist and no annotation will help — upgrade the Compose BOM instead of forcing the API through.
+
+❌ **Wrong** — boxing an `Int`/`Float` through the generic holder:
+```kotlin
+var count by remember { mutableStateOf(0) }     // Int boxed inside MutableState<Int>
+var alpha by remember { mutableStateOf(0.5f) }  // Float boxed inside MutableState<Float>
+```
+✅ **Correct** — use the primitive specialization for `Int`/`Float`:
+```kotlin
+var count by remember { mutableIntStateOf(0) }    // MutableIntState, unboxed Int value
+var alpha by remember { mutableFloatStateOf(0.5f) } // MutableFloatState, unboxed Float value
+```
+The specialized functions return `MutableIntState`/`MutableFloatState`, whose `value` reads and writes a primitive directly and avoids boxing. For other types — `Boolean`, `String`, collections, domain objects — plain `mutableStateOf` is still the right API.
+
+### 2. Strong skipping implications
+
+Since Kotlin 2.0.20, strong skipping is on by default. Two compiler behaviors change: every restartable composable becomes skippable regardless of unstable parameters, and lambdas are automatically memoized — wrapped in `remember` keyed by their captures. Stability matters more, not less, under this mode. `@Stable`/`@Immutable` types are compared by value, so a new instance with equal data still allows skipping; unstable parameters are compared by identity, so a new instance always recomposes.
+
+**Version requirement:** strong skipping requires the Kotlin 2.0 Compose compiler — the compiler plugin that ships with Kotlin 2.0.20 enables it by default. On the legacy 1.5.x compiler line it was an opt-in feature flag, not an annotation (experimental since 1.5.4, declared production-ready in 1.5.13). Nothing needs to be enabled on Kotlin 2.0.20+. EXPERIMENTAL — confirm with the user before @OptIn: do not flip experimental compiler feature flags or add `@OptIn` to force the behavior on an older compiler; upgrade the Compose compiler instead.
+
+❌ **Wrong** — an unstable lambda defeats strong skipping. The receiver gets a fresh lambda instance, its parameter fails instance equality, and it recomposes:
+```kotlin
+@Composable
+fun ProfileCard(profile: Profile) {        // Profile unstable: new instance per refresh
+    FollowButton(onClick = { follow(profile) })  // compiler memoizes as remember(profile)
+}
+```
+The compiler keys the memoized lambda on the capture `profile`. Because `Profile` is unstable, the key is compared by identity — a refreshed `Profile` holding identical data produces a new lambda, and `FollowButton` recomposes even though nothing it displays changed.
+
+✅ **Correct** — keep lambda captures stable so the memoized instance survives recompositions:
+```kotlin
+@Composable
+fun ProfileCard(profileId: Long, onFollow: (Long) -> Unit) {
+    FollowButton(onClick = { onFollow(profileId) })  // stable captures: same instance every time
+}
+```
+`profileId` is a primitive (immutable) capture and `onFollow` is a hoisted callback, so the memoized lambda keeps its identity across recompositions and `FollowButton` is skipped. In general, `remember`-cached instances — including the lambdas the compiler memoizes for you — stay stable across recompositions; only fresh allocations break the comparison.
+
+### 3. Fix unstable types at the source before annotating
+
+`@Stable` and `@Immutable` override what the compiler infers about a type. The rule is to fix unstable types at the source before annotating: do not add the annotations merely to silence compiler reports. If the type is actually mutable, the runtime will trust the annotation and skip recompositions that should have happened. Restructure the type first — immutable data class, stable `val` fields — and only annotate once the contract is genuinely true.
+
+❌ **Wrong** — annotating a mutable wrapper to quiet the stability report:
+```kotlin
+@Immutable
+data class Cart(val items: MutableList<Item>)  // lie: items mutates in place
+```
+The compiler trusts `@Immutable` and marks `Cart` stable. Later `items.add(...)` calls are invisible to the snapshot system, and any composable that should have recomposed is skipped, leaving stale UI.
+
+✅ **Correct** — fix the type at the source so stability is real:
+```kotlin
+data class Cart(val items: List<Item>)  // immutable val field: compiler infers stable
+```
+Use an immutable collection (or a plain `val` of an immutable type), and let the compiler infer stability. If the type genuinely needs mutable fields, route mutations through Compose state (`mutableStateOf`, `mutableStateListOf`) and reserve `@Stable` for classes whose mutation is snapshot-observed — never as a way to silence the compiler report.
 
 ## Workflow
 
@@ -219,3 +279,11 @@ LaunchedEffect(Unit) {
 }
 ```
 `SideEffect` guarantees execution after every successful recomposition — not once per composition lifespan. Its block is non-cancellable and non-lifecycle-aware. Launching a coroutine there will fire repeatedly as the composition updates.
+
+## Cite the Source
+
+When this skill asserts runtime, snapshot, or stability behavior, back the claim with the androidx source: `[source: GitHub — androidx/androidx/{path}:L{line} — {what was verified}]`. For platform or framework source, cite cs.android.com instead.
+
+When behavior is uncertain or version-sensitive, do not guess. Route through the `android-source-research` skill workflow, which traces behavior to source before the claim is written. For deep source navigation, use the `jetpack-compose--source-tracer` subagent.
+
+NEVER assert API behavior from training data alone.

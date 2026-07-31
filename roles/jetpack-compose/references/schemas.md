@@ -4,7 +4,7 @@
 
 **Rule**: One schema per contract. No producer renames, adds, or removes fields without updating this document first (see Field Drift Prevention).
 
-**The `result` fence is the universal return envelope.** Every dispatched subagent returns its payload inside a `` ```result `` fence. The payload schema is determined by the producer — reviewers return `gate_report`, Engineering Lead returns `engineering_state`. The consumer knows which schema to expect from the dispatch it made.
+**The `result` fence is the universal return envelope.** Every gate node returns its payload via the graph engine inside a `` ```result `` fence. The payload schema is determined by the producer — reviewers return `gate_report`, Engineering Lead returns `engineering_state`. The consumer knows which schema to expect from the gate node it authored.
 
 ---
 
@@ -146,7 +146,7 @@ verification: "./gradlew :app:testDebugUnitTest && Accessibility Scanner on 320d
 
 **Direction**: Engineering Lead → subagent (closed-loop revise rounds)
 
-When a gate returns `fail`, the Lead revises code and re-dispatches to the same subagent. If a new session is required, the prompt MUST carry:
+When a gate returns `fail`, the Lead revises code and re-runs the same gate node via `graph_run(graph_id, node_id, retry=true, modify_prompt=...)`. If a new session is required, the prompt MUST carry:
 
 | Field | Source | Purpose |
 |-------|--------|---------|

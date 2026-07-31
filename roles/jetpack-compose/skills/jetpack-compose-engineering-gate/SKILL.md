@@ -18,13 +18,14 @@ Use this skill to keep larger Android/Compose work deliberate without slowing do
   - Test Quality: `references/compose-testing-and-quality.md`
   - Performance: `references/compose-performance-and-platform.md`
   - Source Tracing: `references/source-research.md` and `references/evidence-first-research.md`
+- Symptom → skill routing: see the Quick Routing index in the `compose-idiomatic-style` skill.
 
 ## Workflow
 
-- [ ] Decide whether the task is trivial. If it is a small focused edit with low blast radius, use the relevant skill and skip subagent dispatch.
+- [ ] Decide whether the task is trivial. If it is a small focused edit with low blast radius, use the relevant skill and stay on the lightweight path — no Engineering State, no gate nodes.
 - [ ] For non-trivial work, inspect project facts: `build.gradle.kts`, version catalogs, Compose BOM, module layout, architecture style (MVVM/MVI/UDF), DI approach (Hilt/Koin), navigation structure, testing conventions, and CI configuration.
 - [ ] Create or update the Jetpack Compose Engineering State.
-- [ ] Dispatch only the gates needed by the risk:
+- [ ] Author one graph node per required gate on the graph engine (graph_create → graph_add_node → graph_add_edge → graph_add_loop → graph_run, per PROMPT.md §4), for the risk domains touched:
   - Architecture: ViewModel boundaries, state ownership, DI, module organization, navigation, or data layer.
   - UI/Layout/Accessibility: screens, composable layouts, Material 3 theming, Modifier chains, adaptive behavior, Semantics, or form interactions.
   - Test Quality: test pyramid, composeTestRule selection, semantics assertions, screenshot tests, ViewModel test coverage, or CI verification.

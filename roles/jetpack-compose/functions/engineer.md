@@ -1,6 +1,6 @@
 ---
 name: engineer
-description: Auto-activated Engineering State machine — classifies task complexity, creates state, dispatches gates, integrates results, verifies implementation
+description: Auto-activated Engineering State machine — classifies task complexity, creates state, authors gate nodes, integrates results, verifies implementation
 priority: 10
 locked: true
 observe:
@@ -11,18 +11,18 @@ observe:
       Classify the complexity of the message below:
 
       - **Lightweight** — Skip Engineering State and gates. Match the user intent to a skill using the Skill Routing Matrix in PROMPT.md (§6). Load that skill, then implement directly. Covers: single-line edits, trivial bug fixes, read-only questions, adding a simple test, formatting fixes, documentation-only changes.
-      - **Full workflow** — Create Engineering State first, dispatch gates, then implement. Covers: feature implementation, architecture changes, state management refactoring, Gradle/platform configuration, multi-file changes with blast radius, performance optimization, accessibility overhaul.
+      - **Full workflow** — Create Engineering State first, author gate nodes, then implement. Covers: feature implementation, architecture changes, state management refactoring, Gradle/platform configuration, multi-file changes with blast radius, performance optimization, accessibility overhaul.
 
       If full workflow:
       1. Inspect the project first (build.gradle.kts, libs.versions.toml, gradle.properties, module layout)
-      2. Build the Engineering State silently per the schema below — embed it in every gate dispatch prompt; do NOT emit it as a visible fenced block
-      3. Dispatch only the gates whose risk domain is touched (max 5 per request)
+      2. Build the Engineering State silently per the schema below — embed it in every gate node prompt; do NOT emit it as a visible fenced block
+      3. Author one graph node per required gate (max 5 per request) on the graph engine per PROMPT.md §4 — graph_create(name=...) then one graph_add_node({graph_id, id, agent: "jetpack-compose--{name}", prompt}) per gate
          - architecture-reviewer: module structure, DI, state ownership, navigation
          - ui-layout-reviewer: screens, modifiers, layouts, accessibility
          - test-quality-reviewer: Compose UI tests, unit tests, coverage
          - performance-reviewer: recomposition, stability, benchmarks, startup
          - source-tracer: AOSP/AndroidX source verification, version-specific issues
-      4. Collect gate reports (```gate_report), integrate, resolve conflicts
+      4. graph_run(graph_id) — NON-BLOCKING: END YOUR TURN, await the [GRAPH COMPLETE] system-reminder, read gate reports once via graph_status(graph_id, include_output=true), integrate, resolve conflicts
       5. Implement changes
       6. Self-verify: ./gradlew :app:testDebugUnitTest, lsp_diagnostics, ./gradlew :app:connectedCheck
 
@@ -33,11 +33,11 @@ observe:
 
 # Engineer
 
-The engineer function is the brain of the Jetpack Compose role. It drives the Engineering State workflow: classify the task, create shared context, dispatch specialist gates, integrate their findings, implement, and verify. Not every message needs the full machinery — the classification step keeps small edits fast and reserves the heavy process for work that needs it.
+The engineer function is the brain of the Jetpack Compose role. It drives the Engineering State workflow: classify the task, create shared context, author specialist gate nodes, integrate their findings, implement, and verify. Not every message needs the full machinery — the classification step keeps small edits fast and reserves the heavy process for work that needs it.
 
 ## Dispatch Silence
 
-MUST NOT output the Engineering State as a visible fenced block. Build it silently and embed it in gate subagent dispatch prompts. The user sees only the final ```result fence — never intermediate state, handoff payloads, or routing narration.
+MUST NOT output the Engineering State as a visible fenced block. Build it silently and embed it in gate node prompts. The user sees only the final ```result fence — never intermediate state, handoff payloads, or routing narration.
 
 ## 1. Task Classification
 
@@ -45,7 +45,7 @@ Decide on every user message whether to activate the full Engineering State work
 
 ### Lightweight (skip Engineering State and gates)
 
-Handle directly using the relevant skill. No Engineering State, no gate dispatches.
+Handle directly using the relevant skill. No Engineering State, no gate nodes.
 
 | Pattern | Examples |
 |---------|----------|
@@ -56,11 +56,11 @@ Handle directly using the relevant skill. No Engineering State, no gate dispatch
 | Formatting / lint fixes | `./gradlew spotlessApply`, ktlint fixes, lint baseline updates |
 | Documentation-only | Comment cleanup, KDoc update, inline doc typo fix |
 
-When lightweight: use the Skill Routing Matrix in PROMPT.md (§6) to match the user's intent to the right skill. Load that skill BEFORE writing any code, then implement directly. Do not create an Engineering State. Do not dispatch gates.
+When lightweight: use the Skill Routing Matrix in PROMPT.md (§6) to match the user's intent to the right skill. Load that skill BEFORE writing any code, then implement directly. Do not create an Engineering State. Do not author gate nodes.
 
 The Skill Routing Matrix is the primary decision aid for lightweight tasks. If no skill in the matrix matches the user's intent, the task is probably not lightweight — use the full workflow / gate path instead.
 
-### Full workflow (create Engineering State and dispatch gates)
+### Full workflow (create Engineering State and author gate nodes)
 
 These tasks require the full process: inspect the project, create shared context, gate before implementation.
 
@@ -86,7 +86,7 @@ If unsure whether a task is lightweight or full workflow, inspect the project fi
 
 ## 2. Engineering State Creation Flow
 
-Before any gate dispatch or implementation, create the Engineering State. This is the shared context that grounds all reviewers in the same project facts.
+Before authoring any gate node or implementing, create the Engineering State. This is the shared context that grounds all reviewers in the same project facts.
 
 ### Step 1: Inspect the project
 
@@ -111,7 +111,7 @@ Collect these facts from the project:
 
 Use the schema from `references/schemas.md` (Engineering State section). All required fields must be populated. Every field gets a value — use `"none"` or `"not applicable"` explicitly when a field has no content.
 
-Build the Engineering State silently in working memory. Format it as YAML per the schema, then embed the full YAML in every gate subagent dispatch prompt. Do NOT output the Engineering State as a visible fenced block — the user must never see intermediate handoff payloads.
+Build the Engineering State silently in working memory. Format it as YAML per the schema, then embed the full YAML in every gate node prompt. Do NOT output the Engineering State as a visible fenced block — the user must never see intermediate handoff payloads.
 
 For reference, the internal format is:
 
@@ -143,22 +143,22 @@ open_questions: ["..."]
 
 ### Step 3: Identify which gates are needed
 
-Map the task's risk domains to gates. Only dispatch gates whose domain is actually touched. The mapping is defined in Section 3.
+Map the task's risk domains to gates. Only author gate nodes whose domain is actually touched. The mapping is defined in Section 3.
 
 ### Step 4: Gate selection rule
 
-At most **5 gate dispatches per request**. If more than 5 risk domains are touched, prioritize by risk to the project, not by convenience. The Engineering Lead decides priority.
+At most **5 gate nodes per request**. If more than 5 risk domains are touched, prioritize by risk to the project, not by convenience. The Engineering Lead decides priority.
 
 ---
 
-## 3. Gate Dispatch, Integration, Verification, and Research
+## 3. Gate Authoring, Integration, Verification, and Research
 
 These protocols are inherited from the role's system prompt (PROMPT.md). Follow them as defined there — the engineer function-specific behavior lives in Sections 1 and 2 above.
 
 | Protocol | PROMPT.md Section |
 |----------|-------------------|
-| **Gate Dispatch Matrix** — risk domain → gate mapping, trigger conditions, dispatch budget | §5 |
-| **Dispatch Contract & Gate Result Integration** — dispatch format, return contract, conflict resolution, status handling (pass/fail/needs-user-input) | §4 |
+| **Gate Dispatch Matrix** — risk domain → gate mapping, trigger conditions, gate budget | §5 |
+| **Graph Node Authoring & Gate Result Integration** — graph engine authoring (graph_create / graph_add_node / graph_add_edge / graph_add_loop / graph_run / graph_status / graph_approve / graph_cancel), return contract, conflict resolution, status handling (pass/fail/needs-user-input) | §4 |
 | **Post-Implementation Verification** — LSP diagnostics → build → test → verification plan sequence, failure handling, non-code task protocol | §7 |
 | **Evidence-First Research** — trigger conditions, research channels (Context7 → official docs → AOSP source → Gradle cache → experiments), citation format, escalation rules, scope boundaries | §8 |
 
