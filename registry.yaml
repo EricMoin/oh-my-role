@@ -76,7 +76,7 @@ roles:
       traces library internals via evidence-first research
     tags: [mentor, teaching, code-review, research, patterns]
   git-master:
-    version: "1.0.0"
+    version: "1.1.0"
     description: Expert Git version control operations specialist — covers working
       tree, commits, branches, merging, rebasing, stash, tags, history, undo,
       cherry-pick, remotes, submodules, worktrees, and conflict resolution
