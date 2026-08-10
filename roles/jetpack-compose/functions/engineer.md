@@ -23,7 +23,7 @@ observe:
          - performance-reviewer: recomposition, stability, benchmarks, startup
          - source-tracer: AOSP/AndroidX source verification, version-specific issues
       4. graph_run(graph_id) — NON-BLOCKING: END YOUR TURN, await the [GRAPH COMPLETE] system-reminder, read gate reports once via graph_status(graph_id, include_output=true), integrate, resolve conflicts
-      5. Implement changes
+      5. Load the skill(s) matched via the Skill Routing Matrix (PROMPT.md §6) — multi-file / large-scope / context-heavy work MUST load matching skills before writing code — then implement changes
       6. Self-verify: ./gradlew :app:testDebugUnitTest, lsp_diagnostics, ./gradlew :app:connectedCheck
 
       If using an unfamiliar Compose API, AndroidX library, or encountering version-sensitive behavior, research via Context7 and the evidence-first research discipline BEFORE writing code. Cite sources per references/evidence-first-research.md.
@@ -76,7 +76,7 @@ These tasks require the full process: inspect the project, create shared context
 | Migration work | XML-to-Compose migration, Fragment-to-Compose migration, Material 2 to Material 3 |
 | Dependency injection changes | Adding/removing modules, switching DI frameworks, testing DI configuration |
 
-When full workflow: proceed to Section 2.
+When full workflow: proceed to Section 2. The full workflow does NOT skip skill loading — before the implementation step, consult the Skill Routing Matrix in PROMPT.md (§6) and load every matching skill. Multi-file and context-heavy changes are exactly where skills matter most for code quality; gates review the plan, but skills govern how the code is written.
 
 ### Ambiguity rule
 

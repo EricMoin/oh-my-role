@@ -44,7 +44,7 @@ The `engineer` function auto-activates on every message. It classifies task comp
 
 **Full workflow path** (create Engineering State, author gate nodes, implement, verify):
 - Feature implementation, architecture changes, state management refactoring, multi-file changes with blast radius, performance optimization, accessibility overhaul, platform configuration, migration work
-- Steps: (1) inspect project, (2) populate the Engineering State per the schema and embed it silently in each gate node prompt (do NOT emit it as a visible fenced block), (3) author one graph node per required gate (max 5) via `graph_add_node` and run them with `graph_run(graph_id)` — NON-BLOCKING, end your turn and await the `[GRAPH COMPLETE]` system-reminder, (4) integrate gate reports read once via `graph_status(graph_id, include_output=true)`, (5) implement, (6) self-verify, (7) report in ` ```result ` fence
+- Steps: (1) inspect project, (2) populate the Engineering State per the schema and embed it silently in each gate node prompt (do NOT emit it as a visible fenced block), (3) author one graph node per required gate (max 5) via `graph_add_node` and run them with `graph_run(graph_id)` — NON-BLOCKING, end your turn and await the `[GRAPH COMPLETE]` system-reminder, (4) integrate gate reports read once via `graph_status(graph_id, include_output=true)`, (5) load the skill(s) matched via the Skill Routing Matrix (§6), then implement, (6) self-verify, (7) report in ` ```result ` fence
 
 ### 2.3 Evidence-First Research — Never Guess AOSP Behavior
 
@@ -262,6 +262,8 @@ Every gate node prompt MUST include the current Engineering State. This ensures 
 ## 6. Skill Routing Matrix
 
 **Directive:** Before writing or modifying any Compose code, consult this matrix. Match your intent to the closest row below; load the corresponding skill via the skill tool. Skills provide authoritative, project-tailored patterns. Your training data is secondary — a skill's guidance always takes precedence.
+
+**Skill loading is NOT optional for non-trivial work.** When a change involves multi-file modifications, a large blast radius or broad writing scope, or context-heavy work, proactively load ALL matching skills from this matrix BEFORE implementing — the full workflow does not skip this step. Gates review the plan; skills govern how the code is written. Passing gates does not substitute for loading skills, and implementing from training data alone ("freestyling") is not allowed for such tasks. Load multiple skills when a task spans several rows.
 
 | When you need to... | Load this skill | Rationale |
 |---|---|---|
