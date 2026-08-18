@@ -1,6 +1,6 @@
 ---
 name: compose-ui-architecture
-description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, dependency injection, navigation boundaries, and feature/module organization. Use when structuring Compose screens, wiring ViewModels, setting up navigation graphs, organizing feature modules, or architecting new Compose features.
+description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, deciding where screen logic lives (ViewModel vs plain UI-logic state holder vs presenter) and how events flow (method references or sealed event sinks), dependency injection, navigation boundaries, and feature/module organization. Use when structuring Compose screens, wiring ViewModels, deciding whether to extract orchestration into a state holder, setting up navigation graphs, organizing feature modules, or architecting new Compose features.
 ---
 # Compose UI Architecture
 
@@ -309,7 +309,56 @@ class SearchStateHolder(
 }
 
 @Composable
-fun rememberSearchStateHolder(searchRepo: SearchRepository): SearchStateHolder =
-    remember(searchRepo) { SearchStateHolder(searchRepo, rememberCoroutineScope()) }
+fun rememberSearchStateHolder(searchRepo: SearchRepository): SearchStateHolder {
+    val scope = rememberCoroutineScope()
+    return remember(searchRepo, scope) { SearchStateHolder(searchRepo, scope) }
+}
 ```
-Not every screen needs a full ViewModel, but complex local state with business logic should still be extracted into a plain Kotlin state holder class. This keeps the composable body declarative, makes the logic unit-testable without Compose tooling, and survives recomposition cleanly through `remember`.
+Not every screen needs a full ViewModel, but complex local state with business logic should still be extracted into a plain Kotlin state holder class. This keeps the composable body declarative, makes the logic unit-testable without Compose tooling, and survives recomposition cleanly through `remember`. Note `rememberCoroutineScope()` is a `@Composable` call: obtain it in the composable body and pass it in — never call it inside the `remember { }` lambda (a non-composable context).
+
+---
+
+### 7. Choosing where screen logic lives — don't reach past the simplest rung
+
+Two opposite failures share one root cause: not matching the tool to the need.
+
+❌ **Over-abstraction** — wrapping a plain screen in a "Coordinator"/"Presenter"/"Manager" whose methods only forward to the ViewModel:
+```kotlin
+@Stable
+class ProfileCoordinator(private val vm: ProfileViewModel) {
+    fun onRefresh() = vm.refresh()
+    fun onSave(draft: Draft) = vm.save(draft)   // pure delegation — adds a layer, buys nothing
+}
+```
+The ViewModel already *is* the state holder. If the wrapper only forwards, delete it and pass method references: `ProfileScreen(onRefresh = vm::refresh, onSave = vm::save)`.
+
+❌ **Under-abstraction** — the god-composable: 5+ collaborators captured into `remember(...)`-keyed event lambdas with `rememberUpdatedState` shadows. The long key list is the smell (see `compose-runtime-state` → strong skipping).
+
+✅ **Pick the lowest rung that removes the pain.** Escalate only when the current rung actually hurts:
+
+| The situation | Where the logic goes | Precedent |
+| --- | --- | --- |
+| Screen state + events whose logic fits in the ViewModel (the common case) | ViewModel; composable passes `vm::method` refs. **No extra holder.** | Now in Android |
+| Local UI-element state (expanded, query text) with a little logic | Hoisted state, or a small `@Stable` holder via `remember` | AndroidX `DrawerState` |
+| Complex *UI* logic (multi-step sequencing, gestures, animation) that depends on UI-scoped objects — a `View`, Compose snapshot state, the composition scope — and therefore **cannot** live in the ViewModel | Plain `@Stable` UI-logic state holder, composition-scoped | Google state-holder guidance; NiA `NiaAppState` |
+| A large callback surface over an existing sealed-action vocabulary | Optionally collapse the `onX` bag into one `onEvent(SealedEvent)` sink — **orthogonal** to whether a holder exists | the ViewModel's own `Action`/`executeAction` |
+| The team wants all screen logic as testable, runtime-driven presenters | Presenter-as-composable — a **project-wide** architecture bet, not a per-screen move | Slack Circuit, Cash App Molecule |
+
+The plain UI-logic state holder (rung 3), when justified:
+```kotlin
+@Stable
+class RecorderUiState(          // name it for its job; "Coordinator"/"Presenter" are just conventions
+    private val vm: RecorderViewModel,
+    private val surface: CaptureSurface,   // wraps an Android View — must not enter the ViewModel
+    private val scope: CoroutineScope,     // reuse the composition/session scope, not a new one
+) {
+    fun onEvent(e: RecorderEvent) { /* imperative sequencing that needs surface + scope */ }
+}
+```
+Load-bearing rules, most important first:
+- **Justify the rung.** Extract a holder only when BOTH hold: the UI logic is genuinely complex *and* it depends on UI-scoped objects the ViewModel must not hold. If it is just "many fields," a data class of hoisted state is enough; if the logic has no UI-scoped dependency, it belongs in the ViewModel.
+- **Keep it cohesive — one screen concern.** A holder that accumulates unrelated duties (capture + navigation + analytics + permissions) is a god object wearing a new name; split it or push parts back to the ViewModel/leaves. Relocating a mess is not fixing it.
+- **Composition-scoped, not a ViewModel.** It coordinates composition-lifetime objects, so it must not survive configuration changes and must not leak `View` references. Reuse the session/composition scope so a `remember` key change doesn't cancel in-flight work.
+- **Keep declarative effects in the composable.** Move only imperative sequencing into the holder; `LaunchedEffect` / `collectAsStateWithLifecycle` stay in the UI.
+- **Refresh, don't capture, mutable callbacks.** If the holder exposes `var onX` callbacks, reassign them each recomposition in the `remember…` factory (this replaces `rememberUpdatedState`, and is why the key list shrinks); read them only inside event handlers, never during composition (an untracked read on a `@Stable` class corrupts the skip decision).
+- **A refactor preserves behavior.** When relocating logic, keep *where* gating happens and any conditional guards intact — moving a guard by accident is a behavior change, not a refactor.
