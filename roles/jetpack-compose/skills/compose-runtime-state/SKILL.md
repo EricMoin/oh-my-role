@@ -131,6 +131,8 @@ fun ProfileCard(profileId: Long, onFollow: (Long) -> Unit) {
 ```
 `profileId` is a primitive (immutable) capture and `onFollow` is a hoisted callback, so the memoized lambda keeps its identity across recompositions and `FollowButton` is skipped. In general, `remember`-cached instances — including the lambdas the compiler memoizes for you — stay stable across recompositions; only fresh allocations break the comparison.
 
+Because the compiler already memoizes lambdas by their captures, hand-wrapping an event handler in `remember(a, b, c, …) { { … } }` buys almost nothing under strong skipping — and a long key list is a *symptom*: the composable is capturing too many collaborators and doing orchestration the UI layer should not own. The fix is structural, not deleting the `remember`: move that logic to its proper owner — usually the ViewModel, or a plain UI-logic state holder when it depends on UI-scoped objects (a `View`, snapshot state, composition scope) the ViewModel must not hold — and pass a method reference (stable by construction). Reach for the simplest owner that works; see `compose-ui-architecture` → Common Mistakes for the decision ladder.
+
 ### 3. Fix unstable types at the source before annotating
 
 `@Stable` and `@Immutable` override what the compiler infers about a type. The rule is to fix unstable types at the source before annotating: do not add the annotations merely to silence compiler reports. If the type is actually mutable, the runtime will trust the annotation and skip recompositions that should have happened. Restructure the type first — immutable data class, stable `val` fields — and only annotate once the contract is genuinely true.
