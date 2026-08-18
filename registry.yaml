@@ -88,3 +88,9 @@ roles:
       — fast for simple tasks, thorough for complex ones.
     tags: [rust, cargo, async, systems, unsafe, performance, testing, adaptive, gates,
       subagents]
+  comment-writer:
+    version: "1.0.0"
+    description: Code comment specialist — writes, rewrites, and reviews code comments
+      with plain language over jargon, explains WHY not WHAT, and matches the project's
+      style and language (中文/English)
+    tags: [comments, documentation, code-quality, readability, plain-language]
