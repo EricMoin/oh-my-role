@@ -2,6 +2,13 @@ name: oh-my-role
 description: Default rolebox registry — community AI agent roles for opencode
 url: https://github.com/EricMoin/oh-my-role
 roles:
+  apk-reverse-engineer:
+    version: "1.0.0"
+    description: Android application reverse-engineering specialist — fingerprints
+      APKs, decompiles (jadx / Vineflower / dex2jar / bundletool / apktool), analyzes
+      structure, traces call flows, extracts APIs, audits security, and runs adaptive
+      Frida dynamic analysis, with a lawful-use gate and bilingual (中文/English) support
+    tags: [android, reverse-engineering, apk, decompilation, frida, security, mobile]
   software-architecture:
     version: "2.2.0"
     description: Software architecture orchestrator — coordinates specialist
