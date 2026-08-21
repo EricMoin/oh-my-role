@@ -4,10 +4,9 @@ url: https://github.com/EricMoin/oh-my-role
 roles:
   apk-reverse-engineer:
     version: "1.0.0"
-    description: Android application reverse-engineering specialist — fingerprints
-      APKs, decompiles (jadx / Vineflower / dex2jar / bundletool / apktool), analyzes
-      structure, traces call flows, extracts APIs, audits security, and runs adaptive
-      Frida dynamic analysis, with a lawful-use gate and bilingual (中文/English) support
+    description: Android reverse-engineering specialist — decompiles and analyzes
+      Android apps, extracts APIs, audits security, and runs Frida dynamic analysis.
+      Lawful-use gated; bilingual (中文/English)
     tags: [android, reverse-engineering, apk, decompilation, frida, security, mobile]
   software-architecture:
     version: "2.2.0"
