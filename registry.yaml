@@ -6,7 +6,7 @@ roles:
     version: "1.0.0"
     description: Android reverse-engineering specialist — decompiles and analyzes
       Android apps, extracts APIs, audits security, and runs Frida dynamic analysis.
-      Lawful-use gated; bilingual (中文/English)
+      Lawful-use gated.
     tags: [android, reverse-engineering, apk, decompilation, frida, security, mobile]
   software-architecture:
     version: "2.2.0"
