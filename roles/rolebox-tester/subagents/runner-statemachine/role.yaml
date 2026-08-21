@@ -1,0 +1,15 @@
+name: Runner Statemachine
+description: "State-machine / observe-probe / signal module runner: function lifecycle (gate/evidence/continuation/transitions/artifact/phase), observe-probe handlers, signal tool and signal_observed lifecycle (Tests 85-95, 115-116, 139)."
+model: provider/tier-3-fast
+prompt_file: prompt.md
+functions:
+  - state-machine
+  - observe-probe
+  - signal-probe
+  - transform
+  - test-all
+auto_activate:
+  - state-machine
+  - observe-probe
+  - signal-probe
+locked: true

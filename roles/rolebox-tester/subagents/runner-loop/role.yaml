@@ -1,0 +1,4 @@
+name: Runner Loop
+description: "Loop function module runner: |loop:N| definition, execution/round progression, persistence to disk, state recovery (Tests 19, 67, 97-100)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

@@ -50,3 +50,4 @@ skills:
 references:
   schemas: references/schemas.md
   compose-architecture: references/compose-architecture.md
+model: provider/tier-3-fast

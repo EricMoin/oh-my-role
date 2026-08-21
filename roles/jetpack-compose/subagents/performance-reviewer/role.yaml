@@ -52,3 +52,4 @@ skills:
 references:
   schemas: references/schemas.md
   compose-performance-and-platform: references/compose-performance-and-platform.md
+model: provider/tier-3-fast

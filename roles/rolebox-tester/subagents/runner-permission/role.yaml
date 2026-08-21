@@ -1,0 +1,4 @@
+name: Runner Permission
+description: "Permission-enforcement module runner: restricted subagent deny for bash/write, dispatching the rolebox-tester--restricted fixture (Tests 106, 141)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

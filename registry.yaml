@@ -62,7 +62,7 @@ roles:
       resolution-sim → deploy-health → behavioral eval)
     tags: [meta, role-creation, verification, scaffolding]
   rolebox-tester:
-    version: "3.0.0"
+    version: "5.0.0"
     description: Comprehensive functional tester for rolebox features.
       Executes a full test suite covering skills, dispatch, functions,
       references, tools, permissions, MCP, collaboration graph, hashline

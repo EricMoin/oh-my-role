@@ -361,4 +361,38 @@ Load-bearing rules, most important first:
 - **Composition-scoped, not a ViewModel.** It coordinates composition-lifetime objects, so it must not survive configuration changes and must not leak `View` references. Reuse the session/composition scope so a `remember` key change doesn't cancel in-flight work.
 - **Keep declarative effects in the composable.** Move only imperative sequencing into the holder; `LaunchedEffect` / `collectAsStateWithLifecycle` stay in the UI.
 - **Refresh, don't capture, mutable callbacks.** If the holder exposes `var onX` callbacks, reassign them each recomposition in the `remember…` factory (this replaces `rememberUpdatedState`, and is why the key list shrinks); read them only inside event handlers, never during composition (an untracked read on a `@Stable` class corrupts the skip decision).
+
+---
+
+### 8. Coordinating peer UI instances — arbitrate in the shared owner, don't cross-suppress
+
+The situation: two (or more) instances of the same component are alive at once — a base screen's bar plus an overlay's borrowed copy, duplicate panes in list-detail, a dialog re-hosting a shared editor — and they compete for a singleton concern routed through a shared object: focus requests, back handling, an event stream, an exclusive resource. Exactly one instance must win at any moment.
+
+❌ **Wrong** — one side (or an orchestrator) observes the other side's visibility and suppresses the loser. The suppression signal travels through whatever channel is handy — a threaded parameter, a `CompositionLocal` flag, a toggle on a shared manager — but all variants share the flaw: peers that should be ignorant of each other are now coupled through a visibility fact, and every new peer multiplies the suppression wiring:
+```kotlin
+// Orchestrator flips the loser off when the winner appears — coupling, whatever the channel
+SharedInputManager.setBaseBarEventsEnabled(!overlayVisible)
+```
+Note what the flag really is: `baseBarEventsEnabled` sounds generic, but its semantics are "feature X's overlay is currently showing" — one feature's situation baked into a shared component under a neutral name. The shared component now carries knowledge only one caller understands, and the next overlay feature will add a second flag rather than reuse anything. Shared components accept changes expressed in their own vocabulary (identity, ordering, arbitration — general capabilities); they must not accept encodings of a particular caller's circumstances.
+
+❌ **Also wrong** — pre-declaring a static priority registry (enum of layers, priority ints) for what is really a dynamic stacking order. Every future overlay scenario must edit the registry, which decays into a manually sorted global list:
+```kotlin
+enum class InputLayer { Base, Overlay /*, Overlay2, Dialog, ...? */ }
+```
+
+✅ **Correct** — move the exclusivity into the shared owner as a *derived* rule over facts the participants declare about themselves only:
+```kotlin
+// Shared owner keeps an ordered stack keyed by a STABLE identity (the surface/state-holder
+// object, not the composable instance). Router picks the topmost live entry.
+fun register(owner: Any, handler: Handler): Unregister { /* same owner ⇒ replace in place */ }
+private fun route(event: Event) = entries.lastOrNull { it.live }?.handler?.invoke(event)
+```
+Three properties make this the right shape, and each is a test you can apply to any competing design:
+- **Ownership**: the winner is computed by the shared object's single rule; no participant knows another exists. Adding a third overlay requires zero changes to existing code.
+- **Emergence**: stacking order comes from actual mount order (a dynamic fact derived at runtime), not from a static registry someone must maintain.
+- **Identity**: registration is keyed to the stable logical owner. A composable that remounts (via `AnimatedContent`, `if` branches, mode switches) is a *content refresh*, not a new participant — same-owner re-registration must update in place, never re-push to the top. Binding lifecycle to the composable instance is how "last registered wins" silently becomes "last remounted steals".
+
+The precedent is `BackHandler` / `OnBackPressedDispatcher`: every handler registers into a shared dispatcher; the innermost enabled one wins; nobody suppresses anybody. When you find yourself threading an `enabled`-style flag from one feature into another feature's component, stop and ask which shared object should own the arbitration instead.
+
+The one-sentence test tells the two shapes apart before any code is written: "add a flag so the *camera overlay* can win focus" names a feature — special case; "let the router pick the topmost live surface" names a capability any future participant uses for free — general. The general solution is rarely more code; it differs only in where the change lands (arbitration rule in the shared owner) versus where the special case lands (feature knowledge smeared across participants).
 - **A refactor preserves behavior.** When relocating logic, keep *where* gating happens and any conditional guards intact — moving a guard by accident is a behavior change, not a refactor.

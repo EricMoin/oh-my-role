@@ -282,7 +282,33 @@ LaunchedEffect(Unit) {
 ```
 `SideEffect` guarantees execution after every successful recomposition — not once per composition lifespan. Its block is non-cancellable and non-lifecycle-aware. Launching a coroutine there will fire repeatedly as the composition updates.
 
-## Cite the Source
+---
+
+### 7. `DisposableEffect` registration into order-sensitive structures
+
+A `DisposableEffect` registration lives exactly as long as the composable's presence at its composition location. When the target is an order-sensitive external structure — a listener stack where "last registered wins," a handler chain, a focus dispatcher — that lifecycle binding becomes a semantic claim: *every remount looks like a brand-new participant that jumps the queue*.
+
+❌ **Wrong** — assuming registration order tracks visual/logical order when the registering composable can remount:
+```kotlin
+// Inside a composable that lives under AnimatedContent / an if-branch / movableContentOf
+DisposableEffect(sharedDispatcher) {
+    val unregister = sharedDispatcher.register(handler) // pushed to top of stack
+    onDispose { unregister() }
+}
+```
+A mode switch, `AnimatedContent` target change, or conditional branch remounts this composable. It re-registers and silently steals the top-of-stack position from a logically "higher" participant that never moved. The bug is invisible in the happy path and appears only under specific interaction sequences.
+
+✅ **Correct** — key the registration to the stable logical owner, and make the external structure treat same-owner re-registration as an in-place update:
+```kotlin
+val surface = LocalOwningSurface.current   // stable across remounts of this UI region
+DisposableEffect(sharedDispatcher, surface) {
+    val unregister = sharedDispatcher.register(owner = surface, handler)
+    onDispose { unregister() }              // slot survives; only the handler is detached
+}
+```
+The general rule: a composable instance is an implementation detail of the UI tree, not a logical identity. Before registering into any shared, ordered structure, decide what the *logical participant* is (a screen, a surface, a state holder) and key the registration to that. If the external API only supports append-to-end semantics, fix the API — do not compensate by suppressing other participants from the outside.
+
+---
 
 When this skill asserts runtime, snapshot, or stability behavior, back the claim with the androidx source: `[source: GitHub — androidx/androidx/{path}:L{line} — {what was verified}]`. For platform or framework source, cite cs.android.com instead.
 

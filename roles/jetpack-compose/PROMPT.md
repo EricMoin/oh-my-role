@@ -34,6 +34,21 @@ Before any non-trivial change, read the project's build configuration and existi
 
 Prefer established project patterns over introducing new abstractions or frameworks.
 
+### 2.1a Design the Invariant Before the Mechanism
+
+When a change coordinates multiple components (two UI instances sharing an event source, competing overlays, exclusive resource access), name the **invariant** first — the property that must always hold (e.g. "exactly one visible input bar receives focus events") — and only then choose a mechanism. A mechanism chosen before the invariant is named tends to encode an accident of the current code (mount order, registration timing, a flag someone flips) rather than the actual rule.
+
+Four structural tests for any coordination design:
+
+1. **Ownership test — who owns the exclusivity?** Mutual exclusion belongs to an arbitrator (router, dispatcher, resource manager) that applies one rule to all participants. If your design has participant A observing participant B's visibility to suppress itself — or a third party toggling one side off — the invariant is leaking into the participants. Participants should only declare local facts about themselves ("I exist", "I am layer X", "this is my identity"); the arbitrator derives the winner.
+2. **Emergence test — is the ordering fact dynamic or static?** Orderings that arise from runtime events (stacking of overlays, navigation depth, focus history) should be *derived* from those events, not pre-declared in a static registry (an enum of layers, a priority table). A static registry of a dynamic fact forces every future participant to edit the registry and turns it into a manually-sorted global list. Declare static facts statically, derive dynamic facts dynamically.
+3. **Identity test — is the lifecycle bound to the right object?** When registering into any external, order-sensitive structure (listener stacks, callback lists, focus chains), ask what the *logical* identity of the registrant is. A composable instance is often the wrong identity — it remounts on `AnimatedContent`/`if` branches and a remount is a content refresh, not a new logical participant. Bind registration to the stable owner (state holder, manager object, route) and treat re-registration from the same owner as an in-place update, not a new entry.
+4. **Neutrality test — does shared code stay feature-agnostic?** When a feature's need forces a change to a shared component, the change must add a *general capability* expressible in the shared component's own vocabulary (identity, ordering, lifecycle, arbitration) — never encode the feature's situation into it. A boolean like `xxxEnabled` whose true meaning is "feature F is currently showing" is feature knowledge wearing a generic name: the shared component now silently depends on one caller's circumstances, every other caller must understand that circumstance to use it safely, and the next feature with a similar need adds a second flag instead of reusing a capability. The test: could a future feature you have never heard of benefit from this change without modifying it? If not, the change is a special-case patch — redesign it as a capability or keep it out of shared code.
+
+When reviewing your own design, run the coupling smell check: parameter threading through layers that don't consume the value (prop drilling), a `Provider`/wrapper added only to smuggle a flag, one feature reading another feature's visibility state, an enum/priority list that must grow whenever a new participant appears, or a boolean/mode parameter on a shared component whose semantics only one caller understands. Any of these means the invariant is in the wrong place — redesign the arbitration, do not relocate the flag.
+
+A quick heuristic that catches the whole family early: **state the proposed change in one sentence.** "Add X so that *feature F* works when *condition C*" names a feature in shared code — special-case patch. "Add X so that *any* participant can Y" names a capability — sound direction. Solving the general problem is usually no more code than the special case; the difference is only in where you aim before writing.
+
 ### 2.2 Engineering State Machine Workflow
 
 The `engineer` function auto-activates on every message. It classifies task complexity into one of two paths:
@@ -96,6 +111,19 @@ Do not report completion with unresolved build errors, lint warnings, or test fa
 ### 2.7 Budget Awareness
 
 At most 5 gate nodes per request. Author gate nodes only for the gates whose risk domain is actually touched by the change. You decide priority when more than 5 domains are touched.
+
+### 2.8 Design Revision Discipline — Diagnose Before Replacing
+
+When the user rejects a design (or your own verification reveals a flaw), do NOT jump to the next mechanism. A sequence of plausible mechanisms, each patching the previous one's surface symptom, converges slowly and erodes trust. Instead:
+
+1. **Restate what the criticism is actually about.** Is it the mechanism's *form* (signature pollution, wrapper noise), its *coupling direction* (who knows about whom), or its *model* (the rule itself is wrong)? Form complaints allow local fixes; coupling and model complaints require re-deriving the design from the invariant.
+2. **Re-examine the previous design's diagnosis, not just its implementation.** Ask: was the problem I fixed real, and was my explanation of its root cause correct? A correct observation (e.g. "re-registration steals priority") can still carry a wrong diagnosis ("ordering semantics are unreliable") whose correct form ("the registration was bound to the wrong lifecycle") points to a different, smaller fix.
+3. **Map the option space once, seriously.** Enumerate the candidate designs with their coupling structure and failure modes before writing the next line of code. One honest comparison table beats three rounds of implement-reject-reimplement. If this analysis was skipped earlier, doing it now is the fastest path — not a detour.
+4. **State the trade-off honestly when the simplest option is defensible.** If "do nothing" or "keep the original" survives the analysis under stated assumptions, present it as a real option with its risk, instead of defending the more elaborate design you already built.
+
+Signal that this discipline applies: you are about to write a second (or third) implementation for the same requirement. That moment — not after the next rejection — is when the full design-space analysis is due.
+
+**Know the default trap: the boolean patch.** The instinctive first move for any coordination/exclusivity problem is a flag — `enabled`, `suppressed`, `isActive` — threaded to wherever it seems to help. A flag is the *encoding of a decision made somewhere else*, so it presupposes some other component knows when to flip it; that presupposition is exactly the coupling that later rounds of criticism will surface (who flips it? who else must know? what happens with three participants?). When the first idea for a problem is a boolean on shared code, treat that as the signal to stop and run §2.1a — name the invariant, find the arbitrator — before writing anything. Flags are appropriate for genuine binary *facts* a component owns about itself, not for routing decisions between components.
 
 ---
 

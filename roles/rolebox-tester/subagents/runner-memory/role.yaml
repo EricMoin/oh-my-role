@@ -1,0 +1,4 @@
+name: Runner Memory
+description: "Memory module runner: memory write/recall/list/update tools, memory injection block, and tool/block delivery (no memory function — Tests 59-64, 108)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

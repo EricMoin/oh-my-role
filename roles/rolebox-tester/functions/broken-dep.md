@@ -21,5 +21,5 @@ because `nonexistent-function` does not exist among the loaded functions.
 ## Execution
 
 This function is intentionally broken and should NOT be activated during normal test
-execution. It exists solely as a probe for graph and validation tools. Tests 117 and
-120 reference this function.
+execution. It exists solely as a probe for graph and validation tools. Tests 117-118
+reference this function.
