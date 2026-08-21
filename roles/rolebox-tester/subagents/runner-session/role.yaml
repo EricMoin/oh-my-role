@@ -1,0 +1,4 @@
+name: Runner Session
+description: "Session tools module runner: list, read, search, info, diff, fork, tool_filter (Tests 20-25, 138)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

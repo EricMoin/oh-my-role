@@ -1,0 +1,4 @@
+name: Signal Escalate
+description: Signal-emitting graph agent that always terminates via signal(type="escalate") with a fixed ESCALATE_SIGNAL_OK reason payload
+model: provider/tier-3-fast
+prompt_file: prompt.md

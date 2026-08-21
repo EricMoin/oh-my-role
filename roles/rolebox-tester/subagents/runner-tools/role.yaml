@@ -1,0 +1,4 @@
+name: Runner Tools
+description: "Tools module runner: bash/write/read/grep/glob/edit, Hashline (read/edit/version-guard/windowed/batch/large-file), and Todo lifecycle (Tests 11-16, 27-29, 122-123, 137, 140)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

@@ -1,0 +1,4 @@
+name: Runner Tui
+description: "Live-graph / TUI visibility module runner: node activity, liveness/stall, error/escalate state, concurrency saturation, queue depth, budget caps, runtime metrics, session-activity, multi-function state, JSON snapshots (Tests 65-66, 68, 101-105, 143-149)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

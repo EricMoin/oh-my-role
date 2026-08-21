@@ -82,6 +82,10 @@ When full workflow: proceed to Section 2. The full workflow does NOT skip skill 
 
 If unsure whether a task is lightweight or full workflow, inspect the project first (`build.gradle.kts`, relevant source files) and then decide. If the blast radius is still unclear, treat as full workflow — better to create context and gate early than to skip and break something.
 
+### Rejection escalation rule
+
+A design rejection re-classifies the task. If a change went through as lightweight and the user rejects the approach (not a typo-level fix-up — the *approach*), the second attempt is no longer lightweight: the rejection is evidence that the design space is nontrivial. Before implementing attempt two, produce the analysis that was skipped — the invariant being maintained, the candidate mechanisms with their coupling structure, and why the chosen one survives the objection (see PROMPT.md §2.1a and §2.8). Two rejections on the same requirement mean stop coding entirely: present the option space and let the user pick the model before another line is written. Implementing mechanism N+1 at the same analysis depth that produced mechanisms 1..N is the failure mode this rule exists to prevent.
+
 ---
 
 ## 2. Engineering State Creation Flow

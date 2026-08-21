@@ -1,0 +1,4 @@
+name: Runner Web
+description: "Web/MCP module runner: web search, web read, MCP resource listing (Tests 127-129)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

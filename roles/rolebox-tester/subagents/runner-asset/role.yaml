@@ -1,0 +1,4 @@
+name: Runner Asset
+description: "Asset management & hot-reload module runner: asset search/inspect/validate, skill_compose, function-state block, function_graph, reference search, context assemble, hot-reload, broken-dependency probe, and asset/reference/context remaining coverage (Tests 76-84e, 117-118, 131, 133-135)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

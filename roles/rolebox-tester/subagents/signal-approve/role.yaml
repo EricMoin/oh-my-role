@@ -1,0 +1,4 @@
+name: Signal Approve
+description: Signal-emitting graph agent that always terminates via signal(type="need_approval") with a fixed APPROVAL_GATE_OK summary payload
+model: provider/tier-3-fast
+prompt_file: prompt.md

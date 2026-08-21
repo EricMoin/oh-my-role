@@ -1,0 +1,4 @@
+name: Runner Task
+description: "Task management module runner: task search/budget/graph/node-retry/concurrency/chronology/export and graph session-budget tracking (Tests 69-75, 130, 142)."
+model: provider/tier-3-fast
+prompt_file: prompt.md

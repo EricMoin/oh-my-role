@@ -1,0 +1,8 @@
+name: Runner Core
+description: "Core module runner: skill loading, reference reading, skill-specific reference, parameterized function, auto-activate/locked, and PRIMARY system-prompt block structure (Tests 1-3, 17, 107, 109-114)."
+model: provider/tier-3-fast
+prompt_file: prompt.md
+skills:
+  - test-skill
+functions:
+  - transform

@@ -1,0 +1,4 @@
+name: Signal Revise
+description: Signal-emitting graph agent that always terminates via signal(type="revise_needed") with a fixed REVISE_SIGNAL_OK findings payload
+model: provider/tier-3-fast
+prompt_file: prompt.md

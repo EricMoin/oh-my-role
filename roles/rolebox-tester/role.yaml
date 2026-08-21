@@ -1,7 +1,7 @@
 name: Rolebox Tester
-description: "Comprehensive functional tester for rolebox features. Regardless of user input, executes a full test suite covering skills, dispatch, functions, references, tools, permissions, MCP, todo management, collaboration graph, session continuation, parameterized functions, hash-authored edit (hashline read/edit/version guard), push dispatch (sync session continuation, notification completeness, dispatch_output running-task error guard), memory tools (write, recall, list, update), memory injection, |memory| function definition, the search/tool suite (task search, budget, graph, retry, concurrency, chronology, export, asset search, inspect, validate, skill compose, function state, function graph, reference search, context assemble, asset hot reload), hot reload effectiveness tests (new role discovery, deleted role cleanup, new subagent dispatchable, file watcher auto-trigger, failure reporting), signal architecture testing, and test report artifact generation (persistent structured JSON test report at a known path for orchestrator/agent consumption)."
-version: "3.0.0"
-model: provider/tier-2-reasoning
+description: "User-directed functional tester for rolebox. Run specific test modules on demand (e.g., node dispatch, live-graph visibility, memory, state machine, LSP) or run the full suite. Covers: skills, Graph Engine v2 imperative node dispatch (single-node/chained/parallel runs, node session continuation, node retry, output truncation, cancel), functions (parameterized/state-machine/observe-probe/signal), references, tools (bash/write/read/grep/glob/edit/hashline), permissions, MCP, todo, collaboration graphs, session tools (info/diff/fork), memory (write/recall/list/update/injection), task management (search/budget/graph/concurrency/chronology/export), asset management (search/inspect/validate/compose/hot-reload), live-graph visibility (graph_status liveness/metrics/concurrency), web/search, LSP, nested dispatch, and structured test report generation. Centered on Graph Engine v2 imperative graph_* coverage: graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop termination + mode, node/graph budgets, node liveness, signal-emitting subagents (signal-answer / signal-revise / signal-escalate / signal-approve) exercising the signal-bridge terminating and pausing signal vocabulary end to end, plus an interactive_terminal smoke test."
+version: "5.0.0"
+model: provider/tier-3-fast
 mode: primary
 prompt_file: PROMPT.md
 
@@ -58,6 +58,18 @@ subagents:
       2. Verify the input contains "[PROCESSED]". If it does, respond with "APPROVED" and "GRAPH_FLOW_OK".
       3. If it does not contain "[PROCESSED]", respond with "REVISION_NEEDED" and "GRAPH_FLOW_FAIL".
       Always respond concisely. Keep responses under 3 sentences.
+  - name: Signal Answer
+    description: Signal-emitting graph agent that always terminates via signal(type="answer") with a fixed ANSWER_SIGNAL_OK marker payload
+    prompt_file: subagents/signal-answer/prompt.md
+  - name: Signal Revise
+    description: Signal-emitting graph agent that always terminates via signal(type="revise_needed") with a fixed REVISE_SIGNAL_OK findings payload
+    prompt_file: subagents/signal-revise/prompt.md
+  - name: Signal Escalate
+    description: Signal-emitting graph agent that always terminates via signal(type="escalate") with a fixed ESCALATE_SIGNAL_OK reason payload
+    prompt_file: subagents/signal-escalate/prompt.md
+  - name: Signal Approve
+    description: Signal-emitting graph agent that always terminates via signal(type="need_approval") with a fixed APPROVAL_GATE_OK summary payload
+    prompt_file: subagents/signal-approve/prompt.md
 
 
 
@@ -80,9 +92,10 @@ memory:
   scope: both
 
 dispatch:
-  maxConcurrent: 2
-  maxActivePerParent: 2
-  maxTotalSessionsPerRequest: 8
+  maxConcurrent: 2147483647
+  maxQueueDepth: 2147483647
+  maxActivePerParent: 2147483647
+  syncReservedSlots: 1
 
 auto_activate:
   - test-all
