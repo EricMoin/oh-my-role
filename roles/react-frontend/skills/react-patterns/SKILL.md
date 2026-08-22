@@ -16,8 +16,8 @@ This skill provides comprehensive guidelines, patterns, and best practices for R
 1. **Best Practices**: For component architecture, state management, and TypeScript integration, read `references/best-practices.md`
 2. **Element wrappers**: If a component renders a single native element (`button`, `input`, `a`, …), extend that element’s props (`React.ComponentProps<"…">`) and spread `...props` — see **Extend native element props** below and `references/best-practices.md` → *Extending HTML Elements*.
 3. **useEffect Patterns**: For understanding when to use (and avoid) useEffect, read `references/useeffect-patterns.md`
-4. **Data Fetching**: For TanStack Query patterns, use the `tanstack` skill
-5. **Forms**: For form handling with TanStack Form, use the `tanstack` skill
+4. **Data Fetching**: For TanStack Query patterns, use the `tanstack-query` skill
+5. **Forms**: For form handling with TanStack Form, use the `tanstack-query` skill
 
 ## Core Principles
 
@@ -56,7 +56,7 @@ function TextField({ label, error, className, ...props }: TextFieldProps) {
 }
 ```
 
-**Variants + CVA:** if you use `class-variance-authority`, combine intrinsic props with `VariantProps<typeof variants>` (often `extends React.ButtonHTMLAttributes<HTMLButtonElement>`). Follow the **`shadcn`** skill patterns.
+**Variants + CVA:** if you use `class-variance-authority`, combine intrinsic props with `VariantProps<typeof variants>` (often `extends React.ButtonHTMLAttributes<HTMLButtonElement>`), following shadcn/ui conventions: define variants with `cva`, merge `className` last via `cn()`, and spread `...props` onto the root element.
 
 **Deep dive:** `references/best-practices.md` → *Extending HTML Elements*.
 
@@ -215,7 +215,7 @@ Before finishing a task involving React:
 
 - [ ] Components are functional and follow single responsibility principle
 - [ ] Behavior logic is extracted into custom hooks
-- [ ] TypeScript props are typed directly (not using `React.FC`); native wrappers extend `React.ComponentProps<"…">` (or `ButtonHTMLAttributes` + variants per `shadcn` skill) and forward `...props`
+- [ ] TypeScript props are typed directly (not using `React.FC`); native wrappers extend `React.ComponentProps<"…">` (or `ButtonHTMLAttributes` + variants following shadcn/ui conventions) and forward `...props`
 - [ ] State management follows the hierarchy (local -> Zustand -> TanStack Query -> URL)
 - [ ] useEffect is only used for external system synchronization
 - [ ] Error boundaries are in place for error handling

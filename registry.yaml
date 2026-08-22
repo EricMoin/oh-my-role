@@ -15,10 +15,12 @@ roles:
       architecture-shaping implementation
     tags: [architecture, design, planning, adr, migration, subagents]
   react-frontend:
-    version: "1.0.0"
+    version: "2.0.0"
     description: React/Next.js frontend developer — builds UIs with TypeScript
-      and Tailwind
-    tags: [react, frontend, typescript, tailwindcss]
+      and Tailwind, plus TanStack Query data fetching, distinctive design,
+      accessibility, TDD, and systematic debugging
+    tags: [react, frontend, typescript, tailwindcss, data-fetching, accessibility,
+      testing, debugging]
   ai-designer:
     version: "3.1.0"
     description: AI Design Director — tiered-routing design director with
