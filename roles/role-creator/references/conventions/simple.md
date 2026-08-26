@@ -10,7 +10,9 @@ The simplest role structure. One agent, one purpose, no subagents. All knowledge
 - The agent doesn't need to delegate or coordinate with others
 - You want fast startup and minimal overhead
 
-**Don't use when:** the workflow requires specialist review gates, stateful orchestration, or multi-agent coordination. Reach for director-gated or nested patterns instead.
+**Don't use when:** the workflow requires specialist review gates, stateful orchestration, or multi-agent coordination. Reach for director-gated or graph-orchestrated patterns instead.
+
+**Simple roles need no orchestration:** no `graph:` block, no `collaboration:` block, and no state machine. The single agent answers directly. Reach for an orchestration pattern (director-gated, graph-orchestrated) only when you actually have multiple agents to coordinate.
 
 ## Directory Layout
 
@@ -26,7 +28,7 @@ roles/{role-name}/
     └── {topic}.md
 ```
 
-No `subagents/` directory. No `functions/` directory (defaults apply). No collaboration graph.
+No `subagents/` directory. No `functions/` directory (defaults apply). No collaboration graph. No `graph:` block. No state machine.
 
 ## role.yaml Shape
 
@@ -119,6 +121,6 @@ Skills are role-scoped via rolebox discovery, so no prefix is needed. A skill na
 
 1. **Flat structure.** No nesting, no subagents. One level of files.
 2. **Self-contained knowledge.** The prompt + skills contain everything needed.
-3. **No coordination overhead.** No collaboration graph, no dispatch config.
+3. **No coordination overhead.** No collaboration graph, no `graph:` block, no state machine.
 4. **Fast to create.** You can have a working role in under 30 lines.
 5. **Easy to test.** One agent, one conversation, predictable behavior.

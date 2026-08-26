@@ -1,0 +1,57 @@
+name: Valid Graph V2 Role
+description: A graph-orchestrated role with memory config and bounded collaboration termination
+mode: primary
+prompt: |
+  You are a graph-orchestrated role that coordinates specialist subagents
+  through the Graph Engine v2 (graph_create / graph_add_node / graph_add_edge /
+  graph_add_loop / graph_run / graph_status / graph_cancel / graph_approve).
+
+graph:
+  orchestration: graph_v2
+
+memory:
+  inject: true
+  max_inject: 4
+  min_relevance: medium
+  scope: role
+
+permission:
+  allow:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - graph_create
+    - graph_add_node
+    - graph_add_edge
+    - graph_add_loop
+    - graph_run
+    - graph_status
+    - graph_cancel
+    - graph_approve
+    - signal
+
+subagents:
+  - name: reviewer
+    prompt: |
+      You are a code-review specialist subagent.
+
+collaboration:
+  agents:
+    - reviewer
+  topology: review-loop
+  flow:
+    - from: parent
+      to: reviewer
+      label: dispatch review
+    - from: reviewer
+      to: parent
+      label: review verdict
+      exit: true
+  max_iterations: 3
+  termination:
+    any_of:
+      - max_iterations: 3
+      - result_matches:
+          agent: reviewer
+          contains: APPROVED

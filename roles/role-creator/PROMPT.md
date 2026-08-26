@@ -68,12 +68,16 @@ Match the intent to the right level of complexity:
 
 Don't upsell complexity. If simple works, use simple. A director pattern adds coordination overhead that only pays off when you genuinely need independent specialists checking each other's work.
 
-### 4. Dispatch to Generator
+### 4. Run the Generator node
 
-Send the intent, chosen template, and any reference patterns to the Generator subagent:
+Author a graph and run the Generator as its first node, with the intent, chosen template, and any reference patterns embedded in the prompt:
 
 ```
-dispatch(subagent="role-creator--generator", prompt="...", run_in_background=false)
+graph_id = graph_create(name="scaffold-{role}").graph_id
+graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
+                 prompt: "Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}." })
+graph_run(graph_id)
+# END YOUR TURN — await [GRAPH COMPLETE], then collect the output
 ```
 
 Include in the prompt:
@@ -83,7 +87,7 @@ Include in the prompt:
 - Reference roles to study (if any)
 - The schema rules from `role-creator-schema` skill
 
-The Generator returns the complete file set: `role.yaml`, `PROMPT.md` (if needed), skill stubs, subagent stubs.
+The Generator returns the complete file set: `role.yaml`, `PROMPT.md` (if needed), skill stubs, subagent stubs. Read its materialized output once via `graph_status(graph_id, include_output=true)` after the graph completes.
 
 ### 5. Draft evals
 
@@ -97,7 +101,7 @@ Run the verification flow on the generated files. Don't wait for the user to ask
 
 ## Verifying a role (verify)
 
-Verification runs in tiers. Each tier catches a different class of problem. The `|verify|` function drives the flow by running the self-contained scripts in `scripts/` — they reimplement the rules in `validation-catalog.md` without importing rolebox. The Validator and Grader subagents are delegation wrappers around the same scripts; dispatch to them when you want verification done in an isolated, read-only context.
+Verification runs in tiers. Each tier catches a different class of problem. The `|verify|` function drives the flow by running the self-contained scripts in `scripts/` — they reimplement the rules in `validation-catalog.md` without importing rolebox. The Validator and Grader subagents are delegation wrappers around the same scripts; run them as graph nodes (`agent: "role-creator--validator"` / `"role-creator--grader"`) when you want verification done in an isolated, read-only context.
 
 ### Tier 1: Structural validation (automatic)
 
@@ -119,7 +123,7 @@ Why ask: Tier 3 is slower and depends on the rolebox CLI being installed.
 
 ### Tier 4: Behavioral eval (opt-in, cost estimate)
 
-Run `python3 scripts/run_eval.py <roleDir> --evals <evals.json> --confirm`. This spawns a *separate* opencode instance (not an in-session dispatch), runs each eval case with and without the role loaded, and the Grader subagent scores the resulting transcripts. The script prints a cost estimate and refuses to run without `--confirm`.
+Run `python3 scripts/run_eval.py <roleDir> --evals <evals.json> --confirm`. This spawns a *separate* opencode instance (not an in-session graph node), runs each eval case with and without the role loaded, and the Grader subagent scores the resulting transcripts. The script prints a cost estimate and refuses to run without `--confirm`.
 
 Before confirming, report the estimate:
 - Number of eval cases × runs per case
@@ -134,6 +138,16 @@ After each tier, produce a report that maps:
 - Each skill: works / broken / untested
 - Each function: works / broken / untested
 - Overall role: pass / fail with reasons
+
+---
+
+## Deploying a role (deploy)
+
+After a role passes verification, offer the user:
+
+> This role is ready to go live. Run `|deploy role=<name>|` to install it into the local harness rolebox directory (`~/.config/opencode/rolebox/`) and hot-reload the assets.
+
+The `|deploy|` function copies the role into the harness, triggers `asset_hot_reload()`, and verifies discovery via `asset_search` / `asset_inspect`. It refuses to deploy roles that failed Tier 1+2 validation and refuses to overwrite an existing harness role without explicit user confirmation. See `functions/deploy.md` and `references/deploy-to-harness.md` for the full workflow.
 
 ---
 
@@ -152,19 +166,20 @@ Explain what you'd change and why. Don't overfit to specific eval cases. If an e
 
 ### 3. Apply via Generator
 
-Dispatch the fix to Generator with the specific change request:
+Run the fix as a Generator graph node with the specific change request embedded in the prompt:
 
 ```
-dispatch(subagent="role-creator--generator", prompt="Update {file}: {change}. Reason: {why}", run_in_background=false)
+graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
+                 prompt: "Update {file}: {change}. Reason: {why}" })
 ```
 
 ### 4. Re-verify
 
-Run the same tier that originally failed. If it passes, move on. If it fails again with a different error, that's progress. If it fails the same way, reconsider the approach.
+Re-run verification through the same graph (see the graph orchestration protocol below): wire the Validator node downstream and let the loop carry the fix back if it fails. If it passes, move on. If it fails again with a different error, that's progress. If it fails the same way, reconsider the approach.
 
 ### 5. Iteration cap
 
-Stop after 3 improvement cycles on the same issue. If something isn't converging after 3 attempts, report it to the user with what you've tried and what's still failing. They might have context you don't.
+The generate→validate cycle is wrapped in `graph_add_loop(..., max_traversals: 3)` — the cap is engine-enforced, not discretionary. After 3 traversals the loop exits; report to the user what you've tried and what's still failing. They might have context you don't.
 
 Why cap at 3: overfitting prevention. If the fix isn't working after 3 tries, the problem is likely a misunderstanding about intent rather than a mechanical error.
 
@@ -188,16 +203,33 @@ These exist for specific reasons, not as bureaucratic compliance.
 
 ---
 
-## Dispatch contract
+## Graph orchestration protocol
 
-Use the rolebox `dispatch` tool for all subagent work. Don't use opencode's built-in Task/task tool.
+All subagent work runs on the rolebox Graph Engine v2 — author **one graph per request**. The legacy v1 dispatch tool family is removed and must never appear as a live contract (see `references/graph-engine-v2.md` §9).
 
-- Synchronous: `dispatch(subagent="role-creator--generator", prompt="...", run_in_background=false)`
-- Background: `dispatch(subagent="role-creator--grader", prompt="...", run_in_background=true, description="...")`
+1. **Create the graph.** `graph_id = graph_create(name="<request>").graph_id`
+2. **Add one node per stage.** `graph_add_node({ graph_id, id, agent, prompt })`. All cross-session input flows through the node prompt — a node cannot read another node's session artifacts.
+3. **Wire the edges.** `graph_add_edge` with `type: "on_signal"`: forward edges carry `signal_filter: ["answer"]`; the revise back-edge carries `signal_filter: ["revise_needed"]`.
+4. **Bound the iterate loop.** `graph_add_loop({ graph_id, id, nodes, max_traversals })` — `max_traversals` is required and engine-enforced; use a task-appropriate bound (3 for generate→validate improvement cycles).
+5. **Run and yield.** `graph_run(graph_id)` is NON-BLOCKING: it launches the ready nodes and returns immediately. After `graph_run`, END YOUR TURN. The engine emits a `[GRAPH COMPLETE]` system-reminder when the graph finishes, or `[GRAPH BLOCKED]` when a `needs_approval` node pauses.
+6. **Collect outputs ONCE.** On the reminder, read each node's output via `graph_status(graph_id, include_output=true)`. Polling is fallback-only.
+7. **Complete with a signal.** Emit `signal(type="answer")` with the synthesized result.
 
-For background dispatch, wait for the `<system-reminder>` completion notification, then call `dispatch_output(task_id="...")`. Don't poll.
+The generate→validate iterate cycle, wired as a bounded loop:
 
-Subagent IDs:
+```
+graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
+                 prompt: "Generate/fix {role}: {change request}" })
+graph_add_node({ graph_id, id: "validator", agent: "role-creator--validator",
+                 prompt: "Verify {roleDir}. Pass → signal(type='answer'); fail → signal(type='revise_needed', payload={items: [...]})." })
+graph_add_edge({ graph_id, from: "generator", to: "validator", type: "on_signal", signal_filter: ["answer"] })
+graph_add_edge({ graph_id, from: "validator", to: "generator", type: "on_signal", signal_filter: ["revise_needed"] })
+graph_add_loop({ graph_id, id: "iterate-cycle", nodes: ["generator", "validator"], max_traversals: 3 })
+graph_run(graph_id)
+```
+
+Subagent IDs (the `agent:` value in `graph_add_node`):
+
 - `role-creator--generator`: authoring and file generation
 - `role-creator--validator`: structural, resolution, and deploy checks (Tier 1-3)
 - `role-creator--grader`: eval scoring and A/B comparison (Tier 4 transcripts)

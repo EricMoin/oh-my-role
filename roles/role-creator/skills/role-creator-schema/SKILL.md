@@ -63,6 +63,40 @@ functions: ["plan", "execute"]
 
 Specifying `functions:` explicitly replaces this default entirely. Use `disable_functions:` to selectively remove from whatever set resolves.
 
+## Graph Orchestration Block
+
+Roles that orchestrate subagents declare the engine mode:
+
+```yaml
+graph:
+  orchestration: graph_v2
+```
+
+`orchestration` must be `graph_v2`. Runtime graph concepts — `needs_approval` gates, loop groups (`graph_add_loop`), and `on_signal` edges — are declared via the `graph_*` tools and function frontmatter, not in `role.yaml`.
+
+## Collaboration & Memory Blocks
+
+```yaml
+collaboration:
+  topology: pipeline                 # pipeline | review-loop | star
+  agents: [processor, checker, validator]
+  max_iterations: 2                  # legacy v1 schema-compat ONLY — not a live bound
+  termination:
+    any_of:
+      - max_iterations: 2
+      - result_matches:
+          agent: validator
+          contains: "VALIDATED"
+
+memory:
+  inject: true
+  max_inject: 10
+  min_relevance: medium              # low | medium | high
+  scope: both                        # workspace | role | both
+```
+
+`collaboration.max_iterations` is legacy v1 schema compatibility only — runtime loop bounds are enforced by `graph_add_loop(max_traversals=…)`, never by this field. `termination.any_of` / `termination.all_of` entries are `{ max_iterations: int }` or `{ result_matches: { agent, contains } }`.
+
 ## State-Machine Function Fields
 
 Functions support state-machine orchestration through frontmatter fields. Quick reference:

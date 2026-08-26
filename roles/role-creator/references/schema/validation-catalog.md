@@ -1,11 +1,11 @@
 ---
-description: Frozen validation contract for rolebox 0.20.0 — the definitive rule source for all Tier 1/2 validation code
-rolebox_version: 0.20.0
+description: Frozen validation contract for rolebox 1.5.0 — the definitive rule source for all Tier 1/2 validation code
+rolebox_version: 1.5.0
 ---
 
 # Validation Catalog
 
-This document defines every validation rule enforced by rolebox 0.20.0. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
+This document defines every validation rule enforced by rolebox 1.5.0. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology + engine-v2 config) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
 
 ---
 
@@ -259,9 +259,11 @@ The `references:` block in `role.yaml` can provide stable names and descriptions
 
 ---
 
-## Graph Validation (`validateGraph`) — 6 Checks
+## Legacy v1 Collaboration-Graph Validation (`validateGraph`) — 6 Checks (legacy-compat)
 
-The flow graph is validated with exactly 6 checks. Checks 1–3 are FATAL (validation fails immediately). Checks 4–6 are WARN (accumulated but do not block).
+> **Legacy-compat.** These 6 checks validate the declarative v1 `collaboration:` flow-graph block (flow edges, `max_iterations`) kept for schema compatibility. The live execution path is Graph Engine v2 (imperative `graph_*` tools) — see [Graph Engine v2 Validation](#graph-engine-v2-validation-tier-2) below. The v1 checks remain enforced so legacy declarations stay well-formed, but they do NOT gate the runtime wiring of graph_v2 roles.
+
+The legacy v1 collaboration flow graph is validated with exactly 6 checks. Checks 1–3 are FATAL (validation fails immediately). Checks 4–6 are WARN (accumulated but do not block).
 
 ### Definitions
 
@@ -339,6 +341,89 @@ Algorithms:
 **Resolution:** When violated, rolebox issues a WARN and defaults `max_iterations` to 3.
 
 **Severity:** WARN — does not block validation.
+
+---
+
+## Graph Engine v2 Validation (Tier 2)
+
+Validates the Graph Engine v2 configuration surface (`graph:`, `memory:`, `collaboration.termination`, `permission.allow`, `functions:`) introduced in rolebox 1.5.0. Vocabulary follows `references/graph-engine-v2.md`.
+
+### Rule 1: `graph.orchestration` must be `graph_v2` (FATAL)
+
+**Rule:** When a `graph:` block is present in `role.yaml`, `graph.orchestration` MUST equal `graph_v2`.
+
+**Violation:** A `graph:` block exists but `graph.orchestration` is missing, empty, or set to any value other than `graph_v2` (e.g. a v1 dispatch-mode value).
+
+**Severity:** FATAL — validation fails immediately.
+
+---
+
+### Rule 2: `memory` config shape (WARN on malformed)
+
+**Rule:** When a `memory:` block is present, its fields must conform to `MemoryConfig`:
+
+| Field | Allowed shape |
+|-------|---------------|
+| `inject` | boolean |
+| `max_inject` | integer |
+| `min_relevance` | `"low"` \| `"medium"` \| `"high"` |
+| `scope` | `"workspace"` \| `"role"` \| `"both"` |
+
+Unknown fields are ignored; malformed values (wrong type or out-of-vocabulary enum) are reported.
+
+**Violation:** A `memory:` field has the wrong type, or `min_relevance` / `scope` use a value outside the documented vocabulary.
+
+**Severity:** WARN — does not block validation; accumulated and reported on completion.
+
+---
+
+### Rule 3: `collaboration.termination.any_of` entry shapes (WARN)
+
+**Rule:** Every entry under `collaboration.termination.any_of` MUST be exactly one of:
+
+- `{ max_iterations: int }`
+- `{ result_matches: { agent: string, contains: string } }`
+
+**Violation:** An entry matches neither shape (unknown keys, wrong types, or nested combinators inside an entry).
+
+**Severity:** WARN — does not block validation; accumulated and reported on completion.
+
+---
+
+### Rule 4: Legacy removed tools in `permission.allow` (ERROR)
+
+**Rule:** The legacy v1 background-dispatch tools removed in Phase C MUST NOT appear in any `permission.allow` list (top-level role or subagent):
+
+- `Dispatch` / `dispatch`
+- `dispatch_output`
+- `dispatch_cancel`
+
+These tools are removed and rejected by the engine (see `references/graph-engine-v2.md` §9 Legacy Vocabulary). Granting them is a hard configuration error.
+
+**Violation:** `permission.allow` contains `Dispatch`, `dispatch_output`, or `dispatch_cancel` (or their v1 case variants).
+
+**Severity:** ERROR — the role is rejected at validation.
+
+---
+
+### Rule 5: `functions` entry named `loop` (WARN)
+
+**Rule:** A `functions:` entry named `loop` (legacy `loop_*` tool family, deprecated in Phase C) MUST NOT be declared as a live function. Bounded revise/review cycles run via `graph_add_loop`, not a `loop` function.
+
+**Violation:** `functions:` contains `loop`, or a function file resolves to the name `loop`.
+
+**Severity:** WARN (loop warn) — does not block validation; the author is directed to `graph_add_loop` bounded cycles.
+
+---
+
+## Deploy-to-Harness Validation (Tier 2/Tier 3 note)
+
+A later role-creator subtask adds a **deploy feature** that installs a generated role into the local rolebox harness directory `~/.config/opencode/rolebox/`, followed by `asset_hot_reload`. Validation coverage for that capability:
+
+- **Tier 2 (static):** a deployed role directory MUST contain both `role.yaml` and `PROMPT.md`. Missing either file is an ERROR.
+- **Tier 3 (dynamic):** after `asset_hot_reload`, the deployed role MUST appear in hot-reload discovery (asset discovery finds the role under the harness dir). A role that is deployed but absent from discovery indicates the hot-reload step failed or the directory layout is wrong.
+
+This note is forward-looking: the checks land with the deploy subtask; the catalog entry documents the contract now so validation code can target it.
 
 ---
 

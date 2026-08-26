@@ -1,6 +1,6 @@
 name: Role Creator
 description: "Creates, verifies, and iterates on rolebox roles. Triggers: create a role, scaffold, add a subagent/skill/function, verify/benchmark a role, fix a broken role."
-version: "0.2.0"
+version: "0.3.0"
 mode: primary
 prompt_file: PROMPT.md
 
@@ -28,13 +28,19 @@ functions:
   - scaffold
   - verify
   - iterate
-  - loop
+  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
+  # deploy: deploy-to-harness capability — functions/deploy.md is authored in a later subtask
+  - deploy
 
 skills:
   - role-creator-conventions
   - role-creator-schema
   - role-creator-verification
 
+# Legacy v1 declarative config: this collaboration block is kept only for schema
+# compatibility. It does NOT bound the imperative graph_add_loop revise/review
+# cycles — the graph engine enforces loop bounds via the loop group's
+# max_traversals (see references/graph-engine-v2.md).
 collaboration:
   topology: review-loop
   flow:
@@ -60,6 +66,14 @@ collaboration:
       exit: true
   max_iterations: 3
 
+# Graph orchestration configuration. Orchestration runs on the graph engine
+# (graph_create / graph_add_node / graph_add_edge / graph_add_loop / graph_run /
+# graph_status / graph_cancel / graph_approve). signal stays available.
+# The declarative collaboration: edge list above mirrors what graph_add_edge
+# wires at runtime; the live execution path is the imperative graph_* tools.
+graph:
+  orchestration: graph_v2
+
 permission:
   allow:
     - Read
@@ -68,6 +82,13 @@ permission:
     - Bash
     - Edit
     - Write
-    - Dispatch
-    - dispatch_output
-    - dispatch_cancel
+    # Removed (Phase C): legacy dispatch family (Dispatch / dispatch_output / dispatch_cancel) gone.
+    - graph_create
+    - graph_add_node
+    - graph_add_edge
+    - graph_add_loop
+    - graph_run
+    - graph_status
+    - graph_approve
+    - graph_cancel
+    - signal

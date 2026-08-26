@@ -1,0 +1,9 @@
+name: Broken Legacy Dispatch Role
+description: A role that still grants the removed legacy Dispatch tool
+mode: primary
+prompt: |
+  Test role that allows the legacy Dispatch tool, which was removed in Phase C.
+permission:
+  allow:
+    - Read
+    - Dispatch

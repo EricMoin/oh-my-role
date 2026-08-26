@@ -57,13 +57,19 @@ Verdict is PASS only when zero fatal errors exist. Any single fatal check fails 
 - **Function 3-candidate resolution:** For each declared function name, verify at least one candidate exists (role-local, global, built-in)
 - **Reference auto-discovery:** All `.md` files under `references/` are discoverable and parseable
 - **Subagent discovery:** File-based subagents at `subagents/*/role.yaml` resolve correctly; inline subagents parse successfully
-- **Graph validation (6 checks):**
+- **Legacy v1 graph validation (6 checks, legacy-compat):** validates the declarative `collaboration:` flow-graph block only — retained for schema compatibility; does not gate graph_v2 runtime wiring
   1. Unknown agent reference (FATAL)
   2. No exit edge (FATAL)
   3. No entry point from parent (FATAL)
   4. Orphan agent never referenced in edges (WARN)
   5. Disconnected node unreachable from parent (WARN)
   6. Cycle without `max_iterations` (WARN, defaults to 3)
+- **Graph engine v2 checks:**
+  - `graph.orchestration` must equal `graph_v2` whenever a `graph:` block is present (FATAL otherwise)
+  - `memory` config shape: `inject` boolean, `max_inject` integer, `min_relevance` in low/medium/high, `scope` in workspace/role/both (WARN on malformed)
+  - `collaboration.termination.any_of` entries must be `{max_iterations: int}` or `{result_matches: {agent, contains}}` (WARN on unknown shapes)
+  - Legacy-tool denial: `Dispatch`, `dispatch_output`, `dispatch_cancel` in `permission.allow` is an ERROR (removed Phase C)
+  - `functions` entry named `loop` warns (deprecated Phase C — bounded cycles run via `graph_add_loop`)
 - **Skill-name-collision detection:** Warns if a role-local skill name collides with a known-names set (global skills + built-in functions `plan`, `execute`)
 - **Collaboration-target existence:** If the role references collaboration targets, warns when those targets can't be found on disk
 
@@ -71,9 +77,9 @@ Verdict is PASS only when zero fatal errors exist. Any single fatal check fails 
 
 ```json
 {
-  "tier2": { "checks": [...], "passed": 8, "failed": 0 },
+  "tier2": { "checks": [...], "passed": 13, "failed": 0 },
   "errors": [],
-  "warnings": ["skill 'foo' collides with global skill"],
+  "warnings": ["skill 'foo' collides with global skill", "functions entry named 'loop' is deprecated; use graph_add_loop"],
   "verdict": "PASS"
 }
 ```
@@ -104,6 +110,11 @@ Verdict is PASS when zero errors exist. Warnings do not block but are surfaced t
 **Graceful skip:** If `rolebox` is not installed or not on PATH, Tier 3 reports "skipped (rolebox not available)" rather than failing. This is not a verification failure.
 
 **Failure reporting:** If rolebox IS installed but sync fails, the script captures the precise error message from `rolebox status --json` and reports it verbatim.
+
+**Deploy-to-harness check (Tier 2/Tier 3 note):** a later subtask adds a deploy feature that installs a generated role into the local rolebox harness directory `~/.config/opencode/rolebox/`, then runs `asset_hot_reload`. Verification for that capability:
+
+- Tier 2 (static): the deployed role directory MUST contain both `role.yaml` and `PROMPT.md`. Missing either file is an ERROR.
+- Tier 3 (dynamic): after `asset_hot_reload`, the deployed role MUST appear in hot-reload discovery (asset discovery finds the role under the harness dir). A deployed-but-undiscovered role means the hot-reload step failed or the directory layout is wrong.
 
 ---
 
@@ -158,7 +169,7 @@ A skill is verified working when:
 
 A role is verified working when:
 
-1. **Tier 2** produces a full-resolution PASS verdict (all fields, all subagents, graph valid)
+1. **Tier 2** produces a full-resolution PASS verdict (all fields, all subagents, legacy v1 6-check graph block valid, graph_v2/memory/termination shapes valid, no legacy removed tools in `permission.allow`)
 2. **Tier 3** reports sync:true with no warnings
 3. **Tier 4** persona and boundary eval cases pass on diverse prompts, including out-of-scope rejection cases
 
@@ -167,8 +178,9 @@ A role is verified working when:
 A function is verified working when:
 
 1. It's callable via its declared name (`|function-name|` syntax)
-2. It produces the behavior declared in its definition (verified at Tier 4)
-3. State-machine functions pass deterministic checks: gate blocks/passes correctly, observe doesn't mutate state, transitions repeat identically, continue_until terminates
+2. Its name is not a removed/deprecated legacy token: `Dispatch`/`dispatch_output`/`dispatch_cancel` (ERROR at Tier 2), `loop` (WARN at Tier 2 — bounded cycles run via `graph_add_loop`)
+3. It produces the behavior declared in its definition (verified at Tier 4)
+4. State-machine functions pass deterministic checks: gate blocks/passes correctly, observe doesn't mutate state, transitions repeat identically, continue_until terminates
 
 ---
 
@@ -177,7 +189,7 @@ A function is verified working when:
 - Always run Tiers 1 and 2 after generating or modifying a role. They're free and fast.
 - Never run Tier 3 or 4 without asking the user first.
 - If Tier 1 fails, fix structural issues before attempting Tier 2.
-- If Tier 2 warns about skill collisions or missing collaboration targets, inform the user but don't treat these as blockers.
+- If Tier 2 warns about skill collisions, missing collaboration targets, malformed memory/termination shapes, or a `loop` function entry, inform the user but don't treat these as blockers. Treat a non-`graph_v2` `graph.orchestration` or a legacy removed tool (`Dispatch`, `dispatch_output`, `dispatch_cancel`) in `permission.allow` as a hard error — fix before proceeding.
 - For Tier 4, present the cost estimate and let the user decide. One spot-check run is a reasonable middle ground when full eval feels excessive.
 - When eval cases fail, fix the role, not the eval prompts. Generalize, don't overfit.
 
