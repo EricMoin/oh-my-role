@@ -32,6 +32,39 @@
             { "text": "Explains the guardrail about editing existing roles", "type": "boundary", "weight": 1 }
           ],
           "tags": ["rejection", "guardrail"]
+        },
+        {
+          "id": "create-graph-code-review-role",
+          "description": "Role Creator scaffolds a graph-orchestrated code-review pipeline role",
+          "prompt": "Create a graph-orchestrated role for a code-review pipeline with reviewer and approver specialists",
+          "expectations": [
+            { "text": "Uses graph_add_node to register each specialist subagent", "type": "capability", "weight": 2 },
+            { "text": "Uses graph_add_loop with max_traversals to bound the review cycle", "type": "capability", "weight": 2 },
+            { "text": "Sets needs_approval on destructive steps like merge or delete", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "graph-engine"]
+        },
+        {
+          "id": "verify-graph-v2-role",
+          "description": "Role Creator verifies a graph-v2 role and reports the modernized checks",
+          "prompt": "Run verification on tests/fixtures/valid-graph-v2 and report the graph_v2, memory, and termination checks",
+          "expectations": [
+            { "text": "Runs validate_role.py and reports PASS", "type": "capability", "weight": 2 },
+            { "text": "Reports the graph.orchestration=graph_v2 check", "type": "capability", "weight": 1 },
+            { "text": "Reports the memory config and collaboration termination checks", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["positive", "verification", "graph-engine"]
+        },
+        {
+          "id": "deploy-to-harness",
+          "description": "Role Creator deploys a verified role to the local rolebox harness",
+          "prompt": "Deploy the verified role to my local rolebox",
+          "expectations": [
+            { "text": "Refuses to deploy a role that has not passed validation", "type": "rejection", "weight": 2 },
+            { "text": "Guards against overwriting an existing harness role without user confirmation", "type": "boundary", "weight": 2 },
+            { "text": "Runs asset_hot_reload and verifies discovery", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["deploy", "guardrail"]
         }
       ]
     }

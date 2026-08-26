@@ -1,6 +1,6 @@
 ---
 description: Complete field reference dictionary for role.yaml (RoleConfig) and SubAgentConfig types
-rolebox_version: 0.20.0
+rolebox_version: 1.5.0
 ---
 
 # role.yaml Field Reference
@@ -33,7 +33,9 @@ This is a field DICTIONARY. Validation rules live in `validation-catalog.md`.
 | `disable_functions` | `string[]` | NO | — | NO | Functions to explicitly disable (removed from resolved set). |
 | `subagents` | `SubAgentConfig[]` | NO | — | NO | Inline subagent definitions. |
 | `references` | `Record<string, string \| ReferenceEntry>` | NO | — | NO | Named reference declarations. Values are paths or `ReferenceEntry` objects. |
-| `collaboration` | `CollaborationConfig` | NO | — | NO | Collaboration graph definition for multi-agent orchestration. |
+| `collaboration` | `CollaborationConfig` | NO | — | NO | Legacy v1 declarative mirror of the runtime graph. NOT the execution mechanism. |
+| `graph` | `GraphConfig` | NO | — | NO | Graph orchestration declaration. `orchestration` must be `graph_v2`. |
+| `memory` | `MemoryConfig` | NO | — | NO | Session memory injection configuration. |
 | `dispatch` | `DispatchRoleConfig` | NO | — | NO | Dispatch subsystem overrides for concurrency and backpressure. |
 | `auto_activate` | `string[]` | NO | — | NO | Functions activated automatically on role load. |
 | `locked` | `boolean` | NO | `false` | NO | When true, locks auto-activated functions (prevents deactivation). |
@@ -79,14 +81,26 @@ Controls which tools a role or subagent can access.
 
 ## CollaborationConfig
 
-Defines the multi-agent collaboration graph for orchestrated workflows.
+Legacy v1 declarative mirror of the runtime graph (see `graph-engine-v2.md`). The live execution path is the imperative `graph_*` tools; this block is kept for schema compatibility and to document authoring intent.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topology` | `"pipeline" \| "review-loop" \| "star"` | NO | Named topology hint. |
 | `agents` | `string[]` | NO | List of agent IDs participating in collaboration. |
 | `flow` | `FlowEdge[]` | NO | Directed edges defining the collaboration graph. |
-| `max_iterations` | `number` | NO | Maximum loop iterations for cyclic graphs. |
+| `max_iterations` | `number` | NO | Legacy v1 schema-compat only. Does NOT bound runtime loops — the graph engine enforces loop bounds via `graph_add_loop(max_traversals=…)`. Never used as a live bound. |
+| `termination` | `TerminationConfig` | NO | Declarative soft-exit conditions for the pipeline (mirror of `graph_add_loop`'s `termination` param). |
+
+### TerminationConfig
+
+Soft-exit conditions for the collaboration pipeline.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `any_of` | `TerminationCondition[]` | NO | Exit when ANY entry matches. |
+| `all_of` | `TerminationCondition[]` | NO | Exit when ALL entries match. |
+
+`TerminationCondition` entries are `{ max_iterations: int }` or `{ result_matches: { agent: string, contains: string } }`.
 
 ### FlowEdge
 
@@ -96,6 +110,31 @@ Defines the multi-agent collaboration graph for orchestrated workflows.
 | `to` | `string` | YES | Target agent ID (or `"parent"` for exit). |
 | `label` | `string` | NO | Human-readable label for this edge. |
 | `exit` | `boolean` | NO | When true, marks this edge as a terminal exit point. |
+
+---
+
+## GraphConfig
+
+Declares the role as a graph-orchestrated role (Graph Engine v2).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `orchestration` | `"graph_v2"` | YES | Engine mode. Must be `graph_v2`. |
+
+**Runtime graph concepts are not role.yaml fields.** `needs_approval` gates, loop groups (`graph_add_loop`), and `on_signal` edges are declared at runtime via the `graph_*` tools and in function frontmatter — never in `role.yaml`. See `graph-engine-v2.md`.
+
+---
+
+## MemoryConfig
+
+Controls session memory injection for the role's sessions.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `inject` | `boolean` | NO | Inject relevant memories into the system prompt. |
+| `max_inject` | `integer` | NO | Maximum memories injected per session. |
+| `min_relevance` | `"low" \| "medium" \| "high"` | NO | Relevance floor for injection. |
+| `scope` | `"workspace" \| "role" \| "both"` | NO | Memory scope to inject from. |
 
 ---
 

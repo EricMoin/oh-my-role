@@ -46,13 +46,17 @@ If the user didn't pick a template in step 2, recommend one based on what you le
 
 ### Step 4: Generate
 
-Dispatch to the Generator subagent with everything you've gathered:
+Run the Generator as a graph node with everything you've gathered embedded in the prompt:
 
 ```
-dispatch(subagent="role-creator--generator", prompt="Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}.", run_in_background=false)
+graph_id = graph_create(name="scaffold-{role}").graph_id
+graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
+                 prompt: "Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}." })
+graph_run(graph_id)
+# END YOUR TURN — await [GRAPH COMPLETE]
 ```
 
-The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. You wait for it to finish before moving on.
+The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. When the graph completes, read its output once via `graph_status(graph_id, include_output=true)` before moving on.
 
 ### Step 5: Draft Eval Cases
 

@@ -59,6 +59,34 @@ def _add_error(collector, msg):
     collector['errors'].append(msg)
 
 
+# Legacy v1 background-dispatch tool family removed in Phase C (catalog Rule 4).
+LEGACY_DISPATCH_TOOLS = {'dispatch', 'dispatch_output', 'dispatch_cancel'}
+
+
+def _is_valid_termination_entry(entry) -> bool:
+    """True if entry matches {max_iterations: int} or {result_matches: {agent, contains}} (catalog Rule 3)."""
+    if not isinstance(entry, dict):
+        return False
+    keys = set(entry.keys())
+    if keys == {'max_iterations'}:
+        v = entry['max_iterations']
+        return isinstance(v, int) and not isinstance(v, bool)
+    if keys == {'result_matches'}:
+        rm = entry['result_matches']
+        return (isinstance(rm, dict) and set(rm.keys()) == {'agent', 'contains'}
+                and isinstance(rm.get('agent'), str) and isinstance(rm.get('contains'), str))
+    return False
+
+
+def _collect_legacy_perm_tools(allow_list, where, issues):
+    """Append a violation string per legacy dispatch tool found in a permission.allow list (catalog Rule 4)."""
+    if not isinstance(allow_list, list):
+        return
+    for tool in allow_list:
+        if isinstance(tool, str) and tool.lower() in LEGACY_DISPATCH_TOOLS:
+            issues.append(f"{where}: permission.allow contains legacy removed tool '{tool}'")
+
+
 def _run_tier1(role_yaml_path, role_id, is_subagent=False):
     result = {'checks': [], 'errors': [], 'passed': True}
     E = lambda msg: _add_error(result, msg)
@@ -213,6 +241,7 @@ def _run_tier2(role_dir, role_id, data):
 
     # ── function resolution ──
     functions = data.get('functions')
+    functions_explicit = functions is not None
     if functions is None:
         functions = ['plan', 'execute']
     func_results = []
@@ -231,6 +260,9 @@ def _run_tier2(role_dir, role_id, data):
                     except Exception:
                         pass
                     break
+            if found_path is None and functions_explicit and name not in KNOWN_NAMES:
+                warn(f"Declared function '{name}' has no found file "
+                     f"(functions/{name}.md missing, empty, or unreadable)")
             func_results.append({
                 'name': name,
                 'found': found_path is not None,
@@ -267,11 +299,13 @@ def _run_tier2(role_dir, role_id, data):
         inline_subagents = []
 
     discovered_subagents = []
+    file_subagent_data = {}
     for sa_path in subagent_yamls:
         sa_dir = sa_path.parent
         sa_rel = sa_dir.relative_to(role_dir / 'subagents')
         sa_name = str(sa_rel)
         t1_result, sa_data = _run_tier1(sa_path, sa_name, is_subagent=True)
+        file_subagent_data[sa_name] = sa_data
         entry = {
             'source': 'file',
             'name': sa_name,
@@ -465,6 +499,108 @@ def _run_tier2(role_dir, role_id, data):
             )
             if not exists_on_disk and not exists_inline:
                 warn(f"Collaboration target '{fan}' referenced in flow but no matching subagent found on disk or inline")
+
+    # ── Graph Engine v2 configuration validation ──
+    # Rule 1 (ERROR): graph block present -> graph.orchestration must equal 'graph_v2'
+    graph_block = data.get('graph')
+    if graph_block is None:
+        result['checks'].append(_make_check('graph_orchestration', True, 'no graph block present'))
+    else:
+        orch = graph_block.get('orchestration') if isinstance(graph_block, dict) else None
+        if orch == 'graph_v2':
+            result['checks'].append(_make_check('graph_orchestration', True,
+                                                'graph.orchestration=graph_v2'))
+        else:
+            got = repr(orch) if orch is not None else 'missing'
+            err(f"graph block present but graph.orchestration must equal 'graph_v2' (got {got})")
+            result['checks'].append(_make_check('graph_orchestration', False,
+                                                f"graph.orchestration is {got}, expected 'graph_v2'"))
+
+    # Rule 2 (WARN): memory config shape (inject/max_inject/min_relevance/scope)
+    memory_issues = []
+    memory_block = data.get('memory')
+    if memory_block is not None:
+        if not isinstance(memory_block, dict):
+            memory_issues.append(f"memory must be a mapping, got {type(memory_block).__name__}")
+        else:
+            inject = memory_block.get('inject')
+            if 'inject' in memory_block and not isinstance(inject, bool):
+                memory_issues.append(f"memory.inject must be boolean, got {type(inject).__name__}")
+            max_inject = memory_block.get('max_inject')
+            if 'max_inject' in memory_block and (not isinstance(max_inject, int)
+                                                 or isinstance(max_inject, bool)):
+                memory_issues.append(f"memory.max_inject must be integer, got {type(max_inject).__name__}")
+            min_rel = memory_block.get('min_relevance')
+            if 'min_relevance' in memory_block and min_rel not in ('low', 'medium', 'high'):
+                memory_issues.append(f"memory.min_relevance must be one of low|medium|high, got {min_rel!r}")
+            scope = memory_block.get('scope')
+            if 'scope' in memory_block and scope not in ('workspace', 'role', 'both'):
+                memory_issues.append(f"memory.scope must be one of workspace|role|both, got {scope!r}")
+    if memory_issues:
+        for mi in memory_issues:
+            warn(f"memory config: {mi}")
+        result['checks'].append(_make_check('memory_config', False, '; '.join(memory_issues)))
+    else:
+        result['checks'].append(_make_check('memory_config', True, 'no memory block or valid shape'))
+
+    # Rule 3 (WARN): collaboration.termination.any_of entry shapes
+    term_issues = []
+    if isinstance(collab, dict):
+        termination = collab.get('termination')
+        if termination is not None:
+            if not isinstance(termination, dict):
+                term_issues.append("collaboration.termination must be a mapping")
+            else:
+                any_of = termination.get('any_of')
+                if any_of is not None:
+                    if not isinstance(any_of, list):
+                        term_issues.append("collaboration.termination.any_of must be a list")
+                    else:
+                        for idx, entry in enumerate(any_of):
+                            if not _is_valid_termination_entry(entry):
+                                term_issues.append(
+                                    f"collaboration.termination.any_of[{idx}] must be "
+                                    f"{{max_iterations: int}} or "
+                                    f"{{result_matches: {{agent: string, contains: string}}}}, got {entry!r}")
+    if term_issues:
+        for ti in term_issues:
+            warn(f"collaboration termination: {ti}")
+        result['checks'].append(_make_check('termination_any_of', False, '; '.join(term_issues)))
+    else:
+        result['checks'].append(_make_check('termination_any_of', True, 'no any_of entries or valid shapes'))
+
+    # Rule 4 (ERROR): legacy removed dispatch tools in permission.allow (role + subagents)
+    perm_issues = []
+    top_perm = data.get('permission')
+    if isinstance(top_perm, dict):
+        _collect_legacy_perm_tools(top_perm.get('allow', []), f"role '{role_id}'", perm_issues)
+    for sa_name, sa_data in file_subagent_data.items():
+        if isinstance(sa_data, dict):
+            sa_perm = sa_data.get('permission')
+            if isinstance(sa_perm, dict):
+                _collect_legacy_perm_tools(sa_perm.get('allow', []), f"subagent '{sa_name}'", perm_issues)
+    for inline in inline_subagents:
+        if not isinstance(inline, dict):
+            continue
+        inline_name = inline.get('name', '(inline)')
+        sa_perm = inline.get('permission')
+        if isinstance(sa_perm, dict):
+            _collect_legacy_perm_tools(sa_perm.get('allow', []), f"inline subagent '{inline_name}'", perm_issues)
+    if perm_issues:
+        for pi in perm_issues:
+            err(pi)
+        result['checks'].append(_make_check('permission_legacy_tools', False, '; '.join(perm_issues)))
+    else:
+        result['checks'].append(_make_check('permission_legacy_tools', True))
+
+    # Rule 5 (WARN): 'loop' declared as a live function (legacy loop_* family)
+    loop_declared = functions_explicit and isinstance(functions, list) and 'loop' in functions
+    if loop_declared:
+        warn("Declared function 'loop' is a legacy loop_* tool family member; "
+             "use graph_add_loop(max_traversals=...) for bounded revise/review cycles")
+        result['checks'].append(_make_check('loop_function', False, "functions contains 'loop'"))
+    else:
+        result['checks'].append(_make_check('loop_function', True))
 
     return result
 

@@ -8,7 +8,12 @@ prompt: |
 
   Verification workflow:
   1. **Preflight**: Run `python3 scripts/check_version.py` and report the version status. If mismatch, note it prominently.
-  2. **Tier 1+2 (always)**: Run `python3 scripts/validate_role.py <roleDir> --json`. Parse the JSON output and explain any errors/warnings with their rule reference from the validation catalog.
+  2. **Tier 1+2 (always)**: Run `python3 scripts/validate_role.py <roleDir> --json`. Parse the JSON output and explain any errors/warnings with their rule reference from `references/schema/validation-catalog.md`. Tier 2 now includes the Graph Engine v2 configuration checks (catalog "Graph Engine v2 Validation" section, Rules 1-5):
+     - `graph_orchestration` (Rule 1, ERROR): when a `graph:` block is present, `graph.orchestration` MUST equal `graph_v2`; any other value is a hard error
+     - `memory_config` (Rule 2, WARN): `memory:` fields must match MemoryConfig shape — `inject` boolean, `max_inject` integer, `min_relevance` low|medium|high, `scope` workspace|role|both; malformed values are reported as warnings
+     - `termination_any_of` (Rule 3, WARN): every `collaboration.termination.any_of` entry must be `{max_iterations: int}` or `{result_matches: {agent: string, contains: string}}`; other shapes are reported as warnings
+     - `permission_legacy_tools` (Rule 4, ERROR): legacy removed v1 dispatch tools — `Dispatch`/`dispatch`, `dispatch_output`, `dispatch_cancel` — in any `permission.allow` (top-level role or subagent) are a hard configuration error; the role is rejected
+     - `loop_function` (Rule 5, WARN): a `functions:` entry named `loop` (legacy `loop_*` family) triggers a stale-loop warning — report it and direct the author to `graph_add_loop` bounded cycles
   3. **Tier 3 (with confirmation)**: Ask the user if they want to run deploy/health checks (Tier 3). If confirmed, run `python3 scripts/sync_check.py <roleDir> --json`.
 
   Gate report format:
@@ -22,10 +27,15 @@ prompt: |
   - Pass/Fail: {PASS/FAIL}
   - Issues: {list specific errors with rule references}
 
-  ### Tier 2 — Resolution
+  ### Tier 2 — Resolution + Graph Engine v2 Config
   - Pass/Fail: {PASS/FAIL}
   - Errors: {list}
   - Warnings: {list}
+  - graph_v2 declaration (`graph_orchestration`, Rule 1): {PASS/FAIL} — graph.orchestration must equal graph_v2
+  - memory config shape (`memory_config`, Rule 2): {PASS/FAIL} — inject/max_inject/min_relevance/scope
+  - collaboration.termination shape (`termination_any_of`, Rule 3): {PASS/FAIL} — max_iterations / result_matches entries only
+  - legacy-tool denial (`permission_legacy_tools`, Rule 4): {PASS/FAIL} — Dispatch/dispatch_output/dispatch_cancel in permission.allow is an ERROR
+  - stale loop warning (`loop_function`, Rule 5): {PASS/FAIL} — functions: loop must be replaced with graph_add_loop
 
   ### Tier 3 — Deploy/Health
   - Status: {PASS/FAIL/SKIPPED}
@@ -39,6 +49,8 @@ prompt: |
   Rules:
   - Do NOT auto-fix any issues — report them for the user/iterate function
   - Do NOT mark PASS when warnings indicate unresolved collaboration targets
+  - Treat a non-`graph_v2` `graph.orchestration` (Rule 1) or a legacy removed tool (`Dispatch`, `dispatch_output`, `dispatch_cancel`) in `permission.allow` (Rule 4) as a hard ERROR — never mark PASS while one is present
+  - Surface WARN-severity checks (Rules 2/3/5: memory shape, termination shape, stale `loop` function) in the report without treating them as blockers
   - Do NOT run Tier 3 without user confirmation
   - Reference specific catalog rules when explaining errors
 
