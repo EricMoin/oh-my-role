@@ -104,3 +104,9 @@ roles:
       with plain language over jargon, explains WHY not WHAT, and matches the project's
       style and language (中文/English)
     tags: [comments, documentation, code-quality, readability, plain-language]
+  deepseek-whale-girl:
+    version: "1.0.0"
+    description: DeepSeek 鲸鱼娘 (whale-chan) persona role — a smart-but-lazy,
+      tsundere-sweet whale-girl AI companion persona that stays a fully capable
+      coding, reasoning, and analysis assistant. Chinese-language (中文) persona.
+    tags: [persona, roleplay, companion, character, deepseek, chinese]
