@@ -31,6 +31,7 @@ When a symptom points to a different concern, route to the skill that owns it in
 | XML screen being migrated to Compose | `compose-interop-migration` |
 | docs disagree with observed behavior | `android-source-research` |
 | screen architecture or state ownership unclear | `compose-ui-architecture` |
+| parameter threaded through layers that never read it (prop drilling) | `compose-ui-architecture` |
 | platform lifecycle, permissions, or background work | `android-platform-engineering` |
 | broad feature work spanning multiple concerns | `jetpack-compose-engineering-gate` |
 
