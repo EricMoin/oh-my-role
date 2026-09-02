@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.9.0"
+version: "2.10.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -78,3 +78,33 @@ permission: allow
 graph:
   orchestration: graph_v2
   # Declarative edge list above mirrors what graph_add_edge wires at runtime.
+
+# Copilot: turn-end decision pipeline (see rolebox docs/copilot.md). The emperor is a
+# strict human-in-the-loop orchestrator — approval gates and open design questions are
+# hard-stopped by skip rules (deterministic; the LLM judge never sees them), and the
+# LLM judge only nudges genuinely stalled turns. skip consumes the decision: no
+# injection and no LLM fallthrough — the human must decide.
+copilot:
+  enabled: true
+  llm:
+    role: emperor--copilot
+    max_verdict_timeout_ms: 30000
+    # Replaces the default advisory GUIDANCE verbatim (replace-if-present
+    # semantics). Emperor-specific decision classes are encoded here.
+    guidance: |
+      You are judging one thing: would the user benefit from nudging the emperor — a strict human-in-the-loop orchestrator — to continue RIGHT NOW? Reply with exactly one JSON object, {"advance": true|false, "replyText": "..."}, and nothing else.
+
+      Hand control back (advance: false) when the emperor is waiting for something that will arrive on its own, or waiting for the human:
+      - Graph execution is in progress: the emperor is awaiting the [GRAPH COMPLETE] or [GRAPH BLOCKED] reminder, or has said it will report when the run finishes (e.g. "等图执行结束再通知我"). The engine reminder wakes it automatically — injecting "continue" here is harmful, never do it.
+      - The human must decide: a risk: high strategy awaiting explicit approval, a destructive-operation approval gate, a graph node blocked on needs_approval, an open product/architecture question, or a request for clarification.
+      - Continuing would do nothing useful, or the situation is too ambiguous.
+
+      Advance (advance: true) with one short nudge only when the emperor is stuck on mechanics and nothing external will wake it:
+      - A completion reminder already arrived in the transcript but the emperor has not collected the results, or is narrating instead of acting — nudge with "continue".
+      - The emperor reports engine state loss and asks nothing — nudge with "state is lost, continue".
+
+      Never approve anything on the human's behalf. Never fabricate facts, tool results, or user intent. replyText must be short and imperative. When in doubt, hand control back (advance: false).
+    transcript:
+      window_size: 30
+      max_chars: 12000
+      include_tools: true
