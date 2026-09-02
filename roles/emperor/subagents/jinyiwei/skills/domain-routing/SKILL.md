@@ -9,7 +9,7 @@ Single source of truth for mapping a subtask's domain to the correct department 
 
 ## Domain Routing Table
 
-All eight departments are active and routable. Every row maps a domain to a live department worker.
+All seven departments are active and routable. Every row maps a domain to a live department worker.
 
 | Domain | ID | Scope Description | Evidence Tags |
 |--------|----|-------------------|---------------|
@@ -18,7 +18,6 @@ All eight departments are active and routable. Every row maps a domain to a live
 | test | emperor--jinyiwei--test | Testing: unit tests, integration tests, test fixtures, coverage | `[test]` |
 | data | emperor--jinyiwei--data | Data layer: schemas, migrations, queries, persistence | `[lsp_diagnostics, test]` |
 | docs | emperor--jinyiwei--docs | Documentation: README, API docs, inline comments, guides | `[lsp_diagnostics]` |
-| quality | emperor--jinyiwei--quality | Quality assurance: linting, formatting, static analysis, review | `[lsp_diagnostics]` |
 | devops | emperor--jinyiwei--devops | DevOps/Infra: CI/CD, Docker, Kubernetes, Terraform, deployment | `[lsp_diagnostics]` |
 | security | emperor--jinyiwei--security | Security: vulnerability scanning, auth audit, dependency security, hardening | `[lsp_diagnostics]` |
 
