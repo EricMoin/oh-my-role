@@ -42,3 +42,7 @@ Return a ranked table:
 - fit or relevance
 - confidence
 - caveat
+
+## When The User Wants A Report File
+
+For research-report requests (explicit 报告/调研报告/document deliverable, or a multi-section research synthesis with >= 3 sections each carrying cited sources), load the supersearch-html-report skill and deliver an HTML file at .rolebox/reports/<topic-slug>-<YYYYMMDD>.html. In that case the chat answer degrades to a concise summary (Answer + Confidence + Gaps) ending with the absolute file path of the HTML file.

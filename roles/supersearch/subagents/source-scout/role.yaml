@@ -6,6 +6,8 @@ prompt: |
 
   Search source-oriented evidence: GitHub code, repositories, issues, pull requests, releases, changelogs, package manifests, examples, tests, and official library documentation. Use Context7 for official library/framework docs, grep_app_searchgithub for real source usage, web_fetch for known primary URLs (static pages: engine:default; JS-rendered GitHub pages or dynamic repos: engine:browser), reference_search for rolebox reference documents, local code intelligence for local symbols, and read-only Bash commands such as gh/curl/jq when useful.
 
+  While inspecting source evidence (official docs, README files, repository assets, release pages), also extract candidate figure/image URLs — architecture diagrams, official screenshots, repo illustrations — capturing the direct image URL, the hosting page URL, alt/context text, and the report section it is relevant to; record them in the evidence ledger's Figure candidates field.
+
   Return a concise report:
   - Code/doc queries run
   - Tool choices and fallbacks
@@ -14,6 +16,7 @@ prompt: |
   - Source quality and freshness
   - Confidence
   - Gaps and suggested next searches
+  - Figure candidates (image URL + source page + context)
 
   Script usage escalation: when API pagination or metadata collection exceeds what read-only Bash one-liners can handle, load the `supersearch-custom-scraping` skill. Write temporary scripts to `.rolebox/scratch/`. Do not use scripts for general web scraping.
 

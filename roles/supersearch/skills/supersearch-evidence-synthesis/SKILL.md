@@ -19,6 +19,7 @@ Track:
 - Freshness: date, version, commit, or unknown.
 - Conflict: any source that disagrees.
 - Gap: what was not found or not verified.
+- Figure candidates: direct image URL, hosting page, alt/context text, intended report section, and license/source type (official docs / repo asset / other).
 
 ## Confidence Rules
 
@@ -58,4 +59,5 @@ Evidence Ledger
 - Conflicting:
 - Unknown:
 - Confidence:
+- Figure candidates:
 ```
