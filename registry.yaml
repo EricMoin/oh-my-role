@@ -45,7 +45,7 @@ roles:
       Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
-    version: "3.0.1"
+    version: "3.1.0"
     description: Dart/Flutter engineering lead with evidence-first research,
       engineering state machines, and specialist gate reviews — builds, tests,
       profiles, and ships cross-platform Flutter and Dart applications

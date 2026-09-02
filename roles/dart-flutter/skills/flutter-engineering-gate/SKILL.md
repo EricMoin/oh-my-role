@@ -16,10 +16,10 @@ Use this skill to keep larger Flutter work deliberate without slowing down small
 
 ## Workflow
 
-- [ ] Decide whether the task is trivial. If it is a small focused edit with low blast radius, use the relevant skill and skip subagent dispatch.
+- [ ] Decide whether the task is trivial. If it is a small focused edit with low blast radius, use the relevant skill and skip gate review entirely.
 - [ ] For non-trivial work, inspect project facts: `pubspec.yaml`, SDK constraints, platforms, package layout, analysis options, state management, routing, codegen, tests, and CI/release conventions.
 - [ ] Create or update the Flutter Engineering State.
-- [ ] Dispatch only the gates needed by the risk:
+- [ ] Run only the gates needed by the risk — as PARALLEL graph nodes in one graph (`graph_create` → `graph_add_node` per gate with agent `dart-flutter--{gate}` → `graph_run` → end turn → collect on `[GRAPH COMPLETE]` via `graph_status(include_output=true)`). Never use the task tool or the deprecated `dispatch` tool. Add `graph_add_edge` only when one gate's outcome materially affects another's review.
   - Architecture: feature structure, state ownership, data boundaries, persistence, dependency injection, or refactors.
   - UI/Layout/A11y: screens, widgets, constraints, interactions, forms, semantics, text scaling, or adaptive layout.
   - Test Quality: bug fixes, regression coverage, test strategy, coverage, mocks/fakes, or CI commands.
