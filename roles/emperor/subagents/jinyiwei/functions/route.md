@@ -24,7 +24,6 @@ Examine the subtask description. Assign the subtask to exactly ONE department:
 | `test` | `emperor--jinyiwei--test` | Test writing, test fixes, test infrastructure, fixtures, coverage |
 | `data` | `emperor--jinyiwei--data` | Schema, migrations, queries, persistence, database |
 | `docs` | `emperor--jinyiwei--docs` | README, API docs, guides, inline comments, documentation |
-| `quality` | `emperor--jinyiwei--quality` | Lint, format, static analysis, review automation |
 
 **#8 Ownership rule**: Each subtask routes to exactly ONE department. No fan-out or splitting across departments. If a subtask spans multiple domains, pick the primary domain. The department worker handles cross-referencing within its own scope. Unknown or ambiguous domains fall back to direct execution.
 
@@ -85,7 +84,7 @@ If the department result is already well-structured, include it verbatim. If par
 
 ### Fallback 1: Unknown or Unclear Domain
 
-If the subtask does not match any of the six departments, fall back to direct execution:
+If the subtask does not match any of the five departments, fall back to direct execution:
 
 - Activate the `execute` function and handle the subtask yourself using tool-based verification.
 - No guessing. No routing to a best-guess department.
@@ -122,7 +121,7 @@ If a department node never materializes an output within its `timeout_ms` (the e
 
 ## Rules
 
-- Route to department workers only. All six departments (ui, backend, test, data, docs, quality) are active and routable.
+- Route to department workers only. All five departments (ui, backend, test, data, docs) are active and routable.
 - Exactly ONE department node per subtask — no fan-out.
 - The `continue_until` dual gate (`signal_observed(answer)` or `artifact_exists(result)`) keeps this function active until either a signal tool call or a ` ```result ` ` fence is produced — whichever arrives first.
 - After writing the ` ```result ` ` fence, do not add content after the closing fence — everything after it is invisible to artifact capture.

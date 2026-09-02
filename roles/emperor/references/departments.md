@@ -5,7 +5,7 @@ description: Department definitions, domain assignments, evidence tags, and exte
 
 # Departments
 
-All 8 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope skill, internal skills, and evidence requirements.
+All 7 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope skill, internal skills, and evidence requirements.
 
 ## Department registry
 
@@ -16,7 +16,6 @@ All 8 departments are live and routable. Each runs as a dispatch subagent under 
 | Test | emperor--jinyiwei--test | Tests, fixtures, mocking, coverage, test infra | test | test, spec, mock, fixture, coverage |
 | Data | emperor--jinyiwei--data | Schema, migrations, queries, persistence | lsp_diagnostics, test | schema, migration, query, persistence, database |
 | Docs | emperor--jinyiwei--docs | README, API docs, guides, comments | lsp_diagnostics | doc, readme, guide, comment, changelog |
-| Quality | emperor--jinyiwei--quality | Lint, format, static analysis, review | lsp_diagnostics | lint, format, static analysis, quality |
 | DevOps | emperor--jinyiwei--devops | CI/CD, Docker, Kubernetes, IaC, deployment, observability | lsp_diagnostics | devops, ci, cd, pipeline, docker, kubernetes, deploy, infrastructure, iac, container |
 | Security | emperor--jinyiwei--security | Vulnerability scanning, auth audit, dependency security, hardening | lsp_diagnostics | security, vulnerability, auth, owasp, cve, scan, hardening, secret |
 
@@ -27,7 +26,7 @@ All departments use model pool `tier-2-reasoning`.
 - **lsp_diagnostics**: Run language-server diagnostics on changed files. Zero errors required.
 - **test**: Run relevant tests. All must pass.
 
-Departments that produce prose only (Docs) or whose output IS diagnostics (Quality) skip the test tag.
+Departments that produce prose only (Docs) skip the test tag.
 
 
 ## Skills per department
@@ -41,7 +40,6 @@ Each department loads emperor-internal skills only. The emperor role is self-con
 | Test | test-scope |
 | Data | data-scope |
 | Docs | docs-scope |
-| Quality | quality-scope |
 | DevOps | devops-scope, devops-practices |
 | Security | security-scope, security-practices |
 
