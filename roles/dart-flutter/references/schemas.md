@@ -165,7 +165,7 @@ open_questions:
 
 **Direction**: Engineering Lead → subagent (closed-loop revise rounds)
 
-When a gate returns `fail`, the Lead revises code and re-dispatches to the same subagent (`session_id`). If a new session is required, the prompt MUST carry:
+When a gate returns `fail`, the Lead revises code and re-runs the same gate node via `graph_run(graph_id, node_id="gate-{name}", retry=true, modify_prompt=…)` — retry reopens the node's session with checkpoint context. If the original node was cleaned up and a fresh node is required, its prompt MUST carry:
 
 | Field | Source | Purpose |
 |-------|--------|---------|
@@ -175,7 +175,7 @@ When a gate returns `fail`, the Lead revises code and re-dispatches to the same 
 | Fix description | Engineering Lead | What was changed |
 | Revision flag | Engineering Lead | "This is a revision — re-evaluate against the same engineering state" |
 
-One failed gate per dispatch. The subagent re-evaluates from the unchanged Engineering State and produces a fresh gate report.
+One failed gate per retry node. The subagent re-evaluates from the unchanged Engineering State and produces a fresh gate report.
 
 ---
 

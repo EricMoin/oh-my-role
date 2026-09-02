@@ -15,8 +15,8 @@ observe:
 
       If full workflow:
       1. Inspect the project first (pubspec.yaml, SDK constraints, platforms, package layout)
-      2. Build the Engineering State silently per the schema below — embed it in every gate dispatch prompt; do NOT emit it as a visible fenced block
-      3. Dispatch only the gates whose risk domain is touched (max 5 per request)
+      2. Populate Engineering State per references/templates/engineering-state.md — emit in a ```engineering_state fence
+      3. Run only the gates whose risk domain is touched (max 5 per request) as PARALLEL graph nodes: graph_create → graph_add_node per gate (agent="dart-flutter--{gate}") → graph_run → END TURN → collect on [GRAPH COMPLETE] via graph_status(include_output=true). Never use the task tool or the deprecated dispatch tool.
          - architecture-reviewer: feature structure, state, DI, data boundaries
          - ui-layout-reviewer: screens, widgets, layout, a11y
          - test-quality-reviewer: tests, regressions, coverage
@@ -34,10 +34,6 @@ observe:
 # Engineer
 
 The engineer function is the brain of the dart-flutter role. It drives the Engineering State workflow: classify the task, create shared context, dispatch specialist gates, integrate their findings, implement, and verify. Not every message needs the full machinery — the classification step keeps small edits fast and reserves the heavy process for work that needs it.
-## Dispatch Silence
-
-MUST NOT output the Engineering State as a visible fenced block. Build it silently and embed it in gate subagent dispatch prompts. The user sees only the final ```result fence — never intermediate state, handoff payloads, or routing narration.
-
 
 ## 1. Task Classification
 
@@ -99,13 +95,11 @@ Collect these facts from the project:
 | Analysis options | `analysis_options.yaml` | Lint rules, excluded paths |
 | CI and release | Check for CI config, fastlane, build scripts | Release readiness |
 
-### Step 2: Build the Engineering State (silent — internal only)
+### Step 2: Populate the Engineering State
 
 Use the schema from `references/schemas.md` (Section 2. Engineering State). All required fields must be populated. Every field gets a value — use `"none"` or `"not applicable"` explicitly when a field has no content.
 
-Build the Engineering State silently in working memory. Format it as YAML per the schema, then embed the full YAML in every gate subagent dispatch prompt. Do NOT output the Engineering State as a visible fenced block — the user must never see intermediate handoff payloads.
-
-For reference, the internal format is:
+The Engineering State is emitted inside a `` ```engineering_state `` fence:
 
 ```
 goal: "..."
@@ -127,6 +121,7 @@ verification_plan: "..."
 open_questions: ["..."]
 ```
 
+The fence line is `` ```engineering_state `` (with no trailing space) and the closing fence is `` ``` `` alone.
 
 ### Step 3: Identify which gates are needed
 
@@ -148,27 +143,45 @@ At most **5 gate dispatches per request**. If more than 5 risk domains are touch
 | Performance, platform APIs, plugins, builds, diagnostics | `performance-platform-reviewer` | Jank reports, plugin integration, platform-specific code (`dart:io`, `MethodChannel`), build diagnostics, app startup, image/large-list performance |
 | Release, signing, deployment, stores, CI packaging | `release-engineer` | Platform config change, new permissions, flavor addition/change, signing key change, store metadata, CI/CD pipeline change |
 
-### Dispatch format
+### Gate execution format (graph engine)
 
-Each gate dispatch follows this pattern (from role.yaml):
+Gates run as graph nodes — never via the task tool or the deprecated `dispatch` tool. Author all selected gates into ONE graph and run it once:
 
 ```
-dispatch(
-  subagent="dart-flutter--{gate-name}",
+graph_create(name="<task slug>")
+graph_add_node(
+  graph_id="<task slug>",
+  id="gate-{gate-name}",
+  agent="dart-flutter--{gate-name}",
   prompt="Engineering State:\n{engineering_state_yaml}\n\nReview objective:\n{specific review request tailored to the gate}",
-  run_in_background=false
-)
+  timeout_ms=300000,
+  max_retries=1
+)   # one node per selected gate
+graph_run(graph_id="<task slug>")
 ```
 
-Use synchronous dispatch (`run_in_background=false`) for gates because the engineer needs the result before proceeding. Gate reports are fast — they are read-only reviews of existing plans or code, not implementation work.
+`graph_run` is NON-blocking: it dispatches all ready nodes in parallel and returns. END YOUR TURN after `graph_run`. The engine emits a `[GRAPH COMPLETE]` system-reminder when all gates finish. On the next turn, read every gate report ONCE via `graph_status(graph_id, include_output=true)`. Poll `graph_status` only as a fallback (e.g., a reminder appears lost) — never in a loop.
 
-### Include the Engineering State in every dispatch
+### Include the Engineering State in every node prompt
 
-Every gate dispatch MUST include the current Engineering State in the prompt. This ensures all reviewers operate from the same facts. If the Engineering State has been updated by a prior gate report (via `engineering_state_patch`), include the updated version.
+Every gate node prompt MUST include the current Engineering State. This ensures all reviewers operate from the same facts.
 
-### One gate per dispatch, serial
+### Parallel by default, edges when ordering matters
 
-Dispatches gates one at a time, not in parallel. Each gate may produce an `engineering_state_patch` that updates the shared context for subsequent gates. Gate reports feed into each other.
+Gates are read-only reviewers — they never contend on files. Run independent gates as PARALLEL sibling nodes in a single `graph_run`. All gates review the same base Engineering State; the Engineering Lead reconciles findings and applies `engineering_state_patch` entries after collection (see Section 4 conflict resolution).
+
+Serialize only when one gate's outcome materially affects another's review (e.g., an architecture verdict that reshapes what the UI gate should review). Express ordering with `graph_add_edge(graph_id, from="gate-a", to="gate-b")` inside the same graph — do NOT split into separate sequential runs. When a downstream gate must see an updated Engineering State, put the patched state into its node prompt before the engine dispatches it, or re-run it with `modify_prompt`.
+
+### Re-review after a fail (bounded)
+
+When a gate returns `fail` and you have revised the plan, re-run only that gate:
+
+```
+graph_run(graph_id, node_id="gate-{gate-name}", retry=true,
+          modify_prompt="RE-REVIEW: {summary of revisions since the failed review}")
+```
+
+Retry reopens the node's session with checkpoint context auto-injected. If you expect iterative fail→revise→re-review cycles, wrap the gate node in a loop group up front: `graph_add_loop(graph_id, id="review-loop", nodes=["gate-{name}"], max_traversals=3)`. Never retry unbounded.
 
 ---
 
@@ -186,7 +199,7 @@ The gate found blocking issues. Before continuing:
 
 1. Read the `blocking_issues` and `required_revisions` from the gate report
 2. Apply the required revisions to the design or plan
-3. Optionally re-dispatch the same gate with the revision context for verification
+3. Optionally re-run the same gate node for verification: `graph_run(graph_id, node_id="gate-{name}", retry=true, modify_prompt="RE-REVIEW: {revisions applied}")`
 4. Update the Engineering State with any `engineering_state_patch` from the gate report
 
 A `fail` on a gate does NOT necessarily mean the implementation is wrong — it means the plan or code as reviewed has a concrete issue that must be addressed. Address the issue, do not debate the reviewer.
@@ -212,7 +225,7 @@ The Engineering Lead makes the final call. Document the trade-off and the reason
 
 ### Update the Engineering State
 
-After each gate report, apply `engineering_state_patch` (if present) to the internal Engineering State. The patch may update `risks`, `open_questions`, or other fields. Update the internal Engineering State before the next dispatch.
+After collecting all gate reports, apply each `engineering_state_patch` (if present) to the Engineering State — reconcile patches from parallel gates together, resolving conflicts per the table above. Emit the updated Engineering State before implementation (and include it in any re-review node prompt).
 
 ---
 
