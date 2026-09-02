@@ -51,7 +51,7 @@ roles:
       profiles, and ships cross-platform Flutter and Dart applications
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "3.4.0"
+    version: "3.5.0"
     description: Jetpack Compose Engineering Lead with evidence-first research,
       engineering state machines, graph-execution-engine gate orchestration,
       specialist gate reviews, AOSP/AndroidX source tracing, and idiomatic

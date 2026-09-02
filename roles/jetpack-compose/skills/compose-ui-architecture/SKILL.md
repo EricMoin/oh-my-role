@@ -1,6 +1,6 @@
 ---
 name: compose-ui-architecture
-description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, deciding where screen logic lives (ViewModel vs plain UI-logic state holder vs presenter) and how events flow (method references or sealed event sinks), dependency injection, navigation boundaries, and feature/module organization. Use when structuring Compose screens, wiring ViewModels, deciding whether to extract orchestration into a state holder, setting up navigation graphs, organizing feature modules, or architecting new Compose features.
+description: Applies Android Compose UI architecture with ViewModel, StateFlow, lifecycle-aware collection, UDF/MVI/MVVM, deciding where screen logic lives (ViewModel vs plain UI-logic state holder vs presenter) and how events flow (method references or sealed event sinks), dependency injection, navigation boundaries, and feature/module organization. Use when structuring Compose screens, wiring ViewModels, deciding whether to extract orchestration into a state holder, setting up navigation graphs, organizing feature modules, architecting new Compose features, or when a parameter/flag is being threaded through composable signatures that never consume it (prop drilling) and the fact should live on an existing state holder instead.
 ---
 # Compose UI Architecture
 
@@ -396,3 +396,53 @@ The precedent is `BackHandler` / `OnBackPressedDispatcher`: every handler regist
 
 The one-sentence test tells the two shapes apart before any code is written: "add a flag so the *camera overlay* can win focus" names a feature — special case; "let the router pick the topmost live surface" names a capability any future participant uses for free — general. The general solution is rarely more code; it differs only in where the change lands (arbitration rule in the shared owner) versus where the special case lands (feature knowledge smeared across participants).
 - **A refactor preserves behavior.** When relocating logic, keep *where* gating happens and any conditional guards intact — moving a guard by accident is a behavior change, not a refactor.
+
+---
+
+### 9. Threading a decision through signatures that don't consume it (prop drilling past a state holder)
+
+The situation: a top-level composable owns a mechanism (an animation state, a transition controller, a manager) and derives from it a fact that only a deeply nested layer consumes — "hide this layer while the overlay flies". The instinctive move is to compute the decision at the top and thread it down as a parameter.
+
+❌ **Wrong** — encode the decision where the mechanism lives, then drill it through every signature in between:
+```kotlin
+// Top level knows the animation…
+ScreenRoot {
+    ScreenContent(
+        // hide the review layer while the retake transition is flying
+        reviewContentAlpha = { if (retakeFlight.isRunning) 0f else 1f },
+        /* … */
+    )
+}
+// …and every layer between decision and consumption carries a value it never reads:
+private fun ScreenContent(/* … */, reviewContentAlpha: () -> Float, /* … */)
+private fun ReviewLayer(/* … */, contentAlpha: () -> Float, /* … */)  // finally consumed here
+```
+Two smells compound. The middle signatures carry a parameter they neither understand nor consume — each is a level the *feature knowledge* ("a retake flight animation exists") has leaked into. And the parameter encodes the **why** (a specific animation is running) instead of the **what** (this layer must not draw its content right now), so no future transition can reuse it without another parameter.
+
+✅ **Correct** — name the invariant first ("the same content must never be drawn by both the layer and the transition overlay"), then record it as a fact on the `@Stable` state holder that is *already threaded through the same path*, expressed in the holder's own vocabulary:
+```kotlin
+@Stable
+class CaptureReviewState {
+    /** Content is "borrowed" by a transition overlay: set at takeoff, returned when the animation settles. */
+    var contentInFlight by mutableStateOf(false)
+}
+
+// Write where the orchestration already lives — the same event handler that starts the animation:
+if (retakeFlight.start(/* … */)) review.contentInFlight = true   // and reset on Phase.Idle / clearReview()
+
+// Read at the consumption point — no signature between them changes:
+ReviewStackContent(
+    modifier = Modifier.graphicsLayer { alpha = if (review.contentInFlight) 0f else 1f },
+)
+```
+
+Load-bearing rules:
+
+- **Check the pipeline before adding a parameter.** If a `@Stable` state holder already flows from the decision point to the consumption point, the fact belongs on the holder — a new parameter that merely rides alongside it is a duplicate channel. The strongest smell: the holder and the new parameter appear in the *same* signatures.
+- **Translate mechanism into fact at the boundary.** The orchestration point (which knows the animation) writes a mechanism-free fact (`contentInFlight`); the consumer reads only the fact. Neither middle layers nor the consumer ever learn the animation exists — a future "enter editor" flight reuses the same fact for free.
+- **Name the fact in the holder's vocabulary, not the feature's.** `contentInFlight` ("my content is delegated to an overlay") is a capability any transition can use; `retakeAnimationRunning` is feature knowledge wearing a state-holder field. Same boolean, opposite architecture — this is the same neutrality test as mistake #8.
+- **Preserve the read-site performance contract.** A `() -> Float` lambda parameter is usually there to defer the read to the draw phase. Reading snapshot state inside `graphicsLayer {}` / `drawBehind {}` keeps exactly that property — draw-phase read, zero recomposition — so the refactor loses nothing.
+- **Don't "fix" drilling by passing the mechanism down.** Handing `retakeFlight` itself to the content layer removes the lambda but inverts the coupling: now the content tree knows the animation machinery. That is strictly worse than the parameter.
+- **Plain one-hop data flow is not drilling.** Passing state to a direct stateless child is normal Compose. The smell threshold is a **non-consuming middle layer** carrying a value derived from a mechanism the consumer shouldn't know about.
+
+The one-sentence test, same shape as mistake #8: "thread `reviewContentAlpha` so the *retake animation* can hide the layer" names a feature — special case; "the review state records when its content is borrowed by an overlay" names a capability — general. When the first idea for a coordination problem is a flag or lambda threaded through signatures, stop and ask which object already in the pipeline should own the fact.
