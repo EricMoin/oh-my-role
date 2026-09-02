@@ -30,6 +30,7 @@ Use natural-language queries and source-targeted queries.
 - JS rendering: for pages that require JavaScript rendering, plan `engine:browser` in web_fetch.
 - Blocked pages: for pages behind anti-crawler measures, plan `engine:jina` as fallback downgrade.
 - If ALL fetch engines and the 7-step fallback chain are fully exhausted for a critical source: load the `supersearch-custom-scraping` skill and dispatch web-scout. This is the last resort. Do not plan custom scraping unless every other path has been tried and reported.
+- 当任务交付物是报告时，在文本查询之外并行规划图片发现查询 — 目标包括官方文档配图、设计指南页、架构图页、媒体/新闻素材包；先在已抓取的一手页面上提取图片 URL，再决定是否追加查询. (Plan this figure/image-discovery pass in parallel with the text queries.)
 
 ## GitHub And Docs
 
@@ -50,6 +51,7 @@ Use code-like patterns for GitHub code search and library names for docs.
 - If the target is real-world usage, plan GitHub code search before secondary articles.
 
 - If the target is a blocked or anti-crawler page, plan a `web_fetch` engine downgrade chain instead of a single fetch attempt.
+- If the deliverable is an HTML report, plan a figure candidate pass over every primary source fetched.
 
 ## Query Plan Output
 
@@ -63,4 +65,5 @@ Query Plan
 - Docs lookups:
 - Session/history queries:
 - Verification queries:
+- Image/figure queries:
 ```

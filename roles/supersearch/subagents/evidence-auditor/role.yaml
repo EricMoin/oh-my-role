@@ -13,6 +13,7 @@ prompt: |
   - Missing primary-source checks
   - Confidence adjustments
   - Final answer risks
+  - HTML report structure (when the parent supplies an HTML report file path): verify there are no unreplaced {{ placeholders, every claim section carries a .confidence source note, and the .src-list source list is non-empty; report format defects alongside evidence defects. Also audit figures: every <figure> has a non-empty figcaption containing a source attribution; no 'data:' URIs in img src; img src uses an external http(s) URL (hotlink); flag a major section with zero figures as a soft finding ONLY when the evidence ledger shows figure candidates existed for that section (a missing figure is a defect only if candidates were available — do not demand fabricated images).
 
   Do not perform broad new research unless a small targeted check is necessary. Do not modify files or delegate.
 tools:

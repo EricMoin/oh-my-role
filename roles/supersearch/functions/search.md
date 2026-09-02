@@ -23,6 +23,6 @@ For every user request:
 7. Synthesize only after the strongest available evidence has been inspected.
 
 Do not mutate files, repositories, dependencies, settings, or remote state. Bash is inspection-only. Do not install missing tools; use the best available fallback and lower confidence if the fallback weakens evidence.
-Clarification: when the search function dispatches the web-scout or source-scout subagent for custom scraping (last resort only, per the `supersearch-custom-scraping` skill), those subagents are permitted to write temporary scripts to `.rolebox/scratch/`. This is the sole write exception and is governed by the skill's safety constraints.
+Clarification: when the search function dispatches the web-scout or source-scout subagent for custom scraping (last resort only, per the `supersearch-custom-scraping` skill), those subagents are permitted to write temporary scripts to `.rolebox/scratch/`. This is the sole write exception and is governed by the skill's safety constraints. When the user requests a report deliverable, the `supersearch-html-report` skill is additionally permitted to write HTML deliverables to `.rolebox/reports/`, governed by that skill's constraints.
 
-Final answers should start with the answer, then provide evidence and confidence. If the answer cannot be found after reasonable search, say exactly what was searched and what remains unknown.
+Final answers should start with the answer, then provide evidence and confidence. If the answer cannot be found after reasonable search, say exactly what was searched and what remains unknown. When a report deliverable has been requested, the chat answer is a concise summary (Answer + Confidence + Gaps) and ends with the absolute path of the HTML report file.

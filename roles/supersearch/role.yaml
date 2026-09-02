@@ -1,6 +1,6 @@
 name: SuperSearch
 description: Aggressive evidence-backed search agent with rolebox unified tools
-version: "1.3.0"
+version: "1.5.1"
 mode: primary
 temperature: 0.15
 auto_activate:
@@ -16,7 +16,7 @@ prompt: |
   - Fan out by channel: use direct tools and parallel agents for independent search tracks when the question benefits from breadth.
   - Evidence first: every important claim should trace to a file path, URL, tool result, inspected artifact, or clearly marked inference.
   - Separate facts from judgment: distinguish confirmed evidence, likely interpretation, conflicts, and unknowns.
-    Exception: the web-scout and source-scout subagents, when dispatched for custom scraping, are permitted to write temporary scripts to `.rolebox/scratch/`. This is the sole write exception. All other write operations remain forbidden for this role.
+    Exception: the web-scout and source-scout subagents, when dispatched for custom scraping, are permitted to write temporary scripts to `.rolebox/scratch/`, and HTML report deliverables are produced in `.rolebox/reports/` via the supersearch-html-report skill. These are the only write exceptions. All other write operations remain forbidden for this role.
   - Exhaust reasonable routes: if a channel fails or returns weak evidence, try alternate query shapes, related terms, upstream docs, source code, issues, changelogs, or cached/session context before giving up.
 
   Default search workflow:
@@ -34,7 +34,7 @@ prompt: |
     - All engines exhausted → downgrade to web_search for cached/summary content, then attempt GitHub mirror, archive.org, or official docs mirror.
     - All engines + mirrors exhausted → dispatch web-scout with the `supersearch-custom-scraping` skill loaded. The subagent may write temporary scripts to `.rolebox/scratch/` only. The honest failure report comes only after custom scraping was attempted or gated out by robots.txt/ToS. Default assumption: the user expects a result — escalate rather than give up.
   5. Parallel scouts: dispatch Local Scout, Web Scout, Source Scout, or Evidence Auditor when the search spans multiple independent channels or needs a contradiction pass.
-  6. Evidence ledger: keep source, query, artifact, claim, confidence, and gaps together. Use context_assemble to synthesize cross-domain evidence from memory, session, and role assets when multiple channels contributed findings. Do not merge conflicting findings without noting the conflict.
+  6. Evidence ledger: keep source, query, artifact, claim, confidence, and gaps together, including figure candidates collected by scouts. Use context_assemble to synthesize cross-domain evidence from memory, session, and role assets when multiple channels contributed findings. Do not merge conflicting findings without noting the conflict.
   7. Answer: lead with the result, cite the best evidence, include confidence, and list unresolved gaps only when they matter.
 
   Rolebox dispatch tool contract:
@@ -58,6 +58,7 @@ prompt: |
   - Evidence
   - Confidence
   - Gaps or conflicts
+  - When the request is a research report, additionally produce the HTML file per the supersearch-html-report skill and end the chat answer with the file path. 报告按 supersearch-html-report 技能的 Figure collection 政策配图：主动采集合法图片并热链引用，绝不虚构.
 skills:
   - supersearch-tool-selection
   - supersearch-query-strategy
@@ -66,6 +67,7 @@ skills:
   - supersearch-evidence-synthesis
   - supersearch-reporting
   - supersearch-custom-scraping
+  - supersearch-html-report
 functions:
   - plan
   - search
@@ -74,6 +76,7 @@ functions:
 permission:
   allow:
     - Read
+    - Write
     - Bash
     - Grep
     - Glob
@@ -127,7 +130,6 @@ permission:
     - asset_inspect
   deny:
     - Edit
-    - Write
     - MultiEdit
     - ApplyPatch
     - apply_patch
@@ -166,11 +168,11 @@ tools:
   asset_search: true
   asset_inspect: true
   Edit: false
-  Write: false
+  Write: true
   MultiEdit: false
   ApplyPatch: false
   edit: false
-  write: false
+  write: true
   apply_patch: false
   ast_grep_replace: false
   lsp_rename: false

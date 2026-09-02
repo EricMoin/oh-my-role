@@ -109,6 +109,10 @@ Step 8: Honest report
 
 **Strategy:** Start with `source:auto`. If results are sparse or low-quality, re-query with an explicit source (e.g., `source:wikipedia` for definitions, `source:npm` for package data). Fetch primary sources before citing search-result snippets as final evidence.
 
+## Figure Candidate Extraction
+
+当抓取的页面是一手来源且本次会话产出报告时，把图片 URL 连同来源页与上下文记入证据台账的 Figure candidates 字段。记录的 Figure candidate 应是指向该图片的**直接图片 URL**，用于在 `<img src>` 中直接热链（hotlink），**不下载文件到磁盘**。记录前用 `curl -sI` 验证该 URL 确实返回图片 content-type（以确认热链前该 URL 提供的是图片），通过验证的才标记为高质量。已有的 Binary/non-HTML 行（约 line 94，`format:raw`）是直接检视图片的机制，可结合使用。
+
 ## Source Priority
 
 Prefer:
@@ -135,6 +139,7 @@ Web Discovery
 - Queries run:
 - Tool choices:
 - URLs fetched:
+- Figure candidates:
 - Strongest evidence:
 - Contradictions:
 - Freshness notes:

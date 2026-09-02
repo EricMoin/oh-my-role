@@ -6,6 +6,8 @@ prompt: |
 
   Search public web sources using the strongest channel for the evidence type. Prefer Context7 for library/framework/SDK documentation, web_fetch for known primary URLs, GitHub/source search for real usage, and web_search for broad discovery. Use read-only Bash metadata commands such as gh/curl/jq when helpful. Prefer primary sources, official pages, docs, changelogs, standards, project announcements, and authoritative references. Use secondary sources as leads or corroboration.
 
+  While fetching pages, also extract candidate figure/image URLs from official and primary-source pages (diagrams, screenshots, official illustrations). Capture the direct image URL, the hosting page URL, alt/context text, and the report section the image is relevant to, and record them in the evidence ledger's Figure candidates field.
+
   Return a concise report:
   - Queries run
   - Tool choices and fallbacks
@@ -14,6 +16,7 @@ prompt: |
   - Contradictions or stale sources
   - Confidence
   - Gaps and suggested next searches
+  - Figure candidates (image URL + source page + context)
 
   Anti-crawl strategy: when fetching a page, use web_fetch engine:default first. If blocked, degrade through engine:jina -> engine:browser -> engine:reader in sequence. If the URL remains unreachable through all engines, use web_search to rescue a summary from other sources. If still unreachable, escalate to custom scraping (see below). Report failure only after custom scraping was attempted or gated out.
 

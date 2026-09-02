@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  html-report TEMPLATE — supersearch-html-report
+  ----------------------------------------------------------------------------
+  这是一份「参数化 HTML 调研报告」模板。所有需在生成报告时替换的内容都用
+  双花括号占位符 {{...}} 标出。把本模板复制为实际报告文件后，逐一替换占位符
+  即可（见「填充工作流」）。请勿改动任何「外壳」代码（见「保持不动」）。
+
+  —— 保持不动 (DO NOT EDIT) ——
+  以下任何部分都不要改，它们定义了整份报告的交互与排版：
+    * <head> 中的主题引导 <script>（localStorage 'theme' 读写 + 系统主题回退）
+    * 整个 <style> 块（含 html[data-theme="dark"] 深色主题与 @media print 打印样式）
+    * .topbar（搜索 / 主题切换胶囊） 与 .search-panel（全文搜索面板）
+    * .wrap > nav.toc-nav 的壳（@media 折叠逻辑、scroll-spy、toc 渐隐依赖它）
+    * <body> 末尾的全部 <script>（scroll-spy .is-active、toc 渐隐 .can-up/.can-down、
+      全文搜索 Ctrl/⌘K、Enter 跳转、Esc 关闭、mark 高亮、主题切换持久化）
+  这些脚本与样式用 class/id 选择器驱动，与具体标题、章节、图、表无关。
+
+  —— 占位符清单 (ALL PLACEHOLDERS) ——
+  标题与元信息：
+    {{REPORT_TITLE}}          报告标题，写入 <title>，亦建议在摘要处重复。
+    {{REPORT_SUBTITLE}}       摘要区的一句话核心结论（摘要节 <b> 内）。
+    {{REPORT_DATE}}           报告日期（示例：2026-09-01）。
+  目录（.toc-list 内）：
+    {{TOC_GROUP_LABEL}}       目录分组标签（示例：概览 / 桌面与快捷 / 通知与系统）。
+    {{SECTION_ID}}            章节锚点 id。TOC 链接的 href 与正文 <section id=...>
+                              必须完全一致，scroll-spy 与全文搜索依赖它。
+    {{TOC_TITLE}}             目录项标题（正文 <h2> 的文字，可简化）。
+    {{TOC_ITEMS}}             目录填充点。生成报告时，为每个正文 <section>
+                              复制一个「示例 .toc-group」块，把其中的
+                              {{TOC_GROUP_LABEL}} / {{SECTION_ID}} / {{TOC_TITLE}}
+                              填成实际值，并把 <span class="no"> 序号改为连续编号。
+正文章节（.wrap 内）：
+    {{SECTION_TITLE}}         正文节标题，写入 <h2><span class="no">…</span>...
+    {{SECTION_LEAD}}          该节的引导小节标题，写入 <h3>。
+    {{CODE}}                  行内代码示例，写入 <code>。
+    {{TABLE_COL1_HEAD}} / {{TABLE_COL2_HEAD}} / {{TABLE_COL3_HEAD}}
+                              三列表格的表头（<th>）。
+    {{TABLE_ROW1_COL1}} … {{TABLE_ROW2_COL3}}
+                              三列表格的表体占位（示例给 2 行，行数可按需增删）。
+    {{BLOCKQUOTE_EXEMPLAR}}   <blockquote> 引用内容。
+    {{NOTE_EXEMPLAR}}         <div class="note"> 说明内容。
+    {{WARN_EXEMPLAR}}         <div class="warn"> 警示内容。
+    {{FIGURE_URL}}            配图 src，直接热链引用外部 http(s) 图片 URL（img 直链，不下载本地文件）；base64 禁止。
+    {{FIGURE_ALT}}            配图 alt 文字。
+    {{FIGURE_CAPTION}}        配图说明（<figcaption>）。
+    {{CONFIDENCE_NOTE}}       该节来源与置信度说明，写入 <p class="confidence">。
+    {{SECTIONS}}              正文章节填充点。生成报告时，为每个正文 <section>
+                              复制「示例正文节」块，填成实际内容；<span class="no">
+                              序号从 1 开始连续递增；每个 <section id="{{SECTION_ID}}">
+                              的 id 必须与对应目录 href 相同。
+来源清单与摘要：
+    {{SOURCE_LIST}}           文档来源清单 <ol class="src-list"> 的 <li> 列表项
+                              （每个 <li> 为一条来源，含链接与说明）。
+    {{CONFIDENCE_SUMMARY}}    整份报告的总体置信度说明（摘要节）。
+    {{GAPS}}                  已知证据缺口 / 尚未覆盖的盲点（摘要节 .warn 内）。
+
+  —— 填充工作流 (FILL WORKFLOW) ——
+    1. 复制本模板为新报告文件（例如 report-overview.html）。
+    2. 替换 {{REPORT_TITLE}} / {{REPORT_SUBTITLE}} / {{REPORT_DATE}}。
+    3. 在 .toc-list 里，为每个正文节复制「示例 .toc-group」，填 label/数字/标题，
+       并用 {{TOC_ITEMS}} 作为继续追加的分组；TOC 的 href="#..." 必须等于正文节 id。
+    4. 在 {{SECTIONS}} 处，为每个正文节复制「示例正文节」块，填成实际内容，
+       序号从 1 起连续递增；id 与目录一一对应。
+    5. 正文节之后追加「文档来源清单」节，把 {{SOURCE_LIST}} 展开为真实的 <li> 列表。
+    6. 更新摘要节里的 {{CONFIDENCE_SUMMARY}} 与 {{GAPS}}。
+    7. 每个主要章节：把采集到的合法一手来源图片插入为 <figure>；仅在确实不存在合法图片的章节删除示例 <figure>。
+    8. 删除本注释块与所有说明性 HTML 注释（它们只是模板自述，不进入交付物）。
+
+  —— 规则 (RULES) ——
+    * 绝不编辑外壳（style / 脚本 / topbar / search-panel / toc-nav 壳）。
+    * 配图是报告质量的一部分：凡存在合法官方/一手来源图片的章节都应配图；img src 直接热链外部 http(s) URL，不下载图片文件；绝不 base64；每个 figure 必须有带来源归属的 figcaption；绝不虚构图片。
+    * TOC 的 href 必须等于对应正文 <section id>，否则 scroll-spy 与搜索失效。
+    * 所有 <span class="no"> 数字需与目录、正文、来源节保持连续编号。
+  ============================================================================
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{REPORT_TITLE}}</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'dark' || t === 'light') { document.documentElement.setAttribute('data-theme', t); }
+          else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+        :root {
+          color-scheme: light;
+          --ink: #1e222a; --ink-strong: #12161d; --muted: #555d68; --faint: #5f6770;
+          --line: #e4e6e9; --line-soft: #eff1f4; --bg: #ffffff;
+          --accent: #1f4b8f; --accent-ink: #16365f; --code-bg: #f5f6f7;
+          --fade: rgba(255,255,255,0);
+        }
+        html[data-theme="dark"] {
+          color-scheme: dark;
+          --ink: #e2e7ef; --ink-strong: #f3f6fa; --muted: #9aa5b5; --faint: #7f8a9b;
+          --line: #2b313c; --line-soft: #1c212b; --bg: #0f1216;
+          --accent: #7aa2ff; --accent-ink: #a9c2ff; --code-bg: #1a2029;
+          --fade: rgba(15,18,22,0);
+        }
+        * { box-sizing: border-box; }
+        html { scroll-padding-top: 24px; -webkit-text-size-adjust: 100%; }
+        body {
+          margin: 0;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+          color: var(--ink); background: var(--bg);
+          font-size: 16px; line-height: 1.95; -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: rgba(31,75,143,.14); }
+        html[data-theme="dark"] ::selection { background: rgba(122,162,255,.28); }
+        a { color: var(--accent); text-decoration: none; text-underline-offset: 3px; transition: color 120ms ease-out; }
+        a:hover { color: var(--accent-ink); text-decoration: underline; text-decoration-thickness: 1px; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) { a, .toc-nav::before, .toc-nav::after { transition: none; } }
+
+        /* ———— 顶部胶囊：搜索 / 主题切换 ———— */
+        .topbar {
+          position: fixed; top: 16px; right: 20px; z-index: 60;
+          display: inline-flex; align-items: center; gap: 2px;
+          padding: 4px; border: 1px solid var(--line); border-radius: 999px;
+          background: var(--bg);
+        }
+        .topbar button {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 34px; height: 34px; padding: 0; border: 0; cursor: pointer;
+          color: var(--muted); background: transparent; border-radius: 999px;
+          transition: color 120ms ease-out, background-color 120ms ease-out;
+        }
+        .topbar button:hover, .topbar button:focus-visible { color: var(--accent-ink); background: var(--line-soft); }
+        .topbar svg { width: 17px; height: 17px; display: block; }
+        .icon-sun, .icon-moon { display: block; }
+        html:not([data-theme="dark"]) .icon-sun { display: none; }
+        html[data-theme="dark"] .icon-moon { display: none; }
+
+        .search-panel {
+          position: fixed; top: 64px; right: 20px; z-index: 60;
+          width: min(420px, calc(100vw - 32px));
+          max-height: min(60vh, 520px);
+          display: flex; flex-direction: column; overflow: hidden;
+          background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+        }
+        .search-panel[hidden] { display: none; }
+        .search-panel input {
+          width: 100%; border: 0; border-bottom: 1px solid var(--line-soft);
+          background: transparent; color: var(--ink);
+          font: inherit; font-size: 15px; padding: 14px 16px; outline: none;
+        }
+        .search-panel input::placeholder { color: var(--faint); }
+        .search-results { overflow-y: auto; padding: 6px; }
+        .search-result {
+          display: block; width: 100%; text-align: left; border: 0; cursor: pointer;
+          font: inherit; color: var(--ink); background: transparent; border-radius: 8px; padding: 8px 10px;
+        }
+        .search-result:hover, .search-result.is-active { background: var(--line-soft); }
+        .search-result .sr-title { display: block; font-size: 13.5px; color: var(--ink-strong); margin-bottom: 2px; }
+        .search-result .sr-snippet { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+        .search-result mark { background: transparent; color: var(--accent); }
+        .search-empty { padding: 16px; color: var(--faint); font-size: 13.5px; }
+        .search-hit { animation: search-hit 1.8s ease-out forwards; }
+        @keyframes search-hit {
+          0%, 55% { outline: 3px solid rgba(122,162,255,.45); outline-offset: 2px; }
+          100% { outline: 3px solid rgba(122,162,255,0); outline-offset: 2px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .topbar button { transition: none; }
+          .search-hit { animation: none; outline: 3px solid rgba(122,162,255,.45); outline-offset: 2px; }
+        }
+        .doc-mark { background: rgba(122,162,255,.30); color: inherit; border-radius: 2px; padding: 0 1px; }
+        html[data-theme="dark"] .doc-mark { background: rgba(122,162,255,.32); }
+
+        .wrap {
+          max-width: 1228px;
+          margin: 0 auto;
+          padding: 56px 30px 104px;
+          display: grid;
+          grid-template-columns: 244px minmax(0, 880px);
+          column-gap: 56px;
+          row-gap: 0;
+          justify-content: center;
+        }
+
+        /* ———— 目录侧边栏 Table of Contents ———— */
+        section { scroll-margin-top: 24px; grid-column: 2; }
+        .toc-nav {
+          grid-column: 1; grid-row: 1 / -1;
+          width: 100%; max-width: 244px;
+          position: sticky; top: 24px; align-self: start;
+          padding-right: 22px;
+          border-right: 1px solid var(--line-soft);
+        }
+        .toc-scroll {
+          max-height: min(calc(100vh - 48px), 720px);
+          overflow-y: auto;
+          padding: 2px 0 44px;
+          scrollbar-width: none;      /* Firefox：隐藏滚动条，保留滚动 */
+          -ms-overflow-style: none;   /* 旧版 Edge */
+        }
+        .toc-scroll::-webkit-scrollbar { display: none; }  /* WebKit / Blink */
+        /* 顶部/底部渐隐：定位于不滚动的外层，始终顶满上下 */
+        .toc-nav::before, .toc-nav::after {
+          content: ""; position: absolute; left: 0; right: 22px;
+          height: 40px; pointer-events: none; z-index: 2;
+          opacity: 0; transition: opacity 160ms ease-out;
+        }
+        .toc-nav::before {
+          top: 0;
+          background: linear-gradient(to bottom, var(--bg), var(--fade));
+        }
+        .toc-nav::after {
+          bottom: 0;
+          background: linear-gradient(to bottom, var(--fade), var(--bg));
+        }
+        .toc-nav.can-up::before { opacity: 1; }
+        .toc-nav.can-down::after { opacity: 1; }
+        .toc { margin: 0; }
+        .toc summary {
+          list-style: none; cursor: pointer; margin: 0 0 12px; padding: 0 0 10px;
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em;
+          border-bottom: 1px solid var(--line-soft);
+        }
+        .toc summary::-webkit-details-marker { display: none; }
+        .toc summary::after { content: "＋"; font-weight: 400; color: var(--faint); }
+        .toc[open] summary::after { content: "－"; }
+        /* 桌面端固定标签（移动端由 summary 承担开关） */
+        .toc-head {
+          font-size: 11px; font-weight: 600; color: var(--faint);
+          letter-spacing: 0.14em; margin: 0 0 12px; padding: 0 0 10px 8px;
+          border-bottom: 1px solid var(--line-soft);
+        }
+        .toc-list { list-style: none; margin: 0; padding: 0; }
+        .toc-group + .toc-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+        .toc-label {
+          font-size: 10.5px; font-weight: 600; color: var(--faint);
+          letter-spacing: 0.1em; margin: 0 0 5px; padding-left: 8px;
+        }
+        .toc-list a {
+          display: flex; align-items: baseline; gap: 8px;
+          color: var(--muted); text-decoration: none;
+          font-size: 13.5px; line-height: 1.5;
+          padding: 5px 8px; margin: 1px 0; border-radius: 6px;
+          transition: color 120ms ease-out, background-color 120ms ease-out;
+        }
+        .toc-list a .no {
+          flex: none; min-width: 17px; color: var(--faint);
+          font-family: "SF Mono", Menlo, Consolas, monospace;
+          font-size: 11px; font-weight: 400;
+          font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+        }
+        .toc-list a .txt { flex: 1; }
+        .toc-list a:hover, .toc-list a:focus-visible {
+          color: var(--accent-ink); background: var(--line-soft); text-decoration: none;
+        }
+        .toc-list a.is-active { color: var(--accent-ink); background: rgba(31,75,143,.07); }
+        .toc-list a.is-active .no { color: var(--accent); }
+
+        @media (min-width: 1001px) {
+          .toc summary { display: none; }
+        }
+        @media (max-width: 1000px) {
+          .wrap { grid-template-columns: 1fr; column-gap: 0; row-gap: 0; justify-content: stretch; }
+          .toc-nav {
+            grid-column: auto; grid-row: auto; position: static;
+            max-width: 460px; width: 100%;
+            padding: 0; border-right: 0; margin: 0 0 8px;
+          }
+          .toc-scroll { max-height: none; overflow: visible; padding: 0; }
+          .toc-nav::before, .toc-nav::after { display: none; }
+          .toc-head { display: none; }
+          .toc-label { padding-left: 10px; }
+          .toc-list a { padding: 9px 10px; }
+          section { grid-column: auto; }
+        }
+
+        section { padding: 52px 0 6px; }
+        section:first-of-type { padding-top: 0; }
+
+        h2 { margin: 0 0 22px; font-size: clamp(22px, 2.4vw, 25px); line-height: 1.3; color: var(--ink-strong); font-weight: 640; letter-spacing: 0; }
+        h2 .no { color: var(--muted); font-size: 1em; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; padding-right: 12px; margin-right: 12px; border-right: 1px solid var(--line); vertical-align: baseline; }
+        h3 { margin: 32px 0 12px; font-size: 17px; line-height: 1.45; color: var(--ink-strong); font-weight: 630; letter-spacing: 0; }
+        p { margin: 0.9em 0; }
+        ul, ol { margin: 0.9em 0; padding-left: 24px; }
+        li { margin: 7px 0; line-height: 1.85; }
+        li::marker { color: var(--muted); }
+        b, strong { color: var(--ink-strong); font-weight: 640; }
+        code { font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 13.5px; color: var(--ink); background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+        /* 表格：去 zebra、去竖线，仅保留首行与行间的轻描线 */
+        table { width: 100%; border-collapse: collapse; margin: 22px 0 28px; font-size: 14.5px; line-height: 1.75; }
+        th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 14px 10px 0; border-bottom: 1px solid #c8ccd2; white-space: nowrap; }
+        td { padding: 12px 14px 12px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+        tr:last-child td { border-bottom: 0; }
+
+        /* 标签：去胶囊底色与边框，仅用等宽小字 */
+        .tag { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.72em; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); letter-spacing: 0.02em; background: none; border: 0; padding: 0; vertical-align: baseline; white-space: nowrap; }
+        .tag.p0 { color: var(--accent); }
+        .tag.new { color: var(--muted); font-weight: 560; }
+        .tag.neg { color: var(--muted); font-weight: 640; }
+
+        /* 说明性文字：统一为一种低饱和样式，不再三色泛滥 */
+        .note, .warn, .neg-box { margin: 28px 0; padding: 4px 0 4px 20px; border-left: 2px solid #c8ccd2; background: none; font-size: 15px; line-height: 1.9; color: var(--ink); }
+        blockquote { margin: 26px 0; padding: 4px 0 4px 20px; border-left: 2px solid var(--accent); background: none; font-size: 15px; line-height: 1.9; color: var(--muted); }
+
+        .src-list { font-size: 13.5px; color: var(--muted); }
+        .src-list li { margin: 8px 0; line-height: 1.7; word-break: break-word; }
+        .src-list a { color: var(--accent); }
+        .src-list a:hover { text-decoration: underline; }
+        .confidence { font-size: 13px; color: var(--faint); line-height: 1.7; margin-top: 22px; }
+
+        /* 图片：统一边框与留白 */
+        .figure { margin: 30px 0 10px; }
+        .figure img { max-width: 100%; max-height: 430px; border: 1px solid var(--line); border-radius: 3px; display: block; margin: 0 auto; background: #fff; }
+        .figure figcaption { font-size: 12.5px; color: var(--faint); margin-top: 10px; text-align: center; line-height: 1.65; }
+        .figure svg { max-width: 100%; height: auto; display: block; margin: 0 auto; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+        .figure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 26px; margin: 22px 0; }
+        .figure-grid .figure { margin: 0 0 8px; }
+
+        @media (max-width: 720px) {
+          .wrap { padding: 64px 22px 72px; }
+          section { padding-top: 42px; }
+          table { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
+          th { white-space: normal; }
+          .figure-grid { gap: 20px; }
+          .topbar { top: 12px; right: 12px; }
+          .topbar button { width: 36px; height: 36px; }
+          .search-panel { top: 58px; right: 12px; left: 12px; width: auto; }
+        }
+
+        html[data-theme="dark"] th { border-bottom-color: #3a424f; }
+        html[data-theme="dark"] .note,
+        html[data-theme="dark"] .warn,
+        html[data-theme="dark"] .neg-box { border-left-color: #3a424f; }
+        html[data-theme="dark"] .toc-list a.is-active { background: rgba(122,162,255,.14); }
+
+        @media print {
+          :root, html[data-theme="dark"] {
+            color-scheme: light;
+            --ink: #1e222a; --ink-strong: #12161d; --muted: #555d68; --faint: #5f6770;
+            --line: #e4e6e9; --line-soft: #eff1f4; --bg: #fff;
+            --accent: #1f4b8f; --accent-ink: #16365f; --code-bg: #f5f6f7;
+            --fade: rgba(255,255,255,0);
+          }
+          body { background: #fff; color: #12161d; font-size: 11.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .topbar, .search-panel { display: none !important; }
+          .wrap { max-width: none; width: 100%; padding: 0; display: block; }
+          nav { display: none; }
+          section { grid-column: auto; }
+          section { padding: 12pt 0 4pt; break-inside: auto; }
+          h2, h3, blockquote { break-after: avoid; }
+          table, figure, .figure-grid { break-inside: avoid; }
+          a { color: inherit; text-decoration: none; }
+          .doc-mark { background: transparent; }
+          .src-list a::after { content: " [" attr(href) "]"; font-size: 8.5pt; color: #5b6678; word-break: break-all; }
+          .note, .warn, .neg-box { border-left-color: #b9bec6; }
+        }
+    </style>
+</head>
+<body>
+<div class="topbar" role="group" aria-label="页面工具">
+  <button type="button" id="searchToggle" aria-label="搜索" title="搜索（Ctrl/⌘ K）">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+  </button>
+  <button type="button" id="themeToggle" aria-label="切换主题" title="切换主题">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.3"></circle><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"></path></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.2 14.4A8 8 0 1 1 9.6 3.8a6.4 6.4 0 0 0 10.6 10.6z"></path></svg>
+  </button>
+</div>
+<div class="search-panel" id="searchPanel" hidden>
+  <input id="searchInput" type="search" placeholder="搜索全文…（Enter 跳转，Esc 关闭）" autocomplete="off" aria-label="搜索全文">
+  <div class="search-results" id="searchResults" role="listbox" aria-label="搜索结果"></div>
+</div>
+<div class="wrap">
+
+    <nav aria-label="目录" class="toc-nav">
+        <div class="toc-scroll">
+        <details class="toc" open>
+            <summary>目录</summary>
+            <div class="toc-head">目录</div>
+            <div class="toc-list">
+                <!-- {{TOC_ITEMS}}
+                     为每个正文 <section> 复制一份「示例 .toc-group」块，填成实际值；
+                     <span class="no"> 序号从 0（摘要）开始连续递增；
+                     href="#{{SECTION_ID}}" 必须与对应正文 <section id="{{SECTION_ID}}"> 完全一致。 -->
+                <div class="toc-group">
+                    <div class="toc-label">{{TOC_GROUP_LABEL}}</div>
+                    <a href="#{{SECTION_ID}}"><span class="no">1</span><span class="txt">{{TOC_TITLE}}</span></a>
+                </div>
+            </div>
+        </details>
+        </div>
+    </nav>
+
+    <!-- ============ 摘要结论（示例，编号 0） ============ -->
+    <section id="summary">
+        <h2><span class="no">0</span>摘要结论</h2>
+        <p><b>{{REPORT_SUBTITLE}}</b></p>
+        <p><b>报告日期：</b>{{REPORT_DATE}}</p>
+        <h3>总体置信度</h3>
+        <p>{{CONFIDENCE_SUMMARY}}</p>
+        <div class="warn">已知证据缺口：{{GAPS}}</div>
+    </section>
+
+    <!-- {{SECTIONS}}
+         为每个正文 <section> 复制一份「示例正文节」块，填成实际内容；
+         <span class="no"> 序号从 1 开始连续递增；
+         每个 <section id="{{SECTION_ID}}"> 的 id 必须与目录 href 一一对应。 -->
+    <!-- ============ 示例正文节（编号 1） ============ -->
+    <section id="{{SECTION_ID}}">
+        <h2><span class="no">1</span>{{SECTION_TITLE}}</h2>
+        <h3>{{SECTION_LEAD}}</h3>
+        <p>正文段落占位：替换为对该主题的<b>一句话结论</b>与支撑说明。行内样式可写 <code>{{CODE}}</code> 或高亮<b>要点</b>。</p>
+
+        <table>
+            <thead>
+            <tr>
+                <th>{{TABLE_COL1_HEAD}}</th>
+                <th>{{TABLE_COL2_HEAD}}</th>
+                <th>{{TABLE_COL3_HEAD}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>{{TABLE_ROW1_COL1}}</td>
+                <td>{{TABLE_ROW1_COL2}}</td>
+                <td>{{TABLE_ROW1_COL3}}</td>
+            </tr>
+            <tr>
+                <td>{{TABLE_ROW2_COL1}}</td>
+                <td>{{TABLE_ROW2_COL2}}</td>
+                <td>{{TABLE_ROW2_COL3}}</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <blockquote>{{BLOCKQUOTE_EXEMPLAR}}</blockquote>
+
+        <div class="note">{{NOTE_EXEMPLAR}}</div>
+
+        <div class="warn">{{WARN_EXEMPLAR}}</div>
+
+        <!-- 配图是报告质量的一部分：img src 直接热链外部 http(s) 图片 URL（不下载图片文件）；绝不 base64；每个 figure 必须带来源归属 figcaption；绝不虚构图片。同一章节多张相关图片应使用现有 '.figure-grid' 容器（CSS 已存在）：<div class="figure-grid"> 包裹多个 <figure class="figure">。 -->
+        <figure class="figure">
+            <img src="{{FIGURE_URL}}" alt="{{FIGURE_ALT}}">
+            <figcaption>{{FIGURE_CAPTION}}</figcaption>
+        </figure>
+
+        <p class="confidence">来源（官方）：{{CONFIDENCE_NOTE}}</p>
+    </section>
+
+    <!-- ============ 文档来源清单（示例，编号 N） ============ -->
+    <section id="sources">
+        <h2><span class="no">N</span>文档来源清单</h2>
+        <ol class="src-list">{{SOURCE_LIST}}</ol>
+    </section>
+
+
+</div>
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc-list a[href^="#"]'));
+    if (!('IntersectionObserver' in window) || !links.length) return;
+    var scroller = document.querySelector('.toc-scroll');
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var byId = {};
+    links.forEach(function (a) {
+      var id = a.getAttribute('href').slice(1);
+      if (document.getElementById(id)) byId[id] = a;
+    });
+    function reveal(link) {
+      if (!scroller || !link) return;
+      var max = scroller.scrollHeight - scroller.clientHeight;
+      if (max <= 0) return;
+      var linkTop = link.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      var target = Math.max(0, Math.min(max, linkTop - (scroller.clientHeight - link.offsetHeight) / 2));
+      if (Math.abs(target - scroller.scrollTop) < 2) return;
+      if (typeof scroller.scrollTo === 'function') {
+        scroller.scrollTo({ top: target, behavior: reduceMotion ? 'auto' : 'smooth' });
+      } else {
+        scroller.scrollTop = target;
+      }
+    }
+    var current = null;
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var link = byId[entry.target.id];
+        if (!link || link === current) return;
+        if (current) current.classList.remove('is-active');
+        link.classList.add('is-active');
+        current = link;
+        reveal(link);
+      });
+    }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+    Object.keys(byId).forEach(function (id) {
+      observer.observe(document.getElementById(id));
+    });
+  })();
+
+  (function () {
+    var nav = document.querySelector('.toc-nav');
+    var scroller = document.querySelector('.toc-scroll');
+    if (!nav || !scroller) return;
+    function updateFade() {
+      var up = scroller.scrollTop > 2;
+      var down = scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
+      nav.classList.toggle('can-up', up);
+      nav.classList.toggle('can-down', down);
+    }
+    scroller.addEventListener('scroll', updateFade, { passive: true });
+    window.addEventListener('resize', updateFade);
+    updateFade();
+  })();
+</script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark';
+      root.setAttribute('data-theme', dark ? 'light' : 'dark');
+      try { localStorage.setItem('theme', dark ? 'light' : 'dark'); } catch (e) {}
+    });
+  }
+
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+  var index = [];
+  sections.forEach(function (sec) {
+    var h2 = sec.querySelector('h2');
+    var secTitle = h2 ? h2.textContent.replace(/\s+/g, ' ').trim() : sec.id;
+    var nodes = sec.querySelectorAll('h3, p, li, blockquote, td, figcaption, .note, .warn, .neg-box');
+    nodes.forEach(function (el) {
+      var text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text.length >= 4) index.push({ sec: sec, title: secTitle, el: el, text: text });
+    });
+  });
+
+  var panel = document.getElementById('searchPanel');
+  var input = document.getElementById('searchInput');
+  var resultsBox = document.getElementById('searchResults');
+  var resultEls = [];
+  var activeIndex = -1;
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function snippet(text, q) {
+    var lower = text.toLowerCase();
+    var i = lower.indexOf(q);
+    if (i < 0) return escapeHtml(text.length > 90 ? text.slice(0, 90) + '…' : text);
+    var start = Math.max(0, i - 40);
+    var end = Math.min(text.length, i + q.length + 50);
+    return (start > 0 ? '…' : '') + escapeHtml(text.slice(start, i)) +
+      '<mark>' + escapeHtml(text.slice(i, i + q.length)) + '</mark>' +
+      escapeHtml(text.slice(i + q.length, end)) + (end < text.length ? '…' : '');
+  }
+  function render(list, q) {
+    resultsBox.innerHTML = '';
+    resultEls = [];
+    activeIndex = -1;
+    if (!q) return;
+    if (!list.length) {
+      resultsBox.innerHTML = '<div class="search-empty">没有匹配「' + escapeHtml(q) + '」</div>';
+      return;
+    }
+    list.slice(0, 30).forEach(function (item) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-result';
+      btn.setAttribute('role', 'option');
+      btn.innerHTML = '<span class="sr-title">' + escapeHtml(item.title) + '</span><span class="sr-snippet">' + snippet(item.text, q) + '</span>';
+      btn.addEventListener('click', function () { select(item); });
+      resultsBox.appendChild(btn);
+      resultEls.push({ btn: btn, item: item });
+    });
+  }
+  function runSearch() {
+    var q = input.value.trim().toLowerCase();
+    if (!q) { render([], q); return; }
+    var matches = index.filter(function (it) { return it.text.toLowerCase().indexOf(q) >= 0; });
+    matches.sort(function (a, b) {
+      return (a.title.toLowerCase().indexOf(q) >= 0 ? 0 : 1) - (b.title.toLowerCase().indexOf(q) >= 0 ? 0 : 1);
+    });
+    render(matches, q);
+  }
+  function clearMarks() {
+    var marks = document.querySelectorAll('mark.doc-mark');
+    Array.prototype.forEach.call(marks, function (m) {
+      var parent = m.parentNode;
+      parent.replaceChild(document.createTextNode(m.textContent), m);
+      parent.normalize();
+    });
+  }
+  function highlightTerm(el, q) {
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        var parent = node.parentNode;
+        if (!parent || !node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        if (parent.closest && parent.closest('script, style, mark, svg')) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var queries = [q];
+    if (q.indexOf(' ') > -1) {
+      var first = q.split(/\s+/)[0];
+      if (first) queries.push(first);
+    }
+    var node = null, matchIndex = -1, matchQuery = '';
+    while ((node = walker.nextNode())) {
+      var lower = node.nodeValue.toLowerCase();
+      for (var i = 0; i < queries.length; i++) {
+        var idx = lower.indexOf(queries[i].toLowerCase());
+        if (idx > -1) { matchIndex = idx; matchQuery = queries[i]; break; }
+      }
+      if (matchIndex > -1) break;
+    }
+    if (!node || matchIndex < 0) return null;
+    var val = node.nodeValue;
+    var mark = document.createElement('mark');
+    mark.className = 'doc-mark';
+    mark.textContent = val.slice(matchIndex, matchIndex + matchQuery.length);
+    var frag = document.createDocumentFragment();
+    if (matchIndex > 0) frag.appendChild(document.createTextNode(val.slice(0, matchIndex)));
+    frag.appendChild(mark);
+    if (matchIndex + matchQuery.length < val.length) frag.appendChild(document.createTextNode(val.slice(matchIndex + matchQuery.length)));
+    node.parentNode.replaceChild(frag, node);
+    return mark;
+  }
+  function select(hit) {
+    var q = input.value.trim();
+    closeSearch();
+    clearMarks();
+    var target = hit.el;
+    if (q) {
+      var mark = highlightTerm(hit.el, q);
+      if (mark) target = mark;
+    }
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    hit.el.classList.remove('search-hit');
+    void hit.el.offsetWidth;
+    hit.el.classList.add('search-hit');
+    setTimeout(function () { hit.el.classList.remove('search-hit'); }, 1900);
+  }
+  function openSearch() {
+    panel.hidden = false;
+    clearMarks();
+    input.value = '';
+    render([], '');
+    setTimeout(function () { input.focus(); }, 0);
+  }
+  function closeSearch() {
+    panel.hidden = true;
+    input.value = '';
+    resultsBox.innerHTML = '';
+  }
+  function updateActive() {
+    resultEls.forEach(function (r, i) {
+      r.btn.classList.toggle('is-active', i === activeIndex);
+      if (i === activeIndex) r.btn.scrollIntoView({ block: 'nearest' });
+    });
+  }
+  document.getElementById('searchToggle').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (panel.hidden) openSearch(); else closeSearch();
+  });
+  input.addEventListener('input', runSearch);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown' && resultEls.length) {
+      e.preventDefault(); activeIndex = (activeIndex + 1) % resultEls.length; updateActive();
+    } else if (e.key === 'ArrowUp' && resultEls.length) {
+      e.preventDefault(); activeIndex = (activeIndex - 1 + resultEls.length) % resultEls.length; updateActive();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && resultEls[activeIndex]) select(resultEls[activeIndex].item);
+      else if (resultEls[0]) select(resultEls[0].item);
+    } else if (e.key === 'Escape') {
+      closeSearch();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault(); openSearch();
+    } else if (e.key === '/' && !typing) {
+      e.preventDefault(); openSearch();
+    } else if (e.key === 'Escape' && !panel.hidden) {
+      closeSearch();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var searchBtn = document.getElementById('searchToggle');
+    if (!panel.hidden && !panel.contains(e.target) && !searchBtn.contains(e.target)) closeSearch();
+  });
+})();
+</script>
+</body>
+</html>
