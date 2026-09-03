@@ -10,7 +10,7 @@ Quick-reference for Jetpack Compose Kotlin idiomatic patterns. Each entry shows 
 - Single-line edits or trivial changes — the cost of loading reference content outweighs the benefit.
 - New feature implementation — use the domain-specific skill (e.g., `compose-runtime-state`, `compose-layout-material-adaptive`) instead.
 - Bug fixes where style is not the primary concern — fix the bug first; apply style guidance only in a follow-up refinement pass.
-- Writing or modifying non-Compose Kotlin code (this skill is specific to `@Composable` patterns).
+- Writing or modifying non-Compose Kotlin code — route to the `kotlin-idiomatic-style` skill.
 
 ## Quick Routing — Symptom to Skill
 
@@ -34,6 +34,8 @@ When a symptom points to a different concern, route to the skill that owns it in
 | parameter threaded through layers that never read it (prop drilling) | `compose-ui-architecture` |
 | platform lifecycle, permissions, or background work | `android-platform-engineering` |
 | broad feature work spanning multiple concerns | `jetpack-compose-engineering-gate` |
+| Java-style Kotlin — `!!`, getFoo()/setFoo() methods, Utils classes, index loops | `kotlin-idiomatic-style` |
+| plain-Kotlin idioms — null safety, scope functions, sealed classes, collections | `kotlin-idiomatic-style` |
 
 ## State
 

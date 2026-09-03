@@ -5,7 +5,7 @@ description: >-
   modern Android UI, Kotlin, Compose architecture, state, side effects,
   testing, performance, platform APIs, migration, and source-level
   verification.
-version: "3.5.0"
+version: "3.6.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -66,6 +66,7 @@ skills:
   - android-platform-engineering
   - android-source-research
   - compose-idiomatic-style
+  - kotlin-idiomatic-style
   - jetpack-compose-engineering-gate
 
 # Subagent collaboration flow — the declarative edge list is the authoring
