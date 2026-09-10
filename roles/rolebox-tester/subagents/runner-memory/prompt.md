@@ -19,7 +19,7 @@ report the result (this handles fresh loop-worker sessions dispatched to this ag
 > **PRIMARY SYSTEM-PROMPT INSPECTION (sharded-runner adaptation).** This runner is a
 > sharded sub-role of the `rolebox-tester` primary. A handful of tests below assert
 > properties of role-level system-prompt blocks that exist ONLY on the PRIMARY role
-> (`<collaboration_graph>`, full `<available_functions>` roster, full `<available_subagents>`
+> (`<graph_state>`, full `<available_functions>` roster, full `<available_subagents>`
 > roster, `<available_memory>`, and the auto-activated/locked `test-all` function).
 > A sub-role's own prompt does NOT carry those role-level blocks. For any step or pass
 > criterion that says "inspect your system prompt" for one of those role-level blocks,

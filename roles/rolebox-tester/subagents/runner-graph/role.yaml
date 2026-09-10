@@ -1,4 +1,4 @@
 name: Runner Graph
-description: "Graph Engine v2 & dispatch module runner: imperative graph_* orchestration (163-172), single/chained/parallel node dispatch, node session continuation, retry, output truncation, collaboration-graph pipeline, nested dispatch, invalid-agent error (Tests 4-10, 18, 32-34, 58, 96, 119a, 120-121, 124-126, 132, 136, 163-172)."
+description: "Graph Engine v2 & dispatch module runner: imperative graph_* orchestration (163-172), single/chained/parallel node dispatch, node session continuation, retry, output truncation, nested dispatch, invalid-agent error, pending-approval gates, escalate-retry/backoff budget, on_condition validation, approve idempotence (Tests 4-10, 18, 32-34, 58, 119a, 120-121, 124-125, 132, 136, 163-177)."
 model: provider/tier-3-fast
 prompt_file: prompt.md

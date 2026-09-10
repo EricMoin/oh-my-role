@@ -11,7 +11,10 @@ observe:
         type: "answer"
     set_evidence: signal_answer_observed
     capture_payload_as: signal_test_payload
-continue_until: "any:[signal_observed(answer), evidence_met]"
+continue_until:
+  any:
+    - signal_observed(answer)
+    - evidence_met
 requires_evidence:
   - signal_answer_observed
 ---
@@ -20,7 +23,7 @@ requires_evidence:
 
 This function exercises the rolebox signal tool lifecycle via function-state observation:
 
-1. **signal_observed condition**: The `continue_until` expression `any:[signal_observed(answer), evidence_met]` tests the dual-channel completion mechanism — the function can terminate when either a `signal(type="answer")` is observed OR when the `signal_answer_observed` evidence tag is set.
+1. **signal_observed condition**: The `continue_until` condition (`any: [signal_observed(answer), evidence_met]`) tests the dual-channel completion mechanism — the function can terminate when either a `signal(type="answer")` is observed OR when the `signal_answer_observed` evidence tag is set.
 
 2. **when_args filter**: The observe block listens for `tool: signal` calls and uses `when_args: {match: {type: "answer"}}` to only react to `signal(type="answer")` calls, ignoring other signal types (e.g., `type="blocked"`, `type="escalate"`).
 

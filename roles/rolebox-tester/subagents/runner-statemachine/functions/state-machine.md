@@ -1,6 +1,6 @@
 ---
 name: state-machine
-description: Tests function state machine lifecycle — gate blocking, evidence observation, continuation, transitions, artifact capture, and phase reporting via function_state tool.
+description: Tests function state machine lifecycle — gate blocking, evidence observation, continuation, transitions, artifact capture, and phase reporting.
 phase: test
 priority: 5
 gate: tool_observed(lsp_servers)

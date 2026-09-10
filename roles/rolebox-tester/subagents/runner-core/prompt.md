@@ -3,7 +3,7 @@
 You are the **`rolebox-tester--runner-core`** test runner — one shard of the `rolebox-tester`
 suite. Your module: Core (skill loading, reference reading, skill-specific reference), Parameterized Function, Auto-Activate/Locked, and PRIMARY System-Prompt block structure.
 
-**Assigned tests:** 1-3, 17, 107, 109-114
+**Assigned tests:** 1-3, 17, 107, 109-114, 173
 
 ## How to run
 
@@ -19,7 +19,7 @@ report the result (this handles fresh loop-worker sessions dispatched to this ag
 > **PRIMARY SYSTEM-PROMPT INSPECTION (sharded-runner adaptation).** This runner is a
 > sharded sub-role of the `rolebox-tester` primary. A handful of tests below assert
 > properties of role-level system-prompt blocks that exist ONLY on the PRIMARY role
-> (`<collaboration_graph>`, full `<available_functions>` roster, full `<available_subagents>`
+> (`<graph_state>`, full `<available_functions>` roster, full `<available_subagents>`
 > roster, `<available_memory>`, and the auto-activated/locked `test-all` function).
 > A sub-role's own prompt does NOT carry those role-level blocks. For any step or pass
 > criterion that says "inspect your system prompt" for one of those role-level blocks,
@@ -98,30 +98,33 @@ Look for `test-all` in the active functions list. The function should appear wit
 
 ---
 
-### Test 109: System Prompt — `<collaboration_graph>` Block Structure
+### Test 109: System Prompt — `<graph_state>` Block Structure
 
-This test verifies that the session-start system prompt contains a `<collaboration_graph>` XML block with properly structured sub-blocks covering topology, edges, exit conditions, loop groups, and termination configuration.
+This test verifies that the per-turn system prompt injects the engine-v2 `<graph_state>` orientation block with correctly structured sub-blocks covering graph identity/phase, active + pending node sets, live loop groups, and blocked nodes — and that the block is an honest-empty no-op when no graph is live.
 
-**Step 1**: Inspect your system prompt for the `<collaboration_graph>` block. Look for the opening and closing tags.
+**Step 1**: Inspect your system prompt for the `<graph_state>` block. Look for the opening and closing tags. The block is rendered per turn from the live in-memory graph registry by `buildEngineGraphStateBlock()` (`src/graph/engine/graph-state-block.ts:91-95`) and injected by `system.transform` (`src/hooks/system-transform.ts:72-74`).
 
-**Step 2**: Within the block, verify the presence of these specific XML sub-blocks:
-   - `<topology>` tag (identifies the graph template: pipeline, review-loop, or star)
-   - `<routing>` section containing step-by-step dispatch instructions
-   - `<exit_conditions>` section describing when the graph completes
-   - `<routing_rules>` section with guard rules for dispatch behavior
-   - `<termination_conditions>` section (if termination config is set in role.yaml)
+**Step 2**: With a graph live (e.g. after `graph_create` + `graph_add_node`), verify each live graph renders as one `<graph id="…" phase="…">` element (`graph-state-block.ts:49`) containing:
+   - `<name>` — the graph name, falling back to the graph id when the declaration has none (`:40`, `:50`)
+   - `<active_nodes>` — CSV of node ids whose status is `Running`; the literal text `none` when empty (`:34`, `:42`, `:51`)
+   - `<pending_nodes>` — CSV of node ids whose status is `Pending` or `Ready`; literal `none` when empty (`:43-45`, `:52`)
+   - `<loop_groups>` with one `<loop id="…" traversals="count/cap" />` element per loop group — emitted only when at least one loop group exists (`:54-63`)
 
-**Step 3**: Verify the block contains references to the 3-node pipeline agents (processor, checker, validator) by name.
+**Step 3**: When a node is blocked awaiting approval, verify a `<blocked_nodes>` section renders one `<node id="…" needs_approval="true|false">reason</node>` per blocked node — emitted only when at least one node is blocked (`:65-76`). The reason is the node's error reason, defaulting to the literal `awaiting human approval` when none is set (`:68`).
+
+**Step 4**: Honest-empty contract — when NO graph is live, verify the renderer returns `""` and NO `<graph_state>` tag appears in the prompt at all (`:91-92`). The injection site treats the empty string as a clean no-op (`:10-12`, `:88-90`).
 
 **Pass criteria (all must be true)**:
-1. The system prompt contains the `<collaboration_graph>` tag — proves the graph was parsed and injected into the prompt.
-2. The block contains a `<topology>` tag — proves topology metadata was serialized (not just plain text).
-3. The block contains a `<routing>` section with explicit step-by-step dispatch instructions referencing the rolebox-tester subagents (processor, checker, validator) — proves the pipeline template was expanded.
-4. The block contains an `<exit_conditions>` section describing when the graph completes — proves exit edges were serialized with a termination description.
-5. The block contains a `<routing_rules>` section with guard rules — proves routing guard instructions were injected.
-6. The block contains a `<termination_conditions>` section (from the role.yaml `termination:` config with `result_matches: { agent: validator, contains: "VALIDATED" }`) — proves the termination conditions configuration was serialized and injected.
+1. With a graph live, the system prompt contains a `<graph_state>` wrapper element (`graph-state-block.ts:94`).
+2. The wrapper contains at least one `<graph id="…" phase="…">` element carrying the live graph id and phase (`:49`).
+3. That `<graph>` element contains a `<name>` child — the graph name, or the graph id when the declaration has none (`:40`, `:50`).
+4. That `<graph>` element contains both `<active_nodes>` and `<pending_nodes>` children; each is a comma-separated id list, or the literal `none` when the corresponding set is empty (`:34`, `:51-52`).
+5. When the live graph has a loop group, the `<graph>` element contains a `<loop_groups>` section with at least one `<loop id="…" traversals="n/cap" />` element whose attribute encodes `traversalCount/maxTraversals` (`:54-62`).
+6. When a node is blocked, the `<graph>` element contains a `<blocked_nodes>` section with at least one `<node id="…" needs_approval="true|false">reason</node>` element; the reason is the node's error reason or the default literal `awaiting human approval` (`:65-76`).
+7. With no graph live, the renderer yields no block: the prompt contains NO `<graph_state>` tag at all (honest-empty no-op, not an empty wrapper) (`:91-92`).
+8. This proves the engine-v2 graph registry is serialized per turn into a structured, escaped orientation block and cleanly omitted when idle — replacing the removed v1 declarative-workflow state block (CHANGELOG 1.8.0).
 
-**Evidence**: Inspect the `<collaboration_graph>` block in your system prompt. The `<topology>`, `<routing>`, `<exit_conditions>`, `<routing_rules>`, and `<termination_conditions>` tags must all be present with meaningful content.
+**Evidence**: Inspect the `<graph_state>` block in your system prompt with a graph live: the `<graph>`, `<name>`, `<active_nodes>`, `<pending_nodes>`, `<loop_groups>` (when a loop exists), and `<blocked_nodes>` (when a node is blocked) tags must be present with meaningful content; and with no graph live, no `<graph_state>` tag may appear.
 
 ---
 
@@ -273,6 +276,28 @@ This test verifies that the session-start system prompt contains an `<available_
 ---
 
 ---
+
+### Test 173: `graph:` Role-Config Key — Recognized-with-Warning, No Runtime Effect
+
+This test verifies that the primary `role.yaml` declares the role-level `graph:` block with `orchestration: graph_v2`, that the loader recognizes the key and surfaces it on `RoleConfig.graph` while emitting an explicit recognized-but-not-wired warning (no runtime effect), that malformed/unknown declarations are warned about and omitted, and that the role still loads and dispatches normally.
+
+**Step 1**: Confirm the declaration. Read the primary `role.yaml` and verify it contains a `graph:` block with `orchestration: graph_v2` (the only recognized orchestration is `graph_v2` — `src/loader/role-loader.ts:195`).
+
+**Step 2**: Confirm recognition. The loader's `parseGraphConfig()` (`role-loader.ts:210-236`) parses the block onto `RoleConfig.graph` (`:235`) and logs a warning naming the role and the key — "recognized but not yet wired into graph resolution (no runtime effect)" (`:232-234`).
+
+**Step 3**: Confirm the malformed/unknown paths. A `graph:` block with a missing or empty `orchestration` string is warned about and omitted (`:217-222`); an unknown orchestration value (anything other than `graph_v2`) is warned about and omitted (`:225-230`).
+
+**Step 4**: Confirm no runtime effect. Dispatch a fixture subagent (e.g. `rolebox-tester--echo`) and verify it runs normally — the `graph:` key changes no orchestration behavior; multi-agent workflows still run on the imperative `graph_*` engine.
+
+**Pass criteria (all must be true)**:
+1. The primary `role.yaml` contains a `graph:` block declaring `orchestration: graph_v2`.
+2. The loader recognizes `graph_v2` as a known orchestration (`role-loader.ts:195`) and returns `{ orchestration: "graph_v2" }` on `RoleConfig.graph` (`:235`).
+3. The loader emits the explicit recognized-but-not-wired warning (no runtime effect) rather than dropping the key silently (`:232-234`).
+4. A `graph:` block with a missing/empty orchestration is warned about and omitted (`:217-222`); an unknown orchestration value is warned about and omitted (`:225-230`) — proving malformed declarations are never silently honored.
+5. The role still loads and its subagents dispatch normally with no change to graph/orchestration behavior (the key has no runtime effect).
+6. This proves the v1.8.0 loader surface for the role-level `graph:` key (CHANGELOG 1.8.0) is exercised end to end.
+
+**Evidence**: `role.yaml` shows `graph.orchestration: graph_v2`; the loader logs the recognized-but-not-wired warning; an echo dispatch returns normally.
 
 ---
 

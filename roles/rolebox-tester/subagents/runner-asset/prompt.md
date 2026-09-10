@@ -487,7 +487,8 @@ asset_validate()
 2. The output contains a validation issue (error or warning) that references `broken-dep`.
 3. The issue mentions `nonexistent-function` or describes a "missing dependency" / "unsatisfied requires".
 4. The issue is categorized as a "missing dependency" type (the first of the three categories: missing dependencies, broken reference paths, unknown transition conditions).
-5. This proves `asset_validate` performs dependency resolution checking and reports functions whose `requires` field references non-existent functions.
+5. The whole-roster run reports **exactly one** issue in total (1 error, 0 warnings) — the `broken-dep → nonexistent-function` missing-dependency error above. This re-confirms the intentional probe remains the SOLE expected defect across all resolved roles and sub-agents after the v6.0 `role.yaml` clean-up, with no other role or asset regressing.
+6. This proves `asset_validate` performs dependency resolution checking and reports functions whose `requires` field references non-existent functions.
 
 ---
 
@@ -594,6 +595,39 @@ asset_search(query="test", type="all", limit=10)
 5. This proves `asset_search` correctly scopes results using the `role_id` filter.
 
 **Count once, mark once**: This test is counted EXACTLY ONCE in the report — the per-test row's PASS/FAIL is the single source of truth for this test's aggregate contribution. Do not count it twice (e.g., once as a row and again via a separate "as-written" interpretation).
+
+---
+
+---
+
+### Test 182: Asset Search — Type Normalization (Omitted / Literal "undefined")
+
+This test verifies the CHANGELOG 1.5.0 fix "asset_search type normalized to all": an **omitted** `type` and the **literal string `"undefined"`** (which some models emit for an omitted optional enum) must both normalize to `all` and return matches — never silently filter against the bogus type and return zero. The zod schema declares `.catch("all").optional().default("all")` (source: `src/asset/asset-search.ts:159-164`), and the execute handler carries a matching guard that coerces any non-enum value to `all` (`src/asset/asset-search.ts:191-198`).
+
+**Step 1**: Call `asset_search` WITHOUT a `type` argument (schema-default path):
+
+```
+asset_search(query="test", limit=10)
+```
+
+**Step 2**: Call `asset_search` with the literal string `"undefined"` as the type (invalid-value path):
+
+```
+asset_search(query="test", type="undefined", limit=10)
+```
+
+**Step 3**: Call `asset_search` with an explicit `type="all"` (baseline for comparison):
+
+```
+asset_search(query="test", type="all", limit=10)
+```
+
+**Pass criteria (all must be true)**:
+1. All three calls return without error.
+2. Step 1 (omitted `type`) returns a non-empty result set — the schema default resolves the missing value to `all`, not to an empty/zero-match filter.
+3. Step 2 (`type="undefined"`) returns the SAME non-empty result set as Step 3 (`type="all"`) — the `.catch("all")` schema normalization plus the execute-level guard coerce the invalid literal to `all`.
+4. Neither Step 1 nor Step 2 emits the type-scoped empty-result message `No assets matching … of type "…"` (which `asset-search.ts:244` only prints when the effective type is not `all`) — proving no bogus-type filter ran.
+5. This proves `asset_search` normalizes missing/invalid `type` values to `all` and returns matches rather than silently zero (CHANGELOG 1.5.0).
 
 ---
 

@@ -3,7 +3,7 @@
 You are the **`rolebox-tester--runner-tools`** test runner — one shard of the `rolebox-tester`
 suite. Your module: Core file/shell tools (bash, write/read, grep, glob, edit), Hashline (read/edit/version-guard/windowed/batch/large-file), and Todo lifecycle.
 
-**Assigned tests:** 11-16, 27-29, 122-123, 137, 140
+**Assigned tests:** 11-16, 27-29, 122-123, 137, 140, 180-181
 
 ## How to run
 
@@ -241,6 +241,12 @@ write(filePath="/tmp/opencode/hashline-windowed-test.txt", content="line01\nline
 hashline_read(filePath="/tmp/opencode/hashline-windowed-test.txt", offset=3, limit=4)
 ```
 
+**Step 3**: Call `hashline_read` with an offset past the end of the file to probe window clamping:
+
+```
+hashline_read(filePath="/tmp/opencode/hashline-windowed-test.txt", offset=999, limit=4)
+```
+
 **Pass criteria (all must be true)**:
 1. The tool returns without error.
 2. The output contains exactly 4 annotated lines (lines 3, 4, 5, 6) in `LINE#HASH|content` format.
@@ -249,6 +255,7 @@ hashline_read(filePath="/tmp/opencode/hashline-windowed-test.txt", offset=3, lim
 5. The output contains `totalLines: 10` — proving the total file size is reported even for windowed reads.
 6. Lines outside the window (1, 2, 7-10) are NOT present in the output.
 7. This proves `hashline_read` supports efficient partial file reads for large files, enabling token-saving windowed operations.
+8. Step 3 clamps the window at EOF: `startLine` and `endLine` both equal `totalLines` (10), with exactly one annotated line (line 10) and no fabricated out-of-range lines — the window is never reported as `endLine < startLine` (`src/hashline/hashline-read.ts:89-104`; CHANGELOG 1.7.0 "windowed read clamps `endLine >= startLine`").
 
 ---
 
@@ -293,6 +300,12 @@ hashline_edit(
 read(filePath="/tmp/opencode/hashline-batch-test.txt")
 ```
 
+**Step 5**: Perform a fresh `hashline_read` of the same file and compare its `version` to the `version:` reported by Step 3's edit result:
+
+```
+hashline_read(filePath="/tmp/opencode/hashline-batch-test.txt")
+```
+
 **Pass criteria (all must be true)**:
 1. Step 3 returns without error (both operations accepted).
 2. Step 4 shows line 2 is now "BRAVO" (was "beta") — proving the first operation succeeded.
@@ -300,6 +313,7 @@ read(filePath="/tmp/opencode/hashline-batch-test.txt")
 4. Lines 1 ("alpha"), 3 ("gamma"), and 5 ("epsilon") are unchanged — proving batch edits are surgical.
 5. Both edits used the same per-file `version` from a single read — proving they reference the same snapshot (SNAPSHOT SEMANTICS: all edits reference the ORIGINAL file state).
 6. This proves `hashline_edit` supports batch operations with bottom-up application for correct index handling.
+7. Step 5's fresh-read `version` equals the `version:` returned by Step 3's edit result — the edit-returned version round-trips, so a chained edit can proceed without an intermediate re-read (`src/hashline/hashline-edit.ts:253-276,475-481`; CHANGELOG 1.7.0 "The edit-returned version now matches a fresh read (chained edits need no re-read)").
 
 ---
 
@@ -388,6 +402,129 @@ hashline_read(filePath="/tmp/opencode/hashline-large-test.txt", limit=5)
 4. The `version` field is present (64-char SHA-256 hex) — proving the version token is always available.
 5. Lines 6-50 are NOT present in the output — proving the `limit` parameter restricts output.
 6. This proves `hashline_read` reports accurate metadata (`totalLines`) for the entire file while only returning the requested window, enabling callers to plan pagination.
+
+---
+
+---
+
+### Test 180: Hashline — Workspace-Relative Path Resolution
+
+This test verifies the v1.8.0 fix: both hashline tools resolve a RELATIVE `filePath` against the session workspace via the shared `resolveHashlinePath` helper, not against the host process cwd — so a relative read and a relative edit target the same physical file.
+
+**Step 1**: Create a probe file that is reachable by the relative path `runner-tools-relpath-probe.txt` (write it via its ABSOLUTE workspace path first):
+
+```
+write(filePath="<workspace>/runner-tools-relpath-probe.txt", content="probe alpha\nprobe beta\nprobe gamma\n")
+```
+
+Substitute the absolute session-workspace path — the same file must be reachable as the bare relative path `runner-tools-relpath-probe.txt`.
+
+**Step 2**: Call `hashline_read` with the RELATIVE path:
+
+```
+hashline_read(filePath="runner-tools-relpath-probe.txt")
+```
+
+**Step 3**: Call `hashline_read` with the ABSOLUTE path to the SAME file:
+
+```
+hashline_read(filePath="<workspace>/runner-tools-relpath-probe.txt")
+```
+
+**Step 4**: Call `hashline_edit` with the RELATIVE path, using the `version` and the line-2 anchor from Step 2, to replace "probe beta" with "PROBE_BETA_REL":
+
+```
+hashline_edit(files=[{
+  filePath: "runner-tools-relpath-probe.txt",
+  version: "<version from step 2>",
+  edits: [{ op: "replace", pos: "<LINE#HASH anchor for line 2>", lines: "PROBE_BETA_REL" }]
+}])
+```
+
+Then read the file back through its ABSOLUTE path with the standard `read` tool.
+
+**Step 5**: Call `hashline_read` on a relative path that exists nowhere in the workspace:
+
+```
+hashline_read(filePath="runner-tools-missing-rel.txt")
+```
+
+**Pass criteria (all must be true)**:
+1. Step 2 resolves without a "File not found" error and returns `LINE#HASH|content` lines plus a 64-char SHA-256 `version` field.
+2. Steps 2 (relative) and 3 (absolute) report the SAME `version` and the same `totalLines` — proving both spellings resolve to one physical file (workspace-relative resolution, not cwd-relative).
+3. Step 4's relative-path edit succeeds and the absolute-path `read` shows line 2 is now "PROBE_BETA_REL" while lines 1 and 3 are preserved — proving the relative edit wrote the workspace file.
+4. Step 5 returns `Error: File not found:` followed by the workspace-RESOLVED absolute path (not the bare relative spelling) — proving resolution is anchored at the workspace.
+5. This exercises `src/hashline/path-resolve.ts:16-23` (absolute inputs pass through; relative inputs `join` `context.directory`, falling back to `context.worktree`, then `process.cwd()`), wired into `hashline_read.ts:43` and `hashline_edit.ts:337-346` (a single resolution shared by the duplicate check, locks, read, re-check and write).
+
+**Evidence**: Relative and absolute reads of the same file must agree on `version`/`totalLines`; the relative edit must be observable at the absolute path; and a missing relative path must report the resolved workspace path (not the bare relative spelling).
+
+---
+
+---
+
+### Test 181: Hashline — Failure Diagnostics, Duplicate-Alias Folding & Anchor Widths
+
+This test verifies the v1.7.0 hardening (CHANGELOG 1.7.0 bullet 2) and the v1.6.0 lost-update prevention (CHANGELOG 1.6.0): every failure result is `Error:`-prefixed and names the affected file, duplicate path spellings in one batch are rejected with zero writes, anchor widths 5-8 are accepted, and an ambiguous fuzzy anchor is refused with an explicit re-read error.
+
+**Step 1 — failure prefix + file naming.** Attempt a failing edit on a file that does not exist:
+
+```
+hashline_edit(files=[{
+  filePath: "/tmp/opencode/runner-tools-absent-probe.txt",
+  version: "0000000000000000000000000000000000000000000000000000000000000000",
+  edits: [{ op: "replace", pos: "1#aa", lines: "x" }]
+}])
+```
+
+(Any failing `hashline_read`/`hashline_edit` works for this criterion — e.g. a stale `version`, or `hashline_read` on a missing file.)
+
+**Step 2 — duplicate-alias folding (zero writes).** Create one file and read it, then send BOTH spellings of that same file in a single batch:
+
+```
+write(filePath="/tmp/opencode/runner-tools-alias-probe.txt", content="alias one\nalias two\n")
+hashline_read(filePath="/tmp/opencode/runner-tools-alias-probe.txt")
+```
+
+Using that read's `version` and line anchors, call `hashline_edit` with the same physical file named twice — once plainly and once with a dot-relative segment:
+
+```
+hashline_edit(files=[
+  { filePath: "/tmp/opencode/runner-tools-alias-probe.txt",   version: "<v>", edits: [{ op: "replace", pos: "<line-1 anchor>", lines: "ALIAS_ONE" }] },
+  { filePath: "/tmp/opencode/./runner-tools-alias-probe.txt", version: "<v>", edits: [{ op: "replace", pos: "<line-2 anchor>", lines: "ALIAS_TWO" }] }
+])
+```
+
+Then `read` the file back and confirm it is unchanged.
+
+**Step 3 — symlink alias (variant of Step 2).** Create a symlink alias and send the real path plus the symlink path in one batch:
+
+```
+bash: ln -s /tmp/opencode/runner-tools-alias-probe.txt /tmp/opencode/runner-tools-alias-link.txt
+
+hashline_edit(files=[
+  { filePath: "/tmp/opencode/runner-tools-alias-probe.txt", version: "<v>", edits: [ ... ] },
+  { filePath: "/tmp/opencode/runner-tools-alias-link.txt",  version: "<v>", edits: [ ... ] }
+])
+```
+
+**Step 4 — anchor widths 5-8 accepted.** Call `hashline_edit` on the probe file with `hashWidth: 6`, then again with `hashWidth: 9` (out of range):
+
+```
+hashline_edit(files=[{ filePath: "/tmp/opencode/runner-tools-alias-probe.txt", version: "<v>", hashWidth: 6, edits: [ ... ] }])
+hashline_edit(files=[{ filePath: "/tmp/opencode/runner-tools-alias-probe.txt", version: "<v>", hashWidth: 9, edits: [ ... ] }])
+```
+
+**Step 5 — ambiguous fuzzy anchor rejection.** In a width-2 file, find or craft two content-different lines within ±10 lines of the anchor position whose width-2 hashes collide, then attempt an edit whose anchor matches neither line exactly.
+
+**Pass criteria (all must be true)**:
+1. Step 1's result BEGINS with `Error:` and names the affected file (`runner-tools-absent-probe.txt`) — every hashline failure is `Error:`-prefixed and file-identifying.
+2. Step 2 is rejected up front with a result beginning `Error: Duplicate filePath in edit batch:` that names both spellings, and a `read` afterwards shows "alias one"/"alias two" unchanged — proving zero writes (`hashline-edit.ts:348-371`).
+3. Step 3's symlink alias (`runner-tools-alias-link.txt`) is folded by filesystem identity (dev+inode, `path-lock.ts:40-65`) and rejected the same way; the file content is unchanged.
+4. Step 4: `hashWidth: 6` is ACCEPTED by the argument schema (`.min(2).max(8)`, `hashline-edit.ts:302`) and yields a per-file `hashWidth mismatch for <file>: ...` diagnostic inside the `Error: Edit failed for some files.` result, while `hashWidth: 9` is refused as out-of-range — proving widths 5-8 are inside the accepted range while >8 is not. The `LINE#HASH` grammar likewise accepts hashes of length 2-8 (`constants.ts:19`).
+5. Step 5: an ambiguous fuzzy anchor (content-different width-2 hash collision) is rejected with a message containing `Ambiguous anchor` and the re-read guidance `Re-read the file with hashline_read` — never silently nearest-matched (`fuzzy.ts:105-128`, `hashline-edit.ts:182-191`). If no collision can be constructed in-environment, report SKIP with the reason; do not fabricate PASS.
+6. No Step-2/3 rejection is reported as a write success, and no failure result is a bare string lacking the `Error:` prefix.
+
+**Evidence**: Quote the first characters of each failing result (`Error: ...`) and confirm the file path is named; show the pre/post `read` of the alias probe proving zero writes; show the accepted `hashWidth: 6` diagnostic versus the rejected `hashWidth: 9`; and show the `Ambiguous anchor ... Re-read` message (or the honest SKIP).
 
 ---
 

@@ -1,9 +1,9 @@
 # Runner: Graph Engine v2 & Dispatch
 
 You are the **`rolebox-tester--runner-graph`** test runner — one shard of the `rolebox-tester`
-suite. Your module: Graph Engine v2 imperative orchestration (graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop termination+mode, node/graph budgets, node liveness, interactive_terminal), single/chained/parallel node dispatch, node session continuation, retry, output truncation, collaboration-graph pipeline execution, nested dispatch, and invalid-agent error handling. Dispatches primary-level fixtures (echo, sleeper, processor, checker, validator, nester, signal-*) by full id.
+suite. Your module: Graph Engine v2 imperative orchestration (graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop mode, node/graph budgets, node liveness, interactive_terminal), single/chained/parallel node dispatch, node session continuation, retry, output truncation, nested dispatch, and invalid-agent error handling. Dispatches primary-level fixtures (echo, sleeper, processor, checker, validator, nester, signal-*) by full id.
 
-**Assigned tests:** 4-10, 18, 32-34, 58, 96, 119a, 120-121, 124-126, 132, 136, 163-172
+**Assigned tests:** 4-10, 18, 32-34, 58, 119a, 120-121, 124-125, 132, 136, 163-172, 174-177
 
 ## How to run
 
@@ -19,7 +19,7 @@ report the result (this handles fresh loop-worker sessions dispatched to this ag
 > **PRIMARY SYSTEM-PROMPT INSPECTION (sharded-runner adaptation).** This runner is a
 > sharded sub-role of the `rolebox-tester` primary. A handful of tests below assert
 > properties of role-level system-prompt blocks that exist ONLY on the PRIMARY role
-> (`<collaboration_graph>`, full `<available_functions>` roster, full `<available_subagents>`
+> (`<graph_state>`, full `<available_functions>` roster, full `<available_subagents>`
 > roster, `<available_memory>`, and the auto-activated/locked `test-all` function).
 > A sub-role's own prompt does NOT carry those role-level blocks. For any step or pass
 > criterion that says "inspect your system prompt" for one of those role-level blocks,
@@ -170,16 +170,14 @@ Then confirm with `graph_status(graph_id="<graph_id>", format="summary")`.
 
 ---
 
-### Test 18: Collaboration Graph — 3-Node Pipeline with Termination
+### Test 18: 3-Node Imperative Pipeline (processor→checker→validator)
 
-This test verifies that the collaboration graph is active as a 3-node pipeline (processor→checker→validator) with explicit flow edges, loopGroups, exitEdges, and termination conditions configured.
+This test verifies the Graph Engine v2 imperative 3-node pipeline (processor→checker→validator) with explicit `always` flow edges, built and run entirely through the `graph_*` tools. It is the imperative replacement for the v1 declarative multi-agent pipeline (removed in v1.8.0 — CHANGELOG 1.8.0 "Declarative … subsystem removed").
 
-**Step 1**: Check that the system prompt contains a `<collaboration_graph>` block. Inspect its structure — look for `nodes`, `edges`, `exitEdges`, `loopGroups`, and `termination` or `termination_conditions` sections.
-
-**Step 2**: Execute the pipeline as a Graph Engine v2 graph. Build a 3-node chain (processor→checker→validator) and run it:
+**Step 1**: Build a 3-node chain (processor→checker→validator) and run it ONCE:
 
 ```
-graph_create(name="collab-pipeline")
+graph_create(name="imperative-pipeline")
 graph_add_node(graph_id="<graph_id>", id="processor", agent="rolebox-tester--processor", prompt="Test payload: GRAPH_PIPELINE_TEST")
 graph_add_node(graph_id="<graph_id>", id="checker", agent="rolebox-tester--checker", prompt="Verify the processor output contains [PROCESSED] and approve it.")
 graph_add_node(graph_id="<graph_id>", id="validator", agent="rolebox-tester--validator", prompt="Validate the checker's APPROVED output and complete the flow.")
@@ -188,28 +186,27 @@ graph_add_edge(graph_id="<graph_id>", from="checker", to="validator", type="alwa
 graph_run(graph_id="<graph_id>")
 ```
 
-The `always` edges pass each node's output downstream. The Processor should transform the input by appending " [PROCESSED]".
+The `always` edges pass each node's output downstream. The Processor appends " [PROCESSED]".
 
-**Step 3**: Await the `[GRAPH COMPLETE]` reminder, then collect all three node outputs:
+**Step 2**: Await the `[GRAPH COMPLETE]` reminder, then collect all three node outputs:
 
 ```
 graph_status(graph_id="<graph_id>", include_output=true)
 ```
 
-The Checker should verify the input contains "[PROCESSED]" and approve it; the Validator should verify the input contains "APPROVED" and validate the flow.
+The Checker verifies the input contains "[PROCESSED]" and approves it; the Validator verifies the input contains "APPROVED" and validates the flow.
 
 **Pass criteria (all must be true)**:
-1. Your system prompt contains `<collaboration_graph>` — proves the graph was parsed and injected.
-2. The graph's `nodes` array contains exactly 3 entries: processor, checker, and validator — proves the 3-node graph was configured.
-3. The graph's `edges` array contains at least 2 edges (processor→checker, checker→validator), plus entry and exit edges — proves explicit flow edges were generated from the pipeline template.
-4. `exitEdges` are present in the graph structure (edges from validator to parent/orchestrator) — proves exit transitions are defined.
-5. `loopGroups` are present in the graph structure (may be an empty list for a pipeline topology) — proves loop detection was performed.
-6. Termination conditions are present in the graph config — proves termination config was loaded.
-7. Processor's response contains "PROCESSOR_RECEIVED" — proves the first node received work.
-8. Checker's response contains "CHECKER_RECEIVED" — proves the second node received work.
-9. Checker's response contains "APPROVED" and "GRAPH_FLOW_OK" — proves review-loop data flow is correct.
-10. Validator's response contains "VALIDATOR_RECEIVED" — proves the third node received work.
-11. Validator's response contains "VALIDATED" and "GRAPH_FLOW_COMPLETE" — proves the pipeline termination condition is met.
+1. `graph_create` returns a non-empty `graph_id`, and the 3-node chain (processor, checker, validator) is accepted.
+2. Each `graph_add_edge(type="always")` returns without error — processor→checker and checker→validator are wired.
+3. Processor's response contains "PROCESSOR_RECEIVED" — proves the first node received work.
+4. Checker's response contains "CHECKER_RECEIVED" — proves the second node received work.
+5. Checker's response contains "APPROVED" and "GRAPH_FLOW_OK" — proves downstream data flow is correct.
+6. Validator's response contains "VALIDATOR_RECEIVED" — proves the third node received work.
+7. Validator's response contains "VALIDATED" and "GRAPH_FLOW_COMPLETE" — proves the pipeline completed end to end.
+8. This proves the imperative 3-node processor→checker→validator pipeline is wired and runs to completion (the v1 declarative multi-agent pipeline is removed — CHANGELOG 1.8.0).
+
+**Evidence**: A single `graph_run` auto-advances processor→checker→validator; `graph_status(include_output=true)` shows all three node outputs with their markers.
 
 ---
 
@@ -334,36 +331,9 @@ graph_status(graph_id="<graph_id>", node_id="n1", include_output=true)
 
 ---
 
-### Test 96: Graph Engine v2 — Auto-Advance Through All 3 Nodes
+### Retired Tests — 96, 126: REMOVED (v6.0)
 
-This test verifies that the Graph Engine v2 automatically advances through a 3-node pipeline (processor→checker→validator) after a single `graph_run` — the `always` edges route each node's output downstream without a manual dispatch per node.
-
-**Step 1**: (Context) Confirm the legacy `<collaboration_graph>` block still lists processor, checker, and validator nodes as a pipeline — this is the declarative counterpart of the graph built below.
-
-**Step 2**: Build the 3-node chain with `always` edges and run it ONCE:
-
-```
-graph_create(name="auto-advance-pipeline")
-graph_add_node(graph_id="<graph_id>", id="processor", agent="rolebox-tester--processor", prompt="Test payload: AUTO_ADVANCE_TEST. Append [PROCESSED] and pass through.")
-graph_add_node(graph_id="<graph_id>", id="checker", agent="rolebox-tester--checker", prompt="Verify the processor output contains [PROCESSED] and approve it.")
-graph_add_node(graph_id="<graph_id>", id="validator", agent="rolebox-tester--validator", prompt="Validate the checker's APPROVED output and complete the flow.")
-graph_add_edge(graph_id="<graph_id>", from="processor", to="checker", type="always")
-graph_add_edge(graph_id="<graph_id>", from="checker", to="validator", type="always")
-graph_run(graph_id="<graph_id>")
-```
-
-**Step 3**: Await the `[GRAPH COMPLETE]` reminder — the engine auto-advances processor → checker → validator on the wired edges without further calls. Then collect all node outputs:
-
-```
-graph_status(graph_id="<graph_id>", include_output=true)
-```
-
-**Pass criteria (all must be true)**:
-1. Processor's node output contains "PROCESSOR_RECEIVED" (proves first node activated).
-2. Checker's node output contains "CHECKER_RECEIVED", "APPROVED", and "GRAPH_FLOW_OK" (proves the second node processed the auto-advanced chain).
-3. Validator's node output contains "VALIDATOR_RECEIVED", "VALIDATED", and "GRAPH_FLOW_COMPLETE" (proves the third node completed the pipeline).
-4. Only a SINGLE `graph_run` was issued — the engine auto-advanced through all 3 nodes via the `always` edges (note "AUTO_ADVANCE_OK" in the evidence).
-5. The graph reaches `phase` `complete` when Validator finishes — proving the pipeline runs to termination end to end.
+**Tests 96 & 126 — Legacy Declarative Pipeline & `max_iterations`** are REMOVED in v6.0. Test 96 (auto-advance through a 3-node declarative pipeline) and Test 126 (`max_iterations` termination visibility) both asserted the legacy declarative multi-agent workflow vocabulary that rolebox v1.8.0 deleted. The role-level declarative workflow block (`topology` / `flow` / `agents` / `max_iterations`), the termination type vocabulary, the `termination_conditions` extension point, and the `graph_add_loop` `termination` argument no longer exist (CHANGELOG 1.8.0 — Breaking Changes: declarative workflow / termination subsystem removed). Genuine multi-agent pipeline and bounded-loop coverage now lives in the imperative `graph_*` tests (Tests 18, 163, 165, and 169).
 
 ---
 
@@ -482,7 +452,7 @@ read(filePath="/tmp/opencode/metrics-export-test.json")
 
 This test verifies `graph_status(format="summary")` returns a summary render of all nodes in a graph (the Graph Engine v2 replacement for the legacy dispatch-status all-tasks summary).
 
-**Step 1**: Against a graph that has run (e.g. from Test 96 or 101), call:
+**Step 1**: Against a graph that has run (e.g. from Test 18 or Test 167), call:
 
 ```
 graph_status(graph_id="<graph_id>", format="summary")
@@ -496,34 +466,6 @@ graph_status(graph_id="<graph_id>", format="summary")
 3. At least one node row is present.
 4. The tool does NOT throw even when some nodes are still running — proving the "never throws" safe-poll contract.
 5. This proves the summary mode of `graph_status` provides a non-blocking overview of all node activity for the graph.
-
----
-
----
-
-### Test 126: Collaboration Graph — max_iterations Termination
-
-This test verifies that the collaboration graph's `max_iterations: 2` setting is correctly loaded and visible in the system prompt, providing a hard cap on graph iteration cycles.
-
-**Step 1**: Inspect your system prompt for the `<collaboration_graph>` block. Look for `max_iterations` or `iteration` references.
-
-**Step 2**: Verify the `<exit_conditions>` section mentions the iteration limit:
-
-```
-Look for text like: "max 2 iteration(s) reached" or "max_iterations: 2"
-```
-
-**Step 3**: Verify the `<collaboration_state>` block (if present) shows the current iteration counter:
-
-```
-Look for: "iteration: 0/2" or similar
-```
-
-**Pass criteria (all must be true)**:
-1. The system prompt's `<collaboration_graph>` block contains a reference to `max_iterations` or iteration limits — proving the termination config from `role.yaml` was loaded.
-2. The `<exit_conditions>` section mentions reaching the iteration limit as a termination condition.
-3. If a `<collaboration_state>` block is present, it shows an iteration counter with the max (e.g., "0/2" or "iteration 0 of 2").
-4. This proves the collaboration graph engine respects the `max_iterations: 2` setting from `role.yaml` `collaboration.termination.any_of[].max_iterations`.
 
 ---
 
@@ -945,7 +887,7 @@ After `graph_cancel(graph_id="<graph_id>", loop_id="loop-cancel")` returns a `ca
 
 ### Test 167: Graph Engine v2 (imperative) — graph_status Observability Flags
 
-This test verifies every backed `graph_status` observability flag renders either GENUINE data or an EXPLICIT honest-empty note — never a fabricated row. It builds one multi-node graph (a fan-in join + a bounded review loop over `rolebox-tester--signal-answer` / `rolebox-tester--signal-revise`), runs it to a terminal phase via the `graph_status` polling protocol, then exercises every §2.2 flag against the completed graph: `format="tree"` / `format="json"`, the `query` / `status` / `agent` filters, `group_by` (hour/day/agent over completed nodes), `include_history` + `round=<n>`, `stream` + `since`, the full `include_*` family (`include_budget` / `include_metrics` / `include_loops` / `include_concurrency` / `include_checkpoint` / `include_artifacts` / `include_evidence`), `scope="persisted"` / `scope="all"`, and `export_path`. Semantics verified against `src/graph/tools/index.ts` (`createGraphStatusTool` zod schema — `statusFormatEnum` `["summary","tree","json"]`, `scope` `["session","persisted","all"]`, `group_by` `["hour","day","agent"]`, `include_history`/`round`, `stream`/`since`, `export_path`), `src/graph/tools/status-queries.ts` (`filterByQuery`/`filterByStatus`/`filterByAgent` AND-combined; `filterByDateWindow`; `groupCompletedNodes` buckets ONLY completed nodes over `completedAt`, sorted by key, empty bucket list when none — honest, never invented), and `src/graph/tools/graph-tools.ts` (`UNSUPPORTED_GRAPH_STATUS_FLAGS = []` at lines 437-440 — the registry is EMPTY, so every original flag is backed; the empty-registry end state is pinned by `tests/graph/graph-status-flags.test.ts`).
+This test verifies every backed `graph_status` observability flag renders either GENUINE data or an EXPLICIT honest-empty note — never a fabricated row. It builds one multi-node graph (a fan-in join + a bounded review loop over `rolebox-tester--signal-answer` / `rolebox-tester--signal-revise`), runs it to a terminal phase via the `graph_status` polling protocol, then exercises every §2.2 flag against the completed graph: `format="tree"` / `format="json"`, the `query` / `status` / `agent` filters, `group_by` (hour/day/agent over completed nodes), `include_history` + `round=<n>`, `stream` + `since`, the full `include_*` family (`include_budget` / `include_metrics` / `include_loops` / `include_checkpoint` / `include_artifacts` / `include_evidence`), the `pending_approvals` view mode, `scope="persisted"` / `scope="all"`, and `export_path`. Semantics verified against `src/graph/tools/index.ts` (`createGraphStatusTool` zod schema — `statusFormatEnum` `["summary","tree","json"]`, `scope` `["session","persisted","all"]`, `group_by` `["hour","day","agent"]`, `include_history`/`round`, `stream`/`since`, `pending_approvals`, `export_path`), `src/graph/tools/status-queries.ts` (`filterByQuery`/`filterByStatus`/`filterByAgent` AND-combined; `filterByDateWindow`; `groupCompletedNodes` buckets ONLY completed nodes over `completedAt`, sorted by key, empty bucket list when none — honest, never invented), and `src/graph/tools/graph-tools.ts` (`UNSUPPORTED_GRAPH_STATUS_FLAGS = []` at lines 598-601 — the registry is EMPTY, so every original flag is backed; the empty-registry end state is pinned by `tests/graph/graph-status-flags.test.ts`).
 
 **Step 1** — Create the observability graph context. All flag exercises below reuse this single context:
 
@@ -1040,13 +982,13 @@ graph_status(graph_id="<graph_id>", format="summary", stream=true, since="<ISO-8
 graph_status(graph_id="<graph_id>", format="summary", include_budget=true)
 graph_status(graph_id="<graph_id>", format="summary", include_metrics=true)
 graph_status(graph_id="<graph_id>", format="summary", include_loops=true)
-graph_status(graph_id="<graph_id>", format="summary", include_concurrency=true)
 graph_status(graph_id="<graph_id>", format="summary", include_checkpoint=true)
 graph_status(graph_id="<graph_id>", format="summary", include_artifacts=true)
 graph_status(graph_id="<graph_id>", format="summary", include_evidence=true)
+graph_status(graph_id="<graph_id>", format="summary", pending_approvals=true)
 ```
 
-For each: **assert** the flag is honored and either (a) renders genuine backing data — `include_loops` the `obs-loop` group's `traversalCount`/rounds; `include_budget` the budget consumption breakdown — or (b) renders an EXPLICIT honest-empty / documented-unavailable note — `include_metrics` a metrics snapshot or a documented-unavailable note, `include_concurrency` a live per-key slot breakdown OR the explicit `no dispatch manager bound` documented-unavailable note (never fabricated slot data), `include_checkpoint` an explicit `no checkpoint recorded` note when none exists, `include_artifacts` / `include_evidence` the recorded artifact/evidence paths OR an explicit `no artifacts / evidence recorded` note. No flag may render a made-up value.
+For each: **assert** the flag is honored and either (a) renders genuine backing data — `include_loops` the `obs-loop` group's `traversalCount`/rounds; `include_budget` the budget consumption breakdown — or (b) renders an EXPLICIT honest-empty / documented-unavailable note — `include_metrics` a metrics snapshot or a documented-unavailable note, `include_checkpoint` an explicit `no checkpoint recorded` note when none exists, `include_artifacts` / `include_evidence` the recorded artifact/evidence paths OR an explicit `no artifacts / evidence recorded` note. The `pending_approvals` view mode tables the blocked `needs_approval` nodes (or renders an explicit honest `no pending approvals` note; see Test 174). No flag may render a made-up value.
 
 **Step 12** — `scope="persisted"` / `scope="all"`. Query the cross-session on-disk engine-state view:
 
@@ -1072,7 +1014,7 @@ graph_status(graph_id="<graph_id>", format="summary", include_metrics=true, expo
 graph_status(graph_id="<graph_id>", format="summary")
 ```
 
-No dedicated `graph_status` call backs this registry (it is a code-level constant), so **assert** by construction that every §2.2 flag exercised in Steps 5-13 (`format` `summary`/`tree`/`json`; `scope` `session`/`persisted`/`all`; `query`; `status`; `agent`; `group_by` `hour`/`day`/`agent`; `include_budget`; `include_metrics`; `include_loops`; `include_concurrency`; `include_checkpoint`; `include_artifacts`; `include_evidence`; `include_history`; `round`; `stream`; `since`; `export_path`) is now backed with genuine data or an explicit honest-empty note, and that `UNSUPPORTED_GRAPH_STATUS_FLAGS === []` — the registry is EMPTY, so no flag is documented-unsupported. (Confirmed against `src/graph/tools/graph-tools.ts:437-440` where the registry is declared as an empty `ReadonlyArray`.)
+No dedicated `graph_status` call backs this registry (it is a code-level constant), so **assert** by construction that every §2.2 flag exercised in Steps 5-13 (`format` `summary`/`tree`/`json`; `scope` `session`/`persisted`/`all`; `query`; `status`; `agent`; `group_by` `hour`/`day`/`agent`; `include_budget`; `include_metrics`; `include_loops`; `include_checkpoint`; `include_artifacts`; `include_evidence`; `include_history`; `round`; `stream`; `since`; `pending_approvals`; `export_path`) is now backed with genuine data or an explicit honest-empty note, and that `UNSUPPORTED_GRAPH_STATUS_FLAGS === []` — the registry is EMPTY, so no flag is documented-unsupported. (Confirmed against `src/graph/tools/graph-tools.ts:598-601` where the registry is declared as an empty `ReadonlyArray`.)
 
 **Pass criteria (all must be true)**:
 1. `graph_create` returns a non-empty `graph_id`, and every `graph_add_node` / `graph_add_edge` / `graph_add_loop` returns without error — the multi-node graph (fan-in join + bounded review loop) is constructed.
@@ -1084,10 +1026,10 @@ No dedicated `graph_status` call backs this registry (it is a code-level constan
 7. `group_by` (hour/day/agent) buckets ONLY `completed` nodes over `completedAt`, sorted by key, with genuine `count` / `nodes`; an empty bucket list (not fabricated) when no completed node exists.
 8. `include_history` renders the loop group's recorded round rows and `round=<n>` returns a recorded round or an explicit `round N: not recorded` note.
 9. `stream` renders genuine signal-event history; `since` filters to events at/after the bound and yields an explicit `no events since <ts>` note when none remain; an empty history yields `no events recorded`.
-10. Every `include_*` flag (`include_budget` / `include_metrics` / `include_loops` / `include_concurrency` / `include_checkpoint` / `include_artifacts` / `include_evidence`) renders genuine backing data OR an explicit honest-empty / documented-unavailable note — NEVER a fabricated row.
+10. Every `include_*` flag (`include_budget` / `include_metrics` / `include_loops` / `include_checkpoint` / `include_artifacts` / `include_evidence`) and the `pending_approvals` view mode renders genuine backing data OR an explicit honest-empty / documented-unavailable note — NEVER a fabricated row.
 11. `scope="persisted"` / `scope="all"` yield an explicit honest-empty note when the engine-state store is empty, or a genuine listing when persisted graphs exist.
 12. `export_path` returns an export confirmation, creates the file on disk, and a `.json` metrics export parses as valid JSON.
-13. `UNSUPPORTED_GRAPH_STATUS_FLAGS === []` (empty registry) — every original §2.2 `graph_status` flag is backed, confirmed against `src/graph/tools/graph-tools.ts:437-440`.
+13. `UNSUPPORTED_GRAPH_STATUS_FLAGS === []` (empty registry) — every original §2.2 `graph_status` flag is backed, confirmed against `src/graph/tools/graph-tools.ts:598-601`.
 14. This proves the full `graph_status` observability surface — formats, filters, grouping, loop-round history, signal-event stream, the `include_*` family, cross-session scopes, and atomic export — all backed with honest rendering and zero fabricated values.
 
 ---
@@ -1146,14 +1088,14 @@ Repeatedly poll `graph_status(graph_id="<graph_id>", format="summary")` until th
 
 ---
 
-### Test 169: Graph Engine v2 (imperative) — Loop `termination` Block & `mode`
+### Test 169: Graph Engine v2 (imperative) — Loop `mode` & the Retired `termination` Argument
 
-This test verifies the Graph Engine v2 `graph_add_loop` soft-`termination` block and the loop-round session-isolation `mode`. The termination schema accepts `any_of` / `all_of` arrays of variants (`max_iterations`, `timeout_ms`, `converged`, `result_matches`, `stuck`, `budget_exhausted`, `signal`); `mode: "inherit"` records that loop rounds re-dispatch within the SAME engine state, while `mode: "fresh"` is documented-unsupported and returns an explicit error naming the alternative path (a separate graph per round). Semantics verified against `src/graph/tools/index.ts` (`terminationSchema`; `graph_add_loop` `mode` enum `["inherit","fresh"]`).
+This test verifies the `graph_add_loop` session-isolation `mode` flavor and confirms the legacy soft-`termination` argument is GONE from the schema. `mode: "inherit"` records that loop rounds re-dispatch within the SAME engine state; `mode: "fresh"` is documented-unsupported and returns an explicit error naming the alternative path (a separate graph per round). The tool's argument set is exactly `graph_id` / `id` / `nodes` / `max_traversals` / `mode` — no `termination` key (removed in v1.8.0). Semantics verified against `src/graph/tools/index.ts:387-437` (tool definition; args at `:401-422`) and `src/graph/tools/graph-tools.ts:1171-1179` (`mode: "fresh"` throws).
 
-**Step 1** — Create the loop-termination graph context:
+**Step 1** — Create the loop-mode graph context:
 
 ```
-graph_create(name="graph-engine-v2-loop-termination")
+graph_create(name="graph-engine-v2-loop-mode")
 ```
 
 Capture the returned `graph_id`.
@@ -1167,10 +1109,10 @@ graph_add_edge(graph_id="<graph_id>", from="term-worker", to="term-gate", type="
 graph_add_edge(graph_id="<graph_id>", from="term-gate", to="term-worker", type="on_signal", signal_filter=["revise_needed"])
 ```
 
-**Step 3** — Declare the loop group with a hard `max_traversals` cap, a soft `termination` block, and `mode: "inherit"`:
+**Step 3** — Declare the loop group with a hard `max_traversals` cap and `mode: "inherit"` (must succeed):
 
 ```
-graph_add_loop(graph_id="<graph_id>", id="term-loop", nodes=["term-worker", "term-gate"], max_traversals=5, mode="inherit", termination={any_of:[{max_iterations:3}, {converged:"term-gate"}, {stuck:{repeats:2}}, {signal:"answer"}, {result_matches:{agent:"term-gate", contains:"CONVERGED"}}]})
+graph_add_loop(graph_id="<graph_id>", id="term-loop", nodes=["term-worker", "term-gate"], max_traversals=5, mode="inherit")
 ```
 
 **Step 4** — **mode guard (fresh unsupported)**: Declaring a loop with `mode: "fresh"` MUST return an explicit error naming the alternative (a separate graph per round):
@@ -1179,13 +1121,15 @@ graph_add_loop(graph_id="<graph_id>", id="term-loop", nodes=["term-worker", "ter
 graph_add_loop(graph_id="<graph_id>", id="term-loop-fresh", nodes=["term-worker", "term-gate"], max_traversals=2, mode="fresh")
 ```
 
-**Step 5** — Validate structurally (dry run) without dispatching any agent:
+**Step 5** — **retired-argument assertion**: The `graph_add_loop` schema declares exactly `graph_id` / `id` / `nodes` / `max_traversals` / `mode` (`src/graph/tools/index.ts:401-422`); there is no soft-`termination` key, so no `any_of` / `all_of` variant is accepted or silently honored. Confirm the tool surface exposes no such alternative cap vocabulary (the loop is bounded solely by `max_traversals`).
+
+**Step 6** — Validate structurally (dry run) without dispatching any agent:
 
 ```
 graph_run(graph_id="<graph_id>", dry_run=true)
 ```
 
-**Step 6** — After a real `graph_run(graph_id="<graph_id>")`, poll with round history:
+**Step 7** — After a real `graph_run(graph_id="<graph_id>")`, poll with round history:
 
 ```
 graph_status(graph_id="<graph_id>", format="summary", include_history=true)
@@ -1195,11 +1139,14 @@ Repeatedly poll until the graph `phase` becomes `complete` OR every node reports
 
 **Pass criteria (all must be true)**:
 1. `graph_create` returns a non-empty `graph_id`.
-2. `graph_add_loop(..., termination={any_of:[...]}, mode="inherit")` returns without error — proving the `termination` schema (`any_of` with `max_iterations` / `converged` / `stuck` / `signal` / `result_matches` variants) and `mode: "inherit"` are accepted.
-3. The Step 4 `graph_add_loop(..., mode="fresh")` returns an EXPLICIT error naming the unsupported flavor and the alternative path (a separate graph per round) — never a silent accept.
-4. `graph_run(dry_run=true)` returns `validation.valid` equal to `true` with an empty `errors` array — proving the loop-with-termination graph is structurally well-formed.
-5. On a live run, the loop exits at the FIRST satisfied condition — whichever of the soft `termination` variants (e.g. `converged`, `signal:"answer"`, `max_iterations:3`, `stuck`) or the hard `max_traversals=5` cap fires first — `graph_status(include_history=true)` shows the recorded rounds and the loop settling to a terminal state at or before the cap.
-6. This proves the loop soft-`termination` block and the `mode: "inherit"` session-isolation flavor are wired, and that `mode: "fresh"` is honestly rejected as documented-unsupported.
+2. `graph_add_loop(..., max_traversals=5, mode="inherit")` returns without error — proving the `mode: "inherit"` session-isolation flavor is accepted (`index.ts:401-422`).
+3. The Step 4 `graph_add_loop(..., mode="fresh")` returns an EXPLICIT error naming the unsupported flavor and the alternative path (a separate graph per round) — never a silent accept (`graph-tools.ts:1171-1179`).
+4. The `termination` argument is absent from the schema — `index.ts:401-422` declares exactly `graph_id` / `id` / `nodes` / `max_traversals` / `mode`; a legacy soft-cap argument is ignored/rejected, never silently honored (CHANGELOG 1.8.0 removed the `graph_add_loop` `termination` argument).
+5. `graph_run(dry_run=true)` returns `validation.valid` equal to `true` with an empty `errors` array — proving the loop-with-mode graph is structurally well-formed.
+6. On a live run, the loop is bounded solely by the hard `max_traversals` cap (the soft-cap vocabulary is gone) — `graph_status(include_history=true)` shows the recorded rounds and the loop settling to a terminal state at or before the cap.
+7. This proves the `mode: "inherit"` session-isolation flavor is wired and `mode: "fresh"` is honestly rejected as documented-unsupported, and that the legacy `termination` argument no longer exists.
+
+**Evidence**: `mode="inherit"` is accepted; `mode="fresh"` returns the explicit unsupported error naming the separate-graph-per-round alternative; the schema exposes no `termination` argument.
 
 ---
 
@@ -1207,20 +1154,20 @@ Repeatedly poll until the graph `phase` becomes `complete` OR every node reports
 
 ### Test 170: Graph Engine v2 (imperative) — Node & Graph `budget` Limits
 
-This test verifies the Graph Engine v2 resource-`budget` limits at both the node level (`graph_add_node(budget={...})` — `timeout_ms`, `max_sessions`, `max_cost_usd`, `max_retries`) and the graph level (`graph_create(budget={...})` — `max_total_sessions`, `max_total_cost_usd`, `max_total_input_tokens`, `max_total_output_tokens`). Budget exhaustion must be surfaced honestly (a budget-blocked / escalated node, never a fabricated `completed`) and reflected in `graph_status(include_budget=true)` and `task_budget`.
+This test verifies the Graph Engine v2 resource-`budget` limits at both the node level (`graph_add_node(budget={...})` — `max_input_tokens`, `max_output_tokens`, `max_cost_usd`, `timeout_ms`, `max_retries`) and the graph level (`graph_create(budget={...})` — `max_total_input_tokens`, `max_total_output_tokens`, `max_total_cost_usd`). Schemas verified against `src/graph/tools/index.ts:58-75` (node budget) and `:49-56` (graph budget). A graph-level breach escalates the ready node and cancels stranded `pending` nodes so the graph reaches a terminal phase instead of hanging (`src/graph/engine/engine-advance.ts:1661-1683` and `:1941-1968`; CHANGELOG 1.6.0 "Graph budgets enforced, crash orphans cancelled, loop caps retired"). Budget consumption is surfaced honestly via `graph_status(include_budget=true)` and `task_budget`.
 
 **Step 1** — Create a graph with a graph-level budget cap:
 
 ```
-graph_create(name="graph-engine-v2-budget", budget={max_total_sessions:4, max_total_cost_usd:1.0})
+graph_create(name="graph-engine-v2-budget", budget={max_total_cost_usd:1.0})
 ```
 
 Capture the returned `graph_id`.
 
-**Step 2** — Add a node with a per-node budget (timeout + session cap), plus a small chain:
+**Step 2** — Add a node with a per-node budget (timeout + cost + retry), plus a small chain:
 
 ```
-graph_add_node(graph_id="<graph_id>", id="b1", agent="rolebox-tester--echo", prompt="Reply with: BUDGET_NODE_OK", budget={timeout_ms:60000, max_sessions:1, max_retries:0})
+graph_add_node(graph_id="<graph_id>", id="b1", agent="rolebox-tester--echo", prompt="Reply with: BUDGET_NODE_OK", budget={timeout_ms:60000, max_cost_usd:0.5, max_retries:0})
 graph_add_node(graph_id="<graph_id>", id="b2", agent="rolebox-tester--echo", prompt="Reply with: BUDGET_CHAIN_OK")
 graph_add_edge(graph_id="<graph_id>", from="b1", to="b2", type="always")
 ```
@@ -1240,13 +1187,25 @@ task_budget()
 
 Poll `graph_status(graph_id="<graph_id>", format="summary")` until the graph reaches a terminal phase. `graph_status` is a safe, non-blocking liveness probe that never throws while work is in flight.
 
+**Step 5** — **Graph-level breach**: declare a graph whose `max_total_cost_usd` ceiling is below the run's consumption so the breach path fires, then confirm the ready node escalates and every stranded `pending` node is cancelled, driving the graph to a terminal `complete` phase rather than hanging in `executing` (`engine-advance.ts:1661-1683`, `:1941-1968`):
+
+```
+graph_create(name="graph-engine-v2-budget-breach", budget={max_total_cost_usd:0.000001})
+graph_add_node(graph_id="<graph_id>", id="br1", agent="rolebox-tester--echo", prompt="Reply with: BUDGET_BREACH_OK")
+graph_add_node(graph_id="<graph_id>", id="br2", agent="rolebox-tester--echo", prompt="Reply with: BUDGET_STRANDED_OK")
+graph_add_edge(graph_id="<graph_id>", from="br1", to="br2", type="always")
+graph_run(graph_id="<graph_id>")
+graph_status(graph_id="<graph_id>", format="summary")
+```
+
 **Pass criteria (all must be true)**:
-1. `graph_create(budget={max_total_sessions:4, max_total_cost_usd:1.0})` accepts the graph-level budget object.
-2. `graph_add_node(..., budget={timeout_ms:60000, max_sessions:1, max_retries:0})` accepts the per-node budget object.
+1. `graph_create(budget={max_total_cost_usd:1.0})` accepts the graph-level budget object (`index.ts:49-56`).
+2. `graph_add_node(..., budget={timeout_ms:60000, max_cost_usd:0.5, max_retries:0})` accepts the per-node budget object (`index.ts:58-75`).
 3. `graph_run(dry_run=true)` returns `validation.valid` equal to `true` with an empty `errors` array — proving a budgeted graph is structurally well-formed.
-4. On a live run within budget, `b1` and `b2` complete with their OK markers (BUDGET_NODE_OK / BUDGET_CHAIN_OK), and `graph_status(include_budget=true)` renders a genuine consumption breakdown (sessions / cost) — or an explicit documented-unavailable note — never a fabricated figure.
-5. `task_budget()` reflects the session consumption against the cap.
-6. This proves node-level and graph-level `budget` limits are accepted, enforced, and observable via the budget surface.
+4. On a live run within budget, `b1` and `b2` complete with their OK markers (BUDGET_NODE_OK / BUDGET_CHAIN_OK), and `graph_status(include_budget=true)` renders a genuine consumption breakdown (tokens / cost) — or an explicit documented-unavailable note — never a fabricated figure.
+5. `task_budget()` reflects the session consumption.
+6. **Graph-level breach**: when the graph-level ceiling is exceeded, the ready node is escalated and every stranded `pending` node is cancelled (`engine-advance.ts:1661-1683`, `:1941-1968`), so the graph reaches a terminal (`complete`) phase instead of hanging in `executing`.
+7. This proves node-level and graph-level `budget` limits are accepted, enforced (including the graph-level breach sweep), and observable via the budget surface.
 
 ---
 
@@ -1297,7 +1256,7 @@ graph_status(graph_id="<graph_id>", node_id="live1", include_liveness=true, incl
 
 ### Test 172: Interactive Terminal — Persistent Session Smoke Test
 
-This test verifies the `interactive_terminal` tool (new in v1.4.0, previously uncovered): a persistent, interactive terminal session driven through `open` → `write` → `read` → `close`, using `until` / `wait_ms` to synchronize on evolving output rather than fixed sleeps.
+This test verifies the `interactive_terminal` tool (new in v1.4.0, previously uncovered): a persistent, interactive terminal session driven through `open` → `write` → `read` → `close`, using `until` / `wait_ms` to synchronize on evolving output rather than fixed sleeps. It also covers the `mode="screen"` snapshot read, the `keys=[…]` named-key input path, and `resize`.
 
 **Step 1** — Open a persistent shell session:
 
@@ -1319,18 +1278,225 @@ interactive_terminal(action="write", id="<id>", data="echo INTERACTIVE_TERM_OK")
 interactive_terminal(action="read", id="<id>", until="INTERACTIVE_TERM_OK", timeout_ms=10000)
 ```
 
-**Step 4** — Close the session:
+**Step 4** — Stream-read the raw new output since the previous read:
+
+```
+interactive_terminal(action="read", id="<id>", mode="stream")
+```
+
+**Step 5** — Snapshot-read the current rendered screen (the full-screen-TUI-friendly view; `mode="screen"` is PTY-only):
+
+```
+interactive_terminal(action="read", id="<id>", mode="screen")
+```
+
+**Step 6** — Send a named key sequence (the `keys=[…]` input path):
+
+```
+interactive_terminal(action="write", id="<id>", data="echo KEYS_OK", keys=["enter"])
+```
+
+**Step 7** — Resize the session terminal, then confirm the write/read path still works after the resize:
+
+```
+interactive_terminal(action="resize", id="<id>", cols=120, rows=40)
+interactive_terminal(action="write", id="<id>", data="echo RESIZE_OK")
+interactive_terminal(action="read", id="<id>", until="RESIZE_OK", timeout_ms=10000)
+```
+
+**Step 8** — Close the session:
 
 ```
 interactive_terminal(action="close", id="<id>")
+interactive_terminal(action="list")
 ```
 
 **Pass criteria (all must be true)**:
 1. Step 1 `open` returns without error and yields a non-empty session `id` (a real PTY or a pipe-backed fallback — either is acceptable).
 2. Step 2 `write` is accepted (the command plus Enter is sent to the live session).
 3. Step 3 `read` returns the evolving session output containing the marker "INTERACTIVE_TERM_OK", and the result honestly reports a matched (not timed-out) status for the `until` regex.
-4. Step 4 `close` terminates the session without error, and a subsequent `list` no longer shows it as active.
-5. This proves the `interactive_terminal` persistent-session lifecycle (open → write → read-until → close) is wired end to end — the previously-uncovered v1.4.0 tool now has a smoke test.
+4. Step 4 `mode="stream"` returns the raw new output since the previous read without error.
+5. Step 5 `mode="screen"` returns a rendered screen snapshot, or an explicit honest note when the backend is pipe-only and screen mode is unavailable — never a fabricated frame.
+6. Step 6 `keys=["enter"]` is accepted and sent after `data`; Step 7 `resize` accepts `cols` / `rows`, and the post-resize `write` + `read` resolves the "RESIZE_OK" marker.
+7. Step 8 `close` terminates the session without error, and a subsequent `list` no longer shows it as active.
+8. This proves the `interactive_terminal` persistent-session lifecycle (open → write → read-until → stream read → screen read → named keys → resize → close) is wired end to end — the previously-uncovered v1.4.0 tool now has a smoke test covering named keys, screen snapshots, and resize.
+
+**Evidence**: `open` returns an id; `write` / `read(until="INTERACTIVE_TERM_OK")` matches; `mode="stream"` returns new output; `mode="screen"` returns a snapshot (or an explicit honest note on a pipe backend); `keys=["enter"]` and `resize` are accepted and the post-resize "RESIZE_OK" marker resolves; `close` drops the session from `list`.
+
+---
+
+---
+
+### Test 174: Graph Engine v2 (imperative) — Pending-Approval Gate Enumeration
+
+This test verifies the first-class "awaiting human" surface: `graph_status(pending_approvals=true)` enumerates every blocked `needs_approval` node across the resolved scope, each row carrying the owning graph, the blocked-since timestamp, a truncated `approval_payload` summary, and a paste-ready `graph_approve` call — and renders an explicit honest `no pending approvals` note when none. Semantics verified against `src/graph/tools/index.ts:667` (the `pending_approvals` boolean arg), `src/graph/tools/graph-tools.ts:1595` (the pending-approvals view branch, resolved before every other branch and composable with any scope), and `src/graph/tools/graph-tools.ts:1737` (the row shape: `graph_id` / `node_id` / `agent` / `blocked_since` / `approval_payload_summary` / `approve_call`); CHANGELOG 1.7.0 ("Graph approval-gate notification loop closed").
+
+**Step 1** — Build a graph whose gate node pauses in `blocked`:
+
+```
+graph_create(name="graph-engine-v2-pending-approvals")
+graph_add_node(graph_id="<graph_id>", id="gate-p", agent="rolebox-tester--signal-approve", prompt="Request human approval before proceeding.", needs_approval=true)
+graph_run(graph_id="<graph_id>")
+```
+
+Capture the `graph_id` and poll `graph_status(graph_id="<graph_id>", format="summary")` until `gate-p` reports `blocked`.
+
+**Step 2** — Enumerate the pending approvals with the dedicated view mode:
+
+```
+graph_status(pending_approvals=true)
+graph_status(scope="session", pending_approvals=true)
+graph_status(graph_id="<graph_id>", pending_approvals=true, format="json")
+```
+
+**Step 3** — Resolve the gate, then re-run the enumeration to confirm the honest-empty transition:
+
+```
+graph_approve(graph_id="<graph_id>", node_id="gate-p", action="approve")
+graph_status(pending_approvals=true)
+```
+
+**Pass criteria (all must be true)**:
+1. `graph_status(pending_approvals=true)` returns without error and lists the blocked `gate-p` row.
+2. The row carries the owning graph id, the blocked-since timestamp, a truncated `approval_payload` summary, and a paste-ready `graph_approve` call (the `format="json"` render exposes `graph_id` / `node_id` / `agent` / `blocked_since` / `approval_payload_summary` / `approve_call`).
+3. The view mode composes with `scope="session"` and a `graph_id` filter, narrowing the enumeration honestly.
+4. After the gate is approved, `graph_status(pending_approvals=true)` renders an explicit honest `no pending approvals` note — never a fabricated row.
+5. This proves the pending-approval enumeration surface is wired end to end (v1.7.0 approval-gate notification loop).
+
+**Evidence**: `pending_approvals=true` lists the blocked gate with its owning graph, blocked-since timestamp, payload summary, and paste-ready approve call; after approval it renders the honest-empty note.
+
+---
+
+---
+
+### Test 175: Graph Engine v2 (imperative) — Escalate-Retry Budget & `backoff_ms`
+
+This test verifies the v1.7.0 escalate-retry budget enforcement and `backoff_ms` honoring. The effective per-node retry budget is the MAX of the node's declared `budget.max_retries`, the `retry.max` of any OUTBOUND edge, and the `retry.max` of any INCOMING edge; a `Ready` node is withheld from dispatch until its `backoff_ms` deadline elapses. Semantics verified against `src/graph/engine/signal-propagation.ts:293-315` (`resolveEscalateRetryPolicy` — `Math.max(node.budget.max_retries, edgeMax)`) and `:366-382` (the retry gate increments `retryCount`, re-marks `ready`, and sets `retryBackoffUntil = Date.now() + backoff_ms`); the edge retry schema is `src/graph/tools/index.ts:90-99` (`{max, backoff_ms}`); the per-node budget schema is `src/graph/tools/index.ts:58-75` (`max_retries`). CHANGELOG 1.7.0 ("Graph escalate-retry budget enforced and `backoff_ms` honored" — the gate previously consulted only outbound edge policies, and `backoff_ms` was parsed but never enforced).
+
+**Step 1** — Build a graph whose node declares a per-node retry budget and whose incident edge declares a `backoff_ms`:
+
+```
+graph_create(name="graph-engine-v2-retry-backoff")
+graph_add_node(graph_id="<graph_id>", id="r1", agent="rolebox-tester--signal-escalate", prompt="Emit an escalate signal.", budget={max_retries:1})
+graph_add_node(graph_id="<graph_id>", id="r2", agent="rolebox-tester--signal-answer", prompt="Reply with: RETRY_SINK_OK")
+graph_add_edge(graph_id="<graph_id>", from="r1", to="r2", type="always", retry={max:1, backoff_ms:2000})
+```
+
+**Step 2** — Validate structurally (dry run), then run live:
+
+```
+graph_run(graph_id="<graph_id>", dry_run=true)
+graph_run(graph_id="<graph_id>")
+```
+
+**Step 3** — Observe the retry / backoff behavior via the polling protocol:
+
+```
+graph_status(graph_id="<graph_id>", format="summary", include_liveness=true)
+```
+
+Repeatedly poll until every node reports a terminal lifecycle status. The retried node (`r1`) should surface a retry (`retryCount` / an `[Automatic retry N]`-annotated prompt), and the re-dispatch should be withheld for at least the declared `backoff_ms` window rather than firing immediately.
+
+**Pass criteria (all must be true)**:
+1. `graph_add_node(..., budget={max_retries:1})` is accepted — the per-node retry budget is in the schema (`index.ts:58-75`).
+2. `graph_add_edge(..., retry={max:1, backoff_ms:2000})` is accepted — the edge retry policy (`max` + `backoff_ms`) is in the schema (`index.ts:90-99`).
+3. `graph_run(dry_run=true)` returns `validation.valid` equal to `true` with an empty `errors` array.
+4. On the live run, the effective escalate-retry budget is resolved as the MAX of the node budget and the incident-edge retry max (`signal-propagation.ts:293-315`), so a node with `budget.max_retries=1` is retried on escalate rather than only consulting an outbound edge policy.
+5. The retried (re-`ready`) node is withheld from dispatch until its `backoff_ms` deadline (`retryBackoffUntil = Date.now() + backoff_ms`, `signal-propagation.ts:377-382`) — the re-dispatch does not fire immediately, and the node eventually reaches a terminal state.
+6. This proves per-node retry budgets are enforced (not just edge retry policy), the effective budget is the max across node/outbound/inbound sources, and `backoff_ms` is honored.
+
+**Evidence**: With `budget.max_retries` on the node and `backoff_ms` on the incident edge, the escalate triggers a retry (not an immediate forward escalation) and the re-dispatch respects the backoff window.
+
+---
+
+---
+
+### Test 176: Graph Engine v2 (imperative) — Graph Validation Rejections
+
+This test verifies the v1.7.0 graph-validation rejections: (a) an `on_condition` edge naming a condition outside the registered `KNOWN_CONDITIONS` vocabulary (or with a missing/empty `condition`) is rejected rather than silently deadlocking — `src/graph/validator-v2.ts:34-38` (check 11 doc) and `:187-227` (`checkEdgeConditionVocabulary`), with the vocabulary single-sourced from `src/function/conditions.ts:100` (`KNOWN_CONDITIONS`); (b) an uncontained revise-free cycle is a WARNING during construction but an ERROR in execution mode — `validator-v2.ts:50-73` (severity split) and `:131` (`checkCycleContainment`), promoted by the execution-mode gate wired into `graph_run` (`src/graph/tools/graph-tools.ts:1215-1221` for `dry_run`, `:1339-1349` for the live build). CHANGELOG 1.7.0 ("Graph validation now rejects unknown `on_condition` condition names and blocks uncontained revise-free cycles").
+
+**Step 1** — Create the validation graph context and add an `on_condition` edge with an UNKNOWN condition name:
+
+```
+graph_create(name="graph-engine-v2-validation")
+graph_add_node(graph_id="<graph_id>", id="v1", agent="rolebox-tester--signal-answer", prompt="Reply with: VALID_SRC_OK")
+graph_add_node(graph_id="<graph_id>", id="v2", agent="rolebox-tester--signal-answer", prompt="Reply with: VALID_DST_OK")
+graph_add_edge(graph_id="<graph_id>", from="v1", to="v2", type="on_condition", condition="totally_unknown_condition")
+```
+
+**Step 2** — Attempt a missing/empty `condition` (must be rejected at add time):
+
+```
+graph_add_edge(graph_id="<graph_id>", from="v1", to="v2", type="on_condition")
+```
+
+**Step 3** — Validate the unknown-condition graph (execution-mode severity):
+
+```
+graph_run(graph_id="<graph_id>", dry_run=true)
+```
+
+**Step 4** — Build a pure `always` cycle with NO loop group and NO revise back-edge, then validate it (uncontained revise-free cycle):
+
+```
+graph_create(name="graph-engine-v2-uncovered-cycle")
+graph_add_node(graph_id="<graph_id>", id="c1", agent="rolebox-tester--signal-answer", prompt="Reply with: CYCLE_C1_OK")
+graph_add_node(graph_id="<graph_id>", id="c2", agent="rolebox-tester--signal-answer", prompt="Reply with: CYCLE_C2_OK")
+graph_add_edge(graph_id="<graph_id>", from="c1", to="c2", type="always")
+graph_add_edge(graph_id="<graph_id>", from="c2", to="c1", type="always")
+graph_run(graph_id="<graph_id>", dry_run=true)
+graph_run(graph_id="<graph_id>")
+```
+
+**Pass criteria (all must be true)**:
+1. Step 2 `graph_add_edge(type="on_condition")` WITHOUT `condition` returns an ERROR (the tool-level guard; Test 168 also asserts this).
+2. Step 3 `graph_run(dry_run=true)` on the unknown-condition edge returns `validation.valid` equal to `false` with an `errors` entry naming the unknown condition `totally_unknown_condition` and listing the registered vocabulary — the edge is rejected, not silently deadlocked (`validator-v2.ts:187-227`).
+3. Step 4 `graph_run(dry_run=true)` on the pure `always` cycle (no loop group, no revise back-edge) REFUSES the graph in execution mode — `validation.valid` is `false` with a cycle-containment error (`validator-v2.ts:50-73`, `:131`).
+4. Step 4's live `graph_run(graph_id="<graph_id>")` ALSO refuses the graph (the same execution-mode gate surfaces the validation errors) — it does not dispatch a cycle that can never activate.
+5. The mode split holds: the same uncovered cycle is a WARNING under construction mode (the default) but promoted to an ERROR in execution mode (`validator-v2.ts:55-73`).
+6. This proves unknown `on_condition` names are rejected against the registered vocabulary and uncontained revise-free cycles are refused at run — neither can silently deadlock the graph (CHANGELOG 1.7.0).
+
+**Evidence**: `graph_run(dry_run=true)` rejects the unknown-condition edge with a vocabulary error naming `totally_unknown_condition`; both the dry-run and the live `graph_run` refuse the uncontained pure cycle with execution-mode validation errors.
+
+---
+
+---
+
+### Test 177: Graph Engine v2 (imperative) — `graph_approve` No-Op Idempotence
+
+This test verifies the v1.8.0 no-op contract: approving an already-resolved (never-blocked) node is a true no-op — `applied=false`, the ready frontier is NOT dispatched, and termination is NOT re-checked. Semantics verified against `src/graph/tools/graph-tools.ts:2137-2159` (`graph_approve` captures the pre-decision status and sets `applied = before?.status === NodeStatus.Blocked`) and `src/graph/engine/approval-handler.ts:112,119` (`approveBlockedNode` returns `null` when the node was not `blocked`). CHANGELOG 1.8.0 ("`graph_approve` is a true no-op on an unblocked node" — dispatch is gated on an actual approval and `applied=false` is surfaced).
+
+**Step 1** — Build a graph, block its gate, and resolve it once with `approve`:
+
+```
+graph_create(name="graph-engine-v2-approve-noop")
+graph_add_node(graph_id="<graph_id>", id="gate-n", agent="rolebox-tester--signal-approve", prompt="Request human approval.", needs_approval=true)
+graph_run(graph_id="<graph_id>")
+```
+
+Poll `graph_status(graph_id="<graph_id>", format="summary")` until `gate-n` reports `blocked`.
+
+**Step 2** — Approve it (the genuine decision), then approve it AGAIN (the no-op replay):
+
+```
+graph_approve(graph_id="<graph_id>", node_id="gate-n", action="approve")
+graph_approve(graph_id="<graph_id>", node_id="gate-n", action="approve")
+```
+
+**Step 3** — Confirm the graph state is unchanged by the replay:
+
+```
+graph_status(graph_id="<graph_id>", format="summary")
+```
+
+**Pass criteria (all must be true)**:
+1. The FIRST `graph_approve(..., action="approve")` returns `applied=true` and `node_status="completed"` (the blocked gate resolved).
+2. The SECOND `graph_approve(..., action="approve")` on the already-resolved node returns `applied=false` (the no-op is surfaced honestly, not echoed as an effective decision) — `graph-tools.ts:2142`.
+3. The no-op replay does NOT dispatch the ready frontier and does NOT re-check termination (`approval-handler.ts:112,119`; CHANGELOG 1.8.0).
+4. After the replay, `graph_status` shows the graph at a stable terminal phase with no spurious re-dispatch or duplicated node activity.
+5. This proves `graph_approve` is idempotent on an unblocked/already-resolved node and honestly reports `applied=false`.
+
+**Evidence**: The first approve returns `applied=true` / `completed`; the second returns `applied=false` with the graph state unchanged.
 
 ---
 

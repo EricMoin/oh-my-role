@@ -3,7 +3,7 @@
 You are the **`rolebox-tester--runner-session`** test runner — one shard of the `rolebox-tester`
 suite. Your module: Session tools — list, read, search, info, diff, fork, and tool_filter.
 
-**Assigned tests:** 20-25, 138
+**Assigned tests:** 20-25, 138, 179
 
 ## How to run
 
@@ -30,6 +30,7 @@ session_list()
 1. The tool returns without error (not an exception or "tool not found").
 2. The output is a markdown table with columns including "Session ID" and "Title", OR the message "No sessions found." if no sessions exist.
 3. At least one session is listed (the current session should appear), with a non-empty title.
+4. **Full/untruncated ids (v1.8.0, `6466d68`):** the "Session ID" column emits the complete session id — no `...` ellipsis and no 12-character cut — so the cell value equals the source id and can be fed back verbatim into `session_info` / `session_read` / `session_fork`. The renderer assigns `const id = s.id;` with no `shortId()` call (`src/session/formatters.ts:82`, `formatSessionListTable`).
 
 ---
 
@@ -55,6 +56,7 @@ session_read(session_id="<id from step 1>", include_todos=true, include_tool_res
 1. Step 2 returns a formatted transcript with a header containing "Session:" and message entries.
 2. The transcript shows at least one message with a `[Message N]` prefix.
 3. Step 3 returns without error, demonstrating that filtering parameters (`include_todos`, `include_tool_results`, `role_filter`, `limit`) are accepted and applied.
+4. **Full/untruncated ids (v1.8.0, `6466d68`):** the transcript header's `ID:` line emits the complete session id with no `...` truncation — the header is built as `ID: ${session.id}` (`src/session/session-inspect-tools.ts:47`, `createSessionReadTool`).
 
 ---
 
@@ -79,6 +81,7 @@ session_search(query="test", limit=5, include_tool_output=true)
 2. If matches are found: output contains "Found N match(es) across M session(s)" with context excerpts showing the query in bold.
 3. If no matches are found: output contains "No matches found." (acceptable if the query is rare).
 4. The second call with `include_tool_output=true` also returns without error (proves the parameter is accepted).
+5. **Full/untruncated ids (v1.8.0, `6466d68`):** when matches are found, each result's `Session:` id and `Message:` id are emitted complete (no `...` ellipsis, no 12-character cut), so both can be fed back into the session tools — the search table interpolates `${m.sessionID}` and `Message: ${m.messageID}` with no `shortId()` call (`src/session/formatters.ts:276-277`, `formatSearchResults`).
 
 ---
 
@@ -141,6 +144,11 @@ session_fork(session_id="<id from step 1>")
 3. The output shows both an "Original Session" ID and a "New Session" ID, and they are different.
 4. The new session ID is non-empty.
 
+**Refusal-honesty criteria (apply only when the fork is refused — i.e. no "## Session Forked Successfully" header and the output says the session exists but the fork was refused; v1.8.0, `31628ba`):**
+5. **No phantom id blame:** a call that supplied **no** `message_id` must not name or implicate any message id. The no-`message_id` refusal is the bare sentence ending "the session exists, but the fork was refused." (`src/session/session-inspect-tools.ts:166-168`).
+6. **No false "session may not exist":** the refusal must not claim the session is missing, unknown, or may not exist — `client.get()` proved the session exists before the fork, so only a **supplied** `message_id` may be flagged (as the possibly-invalid fork point) (`src/session/session-inspect-tools.ts:163-168`).
+7. **Cause surfaced, not swallowed:** the refusal is explicit (fork refused; a supplied message id "may be invalid") rather than a bare or misleading failure, and the underlying adapter error is logged at `warn` with its message so the real cause is observable — not a silent debug-only swallow (`src/platform/adapters/dsh/session.ts:415-421`).
+
 ---
 
 ---
@@ -173,6 +181,47 @@ session_read(session_id="<id from step 1>", tool_filter="skill", limit=10)
 3. If the session has no `graph_run` calls: the output says "No matching messages" or returns an empty transcript.
 4. Step 3 also returns without error (proves the parameter accepts any tool name substring).
 5. This proves `session_read`'s `tool_filter` parameter is accepted and applied to narrow transcript output.
+
+---
+
+---
+
+### Test 179: Session Id Round-Trip (list → info → read → fork)
+
+Verifies the v1.8.0 full-id fix (`6466d68`): an id taken straight from the
+`session_list` table is complete enough to feed back unmodified into every
+downstream session tool without a "Session not found" failure.
+
+**Step 1**: Call `session_list` and capture a "Session ID" cell value **verbatim** — do not trim, reformat, or re-type it:
+
+```
+session_list(limit=5)
+```
+
+**Step 2**: Feed that exact id (unmodified) into `session_info`:
+
+```
+session_info(session_id="<id straight from step 1>")
+```
+
+**Step 3**: Feed the same unmodified id into `session_read`:
+
+```
+session_read(session_id="<id straight from step 1>", limit=1)
+```
+
+**Step 4**: Feed the same unmodified id into `session_fork`:
+
+```
+session_fork(session_id="<id straight from step 1>")
+```
+
+**Pass criteria (all must be true)**:
+1. The Step 1 id is the full untruncated value — it contains no `...` ellipsis (length > 12 unless the platform genuinely emits short ids).
+2. Step 2 resolves: the output begins `## Session: <title>` and its `**ID:**` line echoes the same id — not `Session not found`, not an error.
+3. Step 3 resolves: the transcript header's `ID:` line echoes the same id — not `Session not found`.
+4. Step 4 resolves: the output contains "## Session Forked Successfully" with a non-empty new id different from the original — not `Failed to fork` and not `Session not found`.
+5. All three downstream calls accepted the id **unmodified** (no character added, removed, or substituted between capture and use), proving the emit/consume round-trip — the list table emits `const id = s.id;` with no `shortId()` (`src/session/formatters.ts:82`), and `session_info`/`session_read`/`session_fork` consume that raw string (`src/session/session-inspect-tools.ts:47,89,166-168`).
 
 ---
 

@@ -1,9 +1,9 @@
 # Runner: Task Management
 
 You are the **`rolebox-tester--runner-task`** test runner — one shard of the `rolebox-tester`
-suite. Your module: Task search, budget, graph, node retry, concurrency, chronology, export (markdown + JSON), and graph session-budget tracking.
+suite. Your module: Task search, budget, graph, node retry, chronology, export (markdown + JSON).
 
-**Assigned tests:** 69-75, 130, 142
+**Assigned tests:** 69-72, 74-75, 130, 142
 
 ## How to run
 
@@ -43,17 +43,18 @@ Query budget usage for the current session:
 task_budget()
 ```
 
-Then call with detail mode:
+Then query it scoped explicitly to a session id:
 
 ```
-task_budget(detail=true)
+task_budget(session_id="<current session id>")
 ```
 
 **Pass criteria (all must be true)**:
 1. The tool returns without error.
-2. The output contains a "Task Budget:" header.
-3. The output includes "Request-level Usage" section with a metrics table.
-4. The `detail=true` call returns without error (proves the parameter is accepted).
+2. The output contains a `Task Budget:` header.
+3. The output includes a "Request-level Usage" section with a metrics table of Input Tokens / Output Tokens / Cost (USD) rows.
+4. The explicit `session_id` call returns without error and the header names the explicitly-supplied session id.
+5. The live argument schema exposes only `session_id` — no `detail` flag is accepted.
 
 ---
 
@@ -99,28 +100,6 @@ graph_run(graph_id="<graph_id>", node_id="n1", retry=true)
 **Pass criteria (all must be true)**:
 1. Step 2 returns without error (the node was in a terminal `completed` state and is eligible for retry).
 2. `graph_status` shows `n1` re-opened / re-dispatched and settling back to `completed` — proving the retry re-ran a terminal node.
-
----
-
----
-
-### Test 73: Task Concurrency Tool
-
-Retrieve concurrency slot status:
-
-```
-task_concurrency()
-```
-
-Then call with JSON format:
-
-```
-task_concurrency(format="json")
-```
-
-**Pass criteria (all must be true)**:
-1. The summary format returns without error with a human-readable status.
-2. The JSON format returns without error with valid JSON containing keys/total structure.
 
 ---
 
@@ -215,34 +194,36 @@ read(filePath="/tmp/opencode/task-export-json-test.json")
 
 ---
 
-### Test 142: Graph Session Budget — Tracking via task_budget
+### Test 142: Task Budget — Request-Level Consumption and Remaining Quota
 
-This test verifies that `task_budget(detail=true)` provides per-task breakdown data showing session consumption, enabling budget monitoring against the graph-level session budget.
+This test verifies the surviving `task_budget` surface: cumulative token/cost consumption, remaining quota, and trigger limits for the current request, with `session_id` as the tool's only argument.
 
-**Step 1**: Call `task_budget` with detail enabled:
-
-```
-task_budget(detail=true)
-```
-
-**Step 2**: Call `task_budget` without detail for comparison:
+**Step 1**: Call `task_budget` with no arguments (defaults to the current tool-context session id):
 
 ```
 task_budget()
 ```
 
+**Step 2**: Call `task_budget` scoped explicitly to a session id:
+
+```
+task_budget(session_id="<current session id>")
+```
+
 **Pass criteria (all must be true)**:
 1. Both calls return without error.
-2. Step 1's output contains per-child task entries with consumption data (task IDs, agent names, or session counts).
-3. Step 1's output is longer/richer than Step 2's output — proving the `detail` flag adds granularity.
-4. The output references a session budget / total-sessions cap — proving cumulative session consumption is tracked (complementing the graph-level `max_total_sessions` cap exercised in Test 103).
-5. This proves `task_budget(detail=true)` provides sufficient visibility for budget-aware scheduling, letting orchestrators track cumulative dispatch consumption against the session cap.
+2. Each output contains a `Task Budget:` header naming the inspected session id.
+3. The output includes a "Request-level Usage" metrics table with Input Tokens, Output Tokens, and Cost (USD) rows, each showing Current / Limit / % Used / Remaining.
+4. When a per-request limit is unset, the corresponding row reports `unlimited` in the Limit column and `—` for % Used / Remaining — proving remaining quota is derived from the live config rather than fabricated.
+5. The live argument schema exposes only `session_id` — no `detail` flag and no total-sessions/session-count cap is accepted.
 
 ---
 
-### Tests 150–162: Loop Tools & Guards — REMOVED (v5.0)
+### Retired Tests — 73, 150–162: REMOVED (v6.0)
 
-The 13 legacy `loop_*` tool tests (`loop_start` / `loop_status` / `loop_list` / `loop_history` / `loop_output` / `loop_cancel`, same-origin mutex, schema-v3 store version, `parentLoopId` / `promptFingerprint` fields, no-progress fuse, and fuse progress annotation) are REMOVED in v5.0 — those tools no longer exist in the plugin. Genuine bounded-loop coverage now lives in the Graph Engine v2 loop-group tests (Tests 163, 165, and 169), and the `|loop:N|` loop *function* remains covered by Tests 19, 67, and 97–100 (re-grounded onto store-file inspection and `task_chronology`).
+**Test 73 — Task Concurrency Tool** is REMOVED in v6.0. The standalone concurrency-status tool has zero matches in rolebox `src/` and `tests/` — the legacy `ConcurrencyManager` subsystem, its slot-status surface, and per-request session budget were deleted (CHANGELOG 1.5.0 Breaking Change). Node concurrency is now engine-managed via the graph frontier, loop `max_traversals`, and per-node budgets, so a standalone concurrency-status probe no longer exists to exercise.
+
+**Tests 150–162 — Loop Tools & Guards** are REMOVED (v5.0). The 13 legacy `loop_*`-prefixed tool tests (bounded-loop start / status / list / history / output / cancel variants, same-origin mutex, schema-v3 store version, `parentLoopId` / `promptFingerprint` fields, no-progress fuse, and fuse progress annotation) targeted tools that no longer exist in the plugin. Genuine bounded-loop coverage now lives in the Graph Engine v2 loop-group tests (Tests 163, 165, and 169), and the `|loop:N|` loop *function* remains covered by Tests 19, 67, and 97–100 (re-grounded onto store-file inspection and `task_chronology`).
 
 ---
 

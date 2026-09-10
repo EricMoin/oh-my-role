@@ -1,9 +1,9 @@
 # Runner: Live-Graph / TUI Visibility
 
 You are the **`rolebox-tester--runner-tui`** test runner — one shard of the `rolebox-tester`
-suite. Your module: Live-graph visibility & observability — parallel/chained node activity, liveness/stall, error/escalate state, concurrency slot saturation, queue depth, budget caps, runtime metrics, session-activity state, multi-function state display, and JSON snapshots during activity. Dispatches echo/sleeper fixtures by full id to create observable activity.
+suite. Your module: Live-graph visibility & observability — parallel/chained node activity, liveness/stall, error/escalate state, budget caps, runtime metrics, session-activity state, multi-function state display, and JSON snapshots during activity. Dispatches echo/sleeper fixtures by full id to create observable activity.
 
-**Assigned tests:** 65-66, 68, 101-105, 143-149
+**Assigned tests:** 65-66, 68, 104-105, 143-145, 147-149, 178
 
 ## How to run
 
@@ -20,7 +20,7 @@ report the result (this handles fresh loop-worker sessions dispatched to this ag
 
 ### Test 65: Live-Graph Visibility — Parallel Node Activity Panel
 
-This test verifies that the monitor surfaces live in-memory graph activity. It runs multiple parallel nodes that take long enough to observe, then probes the live-activity surfaces (`graph_status(include_liveness=true, include_concurrency=true)` and `task_concurrency`) during the in-flight window.
+This test verifies that the monitor surfaces live in-memory graph activity. It runs multiple parallel nodes that take long enough to observe, then probes the live-activity surface (`graph_status(include_liveness=true)`) during the in-flight window.
 
 **Step 1**: Build a graph with THREE independent nodes (no edges, so they run in parallel), each long-running:
 
@@ -35,11 +35,10 @@ graph_run(graph_id="<graph_id>")
 **Step 2**: Before collecting results, probe the live-activity surface while nodes are in flight:
 
 ```
-graph_status(graph_id="<graph_id>", format="summary", include_liveness=true, include_concurrency=true)
-task_concurrency()
+graph_status(graph_id="<graph_id>", format="summary", include_liveness=true)
 ```
 
-The live render should show running node rows (with per-node liveness / `lastActivityAt`) and, when a dispatch manager is bound, live concurrency slot usage — otherwise the explicit documented-unavailable note (never fabricated slots).
+The live render should show running node rows (with per-node liveness / `lastActivityAt`) plus honest node-status counts across the non-terminal lifecycle (`running` / `ready` / `pending`) — never fabricated slot data.
 
 **Step 3**: Await the `[GRAPH COMPLETE]` reminder, then collect results:
 
@@ -49,7 +48,7 @@ graph_status(graph_id="<graph_id>", include_output=true)
 
 **Pass criteria**:
 1. Three nodes were added and the graph ran (no structural error).
-2. During the in-flight window, `graph_status(include_liveness=true)` shows running node rows with liveness data (running nodes always render liveness), and `include_concurrency` / `task_concurrency` render live slot status OR an explicit documented-unavailable note.
+2. During the in-flight window, `graph_status(include_liveness=true)` shows running node rows with liveness data (running nodes always render liveness) and the remaining non-terminal node-status counts — the live in-memory graph surface a monitor renders.
 3. All three nodes completed and their outputs contain the respective OK markers (TUI_TASK_ALPHA_OK / TUI_TASK_BRAVO_OK / TUI_TASK_CHARLIE_OK).
 
 ---
@@ -118,114 +117,11 @@ graph_status(graph_id="<graph_id>", node_id="bad", format="summary", include_liv
 
 ---
 
-### Test 101: Graph Concurrency — Live Slot Occupancy
-
-This test verifies that concurrent node execution is observable via the live concurrency surface. It launches four parallel nodes and probes the active-slot occupancy while they run.
-
-**Step 1**: Build a graph with FOUR independent Sleeper nodes (no edges → all eligible in parallel):
-
-```
-graph_create(name="graph-concurrency-cap")
-graph_add_node(graph_id="<graph_id>", id="alpha", agent="rolebox-tester--sleeper", prompt="Reply with: CONCUR_ALPHA_OK. Then count slowly from 1 to 30.")
-graph_add_node(graph_id="<graph_id>", id="bravo", agent="rolebox-tester--sleeper", prompt="Reply with: CONCUR_BRAVO_OK. Then count slowly from 1 to 30.")
-graph_add_node(graph_id="<graph_id>", id="charlie", agent="rolebox-tester--sleeper", prompt="Reply with: CONCUR_CHARLIE_OK. Then count slowly from 1 to 30.")
-graph_add_node(graph_id="<graph_id>", id="delta", agent="rolebox-tester--sleeper", prompt="Reply with: CONCUR_DELTA_OK. Then count slowly from 1 to 30.")
-graph_run(graph_id="<graph_id>")
-```
-
-**Step 2**: Immediately probe the live concurrency surface:
-
-```
-graph_status(graph_id="<graph_id>", format="summary", include_concurrency=true)
-task_concurrency()
-```
-
-**Step 3**: Await the `[GRAPH COMPLETE]` reminder, then collect results with `graph_status(include_output=true)`.
-
-**Pass criteria (all must be true)**:
-1. All four nodes were added and the graph ran (no structural error).
-2. `graph_status(include_concurrency=true)` / `task_concurrency()` render live per-key slot status (active / available / queue depth) OR the explicit documented-unavailable note when no dispatch manager is bound — never fabricated slot data.
-3. All four nodes eventually complete and their outputs contain the respective OK markers.
-4. This proves node concurrency is observable through the live in-memory graph surface.
-
----
-
----
-
-### Test 102: Graph Concurrency — Queue Depth Under Load
-
-This test verifies that when more nodes are eligible than there are concurrency slots, the excess nodes queue rather than over-subscribe — observable via the queue-depth surface.
-
-**Step 1**: Build a graph with three independent Sleeper nodes and run it:
-
-```
-graph_create(name="graph-queue-depth")
-graph_add_node(graph_id="<graph_id>", id="alpha", agent="rolebox-tester--sleeper", prompt="Reply with: PARENT_ALPHA_OK. Then sleep by counting to 40.")
-graph_add_node(graph_id="<graph_id>", id="bravo", agent="rolebox-tester--sleeper", prompt="Reply with: PARENT_BRAVO_OK. Then sleep by counting to 40.")
-graph_add_node(graph_id="<graph_id>", id="charlie", agent="rolebox-tester--sleeper", prompt="Reply with: PARENT_CHARLIE_OK. Then count slowly from 1 to 40.")
-graph_run(graph_id="<graph_id>")
-```
-
-**Step 2**: Probe the concurrency surface for queue depth while nodes are in flight:
-
-```
-task_concurrency()
-graph_status(graph_id="<graph_id>", format="summary", include_concurrency=true)
-```
-
-**Pass criteria (all must be true)**:
-1. All three nodes were accepted and the graph ran.
-2. `task_concurrency()` shows active slots at the configured limit with a non-zero queue/reserved depth when more nodes are eligible than slots (or the explicit documented-unavailable note if no dispatch manager is bound).
-3. Eventually all three nodes complete and their outputs contain the respective OK markers.
-4. This proves excess eligible nodes queue for slot availability rather than over-subscribing.
-
----
-
----
-
-### Test 103: Graph Budget — max_total_sessions Cap
-
-This test verifies that a graph-level `budget.max_total_sessions` cap limits the total number of node dispatch sessions across the graph, rejecting/exhausting work beyond the cap (the Graph Engine v2 replacement for the legacy `maxTotalSessionsPerRequest` dispatch cap).
-
-**Step 1**: Create a graph with a total-sessions budget of 8, then add NINE quick Echo nodes:
-
-```
-graph_create(name="graph-session-budget", budget={max_total_sessions:8})
-graph_add_node(graph_id="<graph_id>", id="s1", agent="rolebox-tester--echo", prompt="Reply: SESS_01_OK")
-graph_add_node(graph_id="<graph_id>", id="s2", agent="rolebox-tester--echo", prompt="Reply: SESS_02_OK")
-graph_add_node(graph_id="<graph_id>", id="s3", agent="rolebox-tester--echo", prompt="Reply: SESS_03_OK")
-graph_add_node(graph_id="<graph_id>", id="s4", agent="rolebox-tester--echo", prompt="Reply: SESS_04_OK")
-graph_add_node(graph_id="<graph_id>", id="s5", agent="rolebox-tester--echo", prompt="Reply: SESS_05_OK")
-graph_add_node(graph_id="<graph_id>", id="s6", agent="rolebox-tester--echo", prompt="Reply: SESS_06_OK")
-graph_add_node(graph_id="<graph_id>", id="s7", agent="rolebox-tester--echo", prompt="Reply: SESS_07_OK")
-graph_add_node(graph_id="<graph_id>", id="s8", agent="rolebox-tester--echo", prompt="Reply: SESS_08_OK")
-graph_add_node(graph_id="<graph_id>", id="s9", agent="rolebox-tester--echo", prompt="Reply: SESS_09_SHOULD_BE_BUDGET_BLOCKED")
-graph_run(graph_id="<graph_id>")
-```
-
-**Step 2**: Await the run, then inspect the budget consumption and node outcomes:
-
-```
-graph_status(graph_id="<graph_id>", format="summary", include_budget=true)
-task_budget()
-```
-
-**Pass criteria (all must be true)**:
-1. The `budget={max_total_sessions:8}` is accepted at `graph_create`.
-2. Eight nodes consume the session budget and complete (their outputs contain the SESS_0N_OK markers).
-3. The 9th node is NOT allowed to consume a session beyond the cap — it is budget-blocked / escalated (never a fabricated `completed`), and `graph_status(include_budget=true)` shows total sessions at the cap.
-4. `task_budget()` reflects the session budget at the limit.
-5. This proves the graph-level `max_total_sessions` budget is enforced.
-
----
-
----
-
 ### Test 104: Graph Metrics — Runtime Counters
 
 This test verifies that `graph_status(include_metrics=true)` exposes graph-engine runtime counters, providing visibility into graph execution state (the replacement for legacy dispatch metrics counters).
 
-**Step 1**: Against a graph that has run (e.g. from Test 101 or 103), request the metrics snapshot:
+**Step 1**: Against a graph that has run (e.g. from Test 65 or 143), request the metrics snapshot:
 
 ```
 graph_status(graph_id="<graph_id>", include_metrics=true)
@@ -300,7 +196,7 @@ graph_run(graph_id="<graph_id>")
 
 ```
 graph_status(graph_id="<graph_id>", format="summary", include_liveness=true)
-graph_status(graph_id="<graph_id>", format="summary", include_metrics=true, include_concurrency=true)
+graph_status(graph_id="<graph_id>", format="summary", include_metrics=true)
 ```
 
 **Step 3**: Await the `[GRAPH COMPLETE]` reminder, then collect results with `graph_status(include_output=true)`.
@@ -308,9 +204,9 @@ graph_status(graph_id="<graph_id>", format="summary", include_metrics=true, incl
 **Pass criteria (all must be true)**:
 1. Three nodes were added and the graph ran (no structural error).
 2. `graph_status(include_liveness=true)` in Step 2 shows at least 2 nodes at a non-terminal status (`running`/`ready`/`pending`) with liveness data — proving live nodes are observable before completion.
-3. `include_metrics` / `include_concurrency` render genuine runtime data OR an explicit documented-unavailable note — proving the aggregate surface reflects real-time activity.
+3. `include_metrics` renders genuine runtime data OR an explicit documented-unavailable note — proving the aggregate surface reflects real-time activity.
 4. All three nodes eventually complete and contain their respective OK markers.
-5. This proves the live-activity panel has observable data: `graph_status` provides node rows and the metrics/concurrency the monitor renders.
+5. This proves the live-activity panel has observable data: `graph_status` provides node rows and the metrics the monitor renders.
 
 ---
 
@@ -379,41 +275,6 @@ graph_status(graph_id="<graph_id>", format="summary", include_liveness=true, inc
 2. `graph_status` honestly reports the failed node's non-success terminal lifecycle (`escalate`/`timeout`/`cancelled`) and its metrics render without error.
 3. `graph_status(include_metrics=true)` returns without error after the failure (proving observability survives node errors).
 4. This proves node failures are observable in the live graph surface, enabling a monitor error-state indicator.
-
----
-
----
-
-### Test 146: Live-Graph Visibility — Concurrency Slot Saturation
-
-This test deliberately saturates the concurrency slots and verifies that the concurrency surface shows both running and queued work — the exact data a monitor concurrency meter would render.
-
-**Step 1**: Build a graph with FOUR independent Sleeper nodes (more than the concurrency limit) and run it:
-
-```
-graph_create(name="live-concurrency-saturation")
-graph_add_node(graph_id="<graph_id>", id="alpha", agent="rolebox-tester--sleeper", prompt="Count from 1 to 40, one per line. Then reply with TUI_CONC_ALPHA_OK")
-graph_add_node(graph_id="<graph_id>", id="bravo", agent="rolebox-tester--sleeper", prompt="Count from 1 to 40, one per line. Then reply with TUI_CONC_BRAVO_OK")
-graph_add_node(graph_id="<graph_id>", id="charlie", agent="rolebox-tester--sleeper", prompt="Count from 1 to 40, one per line. Then reply with TUI_CONC_CHARLIE_OK")
-graph_add_node(graph_id="<graph_id>", id="delta", agent="rolebox-tester--sleeper", prompt="Count from 1 to 40, one per line. Then reply with TUI_CONC_DELTA_OK")
-graph_run(graph_id="<graph_id>")
-```
-
-**Step 2**: IMMEDIATELY capture slot status:
-
-```
-task_concurrency()
-graph_status(graph_id="<graph_id>", format="summary", include_concurrency=true)
-```
-
-**Step 3**: Await completions and collect results.
-
-**Pass criteria (all must be true)**:
-1. All four nodes were accepted and the graph ran.
-2. `task_concurrency()` in Step 2 shows active slots at the limit and a non-zero queue/reserved depth (at least one node waiting) — proving saturation is observable — OR the explicit documented-unavailable note when no dispatch manager is bound.
-3. `graph_status(include_concurrency=true)` reflects the same saturation state (or the same honest documented-unavailable note).
-4. All four nodes eventually complete with their OK markers.
-5. This proves the monitor has access to real-time concurrency data (active / limit / queued) sufficient to render a slot meter.
 
 ---
 
@@ -509,6 +370,64 @@ graph_status(graph_id="<graph_id>", format="json", include_metrics=true)
 4. The JSON reflects real-time state (a running/ready node), not a stale snapshot.
 5. Both nodes eventually complete with their OK markers.
 6. This proves `graph_status(format="json")` provides structured, machine-parseable real-time data suitable for monitor rendering pipelines, dashboards, or CI metrics consumption.
+
+---
+
+---
+
+### Test 178: `<graph_state>` Live Content During Activity
+
+This test verifies that the per-turn `<graph_state>` system-prompt block — rendered from the live in-memory graph registry (`src/graph/engine/graph-state-block.ts:37-95`) and injected by `src/hooks/system-transform.ts:71-74` — reflects real graph content: running node ids under `<active_nodes>`, not-yet-dispatched ids under `<pending_nodes>`, a live loop group's `traversals="n/cap"`, and a gated node under `<blocked_nodes>`. It complements Test 109's structural block-shape assertions. A `needs_approval` gate keeps the graph live across a turn boundary (`[GRAPH BLOCKED]`), so the injected block is observable while work is still in flight.
+
+**Step 1**: Build a graph with a slow running node, a downstream pending node, a bounded loop group, and a `needs_approval` root, then run it:
+
+```
+graph_create(name="graph-state-live")
+graph_add_node(graph_id="<graph_id>", id="alpha", agent="rolebox-tester--sleeper", prompt="Count slowly from 1 to 40, one per line. End with GRAPH_STATE_ALPHA_OK")
+graph_add_node(graph_id="<graph_id>", id="bravo", agent="rolebox-tester--echo", prompt="Reply GRAPH_STATE_BRAVO_OK", needs_approval=true)
+graph_add_node(graph_id="<graph_id>", id="charlie", agent="rolebox-tester--echo", prompt="Reply GRAPH_STATE_CHARLIE_OK")
+graph_add_edge(graph_id="<graph_id>", from="alpha", to="charlie", type="always")
+graph_add_node(graph_id="<graph_id>", id="loop-worker", agent="rolebox-tester--signal-revise", prompt="Draft. First pass replies with a revise_needed signal.")
+graph_add_node(graph_id="<graph_id>", id="loop-gate", agent="rolebox-tester--signal-answer", prompt="Review. Converge with an answer signal.")
+graph_add_edge(graph_id="<graph_id>", from="loop-worker", to="loop-gate", type="always")
+graph_add_edge(graph_id="<graph_id>", from="loop-gate", to="loop-worker", type="on_signal", signal_filter=["revise_needed"])
+graph_add_loop(graph_id="<graph_id>", id="spin", nodes=["loop-worker", "loop-gate"], max_traversals=3)
+graph_run(graph_id="<graph_id>")
+```
+
+**Step 2**: Await the `[GRAPH BLOCKED]` reminder (the `bravo` gate pauses the graph while `alpha` is still counting), then inspect the `<graph_state>` block in your system prompt:
+
+- The block opens with `<graph_state>` and contains one `<graph id="<graph_id>" phase="...">` element whose `<name>` is `graph-state-live`.
+- `<active_nodes>` lists the still-running node id(s) (e.g. `alpha`), CSV-separated; it renders the literal `none` only when nothing is running.
+- `<pending_nodes>` lists a not-yet-dispatched id (e.g. `charlie`, gated behind `alpha`) or the literal `none` when no pending/ready node remains.
+- `<loop_groups>` contains `<loop id="spin" traversals="n/3" />` — the cap `3` matches the declared `max_traversals=3`.
+- `<blocked_nodes>` contains `<node id="bravo" needs_approval="true">awaiting human approval</node>` (the default reason when no error reason is recorded).
+
+**Step 3**: Approve the gate so the graph can finish, then await `[GRAPH COMPLETE]`:
+
+```
+graph_approve(graph_id="<graph_id>", node_id="bravo", action="approve")
+```
+
+**Step 4**: Inspect the `<graph_state>` block once more on the terminal turn. The in-flight content has emptied — `<active_nodes>none</active_nodes>` and `<pending_nodes>none</pending_nodes>` (the renderer's `joinIds` emits `none` for an empty list, `graph-state-block.ts:33-35`), so no lingering running/pending id remains. (The whole-tag honest-empty contract — no `<graph_state>` tag at all when the live registry holds zero graphs, `:91-92` — is asserted structurally by Test 109.)
+
+**Pass criteria (all must be true)**:
+1. `graph_create` / `graph_add_node` / `graph_add_edge` / `graph_add_loop` / `graph_run` all return without error; the `spin` loop group over `["loop-worker", "loop-gate"]` (a signal-gated back-edge cycle) is accepted.
+2. On the blocked turn the `<graph_state>` block is present and contains this graph's `<graph id="<graph_id>" phase="...">`, `<name>graph-state-live</name>`, an `<active_nodes>` line, a `<pending_nodes>` line, and `<loop_groups>` with `<loop id="spin" traversals="n/3" />`.
+3. `<active_nodes>` reflects the injected snapshot faithfully — the running node id (`alpha`, still counting) while it is in flight, or the literal `none` when nothing runs — and `<pending_nodes>` lists this graph's pending/ready ids (e.g. `charlie`) or the literal `none` — never a fabricated id.
+4. `<blocked_nodes>` renders `<node id="bravo" needs_approval="true">awaiting human approval</node>` — the gated node with its approval flag and default reason.
+5. After `graph_approve(action="approve")` and completion, a subsequent `<graph_state>` block shows `<active_nodes>none</active_nodes>` and `<pending_nodes>none</pending_nodes>` — the live-activity content has emptied (no lingering running/pending id).
+6. This proves the `<graph_state>` block carries real per-turn graph content (active / pending / loop / blocked) that a monitor or orientation surface renders, not a static template.
+
+---
+
+---
+
+### Retired Tests — 101–103, 146: REMOVED (v6.0)
+
+**Tests 101–103 — Graph Concurrency Slot Occupancy / Queue Depth / Session Budget** are REMOVED in v6.0. The legacy slot-based `ConcurrencyManager` subsystem, its live slot/queue-depth surface, and the per-request/graph session budget were deleted (CHANGELOG 1.5.0 Breaking Change): the `graph_status` concurrency-flag argument is gone, the standalone concurrency-status tool has zero matches in rolebox `src/` and `tests/`, and the node/graph session-budget caps were removed. Node concurrency is now engine-managed — the graph frontier dispatches ready nodes, a loop group's hard `max_traversals` cap bounds cycles, and per-node `budget` limits resource use — so no slot/queue/session-budget surface remains to probe. Graph budget-consumption observability stays covered by Test 104 (`include_budget`) and Test 65's liveness/node-status reads.
+
+**Test 146 — Concurrency Slot Saturation** is REMOVED in v6.0 for the same reason: it asserted live active/queued slot counts that no longer exist. Live parallel-node activity stays covered by Tests 65, 143, and 149, and the loop cap by Test 178's `<graph_state>` loop-group `traversals="n/cap"`.
 
 ---
 

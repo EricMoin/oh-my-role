@@ -1,6 +1,6 @@
 name: Rolebox Tester
-description: "User-directed functional tester for rolebox. Run specific test modules on demand (e.g., node dispatch, live-graph visibility, memory, state machine, LSP) or run the full suite. Covers: skills, Graph Engine v2 imperative node dispatch (single-node/chained/parallel runs, node session continuation, node retry, output truncation, cancel), functions (parameterized/state-machine/observe-probe/signal), references, tools (bash/write/read/grep/glob/edit/hashline), permissions, MCP, todo, collaboration graphs, session tools (info/diff/fork), memory (write/recall/list/update/injection), task management (search/budget/graph/concurrency/chronology/export), asset management (search/inspect/validate/compose/hot-reload), live-graph visibility (graph_status liveness/metrics/concurrency), web/search, LSP, nested dispatch, and structured test report generation. Centered on Graph Engine v2 imperative graph_* coverage: graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop termination + mode, node/graph budgets, node liveness, signal-emitting subagents (signal-answer / signal-revise / signal-escalate / signal-approve) exercising the signal-bridge terminating and pausing signal vocabulary end to end, plus an interactive_terminal smoke test."
-version: "5.0.0"
+description: "User-directed functional tester for rolebox. Run specific test modules on demand (e.g., node dispatch, live-graph visibility, memory, state machine, LSP) or run the full suite. Covers: skills, Graph Engine v2 imperative node dispatch (single-node/chained/parallel runs, node session continuation, node retry, output truncation, cancel), functions (parameterized/state-machine/observe-probe/signal), references, tools (bash/write/read/grep/glob/edit/hashline), permissions, MCP, todo, session tools (info/diff/fork), memory (write/recall/list/update/injection), task management (search/budget/graph/chronology/export), asset management (search/inspect/validate/compose/hot-reload), live-graph visibility (graph_status liveness/metrics, pending_approvals gates), web/search, LSP, nested dispatch, and structured test report generation. Centered on Graph Engine v2 imperative graph_* coverage: graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop mode, node/graph budgets, escalate-retry with backoff_ms, graph-validation rejection, node liveness, the <graph_state> introspection block, signal-emitting subagents (signal-answer / signal-revise / signal-escalate / signal-approve) exercising the signal-bridge terminating and pausing signal vocabulary end to end, plus an interactive_terminal smoke test."
+version: "6.0.0"
 model: provider/tier-3-fast
 mode: primary
 prompt_file: PROMPT.md
@@ -71,20 +71,6 @@ subagents:
     description: Signal-emitting graph agent that always terminates via signal(type="need_approval") with a fixed APPROVAL_GATE_OK summary payload
     prompt_file: subagents/signal-approve/prompt.md
 
-
-
-
-collaboration:
-  topology: pipeline
-  agents: [processor, checker, validator]
-  max_iterations: 2
-  termination:
-    any_of:
-      - max_iterations: 2
-      - result_matches:
-          agent: validator
-          contains: "VALIDATED"
-
 memory:
   inject: true
   max_inject: 10
@@ -92,10 +78,11 @@ memory:
   scope: both
 
 dispatch:
-  maxConcurrent: 2147483647
-  maxQueueDepth: 2147483647
-  maxActivePerParent: 2147483647
-  syncReservedSlots: 1
+  backgroundStaleTimeoutMs: 900000
+  syncPromptTimeoutMs: 600000
+
+graph:
+  orchestration: graph_v2
 
 auto_activate:
   - test-all
