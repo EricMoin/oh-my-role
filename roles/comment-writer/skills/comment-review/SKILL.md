@@ -7,39 +7,30 @@ description: Audit and fix existing code comments — detect noise, stale, and m
 
 ## 1. Detection Checklist
 
-Noise comments that restate the code:
-- Comment says what the code already shows. `i += 1  # increment i` — delete.
-- Comment repeats the function name. `# parse input` above `parse_input()` — delete.
-- Comment describes obvious control flow. `# loop over users` above a `for` loop — delete.
+A comment fails review when it fails the kill test in comment-style section 1: delete it and ask whether a competent reader loses something the code and its names cannot recover.
 
 Stale / lying comments (verify each claim against the code):
 - Comment claims behavior the code no longer has. Treat every comment as a claim and check it.
 - Comment contradicts the line below it. The comment is wrong, not the code.
-- `# returns milliseconds` when the code returns seconds — fix or delete.
 - Suspect staleness → `git blame <file>`: date the comment against the code line it annotates.
 
-Jargon / buzzword comments:
-- "leverage", "synergy", "robust solution", "modern approach". Plain words or delete.
-
-AI-slop patterns (hedging, filler, pleasantries):
-- Hedging: "attempt to", "try to", "potentially". State it or delete it.
-- Filler: "Note that", "It is worth mentioning that", "This is important because". Delete.
-- Pleasantries: "Nice work here", "Careful!". Delete.
-- Over-explaining the obvious in full sentences. Cut to the why or delete.
-
-Over-commented trivial code:
-- Every line carries a comment. Keep only the non-obvious why, drop the rest.
-- Comment on a self-evident expression. `# sum the totals` above `total += x` — delete.
-
-MISSING comments on non-obvious why:
-- Magic values, workarounds, ordering constraints, platform quirks — why comment required.
-- Inverted logic, non-obvious branch, seemingly dead code — why comment required.
+MISSING why on non-obvious code:
+- Magic values, workarounds, ordering constraints, platform quirks, inverted logic — why comment required.
 - A fix that looks wrong at first glance (offsets, off-by-one, negative checks) — why comment required.
+
+Comment forests and commented-out code:
+- Every line carries a comment, or a banner restates a signature. Keep only the non-obvious why.
+- Commented-out code with no dated reason and no owner. Delete; a dated, owned `// dead since v1.2 — zhang` stays.
+
+Jargon / buzzwords, AI-slop hedging and filler:
+- "leverage", "synergy", "robust solution", "modern approach". Plain words or delete.
+- Hedging: "attempt to", "try to", "potentially". Filler: "Note that", "This is important because". Delete.
+- Pleasantries ("Nice work here", "Careful!") and full-sentence restatements of the obvious. Delete.
 
 ## 2. Audit Workflow
 
 1. Read the code first. Never audit comments without the code they annotate.
-2. Treat each comment as a claim. Verify it line-by-line against the code.
+2. Apply the kill test to each comment: delete it and check whether something unrecoverable is lost.
 3. Staleness suspected → `git blame <file>` before judging.
 4. Report findings (one line each, per contract below), then fix. Never fix silently.
 5. Fix in place. Comments-only diff — code is untouchable during this pass.
@@ -52,9 +43,9 @@ One line per finding, sorted by file:
 
 - No filler prose. No hedging ("maybe", "I think", "could be"). No preamble, no summary.
 - Example:
-  `src/parser.js:42 — comment restates code — delete`
   `src/parser.js:88 — stale: claims ms, code returns s — fix to match`
   `src/auth.js:17 — missing: magic 86400 — add why comment`
+  `src/util.js:7 — buzzword ("robust solution") — delete`
 
 ## 4. Rewrite Rules
 
@@ -66,19 +57,17 @@ One line per finding, sorted by file:
 ## 5. Example Findings
 
 English:
-- ❌ `src/app.js:5 — comment restates code ("increment the counter") — delete`
-- ✅ `src/app.js:11 — comment captures ordering constraint ("must run before flush") — keep`
-- ❌ `src/load.js:3 — hedging ("attempt to load config") — delete`
-- ✅ `src/load.js:9 — comment explains why twice ("loaded at boot and on signal") — keep`
-- ❌ `src/api.js:22 — stale: claims ms, code returns s — fix to match`
+- ❌ `src/parser.js:88 — stale: claims ms, code returns s — fix to match`
+- ✅ `src/queue.js:11 — ordering constraint, still load-bearing — keep`
 - ❌ `src/util.js:7 — buzzword ("leverage the robust framework API") — delete`
-- ❌ `src/main.js:1 — missing: magic 86400 — add why comment`
+- ❌ `src/load.js:3 — hedging ("attempt to load config") — delete`
+- ❌ `src/auth.js:17 — missing: magic 86400 — add why comment`
+- ❌ `src/tokens.js:56 — forest: a comment on every line of check_token — cut to the one why`
 
 中文:
-- ❌ `src/app.js:5 — 复述代码（“计数器加一”）— 删除`
-- ✅ `src/app.js:11 — 记录了顺序约束（“必须先于 flush 执行”）— 保留`
-- ❌ `src/load.js:3 — 含糊表述（“尝试加载配置”）— 删除`
-- ✅ `src/load.js:9 — 解释了为何加载两次（“启动一次，收到信号一次”）— 保留`
-- ❌ `src/api.js:22 — 过期注释：声称毫秒，代码返回秒 — 改为与代码一致`
+- ❌ `src/parser.js:88 — 过期注释：声称毫秒，代码返回秒 — 改为与代码一致`
+- ✅ `src/queue.js:11 — 顺序约束仍在注释里，删掉就会丢 — 保留`
 - ❌ `src/util.js:7 — 空话（“利用健壮的框架 API”）— 删除`
-- ❌ `src/main.js:1 — 缺少注释：魔法值 86400 — 补充 why 注释`
+- ❌ `src/load.js:3 — 含糊表述（“尝试加载配置”）— 删除`
+- ❌ `src/auth.js:17 — 缺少注释：魔法值 86400 — 补充 why 注释`
+- ❌ `src/tokens.js:56 — 注释成林：check_token 每行都有注释 — 只留那一条 why`
