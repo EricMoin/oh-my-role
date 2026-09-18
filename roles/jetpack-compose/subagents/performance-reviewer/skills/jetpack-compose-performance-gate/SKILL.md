@@ -17,7 +17,7 @@ This gate is critical when the change modifies UI that appears in a list, animat
 - Optional: Compose compiler reports from `build/compose_compiler/reports/`, Layout Inspector captures, Macrobenchmark AMI output, or memory profiler snapshots.
 - Reference documents: `references/compose-performance-and-platform.md` for stability tooling, compiler reports, Macrobenchmark setup, Baseline Profile generation, startup optimization, image/memory management, and platform lifecycle integration; `references/schemas.md` for the gate report contract.
 
-## Required Checks
+## Applicable Checks
 
 - State is read at the correct composable scope. A state read in a parent composable recomposes the entire subtree. State reads must be as low in the composable tree as possible, ideally inside the leaf composable that displays the value.
 - Lambda arguments passed to composables are wrapped in `remember {}` to preserve the parent composable's stability. Unstable lambdas are the most common cause of unexpected recomposition — every callback parameter should be checked.
@@ -34,13 +34,13 @@ This gate is critical when the change modifies UI that appears in a list, animat
 
 ## Pass Criteria
 
-- **Pass**: All required checks pass. No stability regressions, recomposition storms, or missing optimization opportunities in the critical path. Benchmark evidence supports any performance claims.
+- **Pass**: All applicable checks pass. No stability regressions, recomposition storms, or missing optimization opportunities in the critical path. Benchmark evidence supports any performance claims.
 - **Fail**: Blocking issues found: recomposition storm in a user-visible composable, stability regression (previously skippable composable became non-skippable), missing Baseline Profile that causes startup regression, or performance claim made without supporting evidence.
-- **Conditional Pass**: Minor optimization opportunities exist (unused compiler report generation, suboptimal lazy list item sizing, missing `contentType` for heterogeneous lists) but no measurable user-facing regression is expected.
+- **Pass with advisory notes**: Minor optimization opportunities exist (unused compiler report generation, suboptimal lazy list item sizing, missing `contentType` for heterogeneous lists) but no measurable user-facing regression is expected.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
 
 ```yaml
 gate: performance

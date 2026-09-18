@@ -1,41 +1,27 @@
 ---
 name: jetpack-compose-engineering-gate
-description: Build a Jetpack Compose Engineering State and route non-trivial work through architecture, UI/layout/accessibility, test-quality, performance, or source-tracing gates. Use when starting broad feature work, significant refactors, platform changes, performance optimization rounds, or source-sensitivity tasks on Android Compose projects.
+description: Design and verify consequential Compose changes using invariants, ownership, encapsulation, and targeted specialist evidence. Use for shared behavior, lifecycle changes, or significant architecture and platform risks.
 ---
-# Jetpack Compose Engineering Gate
+# Compose engineering judgment
 
-## Purpose
+Read `PROMPT.md` for the design and encapsulation policy and `references/schemas.md`
+for the concise design brief. Read `references/graph-protocol.md` only when independent
+specialist review is useful. Work directly on ordinary bounded changes.
 
-Use this skill to keep larger Android/Compose work deliberate without slowing down small edits. It creates a shared Engineering State, selects specialist gates, and records verification requirements.
+Before implementation, trace the affected behavior across its callers and owners. State
+invariants and lifecycle responsibilities. Compare alternatives only where the decision
+is consequential; choose the least complex coherent solution. An abstraction needs a
+production responsibility, not a checklist or a desire to unit-test a private helper.
 
-## Load References
+Choose verification by plausible regressions and observable contracts. Keep private
+members private. Tests may motivate discovery of a misplaced responsibility, but do not
+justify visibility widening or a test-only wrapper. Inspect the resulting call chain and
+remove obsolete mechanisms after replacing a design.
 
-- For state shape, read `references/schemas.md`.
-- For gate reports, read `references/schemas.md`.
-- For gate-specific checks, read the relevant reference in `references/`:
-  - Architecture: `references/compose-architecture.md`
-  - UI/Layout/Accessibility: `references/compose-ui-and-accessibility.md`
-  - Test Quality: `references/compose-testing-and-quality.md`
-  - Performance: `references/compose-performance-and-platform.md`
-  - Source Tracing: `references/source-research.md` and `references/evidence-first-research.md`
-- Symptom → skill routing: see the Quick Routing index in the `compose-idiomatic-style` skill.
+An early consultation resolves a named uncertainty. Acceptance review requires an actual
+diff and recorded check results. Independent reviewers inspect the same stable snapshot;
+the lead integrates findings and owns the final decision. Require concrete failure
+mechanisms for blocking findings; do not obey unsupported pattern prescriptions.
 
-## Workflow
-
-- [ ] Decide whether the task is trivial. If it is a small focused edit with low blast radius, use the relevant skill and stay on the lightweight path — no Engineering State, no gate nodes.
-- [ ] For non-trivial work, inspect project facts: `build.gradle.kts`, version catalogs, Compose BOM, module layout, architecture style (MVVM/MVI/UDF), DI approach (Hilt/Koin), navigation structure, testing conventions, and CI configuration.
-- [ ] Create or update the Jetpack Compose Engineering State.
-- [ ] Author one graph node per required gate on the graph engine (graph_create → graph_add_node → graph_add_edge → graph_add_loop → graph_run, per PROMPT.md §4), for the risk domains touched:
-  - Architecture: ViewModel boundaries, state ownership, DI, module organization, navigation, or data layer.
-  - UI/Layout/Accessibility: screens, composable layouts, Material 3 theming, Modifier chains, adaptive behavior, Semantics, or form interactions.
-  - Test Quality: test pyramid, composeTestRule selection, semantics assertions, screenshot tests, ViewModel test coverage, or CI verification.
-  - Performance: recomposition stability, compiler reports, Lazy layout optimization, Macrobenchmark, Baseline Profiles, or startup/memory.
-  - Source Tracing: AOSP/AndroidX source verification, undocumented API behavior, version-specific differences, or documentation accuracy.
-- [ ] If a gate fails, revise the design or implementation plan before proceeding.
-- [ ] Finalize with the verification commands that fit the project (e.g., `./gradlew :app:testDebugUnitTest`, `./gradlew :app:connectedCheck`).
-
-## Gate Status Rules
-
-- `pass`: implementation can proceed or final answer can ship.
-- `fail`: a correctness, maintainability, platform, accessibility, or verification issue must be fixed first.
-- `needs-user-input`: product intent or platform/release facts are missing and cannot be discovered locally.
+Stop repeating a failed approach when evidence does not improve. Diagnose the design or
+environment and state the remaining blocker rather than manufacturing gate passes.

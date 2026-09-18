@@ -17,7 +17,7 @@ This gate is a novel capability unique to the Android Compose role. When officia
 - Code diff referencing APIs whose behavior is under question.
 - Reference documents: `references/source-research.md` for the evidence hierarchy, AndroidX monorepo navigation guide, cs.android.com navigation guide, and citation format; `references/evidence-first-research.md` for citation discipline and escalation rules; `references/schemas.md` for the gate report contract.
 
-## Required Checks
+## Applicable Checks
 
 - Identify the exact source file and line number in AOSP or AndroidX that governs the API behavior in question. Use the repository tag or branch matching the project's resolved dependency version (e.g., `androidx.compose-1.6.0` for Compose 1.6.0, `androidx.lifecycle-2.8.0` for Lifecycle 2.8.0).
 - Trace the call chain from the public API entrypoint to the internal implementation. Note key delegation points, compatibility wrappers (`ApiHelpers`, `ViewCompat`, `*Impl` classes), and any platform version checks (`Build.VERSION.SDK_INT >= ...`) that branch the behavior.
@@ -33,11 +33,11 @@ This gate is a novel capability unique to the Android Compose role. When officia
 
 - **Pass**: All behavioral claims are verified against authoritative source with full citations (repository, tag, file, line). Documentation gaps are noted in advisory_notes. No assumptions are presented as verified facts. Citations follow the required format.
 - **Fail**: Claims are contradicted by source inspection but not corrected in the report. Source is claimed without a verifiable citation (missing file/line/tag). An assumption is presented as a verified fact. No reproducible experiment was conducted when source and docs disagree.
-- **Conditional Pass**: Source is located but some behavior remains ambiguous (e.g., the code branches based on a runtime flag not present in the project configuration). A reproducible experiment is designed or recommended in advisory_notes to resolve the ambiguity.
+- **Pass with advisory notes**: Source is located but some behavior remains ambiguous (e.g., the code branches based on a runtime flag not present in the project configuration). A reproducible experiment is designed or recommended in advisory_notes to resolve the ambiguity.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
 
 ```yaml
 gate: source-tracing

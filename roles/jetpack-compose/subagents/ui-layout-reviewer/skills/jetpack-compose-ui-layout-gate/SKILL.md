@@ -17,7 +17,7 @@ This gate is critical when the change creates new screens or composables, modifi
 - Optional: Accessibility Scanner output, Layout Inspector frame capture, or design mockup for visual comparison.
 - Reference documents: `references/compose-ui-and-accessibility.md` for theming patterns, modifier ordering rules, adaptive layout strategies, and accessibility guidelines; `references/schemas.md` for the gate report contract.
 
-## Required Checks
+## Applicable Checks
 
 - ColorScheme, Typography, and Shapes are sourced from the project's MaterialTheme — no hardcoded color values (Color(0xFF...)), hardcoded font sizes, or raw shape radii in composable code.
 - Modifier chain ordering produces the correct interaction and layout behavior. Common mistakes: padding applied after clickable reduces the touch target; clip applied before size clips to wrong bounds; background applied inside padding leaves gaps around the background.
@@ -32,13 +32,13 @@ This gate is critical when the change creates new screens or composables, modifi
 
 ## Pass Criteria
 
-- **Pass**: All required checks pass. The UI renders correctly on reference screen sizes. Accessibility scans show no violations. Theming is consistent with project conventions.
+- **Pass**: All applicable checks pass. The UI renders correctly on reference screen sizes. Accessibility scans show no violations. Theming is consistent with project conventions.
 - **Fail**: One or more blocking issues found — accessibility violations (missing semantics, insufficient touch targets), layout overflow or constraint errors, broken theming inconsistency, or missing adaptive support for a required device configuration.
-- **Conditional Pass**: Layout and theming are correct but minor improvements are available (additional @Preview annotations, more granular WindowSizeClass breakpoints, additional accessibility hints).
+- **Pass with advisory notes**: Layout and theming are correct but minor improvements are available (additional @Preview annotations, more granular WindowSizeClass breakpoints, additional accessibility hints).
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
 
 ```yaml
 gate: ui-layout

@@ -6,6 +6,16 @@ description: Applies Android Compose UI architecture with ViewModel, StateFlow, 
 
 Compose architecture should make state flow obvious, keep rendering declarative, and isolate Android/platform effects from business rules.
 
+## Design boundary
+
+Trace behavior, callers, state ownership and lifetimes before choosing layers. The shapes
+below are examples, not requirements to add a ViewModel, use case, or state holder. Keep
+private implementation details private. Extract a collaborator only for a meaningful
+production responsibility, never solely to expose a helper to tests. Choose its visibility
+from real production consumers. Shared screen state and form values belong with the owner
+whose lifetime and business responsibilities require them; there is no universal
+one-ViewModel-per-screen or UI-field prohibition.
+
 ## Recommended Shape
 
 Use unidirectional data flow for screens:

@@ -1,3 +1,7 @@
+> Apply these examples in context. Review actual ownership, lifecycle and dependency
+> contracts; layer counts, naming patterns and file lengths are not acceptance criteria.
+> Test access alone never justifies expanding a private production API.
+
 # Compose Architecture Patterns
 
 This reference covers the architectural patterns, ViewModel conventions, DI strategies, and module organization practices idiomatic to Jetpack Compose and modern Android development.
@@ -180,8 +184,8 @@ Transport DTOs model the API wire format. Domain models model business logic. UI
 | **Event replay / one-shot events not consumed** — `SharedFlow`/`Channel` events re-delivered on recomposition or never consumed | `val events: SharedFlow<OneShotEvent> = _events` collected in composable — fires again on recomposition | Use `Channel` (consume exactly once) or `SnapshotFlow`-based approach. Consume events in a `LaunchedEffect` with a sentinel, not in the composition tree. |
 | **ViewModel holding Context / resources** | `class MyViewModel(val context: Context) : ViewModel()` | Inject `Application` (not `Context`) via `AndroidViewModel`, or inject domain-level dependencies (Repository, DataStore). Resource strings belong in Compose. |
 | **God UiState** — single data class with 20+ fields for an entire screen | `data class HomeUiState(val posts: List<Post>, val filter: Filter, val user: User, val cart: Cart, val loading: Boolean, …)` | Split by sub-screen or widget: `FeedSection`, `FilterSection`, `UserSection`. Nest sections within the screen state only when they share load/error transitions. |
-| **Skipping domain layer — calling data source directly from ViewModel** | `class PostViewModel(repo: PostRepository) : ViewModel()` where `PostRepository` is actually `PostApiImpl` doing raw HTTP | Always have a `domain` package: `PostViewModel(domain: GetPostsUseCase)`. UseCase orchestrates Repository. Keeps data source swappable and ViewModel testable. |
-| **ViewModel holding `TextField` values** | `_uiState.update { it.copy(email = newEmail) }` on every keystroke | Use Compose local state (`var email by remember { mutableStateOf("") }`) for pure UI state. Report to ViewModel only on submit / validation. |
+| **Skipping domain layer — calling data source directly from ViewModel** | `class PostViewModel(repo: PostRepository) : ViewModel()` where `PostRepository` is actually `PostApiImpl` doing raw HTTP | Introduce a use case only when it owns meaningful domain orchestration. A ViewModel may use an existing repository directly; an extra layer solely for testability adds no responsibility. |
+| **ViewModel holding `TextField` values** | `_uiState.update { it.copy(email = newEmail) }` on every keystroke | Choose ownership from validation, persistence, and business behavior. Local-only editing may stay in Compose; screen business state may belong in the ViewModel. |
 | **Flow collection without lifecycle awareness** | `val state by viewModel.uiState.collectAsState()` | Use `collectAsStateWithLifecycle()` from `lifecycle-runtime-compose`. Pauses collection when lifecycle is stopped — saves resources. |
 | **Giant `NavHost` single file (>300 lines)** | All route declarations, navigation logic, and argument parsing in one `NavHost { }` block | Split by feature: `fun NavGraphBuilder.authNavGraph()`, `NavGraphBuilder.profileNavGraph()`. Each feature owns its routes. |
 | **Sharing ViewModel across screens** | Two screens both instantiate or share `SharedViewModel` directly | Share a **Repository** scoped to the parent NavBackStackEntry. Each screen gets its own ViewModel and reads from the shared data source. |

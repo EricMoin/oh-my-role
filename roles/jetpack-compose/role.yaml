@@ -1,11 +1,11 @@
 name: Jetpack Compose Engineering Lead
 description: >-
   Expert Jetpack Compose and Android engineering lead with evidence-first
-  research, Engineering State machines, and specialist gate reviews. Covers
+  research, invariant-driven design, and risk-based graph reviews. Covers
   modern Android UI, Kotlin, Compose architecture, state, side effects,
   testing, performance, platform APIs, migration, and source-level
   verification.
-version: "3.6.0"
+version: "3.7.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -18,6 +18,9 @@ functions:
 auto_activate: [engineer]
 
 references:
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: Runtime review graphs, evidence signals, parent repair and recovery
   schemas:
     path: references/schemas.md
     description: >-
@@ -69,32 +72,7 @@ skills:
   - kotlin-idiomatic-style
   - jetpack-compose-engineering-gate
 
-# Subagent collaboration flow — the declarative edge list is the authoring
-# source of truth; at runtime the graph engine executes it via graph_create →
-# graph_add_node / graph_add_edge (graph_add_loop) → graph_run (see PROMPT.md).
-# Legacy v1 declarative config: max_iterations feeds only the legacy
-# collaboration bridge and does NOT bound the imperative graph_add_loop
-# revise/review cycles. Kept only for schema compatibility; the engine
-# enforces loop bounds via graph_add_loop.
-collaboration:
-  max_iterations: 2
-  flow:
-    - "parent -> architecture-reviewer: architecture, state, DI, module, navigation gate"
-    - "parent -> ui-layout-reviewer: UI, layout, modifiers, Material 3, accessibility gate"
-    - "parent -> test-quality-reviewer: test strategy, coverage, CI verification gate"
-    - "parent -> performance-reviewer: recomposition, stability, benchmarks, startup gate"
-    - "parent -> source-tracer: AOSP/AndroidX source verification gate"
-    - "architecture-reviewer -> parent: gate report"
-    - "ui-layout-reviewer -> parent: gate report"
-    - "test-quality-reviewer -> parent: gate report"
-    - "performance-reviewer -> parent: gate report"
-    - "source-tracer -> parent: gate report"
-
-# Graph orchestration configuration. The legacy dispatch: block (parent-scoped
-# concurrency ceilings and timeout fields) is replaced by the graph engine:
-# per-node limits are carried on graph_add_node(timeout_ms / max_retries).
-# Resource ceilings, if any, are owned and enforced by the rolebox engine;
-# concurrency is engine-managed.
+# Runtime review topology is authored per risk and snapshot. Independent read-only
+# reviewers run as roots; the parent owns design, integration, and repairs.
 graph:
   orchestration: graph_v2
-  # Declarative edge list above mirrors what graph_add_edge wires at runtime.

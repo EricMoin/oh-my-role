@@ -6,6 +6,19 @@ description: Adds and reviews Compose previews, UI tests, semantics assertions, 
 
 Compose testing should verify behavior through state, semantics, and user actions. Previews should make important UI states easy to inspect without running the full app.
 
+## Preserve production boundaries
+
+Keep private helpers private. Do not widen to internal/public, add test-only accessors,
+use reflection, or add `@VisibleForTesting` solely to call implementation details. Exercise
+existing production entry points and observable state, outputs, semantics or effects.
+If testing is awkward, distinguish implementation-coupled tests from misplaced
+responsibility. Extract only a cohesive production responsibility with its own meaningful
+contract; record why it belongs there and keep the narrowest production visibility.
+Do not create wrappers or interfaces that exist only to let a test reach a helper.
+
+Select checks by plausible regressions. No mandatory test ratios, per-composable quotas,
+screenshot tooling, or Flow assertion library. Respect actual project requirements.
+
 ## Test Pyramid
 
 - Unit tests: reducers, mappers, validators, use cases, repositories with fakes, ViewModel state transitions.
@@ -77,7 +90,7 @@ Prefer content descriptions, text, roles, state descriptions, and test tags only
 ## ViewModel Tests
 
 - Use coroutine test dispatchers and deterministic fake repositories.
-- Assert state sequences, not timing-dependent implementation details.
+- Assert observable state/effects. Assert sequences only when ordering is part of the contract; avoid timing-dependent implementation details.
 - Cover loading, success, failure, cancellation, retry, and stale data cases.
 - Keep Android framework dependencies out of ViewModel tests when possible.
 
@@ -105,7 +118,7 @@ If the project does not have screenshot tooling, do not introduce it for a small
 ## Workflow
 
 1. Inspect existing test frameworks, rules, fake patterns, and naming.
-2. Split route/content composables if needed to make UI testable and previewable.
+2. Use the existing production boundary; split route/content only when it improves responsibility separation, not merely test access.
 3. Add previews for relevant UI states.
 4. Add unit tests for state/business logic and Compose UI tests for user-visible behavior.
 5. Use instrumented or screenshot tests only where they answer a risk that unit/UI tests cannot.

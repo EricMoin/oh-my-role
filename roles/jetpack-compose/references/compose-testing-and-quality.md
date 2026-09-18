@@ -4,21 +4,24 @@ Comprehensive reference for Compose UI testing strategy, test rule selection, se
 
 ---
 
-## 1. Test Pyramid for Compose
+## 1. Behavior and encapsulation
 
-- **Unit tests** (60-70%): Pure Kotlin. ViewModel with Turbine for StateFlow assertions. No Compose dependency.
-- **Compose UI tests** (20-30%): `createComposeRule`, semantic assertions on composable output.
-- **Screenshot tests** (5-10%): Visual regression on key screens and design system components.
-- **Integration tests** (5-10%): Full app flows with `createAndroidComposeRule` on emulator/device.
+Choose test levels from the failure being checked. Unit tests fit deterministic logic,
+UI tests fit interactions/semantics, device tests fit real platform behavior, and
+screenshots fit meaningful visual regression risks. There is no required ratio or
+per-function quota. Use the existing stack and actual project coverage requirements.
 
----
+Private helpers stay private. Exercise them through their production owner. Do not widen
+visibility, add test hooks, or reflect into internals merely for tests. Extraction must
+create a meaningful production responsibility; use the narrowest visibility its real
+consumers need. Previews and coverage numbers do not replace behavioral assertions.
 
 ## 2. ComposeTestRule Selection
 
 | Rule | When to Use |
 |------|-------------|
-| `createComposeRule()` | Pure Compose UI — no Android dependency. Runs on JVM. |
-| `createAndroidComposeRule<ComponentActivity>()` | Tests needing Android context, resources, or lifecycle. |
+| `createComposeRule()` | Tests needing a Compose host without direct Activity access; execution environment depends on the configured Android/device or supported JVM test setup. |
+| `createAndroidComposeRule<ComponentActivity>()` | Tests needing explicit access to/control of the chosen Activity; follow the configured test host. |
 
 ```kotlin
 // Pure Compose test
@@ -165,4 +168,4 @@ fun UserCardTabletPreview() = AppTheme { UserCard(user = sampleUser) }
 - `./gradlew :app:lintDebug` — zero warnings
 - `./gradlew :app:testDebugUnitTest` — all green
 - `./gradlew :app:connectedDebugAndroidTest` — all green
-- Coverage threshold (optional): ≥80% line coverage
+- Coverage threshold: use the project’s configured requirement, if any; do not invent a percentage.

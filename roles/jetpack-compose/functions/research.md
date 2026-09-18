@@ -104,7 +104,7 @@ Per the evidence-first research discipline (`references/evidence-first-research.
 
 ## (d) Escalation Rules
 
-**When to stop and escalate to the user** instead of proceeding with uncertain findings:
+**When to investigate further or record an unresolved claim** before relying on it:
 
 1. **No documentation exists.** Context7 has no entry AND WebFetch returns no relevant docs across all six channels.
 
@@ -125,7 +125,7 @@ Finding: {what was found or not found}
 Recommendation: {suggested next step for the user — e.g., file an issue, check a specific GitHub discussion, test on a physical device, file a bug on issuetracker.google.com}
 ```
 
-When you escalate, do NOT proceed with the task. Present the findings and wait for user guidance.
+Resolve discoverable uncertainty using the resolved source version or a focused experiment. If a required claim remains unverified, stop only work depending on it, state the limitation, and continue independent work. Ask the user only for missing intent, authorization, or environment access they must provide; missing documentation alone is not a reason to restart intake or request permission.
 
 ---
 
