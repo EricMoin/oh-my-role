@@ -4,111 +4,130 @@ url: https://github.com/EricMoin/oh-my-role
 roles:
   apk-reverse-engineer:
     version: "1.0.0"
-    description: Android reverse-engineering specialist — decompiles and analyzes
-      Android apps, extracts APIs, audits security, and runs Frida dynamic analysis.
-      Lawful-use gated.
-    tags: [android, reverse-engineering, apk, decompilation, frida, security, mobile]
+    description: Android reverse-engineering specialist — decompiles and 
+      analyzes Android apps, extracts APIs, audits security, and runs Frida 
+      dynamic analysis. Lawful-use gated.
+    tags: [android, reverse-engineering, apk, decompilation, frida, security, 
+        mobile]
   software-architecture:
     version: "2.2.0"
-    description: Software architecture orchestrator — coordinates specialist
-      subagents for design, review, ADRs, migration plans, and
+    description: Software architecture orchestrator — coordinates specialist 
+      subagents for design, review, ADRs, migration plans, and 
       architecture-shaping implementation
     tags: [architecture, design, planning, adr, migration, subagents]
   react-frontend:
     version: "2.0.0"
-    description: React/Next.js frontend developer — builds UIs with TypeScript
-      and Tailwind, plus TanStack Query data fetching, distinctive design,
+    description: React/Next.js frontend developer — builds UIs with TypeScript 
+      and Tailwind, plus TanStack Query data fetching, distinctive design, 
       accessibility, TDD, and systematic debugging
-    tags: [react, frontend, typescript, tailwindcss, data-fetching, accessibility,
-      testing, debugging]
+    tags: [react, frontend, typescript, tailwindcss, data-fetching, 
+        accessibility, testing, debugging]
   ai-designer:
     version: "3.1.0"
-    description: AI Design Director — tiered-routing design director with
+    description: AI Design Director — tiered-routing design director with 
       artifact-first output and severity-layered quality gates
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"
-    description: OSS research and adoption advisor — discovers, source-traces,
+    description: OSS research and adoption advisor — discovers, source-traces, 
       audits, compares, and recommends open-source implementations
     tags: [oss, research, github, architecture, adoption]
   supersearch:
     version: "1.5.1"
-    description: Aggressive evidence-backed search agent — migrates to rolebox
-      unified tools (web_fetch multi-engine, web_search multi-source,
-      reference_search, LSP), with anti-crawl fallback chain and
-      default-escalation custom scraping capability — searches local files, code, web,
-      GitHub, official docs, sessions, and visual/document sources
+    description: Aggressive evidence-backed search agent — migrates to rolebox 
+      unified tools (web_fetch multi-engine, web_search multi-source, 
+      reference_search, LSP), with anti-crawl fallback chain and 
+      default-escalation custom scraping capability — searches local files, 
+      code, web, GitHub, official docs, sessions, and visual/document sources
     tags: [search, research, web, github, docs, evidence]
   tauri:
     version: "1.0.0"
-    description: Tauri desktop app developer — builds cross-platform apps with
+    description: Tauri desktop app developer — builds cross-platform apps with 
       Rust and web tech
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
     version: "3.1.0"
-    description: Dart/Flutter engineering lead with evidence-first research,
-      engineering state machines, and specialist gate reviews — builds, tests,
+    description: Dart/Flutter engineering lead with evidence-first research, 
+      engineering state machines, and specialist gate reviews — builds, tests, 
       profiles, and ships cross-platform Flutter and Dart applications
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
     version: "3.6.0"
-    description: Jetpack Compose Engineering Lead with evidence-first research,
-      engineering state machines, graph-execution-engine gate orchestration,
-      specialist gate reviews, AOSP/AndroidX source tracing, and idiomatic
+    description: Jetpack Compose Engineering Lead with evidence-first research, 
+      engineering state machines, graph-execution-engine gate orchestration, 
+      specialist gate reviews, AOSP/AndroidX source tracing, and idiomatic 
       Compose guidance — builds, tests, profiles, and ships Android applications
-    tags: [android, kotlin, jetpack-compose, compose, mobile, research, source-tracing]
+    tags: [android, kotlin, jetpack-compose, compose, mobile, research, 
+        source-tracing]
   emperor:
     version: "2.10.0"
-    description:
-      "Top-level orchestrator — classifies user requests, dispatches to
+    description: "Top-level orchestrator — classifies user requests, dispatches to
       planner/executor subtrees, synthesizes results with closed-loop validation"
     tags: [orchestrator, triage, dispatch, planner, executor, subagents]
   role-creator:
     version: "0.3.0"
-    description: Meta-role that interviews the user, generates a new rolebox
-      role (3 templates), and verifies it with a 4-tier mechanism (structural →
-      resolution-sim → deploy-health → behavioral eval). Graph-engine-v2
-      aware — bounded revise/review cycles run via graph_add_loop — with
+    description: Meta-role that interviews the user, generates a new rolebox 
+      role (3 templates), and verifies it with a 4-tier mechanism (structural → 
+      resolution-sim → deploy-health → behavioral eval). Graph-engine-v2 aware —
+      bounded revise/review cycles run via graph_add_loop — with 
       deploy-to-harness capability.
     tags: [meta, role-creation, verification, scaffolding]
   rolebox-tester:
     version: "6.0.0"
-    description: Comprehensive functional tester for rolebox features.
-      Executes a full test suite (167 tests, sharded across per-module runner
-      sub-roles) covering skills, Graph Engine v2 imperative dispatch,
-      functions, references, tools, hashline, permissions, MCP, sessions,
-      memory, task management, asset management, live-graph visibility
-      (<graph_state>, pending_approvals), LSP, nested dispatch, signal
-      architecture, and structured test report generation.
-    tags: [testing, qa, graph-engine, dispatch, hashline, lsp, sessions, memory, permissions, signal]
+    description: Comprehensive functional tester for rolebox features. Executes 
+      a full test suite (167 tests, sharded across per-module runner sub-roles) 
+      covering skills, Graph Engine v2 imperative dispatch, functions, 
+      references, tools, hashline, permissions, MCP, sessions, memory, task 
+      management, asset management, live-graph visibility (<graph_state>, 
+      pending_approvals), LSP, nested dispatch, signal architecture, and 
+      structured test report generation.
+    tags: [testing, qa, graph-engine, dispatch, hashline, lsp, sessions, memory, 
+        permissions, signal]
   teacher:
     version: "1.0.0"
-    description: On-demand programming mentor — answers conceptual questions,
-      recommends idiomatic patterns, critiques code with severity levels, and
+    description: On-demand programming mentor — answers conceptual questions, 
+      recommends idiomatic patterns, critiques code with severity levels, and 
       traces library internals via evidence-first research
     tags: [mentor, teaching, code-review, research, patterns]
   git-master:
     version: "1.1.0"
-    description: Expert Git version control operations specialist — covers working
-      tree, commits, branches, merging, rebasing, stash, tags, history, undo,
-      cherry-pick, remotes, submodules, worktrees, and conflict resolution
+    description: Expert Git version control operations specialist — covers 
+      working tree, commits, branches, merging, rebasing, stash, tags, history, 
+      undo, cherry-pick, remotes, submodules, worktrees, and conflict resolution
     tags: [git, version-control, vcs, branches, merging, rebasing, stash]
   rust-engineer:
     version: "2.0.1"
-    description: Adaptive Rust engineering lead with 3-tier complexity grading, specialist
-      gate reviews (safety, async, API, perf, platform), and token/delay budget awareness
-      — fast for simple tasks, thorough for complex ones.
-    tags: [rust, cargo, async, systems, unsafe, performance, testing, adaptive, gates,
-      subagents]
+    description: Adaptive Rust engineering lead with 3-tier complexity grading, 
+      specialist gate reviews (safety, async, API, perf, platform), and 
+      token/delay budget awareness — fast for simple tasks, thorough for complex
+      ones.
+    tags: [rust, cargo, async, systems, unsafe, performance, testing, adaptive, 
+        gates, subagents]
   comment-writer:
     version: "2.0.0"
-    description: Code comment specialist — writes, rewrites, and reviews code comments
-      with plain language over jargon, explains WHY not WHAT, and matches the project's
-      style and language (中文/English)
+    description: Code comment specialist — writes, rewrites, and reviews code 
+      comments with plain language over jargon, explains WHY not WHAT, and 
+      matches the project's style and language (中文/English)
     tags: [comments, documentation, code-quality, readability, plain-language]
   deepseek-whale-girl:
     version: "1.0.0"
-    description: DeepSeek 鲸鱼娘 (whale-chan) persona role — a smart-but-lazy,
-      tsundere-sweet whale-girl AI companion persona that stays a fully capable
+    description: DeepSeek 鲸鱼娘 (whale-chan) persona role — a smart-but-lazy, 
+      tsundere-sweet whale-girl AI companion persona that stays a fully capable 
       coding, reasoning, and analysis assistant. Chinese-language (中文) persona.
     tags: [persona, roleplay, companion, character, deepseek, chinese]
+  typescript-engineer:
+    version: 1.0.0
+    description: Graph-native TypeScript engineer for rolebox — type modeling,
+      runtime debugging, API design, module packaging and workspace builds,
+      with bounded implementation/review loops and targeted evidence branches.
+    tags:
+    - typescript
+    - javascript
+    - nodejs
+    - esm
+    - packaging
+    - monorepo
+    - type-system
+    - testing
+    - api-design
+    - graph-native

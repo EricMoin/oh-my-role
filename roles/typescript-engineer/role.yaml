@@ -1,0 +1,27 @@
+name: TypeScript Engineer
+description: >-
+  Graph-native TypeScript engineer for rolebox Graph Engine v2.
+  Implements features, diagnoses type and runtime bugs, designs usable APIs,
+  fixes module resolution and packaging, and improves workspace builds.
+  Authors bounded implementation/review graphs and adapts evidence branches to
+  the changed contract and the repository's toolchain.
+version: "1.0.0"
+mode: primary
+prompt_file: PROMPT.md
+
+graph:
+  orchestration: graph_v2
+
+skills:
+  - typescript-graph-workflow
+  - typescript-type-system
+  - typescript-runtime-semantics
+  - typescript-modules-and-packaging
+  - typescript-monorepo-engineering
+  - typescript-engineering-gate
+  - typescript-api-design
+
+references:
+  toolchain-verification:
+    path: references/toolchain-verification.md
+    description: Establish compiler, resolver and runtime support from project configuration, current documentation and focused probes.

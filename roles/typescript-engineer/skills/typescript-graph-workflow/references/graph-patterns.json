@@ -1,0 +1,298 @@
+[
+  {
+    "version": 2,
+    "name": "mechanical",
+    "nodes": [
+      {
+        "id": "change",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      }
+    ],
+    "edges": []
+  },
+  {
+    "version": 2,
+    "name": "standard",
+    "nodes": [
+      {
+        "id": "change",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "review",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "change",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "repair",
+        "nodes": [
+          "change",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  },
+  {
+    "version": 2,
+    "name": "expanded",
+    "nodes": [
+      {
+        "id": "change",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "types",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: evidence. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "consumer",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: evidence. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "review",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: synthesis. Replace this schematic prompt with the complete task brief and explicit signal contract before use.",
+        "join": {
+          "strategy": "all"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "types",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "change",
+        "to": "consumer",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "types",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "consumer",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "change",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "repair",
+        "nodes": [
+          "change",
+          "types",
+          "consumer",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  },
+  {
+    "version": 2,
+    "name": "approval",
+    "nodes": [
+      {
+        "id": "change",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "review",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "proposal",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: approval-proposal. Replace this schematic prompt with the complete task brief and explicit signal contract before use.",
+        "needs_approval": true
+      },
+      {
+        "id": "publish",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: action. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "change",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "proposal",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "proposal",
+        "to": "publish",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "repair",
+        "nodes": [
+          "change",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  },
+  {
+    "version": 2,
+    "name": "api-design",
+    "nodes": [
+      {
+        "id": "candidate-a",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: investigation. Replace with the API design brief, shared caller cases and design-stage signal contract before use."
+      },
+      {
+        "id": "candidate-b",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: investigation. Replace with the API design brief, shared caller cases and design-stage signal contract before use."
+      },
+      {
+        "id": "choose",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: synthesis. Replace with the API design brief, shared caller cases and design-stage signal contract before use.",
+        "join": {
+          "strategy": "all"
+        }
+      },
+      {
+        "id": "change",
+        "agent": "typescript-engineer--change-applier",
+        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      },
+      {
+        "id": "review",
+        "agent": "typescript-engineer--verification",
+        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+      }
+    ],
+    "edges": [
+      {
+        "from": "candidate-a",
+        "to": "choose",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "candidate-b",
+        "to": "choose",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "choose",
+        "to": "change",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "change",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "change",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "repair",
+        "nodes": [
+          "change",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  }
+]
