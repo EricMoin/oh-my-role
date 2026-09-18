@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.11.0
+
+- Fix executor tool inheritance and restore discoverable Quality routing.
+- Use staged graphs, durable approval scope and fresh continuation after approval.
+- Separate acceptance revision from low-level retry; validate current workspace regressions.
+- Standardize versioned JSON payloads and producer-node result collection.
+- Generate department registry and portable shared execution/research/verification skills.
+- Add role contract checks and integration tests against the rolebox loader and graph engine.
+
 All notable changes to the Emperor role. Versioning follows semantic versioning; releases are tracked via git tags.
 
 ## [2.9.0]

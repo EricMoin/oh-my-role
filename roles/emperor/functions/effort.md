@@ -1,28 +1,13 @@
 ---
 name: effort
-description: User effort override that influences routing between plan-execute and DIRECT paths
+description: Adjust analysis depth without changing task scope or authorization
 params:
   level: medium
   priority: 10
 ---
 
-The user has set an effort override: **{level}**.
-
-## Routing impact
-
-| Effort level | Routing instruction |
-|---|---|
-| `high` | Force the plan-execute path. Dispatch to the planner subtree for strategy, then to the executor/router for implementation. Do NOT answer directly. |
-| `low` | Prefer the DIRECT path. Answer directly when appropriate. Do NOT route to the planner subtree unless forced by higher-precedence rules below. |
-
-## Precedence order (highest to lowest)
-
-1. **Destructive detection** — ALWAYS overrides effort:low. If the task involves destructive operations, the plan+approval gate is REQUIRED regardless of effort level. effort:low MUST NOT bypass the destructive gate.
-2. **`|plan|` mode** — Forces planning. Still overrides effort:high on non-destructive tasks (planning is still required).
-3. **Effort override** (`|effort:high|` / `|effort:low|`) — influences default routing within the bounds above.
-4. **Default behavior** — medium effort: the orchestrator classifies naturally and routes accordingly.
-
-## Notes
-
-- effort:high on a conceptual question is intentional and allowed. It forces a structured plan-execute path for any request type.
-- Activation syntax: `|effort:high|` / `|effort:low|` / `|effort level=high|`
+Effort changes analysis depth and overhead, never tool permissions or authorization.
+High effort permits more research and independent review when uncertainty warrants
+it. Low effort favors a single executor plus validation for clear changes. Neither
+setting converts implementation into a DIRECT answer or bypasses a pending gate.
+Mode |plan| still requires a reviewable strategy and approval before execution.

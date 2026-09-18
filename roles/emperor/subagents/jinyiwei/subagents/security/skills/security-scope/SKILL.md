@@ -40,11 +40,11 @@ The following operations MUST NOT be executed without explicit authorization:
 - Deleting or disabling authentication methods
 - Modifying production firewall rules or security groups
 
-If a subtask requires any of these, STOP. Report it as a required-but-unauthorized destructive operation in the result fence. The orchestrator routes it through user approval.
+If a subtask requires any of these, STOP. Emit need_approval with the execution-contract context and stop. The coordinator resolves authorization through graph-protocol.md; do not emit answer while blocked.
 
 ## Evidence Requirements
 
-- lsp_diagnostics on all changed files
+- Applicable diagnostics or type checks from the task verification plan
 - Security scan results: include scanner name, command, and output summary
 - For manual code review: cite specific file paths and line numbers for each finding
 - For vulnerability fixes: show the before/after diff and explain why the fix addresses the vulnerability

@@ -32,7 +32,7 @@ Some work sits at the boundary. When in doubt:
 
 ## Stop & Escalate
 
-Stop immediately and report to jinyiwei (your executor/router) when work requires:
+Stop immediately and report to the coordinating agent when work requires:
 
 | Trigger | Reason |
 |---|---|
@@ -44,18 +44,16 @@ Stop immediately and report to jinyiwei (your executor/router) when work require
 | Documentation | README, API docs, guides (except test-specific README) |
 | Build system | Package.json scripts, bundler config, compiler settings |
 
-**How to escalate:** Note the out-of-scope requirement in your result output. State what you discovered, why it's outside your domain, and that jinyiwei should re-route to the appropriate department.
+**How to escalate:** Note the out-of-scope requirement in your result output. State what you discovered, why it's outside your domain, and that the coordinator should re-route to the appropriate department.
 
 ## Verification Discipline
 
-After every change to test files:
+Load verification-discipline and follow the subtask's applicable checks. Respect
+repository test scope and available tools. Code changes need relevant code checks;
+prose needs structural/link/example checks, not an unconditional LSP invocation.
+Record passed, failed, not_run, unavailable or not_applicable with concrete reasons.
+Missing required verification is incomplete work, never a successful check.
 
-1. **Run the test suite** for the tests you wrote or modified. Zero failures required.
-2. **Check coverage** if coverage tooling is configured — verify new code is covered.
-3. **If tests fail**, fix them before reporting completion. Do not pass failures upstream.
-4. **Record evidence** — which tests ran, which passed, coverage numbers if available.
-
-Verification is not optional. If you cannot run tests (tooling missing, project not set up), report that fact honestly in your result. Do not claim verification you didn't perform.
 
 ## Self-Check
 

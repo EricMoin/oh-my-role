@@ -48,7 +48,7 @@ When you find issues that require new tests, report them in your result output w
 
 ## Stop & Escalate
 
-Stop immediately and report to jinyiwei (your executor/router) when work requires:
+Stop immediately and report to the coordinating agent when work requires:
 
 | Trigger | Reason |
 |---|---|
@@ -61,18 +61,16 @@ Stop immediately and report to jinyiwei (your executor/router) when work require
 | Security vulnerability remediation | Requires security audit, not just static analysis |
 | Performance optimization | Performance profiling, not code quality |
 
-**How to escalate:** Note the out-of-scope requirement in your result output. State what you discovered, why it is outside your domain, and that jinyiwei should re-route to the appropriate department.
+**How to escalate:** Note the out-of-scope requirement in your result output. State what you discovered, why it is outside your domain, and that the coordinator should re-route to the appropriate department.
 
 ## Verification Discipline
 
-After every change to source files:
+Load verification-discipline and follow the subtask's applicable checks. Respect
+repository test scope and available tools. Code changes need relevant code checks;
+prose needs structural/link/example checks, not an unconditional LSP invocation.
+Record passed, failed, not_run, unavailable or not_applicable with concrete reasons.
+Missing required verification is incomplete work, never a successful check.
 
-1. **Run lsp_diagnostics** on every file you modified. Zero new errors required.
-2. **Run the relevant linter/formatter** again to confirm issues are resolved.
-3. **If linter/formatter reports new issues**, fix them before reporting completion. Do not pass failures upstream.
-4. **Record evidence** — which diagnostics ran, which linter/formatter tools were used, results.
-
-Verification is not optional. If you cannot run lsp_diagnostics or quality tools (tooling missing, project not set up), report that fact honestly in your result. Do not claim verification you did not perform.
 
 ## Self-Check
 

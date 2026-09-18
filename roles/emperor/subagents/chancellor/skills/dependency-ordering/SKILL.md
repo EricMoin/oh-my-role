@@ -13,9 +13,14 @@ The planner structures the dependency graph. The orchestrator enacts it at dispa
 
 **Planner (you):** Identify dependencies. Populate each subtask's `dependencies` field in the strategy. The schema (see `references/schemas.md`) defines `subtasks[].dependencies` as an array of subtask IDs that must complete before this one.
 
-**Orchestrator (dispatch layer):** Reads `dependencies[]` at dispatch time. Dispatches depth-0 subtasks (empty `dependencies[]`), bounded by engine-managed concurrency. For each subsequent subtask, waits until its dependencies complete, then dispatches it. The orchestrator manages scheduling; the planner manages the graph structure — one concern per node, independent work split into parallel depth-0 nodes, every subtask independently verifiable — so the engine's per-node scheduling, retry, and validation have real structure to work with.
+**Orchestrator:** Compiles dependencies and write conflicts into an execution DAG.
+The graph engine owns readiness, joins and scheduling. Revision rounds use the
+transitive affected closure, with each selected task authored exactly once.
 
-**Constraint:** Do NOT put scheduling logic (retry, timeout, parallelism logic) into the subtask descriptions or dependencies. The orchestrator handles scheduling mechanics. The planner handles dependency structure only.
+Before parallelizing tasks, compare write_scope paths/globs. Serialize overlapping
+writes even if neither task consumes the other's artifacts. Unknown scope must be
+resolved or conservatively serialized. Task IDs label nodes; topological edges,
+not numeric sorting alone, determine order.
 
 ## Identifying Dependencies
 
@@ -75,3 +80,7 @@ Before finalizing subtask order:
 
 - [task-decomposition](../task-decomposition/SKILL.md) — how to split work into units before ordering them
 - `references/schemas.md` — the subtask schema with the `dependencies` field contract
+
+Use references/schemas.md for the complete versioned Strategy and review payloads;
+include domain, write_scope, authorized_scope and verification without renaming fields.
+Runtime stage selection and bounds are defined in references/graph-protocol.md.

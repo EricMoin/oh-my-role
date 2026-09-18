@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.10.0"
+version: "2.11.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -23,6 +23,9 @@ skills:
   - escalate-recovery
 # Reference documents for dispatch decisions, schemas, terminology, model pools, and departments
 references:
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: Staged graph execution, durable approval, revision and result transport
   schemas:
     path: references/schemas.md
     description: Schema definitions for dispatch payloads, strategy documents, and validation results
@@ -31,7 +34,7 @@ references:
     description: Terminology conventions and English style guide for all emperor-facing output
   model-pool:
     path: references/model-pool.md
-    description: Model pool configuration — three independent pools (tier-1-flagship, tier-2-reasoning, tier-3-fast) each with 5-slot semaphore
+    description: Model tier assignments and runtime-owned capacity limits
   departments:
     path: references/departments.md
     description: Department definitions and domain assignments for dispatch routing
@@ -39,24 +42,17 @@ references:
     path: references/evidence-first-research.md
     description: Evidence-first research discipline — citation tiers, triggers, and core principles for verifying external API and library behavior
 
-# Subagent orchestration — collaboration flow declares the graph edges.
-# This declarative edge list is the authoring source of truth; at runtime the
-# graph engine executes it via graph_create → graph_add_node / graph_add_edge
-# (graph_add_loop) → graph_run (see PROMPT.md / functions/synthesize.md).
-# Legacy v1 declarative config: max_iterations feeds only the legacy
-# rolebox/src/graph/collaboration-bridge.ts bridge and does NOT bound the
-# imperative graph_add_loop revise/review cycles (see synthesize.md /
-# orchestrate.md). Kept only for schema compatibility; the engine enforces loop bounds.
+# Descriptive authoring metadata only; graph-protocol.md defines staged graphs.
 collaboration:
-  max_iterations: 3
   flow:
-    - "parent -> chancellor: strategic planning"
-    - "parent -> jinyiwei: direct execution"
-    - "chancellor -> parent: strategy document"
-    - "jinyiwei -> parent: execution result"
-    - "parent -> validator: closed-loop validation"
-    - "validator -> parent: validation result"
-    - "parent -> jinyiwei: re-dispatch failed subtasks"
+    - "parent -> chancellor: optional planning and review"
+    - "chancellor -> parent: versioned strategy"
+    - "parent -> approval: durable authorization gate"
+    - "approval -> parent: pending decision context"
+    - "parent -> jinyiwei: unknown-domain execution"
+    - "jinyiwei -> parent: execution report"
+    - "parent -> validator: independent validation"
+    - "validator -> parent: current workspace verdict"
 
 # Emperor never writes code directly — delegates all implementation to subagents.
 # Orchestration runs on the graph engine (graph_create / graph_add_node /
@@ -77,7 +73,6 @@ permission: allow
 # Resource ceilings, if any, are owned and enforced by the rolebox engine; concurrency is engine-managed.
 graph:
   orchestration: graph_v2
-  # Declarative edge list above mirrors what graph_add_edge wires at runtime.
 
 # Copilot: turn-end decision pipeline (see rolebox docs/copilot.md). The emperor is a
 # strict human-in-the-loop orchestrator — approval gates and open design questions are
@@ -108,3 +103,5 @@ copilot:
       window_size: 30
       max_chars: 12000
       include_tools: true
+
+disable_functions: [plan, execute, loop]

@@ -1,0 +1,25 @@
+name: Approval
+description: Read-only durable gate for an exact strategy revision and action scope
+model: provider/tier-3-fast
+prompt: |
+  You are an approval gate. Read the exact Strategy and proposed action in your
+  prompt. Emit signal(need_approval) with the Approval Request from schemas.md.
+  Do not execute commands, modify files, approve yourself or emit answer.
+functions: [request-approval]
+auto_activate: [request-approval]
+locked: true
+tools:
+  graph_create: false
+  graph_add_node: false
+  graph_add_edge: false
+  graph_add_loop: false
+  graph_run: false
+  graph_cancel: false
+  graph_approve: false
+  Write: false
+  Edit: false
+  Bash: false
+permission:
+  allow: [Read]
+
+disable_functions: [plan, execute, loop]

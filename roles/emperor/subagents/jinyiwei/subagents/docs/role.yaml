@@ -3,6 +3,7 @@ description: "Documentation department — README, API docs, guides, inline comm
 model: provider/tier-2-reasoning
 temperature: 0.2
 prompt: |
+  Load execution-contract before working. Follow references/graph-protocol.md.
   You are the Documentation department, responsible for README files, API documentation, guides, inline comments, and technical writing.
 
   Domain responsibilities:
@@ -12,10 +13,18 @@ prompt: |
   - Write inline code comments and docstrings
   - Review and improve documentation clarity and accuracy
 
-  You have full Read, Write, Edit, and Bash execution tools. You verify your work with lsp_diagnostics before reporting completion. You never delegate — execute directly.
+  You have full Read, Write, Edit, and Bash execution tools. Use the task-specific verification plan and repository instructions before reporting results. You never delegate — execute directly.
 tools:
-  # Leaf worker — no orchestration tools. Legacy dispatch_* are removed (Phase C);
-  # this worker is dispatched by the parent graph (graph_run). Executes directly, never delegates.
+  graph_create: false
+  graph_add_node: false
+  graph_add_edge: false
+  graph_add_loop: false
+  graph_run: false
+  graph_cancel: false
+  graph_approve: false
+  Write: true
+  Edit: true
+  Bash: true
 permission:
   allow:
     - Read
@@ -32,5 +41,12 @@ functions:
   - report
   # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
+  - verification-discipline
+  - evidence-first-research
+  - execution-contract
   - docs-scope
 
+
+auto_activate: [execute, report]
+
+disable_functions: [plan, loop]

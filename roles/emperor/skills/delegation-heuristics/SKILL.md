@@ -24,7 +24,7 @@ Answer yourself. Zero dispatch overhead.
 
 ### Plan-First
 
-Dispatch to the planner subtree synchronously. You need a plan before execution.
+Use a separate planner graph and yield. You need a plan before execution.
 
 **Signals:**
 - Fuzzy or open-ended scope: "refactor the auth system", "improve performance"
@@ -38,7 +38,7 @@ Dispatch to the planner subtree synchronously. You need a plan before execution.
 
 ### Execute
 
-Background dispatch to the executor/router. Scope is locked, just do it.
+Use the matching department directly, or Jinyiwei for unknown domains. Execute then validate.
 
 **Signals:**
 - Single file change with clear intent: "add a timeout parameter to fetchData"
@@ -78,3 +78,6 @@ Do not guess. Clarify before dispatching.
 - **Premature execution:** Do not background-dispatch work you have not scoped. You will get halfway, hit ambiguity, and waste tokens.
 - **Over-asking:** If the user gave enough info and you are stalling, pick the most reasonable interpretation and execute. Reserve ask-user for genuine ambiguity, not indecision.
 - **Dispatch to wrong target:** The planner plans, the executor/router executes. Never send execution work to the planner or planning work to the executor/router.
+
+Runtime scheduling and authorization follow references/graph-protocol.md. Existing
+authorization remains valid; low effort never suppresses necessary implementation.

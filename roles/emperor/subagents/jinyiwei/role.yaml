@@ -2,16 +2,12 @@ name: Jinyiwei
 description: "Domain router and executor — routes subtasks to departments (ui/backend/test/data/docs/quality), executes directly when routing does not apply, and synthesizes results into structured reports"
 model: provider/tier-3-fast
 prompt: |
-  You are Jinyiwei, a domain router and task executor with a dual role:
-
-  1. **Domain Router** — For domain-specialized subtasks, use the `route` function with the `domain-routing` skill to add a graph node bound to the appropriate department worker (ui/backend/test/data/docs/quality) and run it. All department nodes run inside the request graph (`graph_add_node` + `graph_run`) — depth-2 dispatch is rejected at this depth.
-
-  2. **Executor** — For simple tasks, unknown domains, or when budget or concurrency limits block dispatch, use the `execute` function directly. You retain full execution tools and can handle any task inline.
-
-  You orchestrate department workers through the graph engine (graph_add_node →
-  graph_add_edge → graph_run → graph_status), but must never delegate to
-  sub-agents — depth-2 delegation is rejected by the system. Only the `route`
-  and `execute` functions are used for task routing and execution.
+  Load execution-contract before working. Follow references/graph-protocol.md.
+  You are the general executor and fallback domain router. Execute unknown-domain
+  tasks inline. For an explicitly requested specialist, load domain-routing and
+  use a separate child graph; never append workers to a graph waiting on you.
+  Load execution-contract before execution and forward the complete subtask,
+  authorization, verification plan and revision context when routing.
 
 # Functions: routing plus execution and reporting modes
 functions:
@@ -22,6 +18,7 @@ functions:
 
 # Skills: scope discipline, verification rigor, and domain routing
 skills:
+  - execution-contract
   - scope-guard
   - verification-discipline
   - domain-routing
@@ -33,7 +30,10 @@ skills:
 
 # Jinyiwei routes domain work to departments via graph nodes and executes directly otherwise
 # Legacy dispatch_*/loop_* removed (Phase C) — department nodes run via graph_*.
-# No tool deny-list — jinyiwei retains full execution tool permission.
+tools:
+  Write: true
+  Edit: true
+  Bash: true
 
 # Full execution tool permission
 permission:
@@ -44,3 +44,10 @@ permission:
     - Bash
     - Grep
     - Glob
+    - WebFetch
+    - context7_resolve-library-id
+    - context7_query-docs
+
+auto_activate: [execute, report]
+
+disable_functions: [plan, loop]

@@ -61,3 +61,7 @@ If review reached its bound with an unresolved veto, the strategy still
 finalizes (best-effort), but you MUST surface every unresolved concern in `notes`
 so the orchestrator can weigh the risk before dispatch. Never hide an unresolved
 review concern by omitting it.
+
+Use references/schemas.md for the complete versioned Strategy and review payloads;
+include domain, write_scope, authorized_scope and verification without renaming fields.
+Runtime stage selection and bounds are defined in references/graph-protocol.md.

@@ -1,62 +1,21 @@
 ---
 name: report
-description: Format the documentation execution outcome into a result block for jinyiwei
+description: Emit the canonical structured execution report after verification
 priority: 30
-continue_until: evidence_met
+continue_until:
+  any:
+    - signal_observed(answer)
+    - signal_observed(need_approval)
+    - signal_observed(blocked)
+    - signal_observed(escalate)
+    - artifact_exists(result)
 ---
 
-You have completed execution. Now format the outcome into a structured report.
+Return the Execution Report object defined in references/schemas.md. Emit identical
+JSON in a result fence and signal(answer) payload. Include incomplete_items even
+when empty. Never substitute abbreviated summary-only payloads. Check statuses
+must reflect actual outcomes; unavailable verification is not passed.
 
-## Report Rules
-
-1. Place the report inside a ` ```result ` fence (graph_status(graph_id, node_id=…, include_output=true) extracts the last `result` block from the node's materialized output).
-2. Be precise and honest: unverified items remain unverified. Do not exaggerate.
-3. If verification failed, clearly mark it — do not claim success.
-
-## Report Structure
-
-```result
-## Subtask: {subtask-id or brief description}
-
-### Files Modified
-- `path/to/file1` — {what was changed}
-- `path/to/file2` — {what was changed}
-
-### Verification Evidence
-- **lsp_diagnostics**: {clean / errors found — list specifics}
-- **build/tests**: N/A (documentation task — no build or tests)
-- **Other evidence**: {manual verification, non-code checks, etc.}
-
-### Incomplete / Open Items
-- {item}: {reason not yet done}
-- {item}: {blocker or follow-up needed}
-
-### Summary
-{1-2 sentence verdict: what was done, what state things are in}
-```
-
-## Field Guidelines
-
-- **Subtask**: Use the concrete subtask identifier provided in the node prompt, or a concise label (≤80 chars) if none was given.
-- **Files Modified**: Include every file touched. For each file, state the nature of the change in ≤10 words.
-- **Verification Evidence**: Always include the actual tool name and result. `lsp_diagnostics` clean means zero errors/warnings. If you didn't run a check, say so — do not guess.
-- **Incomplete / Open Items**: List anything you know is unfinished, plus the reason. If nothing is pending, write `None`.
-- **Summary**: One short verdict. No fluff.
-
-## Completion
-
-**Primary (signal):** When your report is complete, call the `signal` tool:
-```
-signal(type="answer", payload={subtask: "...", files_modified: [...], verification_evidence: {...}, incomplete_items: [...], summary: "..."})
-```
-
-**Fallback (fence):** If the signal tool is unavailable, emit a fenced block as before:
-```result
-...report content...
-```
-
-Either path satisfies the function's completion condition.
-
-## After Writing the Report
-
-Close the fence. Do NOT add any content after the closing ` ``` ` of the result fence — everything after it is invisible to `graph_status(include_output=true)` extraction.
+Do not emit answer after need_approval, blocked or escalate. These are unresolved
+control states, not successful reports. Preserve completed work and remaining scope
+in the corresponding signal payload for the coordinator.

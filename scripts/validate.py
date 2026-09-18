@@ -693,6 +693,10 @@ def main():
         referenced_functions = set(data.get("functions", []))
         find_orphan_functions(role_dir, referenced_functions, f"roles/{role_name}/role.yaml")
 
+    from validate_emperor import validate as validate_emperor
+    for message in validate_emperor():
+        err("roles/emperor", message)
+
     validate_no_legacy_software_architect_refs()
     scan_for_model_leaks()
 

@@ -27,7 +27,7 @@ Each subtask has:
 - A `dependencies` array (empty `[]` is valid)
 - A `target` field set to `jinyiwei`
 
-**Check**: Could an executor read only the subtask description and produce a
+**Check**: Could an executor read the complete subtask contract and produce a
 verifiable execution report? If not, the subtask is too vague.
 
 ### 3. Every subtask has a verifiable acceptance condition
@@ -48,9 +48,9 @@ Every referenced dependency ID exists as a subtask. No cycles. No
 self-dependencies.
 
 ### 6. All required fields are present
-Per the strategy contract: `objective`, `subtasks` (array), `risk`, and
-each subtask must have `id`, `description`, `target`, `dependencies`,
-`acceptance`.
+Use references/schemas.md for the complete required field set, including version,
+plan_revision, domain, write_scope, authorized_scope and verification. Check that
+authorization matches user intent and parallel tasks do not write overlapping paths.
 
 ### 7. Forbidden fields are absent
 The draft MUST NOT contain fields forbidden by the strategy contract:
@@ -154,3 +154,7 @@ defects), what criterion is violated, and what change would fix it. These
 become the concrete revision notes in the veto verdict.
 
 If no defect is found after checking all criteria, emit `verdict: pass`.
+
+Use references/schemas.md for the complete versioned Strategy and review payloads;
+include domain, write_scope, authorized_scope and verification without renaming fields.
+Runtime stage selection and bounds are defined in references/graph-protocol.md.

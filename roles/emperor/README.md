@@ -1,132 +1,61 @@
 # Emperor
 
-Top-level orchestrator that classifies incoming requests, dispatches work to a planner or executor subtree, and synthesizes results into a final answer. It never writes code, edits files, or plans implementation details.
+A read-only coordinator for planning, scoped execution and independent verification.
+Version 2.11 uses staged rolebox graph_v2 graphs and versioned JSON task contracts.
 
-## When to use
+Read-only requests are answered directly. Clear changes use one execution item plus
+validation. Uncertain work goes to Chancellor, which drafts once and requests an
+independent review when risk or uncertainty warrants it. Drafter handles review
+corrections; Finalizer is optional reconciliation, not a mandatory extra hop.
 
-Use this role when you need multi-step orchestration across different domains (frontend, backend, testing, data, docs, quality). It handles complex workflows that require strategy before execution, dependency-ordered subtask scheduling, risk assessment, and validation loops.
+Known domains dispatch directly to one of eight department workers. Jinyiwei is the
+general executor and fallback router. The canonical department list is generated
+from [departments.json](references/departments.json); see [departments.md](references/departments.md).
 
-Don't use it for simple single-turn tasks. A direct answer, a quick lookup, or a single-file edit doesn't need orchestration overhead.
+The runtime flow is plan if needed → approve if needed → execution DAG → validation.
+Each stage has its own graph. Failed acceptance uses a fresh DAG containing the
+failed and transitively affected items, at most two revision rounds. Every round
+validates all approved items against the current workspace, including regressions.
+Only transient low-level failures use graph_run retry; that operation resets the
+target and its downstream, so dependents are not individually retried again.
 
-## Architecture: classify, dispatch, synthesize
+Approval is durable graph state bound to a plan_revision and action scope. Existing
+explicit authorization is honored. An approval gate performs no mutation. Runtime
+risk discovery stops the worker before the action; resolving that gate completes
+it, so remaining work runs in a fresh continuation after descendants are retired.
+Approval is never reported as evidence that an operation executed.
 
-The emperor operates on a three-action loop:
+All department workers explicitly enable execution tools and load portable shared
+research, execution-contract and verification skills. Graph mutation tools are
+disabled on leaves. Verification follows repository instructions and applicable
+checks; prose work does not require fabricated LSP or test evidence.
 
-1. **Classify** the incoming request (simple? complex? destructive?)
-2. **Dispatch** to the appropriate subtree (planner for strategy, executor for implementation)
-3. **Synthesize** execution reports into a user-facing final answer
+The protocol is in [graph-protocol.md](references/graph-protocol.md), payloads in
+[schemas.md](references/schemas.md), and executable topology examples in
+[graph-examples.json](references/graph-examples.json). Examples show topology only;
+replace their prompts with the actual full contracts before live execution.
 
-The orchestrator never touches implementation. It reads, it routes, it summarizes. That's it.
+## Validation
 
-## Topology
+From the repository root (Python requires PyYAML):
 
+```sh
+python scripts/sync_emperor.py --check
+python scripts/validate.py
+python -m unittest discover -s scripts/tests -v
 ```
-emperor (tier-1-flagship)
-├── chancellor [planner] (tier-2-reasoning)
-│   ├── drafter (tier-2-reasoning)       — produces strategy draft
-│   ├── reviewer (tier-1-flagship)     — audits draft, veto or pass
-│   └── finalizer (tier-2-reasoning)     — produces final_strategy
-├── validator (tier-2-reasoning)         — judges execution reports against acceptance criteria
-└── jinyiwei [executor/router] (tier-3-fast)
-    ├── ui (tier-2-reasoning)            — frontend, components, styling
-    ├── backend (tier-2-reasoning)       — API, services, server logic
-    ├── test (tier-2-reasoning)          — tests, mocking, coverage
-    ├── data (tier-2-reasoning)          — schema, migrations, queries
-    ├── docs (tier-2-reasoning)          — documentation, guides
-    ├── quality (tier-2-reasoning)       — lint, format, static analysis
-    ├── devops (tier-2-reasoning)        — CI/CD, infrastructure, deployment
-    └── security (tier-2-reasoning)      — vulnerability scanning, auth audit
+
+With a sibling rolebox checkout and its dependencies installed:
+
+```sh
+bun test --isolate scripts/tests/emperor-rolebox.test.ts
 ```
 
-The planner subtree runs a three-stage loop: draft a strategy, review it (veto sends it back for revision, bounded by the review cycle's `max_traversals`), then finalize. The executor/router receives individual subtasks and routes each one to exactly one department based on domain keywords. The validator independently verifies execution reports by running tests, builds, and linters, then returns a per-item pass/revise verdict.
+Set ROLEBOX_DIR for another checkout location. Integration tests use rolebox's real
+loader, resolver and graph engine with a fake dispatch port; they do not launch
+models or external operations. Behavioral prompts are in evals/evals.json and
+require a separate model evaluation run. No full rolebox test suite is required.
 
-## Live risk gate
-
-When the planner returns a strategy marked `risk: high`, the orchestrator stops and presents the strategy to the user. Execution only proceeds after explicit user approval.
-
-This gate is unconditional. Even in `|auto|` mode, a high-risk strategy still requires user sign-off before dispatch.
-
-Approval is a two-turn handshake: the orchestrator re-prints the full strategy and waits; the next user message is read as an approval response — approve, reject (which cancels any running tasks), or partial ("skip subtask 3", which drops that subtask and its dependents). The orchestrator recovers the pending strategy from its own conversation history, so no external state is needed. Destructiveness discovered at execution time is routed back through this same gate.
-
-Low-risk strategies proceed immediately without confirmation.
-
-## Closed-loop validation
-
-After execution completes, the orchestrator validates results against the original strategy's acceptance criteria. The loop works like this:
-
-1. Collect all execution reports.
-2. Dispatch validation to the validator.
-3. If verdict is `pass`, synthesize the final answer.
-4. If verdict is `revise`, re-run each failed subtask node via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` — one per executor session, in dependency-root order — directly to the executor (not through the planner or validator). Falls back to a fresh `graph_add_node` when the original node is unavailable. Then re-validate once.
-
-Caps prevent infinite loops:
-
-| Cap | Limit |
-|-----|-------|
-| Retries per round (via graph_run retry) | one `graph_run(node_id, retry=true)` re-run per failed node (never batched) |
-
-The revise loop itself is bounded by qualitative termination (a `pass` verdict, stalled progress, engine rejection, or validate failure) with the loop group's `max_traversals` as the engine-side backstop.
-
-Validation only runs on the plan-execute path. Direct answers skip it entirely.
-
-## Safety precedence
-
-Before any dispatch decision, constraints are evaluated in this fixed order:
-
-1. **destructive** — Request matches a destructive pattern (delete, drop, force-push, migration, etc.)? Requires plan, then user approval, then execute. No exceptions.
-2. **effort** — `|plan|` mode active? Forces plan-then-approve-then-execute regardless of complexity.
-3. **mode** — `|auto|` active? Classify and dispatch without confirmation (unless destructive).
-4. **default** — Orchestrator decides: simple gets a direct answer, complex gets the planner.
-
-When unsure whether something is destructive, treat it as destructive.
-
-## Model pools
-
-Three independent pools, each with a 5-slot semaphore. Cross-pool dispatch doesn't compete for slots.
-
-| Pool | Model | Members |
-|------|-------|---------|
-| tier-1-flagship | `provider/tier-1-flagship` | Emperor, Reviewer |
-| tier-2-reasoning | `provider/tier-2-reasoning` | Chancellor, Drafter, Finalizer, Validator, UI, Backend, Test, Data, Docs, Quality, DevOps, Security |
-| tier-3-fast | `provider/tier-3-fast` | Jinyiwei |
-
-The reviewer shares the tier-1-flagship pool with the emperor. Since the emperor is idle while the reviewer runs (it's waiting for the chancellor to return), contention between them is rare.
-
-## End-to-end sequence
-
-A typical complex request flows like this:
-
-1. User sends a multi-step request.
-2. Emperor classifies it as complex. Dispatches to the chancellor (planner).
-3. Chancellor runs the three-stage loop: drafter produces a strategy, reviewer audits it (veto sends it back, pass advances it), finalizer locks the final strategy.
-4. Chancellor returns the `final_strategy` to the emperor. Strategy includes `subtasks[]` with dependency ordering and a `risk` field.
-5. If `risk: high`, emperor presents the strategy to the user and waits for approval.
-6. Emperor reads the dependency graph. Dispatches depth-0 subtasks (empty dependencies) to jinyiwei — one dispatch per subtask — with dispatch concurrency managed by the graph engine's frontier scheduling. If the engine can't run all runnable subtasks, emperor dispatches lowest-id first and reports any items the engine rejects as unresolved.
-7. Jinyiwei routes each subtask to the appropriate department (ui, backend, test, etc.). Department executes and returns a structured execution report.
-8. As subtasks complete, emperor dispatches newly-unblocked subtasks until all are done.
-9. Emperor dispatches validation to the validator with all execution reports.
-10. If validation passes, emperor synthesizes a final answer. If it fails, emperor re-runs failed subtasks one per session via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)` until the revise loop terminates (pass verdict, stalled progress, engine rejection, or validate failure), then synthesizes regardless.
-11. Emperor emits a `final_answer` fence. Always. Even on partial failure.
-
-## Extension guide
-
-To add a new department:
-
-1. Create `subagents/jinyiwei/subagents/{name}/` with a `role.yaml`, execution function, report function, and scope skill.
-2. Register it in the jinyiwei domain-routing keyword table.
-3. Add a row to the department registry.
-
-Full instructions and existing department definitions are in [departments.md](references/departments.md).
-
-## Reference documents
-
-| Document | What it covers |
-|----------|---------------|
-| [schemas.md](references/schemas.md) | Inter-agent contract schemas (strategy, review verdict, validate result, execution report) |
-| [terminology-and-style.md](references/terminology-and-style.md) | De-theming glossary, language rules, style guide |
-| [model-pool.md](references/model-pool.md) | Three model pools, each with a 5-slot semaphore |
-| [departments.md](references/departments.md) | All 8 departments with scope, evidence tags, and recommended skills |
-
-## Kernel compatibility
-
-Requires rolebox dispatch subsystem and subagent resolution from `subagents/` directories.
+After editing departments.json or canonical shared skills under Jinyiwei, run
+`python scripts/sync_emperor.py`. Validation rejects stale generated copies and
+unreachable/misconfigured departments.

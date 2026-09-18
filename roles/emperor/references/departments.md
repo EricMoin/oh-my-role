@@ -1,65 +1,30 @@
 ---
 name: departments
-description: Department definitions, domain assignments, evidence tags, and extension guide
+description: Generated department registry and dispatch contract
 ---
-
 # Departments
 
-All 7 departments are live and routable. Each runs as a dispatch subagent under Jinyiwei with a dedicated scope skill, internal skills, and evidence requirements.
+Generated from departments.json by scripts/sync_emperor.py; edit the JSON source.
+Known domains dispatch directly to these agents. Unknown domains use emperor--jinyiwei.
 
-## Department registry
+| Domain | Agent | Scope | Keywords |
+|---|---|---|---|
+| ui | emperor--jinyiwei--ui | Components, styling, accessibility and interaction | ui, frontend, component, css, layout |
+| backend | emperor--jinyiwei--backend | API, services and middleware | backend, api, endpoint, middleware, service |
+| test | emperor--jinyiwei--test | Tests, fixtures and test infrastructure | test, spec, mock, coverage, fixture |
+| data | emperor--jinyiwei--data | Schemas, migrations, queries and persistence | schema, migration, query, database, persistence |
+| docs | emperor--jinyiwei--docs | Documentation, guides and comments | docs, readme, guide, comment, changelog |
+| quality | emperor--jinyiwei--quality | Lint, formatting and static analysis without behavior changes | lint, format, prettier, eslint, type-check |
+| devops | emperor--jinyiwei--devops | CI/CD, infrastructure and deployment | ci, pipeline, docker, kubernetes, deploy, infrastructure |
+| security | emperor--jinyiwei--security | Security audits, authentication and hardening | security, vulnerability, auth, cve, scan, hardening |
 
-| Department | Dispatch ID | Scope summary | Evidence tags | Domain keywords |
-|---|---|---|---|---|
-| UI | emperor--jinyiwei--ui | Components, styling, layouts, interactions, accessibility | lsp_diagnostics, test | ui, frontend, component, style, layout |
-| Backend | emperor--jinyiwei--backend | API, services, server logic, integration | lsp_diagnostics, test | backend, api, service, middleware, route |
-| Test | emperor--jinyiwei--test | Tests, fixtures, mocking, coverage, test infra | test | test, spec, mock, fixture, coverage |
-| Data | emperor--jinyiwei--data | Schema, migrations, queries, persistence | lsp_diagnostics, test | schema, migration, query, persistence, database |
-| Docs | emperor--jinyiwei--docs | README, API docs, guides, comments | lsp_diagnostics | doc, readme, guide, comment, changelog |
-| DevOps | emperor--jinyiwei--devops | CI/CD, Docker, Kubernetes, IaC, deployment, observability | lsp_diagnostics | devops, ci, cd, pipeline, docker, kubernetes, deploy, infrastructure, iac, container |
-| Security | emperor--jinyiwei--security | Vulnerability scanning, auth audit, dependency security, hardening | lsp_diagnostics | security, vulnerability, auth, owasp, cve, scan, hardening, secret |
+All eight departments explicitly load execution-contract, evidence-first-research
+and verification-discipline, plus their domain skill. Skills do not inherit from
+parents. Portable copies are generated from Jinyiwei's canonical shared skills.
+Verification is selected per task; no unconditional LSP/test requirement for prose.
 
-All departments use model pool `tier-2-reasoning`.
-
-## Evidence tags explained
-
-- **lsp_diagnostics**: Run language-server diagnostics on changed files. Zero errors required.
-- **test**: Run relevant tests. All must pass.
-
-Departments that produce prose only (Docs) skip the test tag.
-
-
-## Skills per department
-
-Each department loads emperor-internal skills only. The emperor role is self-contained — it does not depend on skills from other roles being installed.
-
-| Department | Internal skills |
-|---|---|
-| UI | ui-scope |
-| Backend | backend-scope |
-| Test | test-scope |
-| Data | data-scope |
-| Docs | docs-scope |
-| DevOps | devops-scope, devops-practices |
-| Security | security-scope, security-practices |
-
-Each department has at minimum a `{name}-scope` skill defining boundaries, grey zones, and destructive-operation HALT rules. DevOps and Security additionally carry practitioner-knowledge skills (`devops-practices`, `security-practices`) with domain expertise for implementation guidance.
-
-### Adding external skills (optional)
-
-If the user has installed additional roles (e.g., `software-architecture`, `react-frontend`, `dart-flutter`), their skills can be added to a department's `opencode_skills` list for stack-specific enhancement. This is optional — the emperor works fully without any external role installed.
-
-## How to add a new department
-
-1. Create `subagents/jinyiwei/subagents/{name}/` with:
-   - `role.yaml` (set name, description, model, prompt, skills reference)
-   - `functions/execute.md` (scope, evidence tags, process)
-   - `functions/report.md` (structured output format)
-   - `skills/{name}-scope/SKILL.md` (boundary definition, grey zones, escalation triggers)
-2. Register the new department in `jinyiwei/skills/domain-routing/SKILL.md` keyword table.
-3. Add a row to the department registry table above.
-4. Reference existing departments for scope-definition patterns (copy from `ui/` or `backend/` and adapt).
-
-## Cost and capacity
-
-See `references/model-pool.md` for the model pool topology, procedural caps, and model selection guidance.
+To add a department, create subagents/jinyiwei/subagents/{domain}/role.yaml with
+execute/report functions and scope skill, add departments.json entry, then run
+scripts/sync_emperor.py and scripts/validate.py. Use explicit execution tool flags.
+Stack-specific installed skills may be declared via opencode_skills when available;
+the portable base role does not assume any external role is installed.

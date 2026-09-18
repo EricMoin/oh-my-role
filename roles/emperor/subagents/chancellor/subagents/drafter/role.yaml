@@ -3,46 +3,24 @@ description: "Researches codebase using read-only tools and produces structured 
 model: provider/tier-2-reasoning
 temperature: 0.3
 prompt: |
-  You are the Drafter, a codebase researcher and strategy author. Your role is to investigate the codebase using read-only tools and produce a detailed strategy draft.
+  Revise a strategy using repository evidence and concrete review findings.
+  Load draft-methodology. Use references/schemas.md as the only payload definition,
+  and references/graph-protocol.md for stage ownership. Emit identical structured
+  signal payload and JSON result fence; optional local artifact fences may mirror it.
 
-  You are the first step in a three-stage planning loop:
-  1. Draft (you) — research and produce a strategy draft
-  2. Review — audit and pass/veto the draft
-  3. Finalize — merge into the canonical strategy
-
-  When you receive instructions:
-  - Read the provided plan and context carefully (passed to you by the planner via the dispatch prompt)
-  - Use Read, Grep, and Glob to investigate relevant code areas
-  - Produce a structured strategy draft in a ```draft``` fence following the exact schema below
-
-  The strategy draft follows this schema:
-
-  ```yaml
-  objective: "<one sentence stating the end goal>"
-  subtasks:
-    - id: 1
-      description: "<concrete, scoped instruction>"
-      target: "jinyiwei"
-      dependencies: []
-      acceptance: "<verifiable done-condition>"
-  risk: "low"
-  notes: "<optional context, single string>"
-  ```
-
-  Schema rules:
-  - `subtasks[].id` MUST be an integer, monotonic from 1 upward
-  - `subtasks[].dependencies` MUST be an array of integer IDs referencing other subtasks — empty `[]` means runnable immediately
-  - `risk` MUST be a scalar: `low` or `high`. `high` triggers user approval before dispatch.
-  - `notes` is optional. When present, it is a single string, not a list.
-  - Do NOT emit `risks` as a list. Do NOT use short-id strings for `subtasks[].id`.
-
-  On revision rounds, the review stage's veto notes will be passed to you by the planner via the dispatch prompt. Revise your draft based on those notes, keeping the same schema.
 permission:
   allow:
     - Read
     - Grep
     - Glob
 tools:
+  graph_create: false
+  graph_add_node: false
+  graph_add_edge: false
+  graph_add_loop: false
+  graph_run: false
+  graph_cancel: false
+  graph_approve: false
   Write: false
   Edit: false
   Bash: false
@@ -53,3 +31,6 @@ skills:
 functions:
   - draft
   # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
+
+auto_activate: [draft]
+disable_functions: [plan, execute, loop]

@@ -19,9 +19,9 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | Supreme orchestrator (as persona) | top-level orchestrator (as function) | describe what it does, not rank |
 | Chancellor (prose) | planner (role) | name field stays; prose uses "planner" |
 | Jinyiwei (prose) | executor/router (role) | name field stays; prose uses "executor/router" |
-| Drafter (prose) | draft stage / drafting step | part of three-stage planning |
-| Reviewer (prose) | review stage / review step | part of three-stage planning |
-| Finalizer (prose) | finalization stage / final step | part of three-stage planning |
+| Drafter (prose) | draft stage / drafting step | optional planning stage |
+| Reviewer (prose) | review stage / review step | optional planning stage |
+| Finalizer (prose) | finalization stage / final step | optional planning stage |
 
 ### Chinese Terms
 
@@ -35,7 +35,7 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | (Jinyiwei / secret police) | executor/router (role) | use English functional term |
 | (strategy / plan) | strategy | noun |
 | (present for user approval) | require explicit user approval | action phrase |
-| (three departments: drafting, veto, finalization) | three-stage planning loop (draft, review, finalize) | pipeline description |
+| (three departments: drafting, veto, finalization) | planning with optional review and reconciliation | pipeline description |
 | (Drafting Department) | draft stage | first step in planning loop |
 | (Veto/Review Department) | review stage | second step in planning loop |
 | (Finalization Department) | finalization stage | third step in planning loop |

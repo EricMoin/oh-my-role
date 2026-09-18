@@ -1,0 +1,108 @@
+{
+  "approval": {
+    "version": 2,
+    "name": "example-v1-approval",
+    "nodes": [
+      {
+        "id": "approval-v1",
+        "agent": "emperor--approval",
+        "prompt": "Request approval of example-v1 with proposed_ids [1,2]; include the complete Strategy and concrete action scope from the request.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      }
+    ],
+    "edges": []
+  },
+  "execution": {
+    "version": 2,
+    "name": "example-v1-execute-r0",
+    "nodes": [
+      {
+        "id": "exec-1-r0",
+        "agent": "emperor--jinyiwei--data",
+        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      },
+      {
+        "id": "exec-2-r0",
+        "agent": "emperor--jinyiwei--backend",
+        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and actual prerequisite report.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      }
+    ],
+    "edges": [
+      {
+        "from": "exec-1-r0",
+        "to": "exec-2-r0",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      }
+    ]
+  },
+  "revision": {
+    "version": 2,
+    "name": "example-v1-execute-r1",
+    "nodes": [
+      {
+        "id": "exec-1-r1",
+        "agent": "emperor--jinyiwei--data",
+        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      },
+      {
+        "id": "exec-2-r1",
+        "agent": "emperor--jinyiwei--backend",
+        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and actual prerequisite report.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      }
+    ],
+    "edges": [
+      {
+        "from": "exec-1-r1",
+        "to": "exec-2-r1",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      }
+    ]
+  },
+  "validation": {
+    "version": 2,
+    "name": "example-v1-validate-r0",
+    "nodes": [
+      {
+        "id": "validate-r0",
+        "agent": "emperor--validator",
+        "prompt": "Validate every approved item against current workspace. Author must embed example-v1 Strategy, current reports and cumulative changed paths."
+      }
+    ],
+    "edges": []
+  }
+}

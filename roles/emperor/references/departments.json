@@ -1,0 +1,92 @@
+{
+  "ui": {
+    "agent": "emperor--jinyiwei--ui",
+    "scope": "Components, styling, accessibility and interaction",
+    "keywords": [
+      "ui",
+      "frontend",
+      "component",
+      "css",
+      "layout"
+    ]
+  },
+  "backend": {
+    "agent": "emperor--jinyiwei--backend",
+    "scope": "API, services and middleware",
+    "keywords": [
+      "backend",
+      "api",
+      "endpoint",
+      "middleware",
+      "service"
+    ]
+  },
+  "test": {
+    "agent": "emperor--jinyiwei--test",
+    "scope": "Tests, fixtures and test infrastructure",
+    "keywords": [
+      "test",
+      "spec",
+      "mock",
+      "coverage",
+      "fixture"
+    ]
+  },
+  "data": {
+    "agent": "emperor--jinyiwei--data",
+    "scope": "Schemas, migrations, queries and persistence",
+    "keywords": [
+      "schema",
+      "migration",
+      "query",
+      "database",
+      "persistence"
+    ]
+  },
+  "docs": {
+    "agent": "emperor--jinyiwei--docs",
+    "scope": "Documentation, guides and comments",
+    "keywords": [
+      "docs",
+      "readme",
+      "guide",
+      "comment",
+      "changelog"
+    ]
+  },
+  "quality": {
+    "agent": "emperor--jinyiwei--quality",
+    "scope": "Lint, formatting and static analysis without behavior changes",
+    "keywords": [
+      "lint",
+      "format",
+      "prettier",
+      "eslint",
+      "type-check"
+    ]
+  },
+  "devops": {
+    "agent": "emperor--jinyiwei--devops",
+    "scope": "CI/CD, infrastructure and deployment",
+    "keywords": [
+      "ci",
+      "pipeline",
+      "docker",
+      "kubernetes",
+      "deploy",
+      "infrastructure"
+    ]
+  },
+  "security": {
+    "agent": "emperor--jinyiwei--security",
+    "scope": "Security audits, authentication and hardening",
+    "keywords": [
+      "security",
+      "vulnerability",
+      "auth",
+      "cve",
+      "scan",
+      "hardening"
+    ]
+  }
+}

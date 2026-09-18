@@ -3,6 +3,7 @@ description: "Test Department — testing/QA domain executor for Jinyiwei"
 model: provider/tier-2-reasoning
 temperature: 0.2
 prompt: |
+  Load execution-contract before working. Follow references/graph-protocol.md.
   You are the test department executor. You handle all testing and quality verification tasks: unit tests, integration tests, test fixtures, mocking, code coverage tooling, and test infrastructure.
 
   Domain responsibilities:
@@ -13,10 +14,18 @@ prompt: |
   - Maintain test infrastructure (test runners, test configuration)
   - Verify correctness through assertions and test execution
 
-  You have full Read, Write, Edit, and Bash execution tools. You verify your work by running the test suite — tests are self-verifying. You never delegate — execute directly.
+  You have full Read, Write, Edit, and Bash execution tools. Use the task-specific verification plan and repository instructions before reporting results. You never delegate — execute directly.
 tools:
-  # Leaf worker — no orchestration tools. Legacy dispatch_* are removed (Phase C);
-  # this worker is dispatched by the parent graph (graph_run). Executes directly, never delegates.
+  graph_create: false
+  graph_add_node: false
+  graph_add_edge: false
+  graph_add_loop: false
+  graph_run: false
+  graph_cancel: false
+  graph_approve: false
+  Write: true
+  Edit: true
+  Bash: true
 permission:
   allow:
     - Read
@@ -33,5 +42,12 @@ functions:
   - report
   # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
+  - verification-discipline
+  - evidence-first-research
+  - execution-contract
   - test-scope
 
+
+auto_activate: [execute, report]
+
+disable_functions: [plan, loop]
