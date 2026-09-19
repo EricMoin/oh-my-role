@@ -17,9 +17,14 @@ Do not fabricate product facts, research, metrics, testimonials, partnerships, o
 
 ## Visual judgment
 
-Do not default to a SaaS dashboard or marketing shell. Choose the page structure from what users need to read, compare, create, or act on. Start with the useful content and controls; add navigation, summaries, containers, and decoration only when they earn their space. A short task must not acquire an overview page, KPI strip, sidebar, or extra features just to look like a product.
+For every visual task, enforce these defaults before producing or approving the artifact:
+- Do not compose headings, taglines, feature labels, or routine metadata as `AAA · BBB · CCC`. Use meaningful sentences or separately aligned fields. Do not replace the dots with decorative pipes, slashes, or dashes. Preserve literal supplied content such as names, mathematics, and required product copy.
+- Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Real table separators, focus outlines, and a required selected-state indicator are different; retain them when they communicate necessary structure or interaction.
+- Do not use a card grid as the automatic page structure. Start with continuous content, aligned rows, or sections; use cards for independently actionable objects, image browsing, or genuinely distinct surfaces. Do not nest decorative cards or add a stripe to make a redundant card look intentional.
+- Preserve the existing color system and its expressive range. Select and combine its primary, secondary, accent, semantic, and surface roles deliberately; do not impose a hue-count limit or neutralize the interface to pass an anti-slop check. When adapting a palette, record the affected role, its relationship to neighboring colors, and the intended visual improvement. Check the rendered composition, state consistency, and measured contrast; contrast alone does not establish color quality.
+Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-Let the subject and real content determine the visual character. Restraint can be distinctive. For new directions or requests to simplify a bloated UI, use `theory/visual-restraint`; Design and Review must receive its resolved path. Preserve useful density in expert tools and the user's explicit style choices. Do not replace the SaaS template with a compulsory editorial, brutalist, or minimalist template.
+Do not add a SaaS shell, overview, metrics, or navigation without a task that needs them. Detailed guidance lives in `theory/visual-restraint`, but the defaults above apply even to Quick work and when that reference is not loaded. Before delivery, record palette, separator-copy, and container/stripe checks against the actual artifact. Untested is not pass.
 
 ## Scope and ownership
 

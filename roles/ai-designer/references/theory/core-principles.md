@@ -64,7 +64,7 @@ When referencing content in another Skill file, use this exact format:
 `(See ai-designer-{domain}.md § Section Name)`
 
 Examples:
-- `(See ai-designer-system.md § Design Tokens — Color Palette)`
+- `(See default-design-system.md § Design Tokens — Color Palette)`
 - `(See ai-designer-visual.md § Typography in Practice)`
 - `(See ai-designer-interaction.md § Loading States)`
 - `(See ai-designer-psychology.md § Cognitive Load Theory)`
@@ -350,7 +350,7 @@ This is the main loop. Every design task moves through these phases, though not 
 - List hard constraints: platform, technology, timeline, brand, regulatory
 - Define success metrics: how will you know the design worked?
 - Identify non-goals: what you are explicitly NOT trying to solve
-- Catalog existing patterns and components available for reuse (See ai-designer-system.md § Design Tokens)
+- Catalog existing patterns and components available for reuse (See default-design-system.md § Design Tokens)
 
 **Outputs**: Problem statement, constraint list, success metrics, non-goals list.
 
@@ -440,7 +440,7 @@ This is the main loop. Every design task moves through these phases, though not 
 
 **Purpose**: Develop the recommended approach into a complete design. Move from concept to specification through increasing fidelity.
 
-**Inputs**: Recommended direction from Phase 4, design tokens and component library (See ai-designer-system.md § Design Tokens).
+**Inputs**: Recommended direction from Phase 4, design tokens and component library (See default-design-system.md § Design Tokens).
 
 **Key Activities**:
 - Wireframes: layout, content placement, and hierarchy without visual styling
@@ -456,7 +456,7 @@ This is the main loop. Every design task moves through these phases, though not 
 **Checklist**:
 - [ ] All screens designed for all states (default, empty, loading, error, success)
 - [ ] Visual hierarchy established (See ai-designer-visual.md § Visual Hierarchy)
-- [ ] Typography, color, and spacing use design tokens (See ai-designer-system.md § Design Tokens)
+- [ ] Typography, color, and spacing use design tokens (See default-design-system.md § Design Tokens)
 - [ ] Interactions specified (hover, focus, active, disabled states for all interactive elements)
 - [ ] Responsive behavior defined for all breakpoints
 - [ ] Edge cases addressed (maximum content, minimum content, empty states)
@@ -469,7 +469,7 @@ This is the main loop. Every design task moves through these phases, though not 
 
 **Key Activities**:
 - Write the Design Specification Document (See § Design Specification Document Template)
-- Document design tokens used (See ai-designer-system.md § Design Tokens)
+- Document design tokens used (See default-design-system.md § Design Tokens)
 - Specify component behavior in detail: props, states, variants, accessibility requirements
 - Document interaction specifications: triggers, transitions, timing, easing
 - Write accessibility specifications for every component
@@ -588,7 +588,7 @@ This is the canonical output format for design work. Every design task produces 
 - Color: palette (using token names), usage rules, meaning associations
 - Spacing: rhythm, margins, padding (using token names)
 - Imagery: style guidelines, illustration approach, icon style
-- References to design tokens (See ai-designer-system.md § Design Tokens)
+- References to design tokens (See default-design-system.md § Design Tokens)
 
 ### 7. Interaction Specifications
 
@@ -851,6 +851,6 @@ This table maps each section of the ai-designer Skill suite to the primary books
 | Visual Design (See ai-designer-visual.md) | Robin Williams — *The Non-Designer's Design Book*; Ellen Lupton — *Thinking with Type*; Josef Müller-Brockmann — *Grid Systems in Graphic Design*; Johannes Itten — *The Art of Color* |
 | Interaction Design (See ai-designer-interaction.md) | Dan Saffer — *Microinteractions*; Jenifer Tidwell — *Designing Interfaces*; Bill Scott & Theresa Neil — *Designing Web Interfaces*; Luke Wroblewski — *Web Form Design* |
 | Psychology (See ai-designer-psychology.md) | Susan Weinschenk — *100 Things Every Designer Needs to Know About People*; Stephen P. Anderson — *Seductive Interaction Design*; Aarron Walter — *Designing for Emotion*; Daniel Kahneman — *Thinking, Fast and Slow* |
-| Design Systems (See ai-designer-system.md) | Alla Kholmatova — *Design Systems*; Brad Frost — *Atomic Design*; Nathan Curtis — *Modular Web Design* |
+| Design Systems (See default-design-system.md) | Alla Kholmatova — *Design Systems*; Brad Frost — *Atomic Design*; Nathan Curtis — *Modular Web Design* |
 | Research Methods (See ai-designer-research.md) | Steve Portigal — *Interviewing Users*; Erika Hall — *Just Enough Research*; Jeff Gothelf & Josh Seiden — *Lean UX* |
 | Anti-Patterns (See ai-designer-antipatterns.md) | Harry Brignull — *Deceptive Design*; Chris Nodder — *Evil by Design*; Cass Sunstein & Richard Thaler — *Nudge* |

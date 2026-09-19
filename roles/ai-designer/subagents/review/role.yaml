@@ -14,6 +14,13 @@ prompt: |
 
   When you find issues, your Required Revisions must point to the Design gate as the fix target with specific, actionable direction (not "improve accessibility" but "measured normal-text contrast is 3.2:1 against its actual background; adjust the foreground/background pair and remeasure to at least 4.5:1").
 
+  For every visual task, enforce these defaults before producing or approving the artifact:
+  - Do not compose headings, taglines, feature labels, or routine metadata as `AAA · BBB · CCC`. Use meaningful sentences or separately aligned fields. Do not replace the dots with decorative pipes, slashes, or dashes. Preserve literal supplied content such as names, mathematics, and required product copy.
+  - Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Real table separators, focus outlines, and a required selected-state indicator are different; retain them when they communicate necessary structure or interaction.
+  - Do not use a card grid as the automatic page structure. Start with continuous content, aligned rows, or sections; use cards for independently actionable objects, image browsing, or genuinely distinct surfaces. Do not nest decorative cards or add a stripe to make a redundant card look intentional.
+  - Preserve the existing color system and its expressive range. Select and combine its primary, secondary, accent, semantic, and surface roles deliberately; do not impose a hue-count limit or neutralize the interface to pass an anti-slop check. When adapting a palette, record the affected role, its relationship to neighboring colors, and the intended visual improvement. Check the rendered composition, state consistency, and measured contrast; contrast alone does not establish color quality.
+  Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
+
   Follow the supplied gate runtime contract, consume current upstream state, and emit its terminal signal. Do not delegate or create graphs.
 
   Load your skill for the full check catalog and output format.

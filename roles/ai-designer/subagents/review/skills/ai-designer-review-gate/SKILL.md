@@ -29,6 +29,9 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 
 ### High (should block)
 
+**Visual-default violations**: generated `AAA · BBB` label chains; decorative dark/colored left stripes on cards, callouts, or rows; unsupported card-grid page structure; color-role assignments or combinations that demonstrably defeat the agreed palette. Inspect equivalent stripe implementations, not only literal `border-left`. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision. This explicit acceptance rule overrides the general caution about subjective taste below.
+
+
 6. **Context mismatch**: layouts, imagery, or placeholder content that demonstrably obscure the user task or contradict the brief. Familiar patterns and symmetry are not failures by themselves
 7. **Brand dilution**: design ignores existing brand assets/guidelines provided in constraints, generic styling when brand context was available
 8. **Missing states**: disabled states, maximum-content overflow, offline/degraded states where relevant
@@ -41,6 +44,16 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 12. **Token soup**: design system tokens referenced but not actually coherent (spacing system with 13 arbitrary values, color palette with no relationship)
 13. **Structural sameness**: every section uses identical layout pattern, no visual rhythm
 14. **Second-order defaults**: technically accessible but practically unusable (legal-minimum touch targets, minimum contrast with low-quality displays in mind)
+
+## Required artifact checks
+
+Report all three categories from `gate-contract`: palette, separator copy, and cards/stripes. Inspect source for copy/stripe implementations and inspect the current render for palette relationships and page structure. State which revision and viewport you examined. Record an exact exception when applicable. Never substitute “looks clean” or a checklist tick for evidence.
+
+Contrast measurements verify readability, not aesthetic coherence. Check role consistency, the relationship of neighboring colors, emphasis at actual surface areas, and interaction states. Multiple hues, tinted text/surfaces, deliberate temperature contrast, and vivid palettes are not failures by themselves. State the specific relationship that fails; “weird color” without an observable example is not an actionable finding. If rendering is unavailable, report visual checks as not checked and do not issue an overall visual pass for a build.
+
+## Preservation check for optimization
+
+Compare the current revision with the available baseline at equivalent viewports and states. Report the intended improvement and any change to existing palette families, token values, component behavior, density, and visual character. Unrequested loss of an established capability or replacement of the agreed style is a High regression, even if the result looks simpler. Prefer a focused correction over accepting a broad redesign. If no baseline can be inspected, state that preservation is unverified rather than assuming it.
 
 ## Visual fit and economy
 
@@ -65,7 +78,7 @@ Reference these principle cards when relevant:
 
 Load these references when you need depth:
 
-- `references/theory/visual-restraint.md` — visual fit, subtraction, and calibration examples
+- `references/theory/visual-restraint.md` — visual fit, preservation, and calibration examples
 - `references/catalogs/anti-patterns.md` — relevant anti-pattern categories
 - `references/theory/psychology.md` — cognitive science grounding
 - `references/theory/interaction-design.md` — interaction pattern validation
@@ -87,6 +100,7 @@ Load these references when you need depth:
 
 Return `pass` when:
 
+- For visual builds, all three Visual Checks have current rendered/source evidence as appropriate; no required check is not-checked
 - Zero Critical issues
 - Zero unaccepted High issues
 - Medium issues are noted but do not block
@@ -115,6 +129,8 @@ Design State Patch:
   Validation: ...
   Risks: ...
 Evidence:
+Visual Checks: palette; separator copy; cards/stripes — status, location, evidence, exceptions
+Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:
 Blocking Issues:
 Required Revisions: (point to Design gate with specific fix direction)

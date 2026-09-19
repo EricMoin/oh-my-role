@@ -23,6 +23,30 @@ Prefer project tokens when they exist. When introducing a token, give its role a
 
 ---
 
+## Color Selection and Application Protocol
+
+The system below is a reusable capability set. Preserve its palette families, ramps, theme variants, and component specifications. A screen selects from the system; it does not redefine the system by deleting values it happens not to use. Optimization must preserve the existing visual identity unless a redesign is explicitly in scope.
+
+### Diagnose before editing
+
+Inspect the current screen and the relevant tokens together. Identify what needs correction: a component using the wrong semantic role, an unsuitable foreground/background pair, competing focal elements, an inconsistent state, or a missing capability. Record the affected component and existing value before choosing a replacement. Keep the original pairing when it already works.
+
+### Compose a relationship
+
+Use the primary, secondary, accent, and semantic families according to the product's direction. Supporting colors may occupy large regions, accents may appear in several related roles, and a rich palette may be the correct result. Choose a dominant/supporting relationship and intended focal areas; do not enforce a one-accent limit, neutral-only foundation, or a fixed percentage of colored pixels.
+
+For an undecided direction, compare a small number of plausible combinations on the same representative content. Select the one that best expresses the intended hierarchy and identity. Do not create alternatives for a settled local correction. A brand color can remain intact while a particular component uses a different step of its ramp for readability.
+
+### Specify the application
+
+Record the selected token, component/state, neighboring foreground or background, and the reason for that pairing. Separate primitive palette values from semantic component assignments. Prefer correcting an assignment before changing a shared primitive; when a shared value must change, inspect its other consumers. Preserve the project's existing color representation and theme mechanism.
+
+Do not assume all values in a family are interchangeable or pre-validated. Small colored labels, large color fields, and subdued separators have different demands even when they share a hue. Inspect transitions among default, hover, selected, disabled, and error states without changing the meaning of the color.
+
+### Verify improvement and preservation
+
+Compare the affected screen and neighboring uses before/after at equivalent sizes, content, and supported themes. Judge both expressive intent and readable hierarchy. Measure actual composited text/background pairs independently of visual judgment. Report the specific improvement, unchanged strengths, and any unverified coverage. A fix that passes contrast but erases the intended visual character is incomplete.
+
 ## Design Tokens — Color Palette
 
 The tables offer light and dark examples. Implement and validate the themes required by the product or brief; do not add a theme switch or second theme solely to complete this table.

@@ -15,12 +15,13 @@ Design State
 - Evidence: observed facts with source locations
 - Assumptions / Unknowns:
 - Assets: available sources, usage constraints, honest gaps
-- Direction: task structure, density, content-led identity, deliberate omissions
+- Direction: task structure, density, color relationships, content-led identity, choices to retain or improve
+- Preservation: refinement/redesign scope, baseline, existing visual strengths, targeted changes
 - Information Architecture:
-- Visual System:
+- Visual System: color roles/values/sources, typography, spacing, explicit style exceptions
 - Interaction Model:
 - Artifact: path or URL, kind, revision, preview instructions
-- Validation: checks run, outcomes, untested coverage, reviewer
+- Validation: checks run, outcomes, untested coverage, reviewer; palette/separator-copy/cards-and-stripes checks tied to artifact revision
 - Risks / Unresolved Findings:
 - Open Questions:
 ```

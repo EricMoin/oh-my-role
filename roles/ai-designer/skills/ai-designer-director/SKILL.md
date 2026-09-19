@@ -22,8 +22,8 @@ For non-Quick work, first run an intake-only graph. Collect its report before bu
 Read `templates/design-state` and `gate-contract` from available references. For new directions or simplification work, supply `theory/visual-restraint` to Design and Review. The contract defines state transport, reporting, and terminal signals. Resolve the actual paths once. Every node prompt contains:
 
 - The user's request, known constraints, authorized scope, tier, and full current Design State.
-- Its objective, acceptance criteria, write scope (Design only), artifact destination, and expected next gate.
-- The gate-contract text, principle-card location, and relevant reference paths. Child skill lists do not inherit from the parent.
+- Its objective, acceptance criteria, write scope (Design only), artifact destination, and expected next gate. Identify refinement versus redesign; for refinement include the baseline and the visual/system properties to preserve.
+- The gate-contract text, explicit visual constraints/exceptions from the user, principle-card location, and relevant reference paths. Child skill lists do not inherit from the parent.
 - Graph ID, own node ID, and forward prerequisite node IDs so a worker can retrieve current producer output if necessary. Give Design the Review node ID as revision context only; on the first pass Review has no result to await.
 - On revision, the latest artifact and specific unresolved findings; never just “try again”.
 
@@ -54,4 +54,4 @@ If inputs or scope change substantially, retire obsolete work and create a named
 
 ## Assemble the deliverable
 
-Inspect the latest artifact and Review evidence. Link or show the actual result; summarize the few decisions that matter, validation coverage, assumptions, and unresolved risks. Clearly distinguish a specification from a prototype, an implemented feature from a mock, and a static inspection from an executed browser/assistive-technology check. Do not rerun a successful gate just to normalize harmless report formatting.
+Inspect the latest artifact and Review evidence. Check that palette, separator-copy, and card/stripe checks refer to the latest revision; missing or unrendered checks cannot be reported as visual approval. For refinement, also inspect the preservation report: a pass must not conceal a replacement palette, removed token capabilities, or unrelated restyling. Link or show the actual result; summarize the few decisions that matter, validation coverage, assumptions, and unresolved risks. Clearly distinguish a specification from a prototype, an implemented feature from a mock, and a static inspection from an executed browser/assistive-technology check. Do not rerun a successful gate just to normalize harmless report formatting.

@@ -60,7 +60,7 @@ Every microinteraction consists of four parts:
 
 - **Trigger**: tap or click on the toggle element
 - **Rules**: flip the boolean state. If currently off, set to on. If on, set to off. Animate the knob position and track color simultaneously.
-- **Feedback**: knob slides from one side to the other. Track color transitions (e.g., gray → green). On mobile, provide subtle haptic feedback on state change. The transition duration communicates responsiveness — keep it fast (See ai-designer-system.md § Design Tokens — Motion & Animation).
+- **Feedback**: knob slides from one side to the other. Track color transitions (e.g., gray → green). On mobile, provide subtle haptic feedback on state change. The transition duration communicates responsiveness — keep it fast (See default-design-system.md § Design Tokens — Motion & Animation).
 - **Loops and Modes**: state persists across sessions. No decay. No adaptation needed.
 
 #### Pull-to-Refresh
@@ -546,7 +546,7 @@ Speed communicates meaning:
 - **Slow (400–700ms)**: complex or emphasized transitions. Shared element morphs, multi-step orchestrated animations, celebratory moments. These feel deliberate and weighty.
 - **Never >700ms**: users perceive >700ms as sluggish. If a real operation takes longer, show progress feedback rather than a long animation.
 
-For specific duration and easing token values: (See ai-designer-system.md § Design Tokens — Motion & Animation).
+For specific duration and easing token values: (See default-design-system.md § Design Tokens — Motion & Animation).
 
 ### Functional vs Decorative Animation
 

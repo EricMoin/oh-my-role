@@ -60,7 +60,7 @@ These are patterns that AI designers are particularly prone to. This section is 
 
 **Why It Happens**: Tokens are concrete values that can be applied without judgment. Picking the "right" token requires understanding why one spacing value works better than another — a contextual judgment that AI struggles with.
 
-**Instead**: Choose spacing based on the relationship between elements. Related items get tighter spacing. Separate groups get wider spacing. The token system encodes a range of relationships — use the full range. (See ai-designer-system.md § Design Tokens)
+**Instead**: Choose spacing based on the relationship between elements. Related items get tighter spacing. Separate groups get wider spacing. The token system encodes a range of relationships — use the full range. (See default-design-system.md § Design Tokens)
 
 **Detection**: "Can I explain why each spacing value was chosen, or did I just pick the most common one?"
 
@@ -160,7 +160,7 @@ These are patterns that AI designers are particularly prone to. This section is 
 
 **Why It Happens**: Tokens are systematic and concrete — perfect for AI to optimize. But optimizing the system is not the same as optimizing the experience. A perfect token system can produce a terrible interface.
 
-**Instead**: Tokens serve the experience, not the other way around. Start with the desired experience, then express it through tokens. If a token doesn't serve a user need, question whether it belongs. (See ai-designer-system.md § Design Tokens)
+**Instead**: Tokens serve the experience, not the other way around. Start with the desired experience, then express it through tokens. If a token doesn't serve a user need, question whether it belongs. (See default-design-system.md § Design Tokens)
 
 **Detection**: "Am I choosing tokens because they serve the user, or because they complete the system?"
 
@@ -246,7 +246,7 @@ These are well-documented UX mistakes that persist because they're easy to creat
 
 **Why It Happens**: Different parts of the interface were designed at different times, by different people (or different AI prompts), using different references.
 
-**Instead**: Use one design system consistently. When adding new patterns, check if an existing component can be adapted. If the system doesn't cover a case, extend the system — don't create a one-off. (See ai-designer-system.md § Component Specifications)
+**Instead**: Use one design system consistently. When adding new patterns, check if an existing component can be adapted. If the system doesn't cover a case, extend the system — don't create a one-off. (See default-design-system.md § Component Specifications)
 
 **Detection**: "Do all components feel like they belong to the same family? Would a user notice style inconsistencies?"
 
@@ -336,7 +336,7 @@ Reference: Evil by Design (Nodder), Tragic Design (Shariat), Ruined by Design (M
 
 **Why It Happens**: Color is an easy differentiator. Without a constrained palette, each new element gets a new color until the interface is a carnival.
 
-**Instead**: Use the design system's color palette. Limit functional colors to 2-3 main hues plus neutrals. Use shade variations of the same hue rather than new hues. (See ai-designer-system.md § Design Tokens — Color Palette)
+**Instead**: Use the design system's color palette. Limit functional colors to 2-3 main hues plus neutrals. Use shade variations of the same hue rather than new hues. (See default-design-system.md § Design Tokens — Color Palette)
 
 **Detection**: "How many distinct hues am I using? Can I reduce them without losing information?"
 
@@ -550,7 +550,7 @@ These are not optional. Accessibility failures exclude real users and often viol
 
 **Why It Happens**: Animation adds "polish" and "delight." The impact on motion-sensitive users is invisible to the designer.
 
-**Instead**: Respect `prefers-reduced-motion`. When the user has requested reduced motion, disable or significantly reduce all non-essential animations. Essential feedback (loading spinners) can remain but should be subtle. (See ai-designer-system.md § Design Tokens — Motion & Animation)
+**Instead**: Respect `prefers-reduced-motion`. When the user has requested reduced motion, disable or significantly reduce all non-essential animations. Essential feedback (loading spinners) can remain but should be subtle. (See default-design-system.md § Design Tokens — Motion & Animation)
 
 **Detection**: "Have I tested with prefers-reduced-motion enabled? Does the interface still work and communicate without animations?"
 

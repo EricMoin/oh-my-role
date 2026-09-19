@@ -31,6 +31,12 @@ Fix Patterns:
 Reference:
 ```
 
+## Visual defaults that must survive routing
+
+No generated `AAA · BBB` heading/tagline/metadata formula and no decorative replacement separators. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Preserve the complete palette and choose roles and combinations from it. Evaluate hue relationships, surface area, emphasis, state meaning, and actual contrast; there is no one-accent or neutral-only rule. An explicit user/project requirement is the exception, not a rationale invented after the design is built.
+
+Verify palette, separator copy, and cards/stripes on the current artifact; record evidence or state that visual inspection was unavailable. These apply to direct Quick work as well as specialist gates. Detailed explanations are in `visual-restraint.md`.
+
 ## Core Cards
 
 ### User Goal First
@@ -128,6 +134,18 @@ Reference:
 **Fix Patterns**: Chunking, progressive disclosure, defaults, grouping by proximity, reduce simultaneous choices.
 
 **Reference**: psychology.md; visual-design.md.
+
+### Preserve and Improve
+
+**Use When**: Refining an existing design or design system.
+
+**Violation Signs**: A local correction replaces the palette, flattens rich surfaces, removes working hierarchy, or deletes reusable tokens without a task-specific reason.
+
+**Gate Question**: What improved, and which existing visual strengths remain demonstrably intact?
+
+**Fix Patterns**: Capture the current composition, identify the defective application, correct the smallest responsible role/component, and compare the same states afterward. Retain, retune, add, reorganize, or remove according to the defect; fewer elements or hues is not a success metric.
+
+**Reference**: default-design-system.md; visual-restraint.md.
 
 ### Interface Economy
 

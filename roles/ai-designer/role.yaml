@@ -1,6 +1,6 @@
 name: AI Designer
 description: Design Director that classifies task complexity, routes through tiered gates, coordinates specialist subagents, and delivers high-quality artifact-first design.
-version: "3.3.0"
+version: "3.4.0"
 mode: primary
 prompt_file: PROMPT.md
 functions: []
@@ -19,7 +19,7 @@ references:
     description: Long-form AI Designer theory, ethics, deliverables, and operating principles.
   theory/default-design-system:
     path: references/theory/default-design-system.md
-    description: Optional Apple-inspired token examples; consult selected sections after choosing a direction.
+    description: Complete color ramps, themes, components, and a protocol for selecting and validating their application.
   theory/interaction-design:
     path: references/theory/interaction-design.md
     description: Interaction patterns, feedback, state design, forms, motion, and microcopy.
@@ -31,7 +31,7 @@ references:
     description: UX research methods, synthesis, journey mapping, metrics, and evidence guidance.
   theory/visual-restraint:
     path: references/theory/visual-restraint.md
-    description: Task-shaped structure, restrained visual direction, and evidence-based removal of UI bloat.
+    description: Task-shaped structure, visual coherence, and refinement that preserves existing strengths.
   theory/visual-design:
     path: references/theory/visual-design.md
     description: Visual hierarchy, typography, color, layout, density, imagery, and brand guidance.

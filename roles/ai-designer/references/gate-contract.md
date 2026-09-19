@@ -8,6 +8,14 @@ Start from the supplied full Design State. Read the latest prerequisite result f
 
 Apply your patch and carry forward a compact **full** Design State in the result so a downstream consumer does not lose earlier constraints. Preserve source locations and distinguish observed facts, assumptions, and unknowns. On revision, read the actual latest artifact and Review feedback before editing. Reference paths are resolved by the director; `references/...` in a gate skill means the supplied parent-role reference, not a path relative to the user's project.
 
+## Visual acceptance
+
+Design and Review must check the palette, separator-style copy, and card/stripe treatment in every visual artifact they touch. Record `Visual Checks` in the report: each category is `pass`, `fail`, `not-checked`, or `not-applicable`, with the artifact revision, location/viewport or source location, evidence, and any exact user/project exception. A screenshot checks visual composition; source inspection locates repeated separators and stripe implementations. Neither alone establishes every aspect of quality.
+
+A confirmed violation of the visual defaults is a High finding and Review emits `revise_needed`, even if the page is functional. Do not waive it as personal taste, hide it in nonblocking notes, or equate a passing contrast check with a coherent palette. Design fixes its own detected violations before handing off. For a prototype/build, unavailable rendering means visual acceptance remains `not-checked`; return the useful artifact as an explicitly unverified draft rather than claiming visual approval. Specification-only work may pass a specification review but must remain labeled as such. Purely nonvisual work marks these checks not applicable.
+
+For optimization work, also record `Preservation Check`: baseline/revision, intended improvement, retained visual strengths, changed tokens/components, and observed regressions or unverified coverage. Do not equate successful deletion or fewer colors with improvement. Preserve full reusable token families; test changes to shared tokens against affected uses before accepting them.
+
 ## Report and signal
 
 Return a concise report with these fields; gate-specific fields may be added:
@@ -19,6 +27,8 @@ Design State Patch:
 Design State: <compact full state after applying the patch>
 Evidence: <paths, sources, measurements, commands and outcomes>
 Theory Applied: <relevant principles and their practical effect>
+Visual Checks: <palette; separator copy; cards/stripes, with evidence and coverage>
+Preservation Check: <baseline, retained strengths, scoped changes, regression evidence; N/A for new work>
 Blocking Issues:
 Required Revisions:
 Next Gate: Context | Design | Review | Done | Director

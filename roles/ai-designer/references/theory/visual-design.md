@@ -189,7 +189,7 @@ A typographic scale creates consistent, harmonious relationships between text si
 
 **Practical scale construction**: Start with a 16px base (body text). Apply the ratio to generate heading sizes, small text sizes, and display sizes. Round to whole pixels. Verify that each step is visibly distinct from adjacent steps — if two sizes look the same, the ratio is too tight for your size range.
 
-For concrete token values and the project's specific typographic scale, (See ai-designer-system.md § Design Tokens — Typography).
+For concrete token values and the project's specific typographic scale, (See default-design-system.md § Design Tokens — Typography).
 
 ### Line Height
 
@@ -234,7 +234,7 @@ Font weight communicates emphasis and hierarchy within a type family.
 
 ## Color Theory & Application
 
-Color is the most emotionally potent visual property. It triggers faster responses than shape, size, or text. This power makes color decisions high-leverage — a good color system multiplies clarity; a poor one multiplies confusion. This section covers color theory and application principles. For specific color token values, (See ai-designer-system.md § Design Tokens — Color Palette).
+Color is the most emotionally potent visual property. It triggers faster responses than shape, size, or text. This power makes color decisions high-leverage — a good color system multiplies clarity; a poor one multiplies confusion. This section covers color theory and application principles. For specific color token values, (See default-design-system.md § Design Tokens — Color Palette).
 
 ### Color Models
 
@@ -272,15 +272,15 @@ Color temperature is a perceptual property that influences emotional response an
 
 **Neutral colors** (grays, tans, off-whites): Neither warm nor cool. Provide the scaffolding that lets chromatic colors work. Use neutrals for: backgrounds, borders, secondary text, disabled states. Neutrals with warm undertones (warm gray) feel more human. Neutrals with cool undertones (cool gray) feel more technical.
 
-### The 60-30-10 Rule
+### The 60-30-10 Heuristic
 
-A time-tested formula for color distribution that prevents both monotony and chaos:
+One possible starting arrangement for exploring hierarchy, not a requirement for every interface:
 
 - **60% — Dominant color**: The background, the canvas. Typically a neutral: white, off-white, light gray, dark gray (dark mode). This is the color users see most and notice least. It sets the emotional baseline.
 - **30% — Secondary color**: UI elements that provide structure. Navigation backgrounds, card surfaces, section dividers, secondary buttons. This color supports hierarchy by differentiating surface layers.
 - **10% — Accent color**: The attention-grabber. Primary CTAs, active states, selected elements, links, key data points. This is the color that means "look here" and "interact with this."
 
-**Applying the rule**: The 60-30-10 distribution is approximate, not mathematical. The principle is: most of the interface is calm (60%), some of the interface provides structure (30%), and a small amount commands attention (10%). If your accent color occupies more than 15% of the screen, it loses its attention-commanding power.
+**Applying the heuristic**: Evaluate the actual composition rather than enforcing these percentages or a maximum accent area. A colored background, immersive brand surface, or multi-hue visualization can support the intended hierarchy. Preserve the existing palette and adjust the relationships that cause a demonstrated problem.
 
 ### Color for Meaning
 

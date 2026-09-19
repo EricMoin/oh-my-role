@@ -17,11 +17,21 @@ Produce the requested design with a clear hierarchy and choices grounded in the 
 
 Expect a current Design State with Brief, Audience, Success Criteria, Scope, Constraints, and (for Full tier) Evidence and Assets from the Context gate. If coming from Standard tier, you may have less context — compensate with reasonable defaults grounded in the audience and task type.
 
+## Non-negotiable generation checks
+
+Apply the visual defaults in your role prompt: no generated middle-dot label chains, no decorative left-stripe cards/callouts, and no automatic card-grid page shell. Do not reproduce a forbidden stripe with a pseudo-element or swap dots for another decorative separator. Keep real content and necessary interaction indicators intact.
+
+Preserve the full existing palette, ramps, theme mappings, and component states. Before changing color, identify whether the defect is a wrong token assignment, an unsuitable shade for its area, a state inconsistency, or an actual missing role. State the intended relationship among dominant/supporting colors and focal accents; multiple hues and colored surfaces are valid. Apply the color-selection protocol in `default-design-system.md` when creating or changing a palette. Record specific foreground/background measurements separately from the visual judgment.
+
+For optimization, capture the current appearance or use a verified baseline. State which visual strengths to retain and the targeted improvement. Compare before/after at the same size and state, including affected neighboring components. Missing a baseline is a limitation, not permission to reinvent the system. Do not delete palette families or replace them with neutrals to make the task easier.
+
+Repair detected violations before handoff. Include the three `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
+
 ## Structure and restraint
 
-For a new direction or simplification request, read the supplied `theory/visual-restraint` reference. Record the task-bearing structure, chosen density, source of visual identity, and deliberate omissions in Direction. For an existing product, reuse working conventions and remove only what the authorized scope supports.
+For a new direction or simplification request, read the supplied `theory/visual-restraint` reference. Record the task-bearing structure, chosen density, source of visual identity, and choices to retain or improve in Direction. For an existing product, reuse working conventions and remove only what the authorized scope supports.
 
-During the normal artifact inspection, check whether the user reaches useful content immediately and whether wrappers, repeated copy, or competing emphasis can be reduced. Preserve functionality and required states. This is part of the existing pass, not a new graph or an endless polishing loop.
+During the normal artifact inspection, check hierarchy, content, color, and component relationships. Choose the correction that improves the specific defect: retune, regroup, enrich, or remove where justified. Preserve the visual identity, functionality, and required states. This is part of the existing pass, not a new graph or an endless polishing loop.
 
 ## Required Deliverables
 
@@ -64,7 +74,7 @@ Load these theory references when you need depth:
 - `references/theory/interaction-design.md` — for interaction model decisions
 - `references/theory/psychology.md` — for cognitive/behavioral grounding
 - `references/theory/visual-restraint.md` — for new directions and reducing UI bloat
-- `references/theory/default-design-system.md` — selected token examples only after direction is chosen; not a default visual identity
+- `references/theory/default-design-system.md` — complete palette/component system and color-selection protocol; preserve existing token values unless an evidenced change is in scope
 
 ## Quality Bar
 
@@ -77,7 +87,7 @@ Your output must be:
 
 ## Pass Criteria
 
-Return `pass` when the requested deliverable exists, serves the brief, addresses applicable states and accessibility, and has honest verification evidence.
+Return `pass` when the requested deliverable exists, serves the brief, satisfies the visual defaults and applicable accessibility/state requirements, and has evidence appropriate to the deliverable. A build without rendered inspection remains a draft with visual checks not checked.
 
 Return `fail` when:
 - The requested build artifact is missing or replaced by a prose plan
@@ -102,6 +112,8 @@ Design State Patch:
   Interaction Model: ...
   Artifact: ...
 Evidence:
+Visual Checks: palette; separator copy; cards/stripes — status, location, evidence, exceptions
+Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:
 Blocking Issues:
 Required Revisions:
