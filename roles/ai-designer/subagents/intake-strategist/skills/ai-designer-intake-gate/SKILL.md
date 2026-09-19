@@ -5,6 +5,10 @@ description: Intake gate for AI Designer subagent. Frames the design problem, cl
 
 # Intake Gate
 
+## Runtime
+
+Follow the director-supplied `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated state, and emit the mapped terminal signal. Use supplied reference paths, not project-relative guesses. Work only on this gate; do not delegate.
+
 ## Mission
 
 Frame the design problem before solution work begins. Your output is a gate report for the parent Design Director, not a final answer to the user. In addition to problem framing, assign a complexity tier that determines which downstream gates (Context, Design, Review) the task will pass through.
@@ -18,6 +22,7 @@ Expect a current Design State, the user's latest request, and any known constrai
 - Identify task type: new product, redesign, component, dashboard, app flow, landing page, brand material, prototype, critique, or handoff-only.
 - Identify audience, context of use, primary goal, and success criteria.
 - Define scope and non-goals. Explicitly flag if the task is a review rather than a build.
+- Preserve explicit visual preferences and rejected treatments in Constraints, including requests for less chrome or bloat. Translate these into observable scope and hierarchy expectations without inventing a new style mandate.
 - Identify output expectation: design spec, prototype, HTML artifact, implementation guidance, critique, or combination.
 - Identify high-impact ambiguity that cannot be resolved by local inspection.
 - Decide whether the task requires visual artifact validation. Default yes for UI, prototype, redesign, app, landing, dashboard, and visual design work.
@@ -61,7 +66,7 @@ Classify the task into exactly one tier. The tier determines which gates run dow
 
 ### Tie-breaking
 
-If a task could plausibly match multiple tiers (e.g., a landing page with multi-surface requirements), prefer the higher tier. When in doubt, escalate with `needs-user-input`.
+If a task could plausibly match multiple tiers (e.g., a landing page with multi-surface requirements), prefer the higher tier. Decide the tier yourself from uncertainty and scope; tier selection is never a user-input blocker. A bounded critique can be Quick, but a broad audit or uncertain product context may need Full.
 
 ## Pass Criteria
 
@@ -73,17 +78,18 @@ Return `fail` when the brief asks for a harmful, manipulative, deceptive, or ina
 
 ## Output
 
-Use exactly:
+Use the shared gate report and signal contract, with these gate-specific fields:
 
 ```md
 Gate: Intake
 Status: pass | fail | needs-user-input
 Tier: quick | standard | full
 Gates: [Context, Design, Review] | [Design, Review] | []
+Design State: <full updated state>
 Design State Patch:
 Evidence:
 Theory Applied:
 Blocking Issues:
 Required Revisions:
-Next Gate: Context | Design | Done
+Next Gate: Context | Design | Done | Director
 ```

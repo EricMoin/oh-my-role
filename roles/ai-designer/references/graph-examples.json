@@ -1,0 +1,119 @@
+{
+  "intake": {
+    "name": "design-intake",
+    "nodes": [
+      {
+        "id": "intake-strategist",
+        "agent": "ai-designer--intake-strategist",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      }
+    ],
+    "edges": [],
+    "loop_groups": []
+  },
+  "standard": {
+    "name": "design-standard",
+    "nodes": [
+      {
+        "id": "design",
+        "agent": "ai-designer--design",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      },
+      {
+        "id": "review",
+        "agent": "ai-designer--review",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      }
+    ],
+    "edges": [
+      {
+        "from": "design",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "design",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "review-loop",
+        "nodes": [
+          "design",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  },
+  "full": {
+    "name": "design-full",
+    "nodes": [
+      {
+        "id": "context-researcher",
+        "agent": "ai-designer--context-researcher",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      },
+      {
+        "id": "design",
+        "agent": "ai-designer--design",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      },
+      {
+        "id": "review",
+        "agent": "ai-designer--review",
+        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
+        "max_retries": 0
+      }
+    ],
+    "edges": [
+      {
+        "from": "context-researcher",
+        "to": "design",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "design",
+        "to": "review",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      },
+      {
+        "from": "review",
+        "to": "design",
+        "type": "on_signal",
+        "signal_filter": [
+          "revise_needed"
+        ]
+      }
+    ],
+    "loop_groups": [
+      {
+        "id": "review-loop",
+        "nodes": [
+          "design",
+          "review"
+        ],
+        "max_traversals": 2
+      }
+    ]
+  }
+}

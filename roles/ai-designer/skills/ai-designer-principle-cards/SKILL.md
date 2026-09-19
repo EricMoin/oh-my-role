@@ -1,11 +1,11 @@
 ---
 name: ai-designer-principle-cards
-description: Short, always-loaded design constitution and executable principle cards for humane UI/UX gates. Full theory lives in references and is loaded only when a gate needs depth.
+description: On-demand design constitution and executable principle cards for humane UI/UX gates. Full theory lives in references and is loaded only when a gate needs depth.
 ---
 
 # Principle Cards
 
-Use these cards as the always-on theory layer. Gate specialists cite these cards in `Theory Applied`. Full theory lives in `roles/ai-designer/references/theory/` and the anti-pattern catalog lives in `roles/ai-designer/references/catalogs/`.
+Load these cards explicitly for design work; listing a skill does not load its body. Apply relevant cards and briefly record their effect in `Theory Applied`. Load deeper theory only when needed, using runtime-provided reference paths or the director's resolved paths. Do not assume the role source tree is the current workspace.
 
 ## Design Constitution
 
@@ -113,7 +113,7 @@ Reference:
 
 **Gate Question**: Can keyboard, screen reader, low-vision, touch, and reduced-motion users complete the core task?
 
-**Fix Patterns**: Semantic labels, visible focus, 4.5:1 text contrast, 44px targets, non-color indicators, reduced motion.
+**Fix Patterns**: Semantic labels, visible focus, applicable contrast thresholds, measured checks, generous touch targets (44px preferred; WCAG 2.2 AA uses 24px or qualifying spacing/exceptions), non-color indicators, reduced motion.
 
 **Reference**: core-principles.md; default-design-system.md.
 
@@ -128,6 +128,30 @@ Reference:
 **Fix Patterns**: Chunking, progressive disclosure, defaults, grouping by proximity, reduce simultaneous choices.
 
 **Reference**: psychology.md; visual-design.md.
+
+### Interface Economy
+
+**Use When**: New surfaces, redesigns, or UI that feels bloated.
+
+**Violation Signs**: The work is buried beneath a generic shell; repeated summaries and containers consume attention without helping a decision.
+
+**Gate Question**: Which element could disappear without losing capability, meaning, or orientation?
+
+**Fix Patterns**: Put the task-bearing object first; consolidate repetition; remove unnecessary wrappers before reducing readable type or touch targets. Preserve useful information density and essential controls.
+
+**Reference**: visual-restraint.md.
+
+### Contextual Identity
+
+**Use When**: Choosing or reviewing a visual direction.
+
+**Violation Signs**: Swapping the product name leaves a plausible page for any unrelated product; novelty comes entirely from surface effects.
+
+**Gate Question**: Which visible choice follows from this content, audience, or brand?
+
+**Fix Patterns**: Let real material and content shape composition; make the surrounding interface support it. A quiet interface can be the right authored choice. Do not mandate eccentricity, asymmetry, or a replacement template.
+
+**Reference**: visual-restraint.md; visual-design.md.
 
 ### Visual Hierarchy
 

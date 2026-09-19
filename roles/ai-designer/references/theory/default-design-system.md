@@ -1,57 +1,31 @@
 ---
 name: ai-designer-system
-description: Apple HIG-inspired default design system for the AI Designer suite. Provides concrete design tokens (colors, typography, spacing, border radius, shadows, motion, iconography) and component specifications for use when no project design system exists. Load with ai-designer-core. Override with project-specific tokens when available.
+description: Optional Apple-inspired token and component examples. Consult selected sections after choosing a task-appropriate direction; missing project tokens do not imply adopting this entire visual system.
 ---
 
-# AI Designer — Default Design System
+> Reference scope: use relevant design rationale only. The current role prompt, director skill, and gate contract own workflow and deliverables. Existing project systems take precedence over these fallback tokens; do not treat example values or historical templates as universal requirements.
 
-This Skill contains the complete default design system: every color, every spacing value, every type size, every shadow, every motion curve, every component specification. These are concrete values you use directly in design decisions — not principles or philosophy.
+# AI Designer — Optional Token Reference
 
-All principles governing how and why these tokens exist live in `ai-designer-core.md`. This file answers "what are the values?" — Core answers "why these values?"
+## Choose before borrowing
 
-## Purpose & When to Use
+This is an Apple-inspired example library, not the default identity for every project. First use the existing project system, explicit user direction, and task-specific visual rationale. Consult `visual-restraint.md` for a new direction or a simplification request.
 
-### This Is the Default Design System
+When a project lacks tokens, define the small set needed by the actual surface. Borrow individual values here only when they fit that direction. Do not automatically adopt the blue palette, rounded card system, shadows, complete component catalog, or a second theme. Missing documentation is not a request to redesign a working interface.
 
-Use these tokens when:
+Read only the relevant sections. Tables are examples within this visual family, not a checklist of components to build. No card, badge, navigation rail, modal, animation, or dashboard metric should be added merely because this reference specifies one.
 
-- The project has no existing design system
-- The project has a partial design system with gaps — fill gaps from here
-- You are prototyping or creating a new project from scratch
-- The client has not specified brand colors, typography, or spacing
+Keep project naming and platform conventions. Native point values below require platform-aware interpretation; do not mechanically emit them as web CSS units. Validate the chosen combinations with actual content, including the required writing systems and applicable accessibility requirements.
 
-### When a Project Design System Exists
+## Using the values
 
-The project's own design system ALWAYS takes precedence. Specifically:
-
-- **Full override**: The project defines its own color palette → ignore this file's color palette entirely
-- **Partial override**: The project defines primary/secondary colors but no spacing scale → use the project's colors with this file's spacing scale
-- **Gap filling**: The project defines buttons and inputs but no modal specs → use the project's button/input specs, fall back to this file for modals
-
-### When to Adapt vs Adopt
-
-**Adopt** (use directly) when:
-- No project tokens exist for that category
-- The project explicitly says "use system defaults"
-- You are in early prototyping and the brand identity is not yet defined
-
-**Adapt** (modify based on project context) when:
-- The project has a brand color but hasn't defined a full palette — generate the palette using the brand color as primary, following the structure defined here
-- The project targets a specific platform (Android, Windows) — adjust platform-specific values (touch targets, navigation patterns) while keeping the token structure
-- The project has specific accessibility requirements beyond WCAG AA — tighten contrast ratios and increase minimum sizes accordingly
-
-### What This Skill Provides
-
-Values and rules. Not code. Not implementation. Not CSS classes or React components. When you use these tokens in a design specification, reference them by their semantic name and provide the concrete value.
-
-**Wrong**: "Use the primary color for the button background."
-**Right**: "Button background: `color-primary-500` (#007AFF in light mode, #0A84FF in dark mode)."
+Prefer project tokens when they exist. When introducing a token, give its role and concrete value so the result is implementable. Reuse a small coherent set; do not import unused scales or create a whole design-system deliverable for a single screen.
 
 ---
 
 ## Design Tokens — Color Palette
 
-Every color token has a light mode value and a dark mode value. Always specify both. Never assume light mode is the default — both modes are equal citizens.
+The tables offer light and dark examples. Implement and validate the themes required by the product or brief; do not add a theme switch or second theme solely to complete this table.
 
 ### Semantic Colors
 
@@ -858,13 +832,15 @@ Each component specification defines: size variants, internal dimensions, states
 
 ### Cards
 
+Use a card when an independent item, surface, or interaction needs containment. For continuous text, settings rows, or comparable records, first consider normal flow or aligned rows. These dimensions do not require a title, subtitle, footer, or metadata on every card.
+
 #### Card Dimensions
 
 | Property | Value | Notes |
 |----------|:---:|-------|
 | Padding | 16pt–20pt | 16pt for compact, 20pt for standard |
 | Border radius | `radius-lg` 12pt | Generous rounding signals containment |
-| Shadow | Level 2 (Card) | See § Shadows & Elevation |
+| Shadow | None by default; elevation if needed | Use depth to communicate a distinct surface |
 | Border (dark mode) | 1pt rgba(255,255,255,0.08) | Replaces shadow in dark mode |
 | Content gap | 12pt | Between internal sections (header, body, footer) |
 | Image radius (inner) | 8pt | Slightly less than card radius |
@@ -1047,7 +1023,7 @@ Each component specification defines: size variants, internal dimensions, states
 
 ## Design System Governance
 
-These rules govern how tokens are managed over the lifecycle of a project. Tokens are a contract — changing them has ripple effects across every component.
+The following examples apply only when establishing a reusable system is in scope. Follow existing project naming, versioning, and migration practices first; do not add token infrastructure to satisfy this reference.
 
 ### Token Naming Convention
 
@@ -1075,18 +1051,11 @@ Format: `{category}-{property}-{variant}`
 - Project uses 8pt base grid, not 4pt → override all spacing tokens
 - Project requires larger touch targets (52pt not 44pt) → override component heights
 
-**Never override**:
-- Token naming structure
-- Semantic role mapping (e.g., primary means "main action")
-- Accessibility minimums (contrast ratios, touch target sizes)
+Preserve semantic meaning and accessibility requirements. Token names and example values may be adapted to the project.
 
-### Token Versioning Rules
+### Token changes
 
-- **Never change a token value once established in production** — add a new token instead
-- `color-primary-500: #007AFF` is permanent once shipped. If brand changes, introduce `color-primary-v2-500: #2563EB` and migrate
-- Deprecation: mark old tokens as deprecated for 2 release cycles before removal
-- **Additive changes are always safe**: new tokens, new variants, new components
-- **Destructive changes require migration**: changing values, removing tokens, renaming tokens
+Check affected components before changing shared tokens. Use the project's migration conventions for breaking changes; neither adding unused tokens nor creating versioned duplicates is automatically safer. Keep local visual changes local unless shared behavior needs to change.
 
 ### Audit Checklist
 
@@ -1098,9 +1067,9 @@ Before finalizing any design that uses this system, verify:
 - [ ] Every shadow uses an elevation level, not a custom shadow
 - [ ] Every animation uses a duration + easing token combination
 - [ ] Every icon uses a size from the icon scale
-- [ ] Light mode and dark mode tokens are both specified
+- [ ] All supported themes are specified and checked
 - [ ] All text meets WCAG AA contrast requirements
-- [ ] All interactive elements meet 44×44pt minimum touch target
+- [ ] Hit targets meet applicable platform/accessibility requirements; distinguish a preferred 44pt native target from a web AA minimum
 - [ ] No more than 3 font weights are used on any single screen
 
 ---

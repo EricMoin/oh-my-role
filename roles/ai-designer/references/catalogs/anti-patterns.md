@@ -18,14 +18,14 @@ This is a reference library, not a sequential read. Use it as a diagnostic tool.
    - **Why It Happens** — The root cause (so you can prevent it)
    - **What To Do Instead** — The concrete fix
    - **Detection** — A question to ask yourself
-3. If you find yourself matching an anti-pattern, stop and fix it before proceeding.
+3. Confirm the pattern causes a task, brief, or accessibility problem before changing it. Familiar styling alone is not a defect.
 4. The detection checklist at the end (§ Anti-Pattern Detection Checklist) is a quick-scan summary.
 
 ### Severity Levels
 
 - **Critical**: Dark patterns and accessibility violations. Must fix before delivery.
-- **High**: AI-specific anti-patterns. These are your most likely mistakes.
-- **Medium**: Classic UX and visual anti-patterns. Fix unless you have a documented reason.
+- **High**: Demonstrated task obstruction or material conflict with an explicit brief, including requested reduction of visual bloat.
+- **Medium**: Nonblocking visual or usability improvements. Do not initiate a revision loop for personal taste.
 - **Low**: Content and IA anti-patterns. Fix when time permits, flag otherwise.
 
 ---
@@ -34,15 +34,25 @@ This is a reference library, not a sequential read. Use it as a diagnostic tool.
 
 These are patterns that AI designers are particularly prone to. This section is your highest-priority audit target.
 
-### Generic Symmetry
+### Unnecessary Product Shell
 
-**Description**: Defaulting to perfectly balanced, symmetrical layouts where every element is centered and evenly distributed. Real designs use intentional asymmetry to create hierarchy and visual interest.
+**Description**: A small tool arrives inside a persistent sidebar, greeting, KPI strip, and several dashboard panels, although its useful content needs none of them.
 
-**Why It Happens**: Symmetry is the "safest" choice — it offends no one and requires no judgment calls about emphasis. AI defaults to balance because imbalance feels like a mistake.
+**Why It Happens**: The model associates these components with a finished product and fills space before understanding the task.
 
-**Instead**: Use asymmetry to create focal points and guide attention. One side heavier than the other. One element larger. The layout should tell the user where to look first, second, third.
+**Instead**: Expose the work object and relevant controls. Keep navigation and summary information only where they support real user movement or decisions. See `theory/visual-restraint` for task-specific alternatives.
 
-**Detection**: "Is every element perfectly centered or evenly spaced? Does the layout have a clear focal point, or does it feel like a spreadsheet?"
+**Detection**: "Which useful action or piece of content is delayed by this shell? What would be lost if this section were removed?"
+
+### Weak Hierarchy
+
+**Description**: Elements with different importance receive indistinguishable emphasis. This can happen in either symmetric or asymmetric layouts.
+
+**Why It Happens**: Layout balance or visual novelty substitutes for deciding what the user needs first.
+
+**Instead**: Establish hierarchy through reading order, grouping, content, and emphasis. Retain symmetry when it supports comparison or calm structure; introduce asymmetry only when it serves the composition.
+
+**Detection**: "Can the user locate the primary content and action without competing decoration?"
 
 ### Token Soup
 

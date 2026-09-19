@@ -5,6 +5,10 @@ description: Context gate for AI Designer subagent. Grounds design work in exist
 
 # Context Gate
 
+## Runtime
+
+Follow the director-supplied `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated state, and emit the mapped terminal signal. Use supplied reference paths, not project-relative guesses. Work only on this gate; do not delegate.
+
 ## Mission
 
 Ground the work in reality before any design direction is finalized. Prefer discovered evidence over assumptions. Do not judge aesthetics yet.
@@ -15,7 +19,7 @@ Ground the work in reality before any design direction is finalized. Prefer disc
 - Identify framework and implementation constraints when the task touches an existing product.
 - Capture existing brand signals: logo, product imagery, screenshots, color tokens, typography, voice, icon style, spacing, radius, density, and motion.
 - For named products, brands, SDKs, events, or current facts, verify facts before relying on memory.
-- For brand or product tasks, require real assets in this order: user-provided assets, repo assets, official source, reputable public source, generated from references, honest placeholder.
+- For brand or product tasks, look for appropriate assets in this order: user-provided assets, repo assets, official source, reputable public source, generated from references, honest placeholder.
 - Identify content truth risks: invented metrics, missing testimonials, fake dashboards, placeholder names, unavailable proof.
 - Preserve existing IA, routes, analytics-sensitive labels, legal copy, and accessibility wins unless the brief explicitly asks to change them.
 
@@ -34,21 +38,22 @@ Use `references/theory/research.md` for evidence hierarchy and research limitati
 
 Return `pass` when the Design State has enough evidence and asset policy for UX/IA work to proceed honestly.
 
-Return `needs-user-input` when a required brand or product asset cannot be discovered and omission would break recognition or truthfulness.
+Use an explicitly labeled placeholder or omission when it preserves the task. Return `needs-user-input` only when an undiscoverable required asset or fact materially prevents an honest deliverable.
 
 Return `fail` when the state relies on fabricated facts, unverified current claims, or fake brand/product material.
 
 ## Output
 
-Use exactly:
+Use the shared gate report and signal contract, with these gate-specific fields:
 
 ```md
 Gate: Context
 Status: pass | fail | needs-user-input
+Design State: <full updated state>
 Design State Patch:
 Evidence:
 Theory Applied:
 Blocking Issues:
 Required Revisions:
-Next Gate: UX/IA
+Next Gate: Design | Director
 ```

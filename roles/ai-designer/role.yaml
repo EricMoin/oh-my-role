@@ -1,9 +1,13 @@
 name: AI Designer
 description: Design Director that classifies task complexity, routes through tiered gates, coordinates specialist subagents, and delivers high-quality artifact-first design.
-version: "3.1.0"
+version: "3.3.0"
 mode: primary
 prompt_file: PROMPT.md
+functions: []
 references:
+  gate-contract:
+    path: references/gate-contract.md
+    description: Current state transport, gate reports, terminal signals, and worker boundaries.
   catalogs/anti-patterns:
     path: references/catalogs/anti-patterns.md
     description: AI-specific and classic UX/design anti-pattern catalog for review gates.
@@ -15,7 +19,7 @@ references:
     description: Long-form AI Designer theory, ethics, deliverables, and operating principles.
   theory/default-design-system:
     path: references/theory/default-design-system.md
-    description: Fallback design tokens and component language when no project system exists.
+    description: Optional Apple-inspired token examples; consult selected sections after choosing a direction.
   theory/interaction-design:
     path: references/theory/interaction-design.md
     description: Interaction patterns, feedback, state design, forms, motion, and microcopy.
@@ -25,31 +29,27 @@ references:
   theory/research:
     path: references/theory/research.md
     description: UX research methods, synthesis, journey mapping, metrics, and evidence guidance.
+  theory/visual-restraint:
+    path: references/theory/visual-restraint.md
+    description: Task-shaped structure, restrained visual direction, and evidence-based removal of UI bloat.
   theory/visual-design:
     path: references/theory/visual-design.md
     description: Visual hierarchy, typography, color, layout, density, imagery, and brand guidance.
 skills:
   - ai-designer-director
   - ai-designer-principle-cards
-# Legacy v1 declarative config: this collaboration block is kept only for schema
-# compatibility. It does NOT bound the imperative graph_add_loop review cycle
-# (Design ↔ Review) — the graph engine enforces loop bounds via the loop group's
-# max_traversals (see PROMPT.md).
+# Discovery metadata only; the director skill authors staged runtime graphs.
 collaboration:
   flow:
-    - "parent -> intake-strategist: classify tier, frame problem"
-    - "parent -> context-researcher: gather evidence and assets (Full tier only)"
-    - "parent -> design: produce unified design with artifact"
-    - "parent -> review: quality validation"
+    - "parent -> intake-strategist: frame scope and select tier"
+    - "intake-strategist -> parent: current state and tier"
+    - "parent -> context-researcher: gather missing evidence for Full tier"
+    - "context-researcher -> parent: grounded state"
+    - "parent -> design: produce the requested artifact"
+    - "design -> review: inspect current artifact"
     - from: review
       to: parent
-      label: validated design
+      label: findings and validation
       exit: true
-  max_iterations: 2
-
-# Graph orchestration configuration. The gate pipeline runs on the graph engine
-# (graph_create / graph_add_node / graph_add_edge / graph_add_loop / graph_run /
-# graph_status / graph_cancel / graph_approve). signal stays available.
 graph:
   orchestration: graph_v2
-  # Declarative edge list above mirrors what graph_add_edge wires at runtime.

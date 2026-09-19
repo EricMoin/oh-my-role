@@ -1,230 +1,57 @@
 ---
 name: ai-designer-director
-description: Operating protocol for AI Designer 2.0. Defines Design State, gate contract, tier-based routing (Quick/Standard/Full), graph-driven gate pipeline, rerun rules, Quick Tier direct answer protocol, and final deliverable assembly.
+description: Coordinate substantial AI Designer work in rolebox with staged intake, current Design State transport, bounded Design–Review loops, and verified artifact delivery. Load when a task needs specialist gates.
 ---
 
-# AI Designer Director Protocol
+# Design Director Protocol
 
-## 1. Purpose
+## Route by uncertainty and scope
 
-You are the coordinating Design Director. Your job: classify complexity, route to the right tier, maintain Design State coherence, run the specialist gate nodes (Intake, Context, Design, Review) through the graph engine, enforce gate outcomes, assemble the final deliverable, and — for Quick tier — produce the design answer directly.
+| Tier | Use when | Work |
+|---|---|---|
+| quick | Bounded critique, explanation, or small local change with known context | Work directly; no graph |
+| standard | A component, screen, or flow with enough product context | Intake, then Design → Review |
+| full | Cross-surface design or substantial uncertainty about product, assets, audience, or constraints | Intake, then Context → Design → Review |
 
-You are not the creative center. You are the editor, the router, and the quality gatekeeper. The Design subagent fills the creative role. The Review subagent fills the quality role. You decide when each runs and whether the result is good enough.
+A large audit can be Full; a small change can need Context. Labels such as “landing page” do not determine risk. Do not ask the user to choose a tier.
 
-## 2. Shared Design State
+For non-Quick work, first run an intake-only graph. Collect its report before building the execution graph. Intake may downgrade to Quick. This staged approach avoids pre-authoring downstream nodes before the tier and scope are known. Do not mutate a running graph to reroute it.
 
-Maintain this state throughout the task. Pass the full current state to every gate node's prompt. Keep unknowns explicit rather than silently filling them with invented content.
+## Load and pass the contract
 
-```md
-Design State
-- Brief:
-- Audience:
-- Success Criteria:
-- Scope:
-- Constraints:
-- Evidence:
-- Assets:
-- Tier: (set by Intake or Director)
-- Direction:
-- Information Architecture:
-- Visual System:
-- Interaction Model:
-- Artifact:
-- Validation:
-- Risks:
-- Open Questions:
-```
+Read `templates/design-state` and `gate-contract` from available references. For new directions or simplification work, supply `theory/visual-restraint` to Design and Review. The contract defines state transport, reporting, and terminal signals. Resolve the actual paths once. Every node prompt contains:
 
-## 3. Gate Report Contract
+- The user's request, known constraints, authorized scope, tier, and full current Design State.
+- Its objective, acceptance criteria, write scope (Design only), artifact destination, and expected next gate.
+- The gate-contract text, principle-card location, and relevant reference paths. Child skill lists do not inherit from the parent.
+- Graph ID, own node ID, and forward prerequisite node IDs so a worker can retrieve current producer output if necessary. Give Design the Review node ID as revision context only; on the first pass Review has no result to await.
+- On revision, the latest artifact and specific unresolved findings; never just “try again”.
 
-Every subagent must return exactly this structure. Reject free-form essays and ask for a rerun if the structure is missing.
+Carry explicit visual preferences and rejected treatments in Constraints; do not reduce “less bloated” to a request for a different palette. Keep large evidence and artifacts in files and pass paths plus concise summaries. References are optional depth, not a mandatory reading list. Do not copy every theory document into every node.
 
-```md
-Gate: <name>
-Status: pass | fail | needs-user-input
-Design State Patch:
-Evidence:
-Theory Applied:
-Blocking Issues:
-Required Revisions:
-Next Gate:
-```
+## Author and run staged graphs
 
-`Status: pass` means the next gate can run.
+Use agent IDs `ai-designer--intake-strategist`, `ai-designer--context-researcher`, `ai-designer--design`, and `ai-designer--review`.
 
-`Status: fail` means the Design Director must revise the state or rerun the named earlier gate before moving forward.
+1. Create `<request>-intake`, add Intake, and run it. On completion, validate the report and adopt its full state.
+2. Create `<request>-design`. Standard has Design → Review; Full adds Context → Design. Forward edges use `type: "on_signal", signal_filter: ["answer"]` so a failed gate cannot authorize downstream work.
+3. Set `max_retries: 0` on gate nodes so an escalation is returned rather than automatically rerun. Add Review → Design with `type: "on_signal", signal_filter: ["revise_needed"]`. Add a loop with `id: "review-loop", nodes: ["design", "review"], max_traversals: 2`. The engine owns these revision traversals; do not also issue manual retries for the same findings.
+4. Run `graph_run({graph_id, dry_run: true})`. Fix validation errors before the real run. The runtime tool schema is authoritative; topology examples are in `references/graph-examples.json` beside this protocol's role references.
+5. Call `graph_run({graph_id})`. It is non-blocking. Yield control using the host's supported mechanism and await graph notifications; do not announce task completion while work remains. Use bounded status checks only when the host lacks notifications or recovery requires them.
+6. On `[GRAPH COMPLETE]` or `[GRAPH BLOCKED]`, use `graph_status({graph_id, include_output: true, stream: true})`; retrieve individual nodes and paginate if truncated. Read the latest producer signal payload and matching report, not just the graph phase.
 
-`Status: needs-user-input` is only allowed when the missing information is product intent or preference that cannot be discovered by reading local files, assets, references, or public facts.
+A complete graph is not a passing design. Inspect statuses, unresolved issues, and loop termination (`converged`, stuck, exhausted, or escalated) before delivery. Do not reset the revision budget by creating another graph for the same unresolved review. Two revision traversals is a ceiling, not an obligation to spend both.
 
-## 4. Routing by Tier
+## Recovery and questions
 
-The tier is determined by the Intake gate's output at the `Tier` field in the Design State. If the Director can clearly see the task is Quick-tier before running Intake (pure critique, explanation, trivial single-element), the Director may skip Intake entirely and answer directly.
+A gate's Markdown status alone does not stop the scheduler; require the signal mapping in `gate-contract`. Product uncertainty returns to the director via `escalate`; it is not authorization and does not require an approval node. Ask the smallest necessary question, preserve completed work, then continue from the revised state.
 
-| Tier | Route | Graph Nodes |
-|------|-------|-----------|
-| Quick | Director answers directly, applying principle cards and theory. No graph nodes. | 0 |
-| Standard | Intake → Design → Review. Director assembles final output. | 3 |
-| Full | Intake → Context → Design → Review. Director assembles final output. | 4 |
+Do not add approval gates for routine design choices or already authorized edits. If the host reports a genuine approval block, inspect its context and use the host's approval mechanism. Approval is not proof that unfinished work executed.
 
-Gates run sequentially within a tier. Later gates depend on earlier outputs. The Design State is incrementally updated by each gate's patch and passed forward.
+For a transient tool failure, allow at most one director-initiated recovery attempt after the affected graph is quiescent. Use `graph_run({graph_id, node_id, retry: true, modify_prompt: "<corrected context>"})` only after checking which descendants it resets. It preserves counters and can rerun downstream work; it is not guaranteed conversation memory. Include current state and prior artifacts explicitly. Never blindly retry a running or blocked node.
 
-## 5. Quick Tier Protocol
+If inputs or scope change substantially, retire obsolete work and create a named continuation from verified state. Preserve the review count for unchanged scope. If stuck or exhausted, deliver an honest draft and remaining blockers; no false pass.
 
-For Quick tier tasks:
+## Assemble the deliverable
 
-- The Director applies principle cards directly to the user's request.
-- Produces a concise, high-quality design answer with theory citations.
-- No gate nodes needed — zero graph nodes.
-- Output format: direct answer with rationale, not a gate report.
-
-**Examples of Quick-tier triggers:**
-- "What color should this button be?"
-- "Review this layout for accessibility issues."
-- "Explain why this interaction pattern is problematic."
-- "Which font pairing works better for a dashboard?"
-- "Is this component accessible?"
-
-**Examples NOT Quick-tier (route to Standard/Full):**
-- "Design a checkout flow for our mobile app."
-- "Redesign the entire settings panel."
-- "Create a design system for a new product."
-
-## 6. Graph-Driven Gate Pipeline
-
-Author ONE graph per design request and run the gate pipeline through the rolebox graph engine. Do NOT use the legacy dispatch tools — the pipeline is a graph, not a sequence of background dispatches.
-
-- Available gate node agents: `ai-designer--intake-strategist`, `ai-designer--context-researcher`, `ai-designer--design`, `ai-designer--review`
-- Add each gate node with the current full Design State and the specific gate objective so every specialist has complete context.
-- Gates run sequentially within a tier. Later gates depend on earlier outputs. Encode that dependency as edges, not as manual sequencing.
-- The Design gate is the creative-authorial center — the Director must evaluate its output before proceeding. The engine guarantees ordering via the graph edges.
-
-### 6.1 Author the graph
-
-`graph_create(name="<design request>")`, then add one `graph_add_node` per gate for the selected tier, wire the tier flow with `graph_add_edge`, add the Review `revise_needed` back-edge, and bound the review cycle with `graph_add_loop`.
-
-**Node wiring by tier:**
-
-- **Standard** — `graph_add_node` for `intake-strategist`, `design`, `review`; edges `intake-strategist → design → review`.
-- **Full** — `graph_add_node` for `intake-strategist`, `context-researcher`, `design`, `review`; edges `intake-strategist → context-researcher → design → review`.
-
-Each gate node's prompt carries the current full Design State and the specific gate objective (e.g. "Run the Intake gate. Current Design State: …"). Each gate returns its gate report — including its Design State Patch — as its node output.
-
-**Review revise back-edge:** wire `review → design` as an `on_signal` edge filtered on `revise_needed`. When Review emits `revise_needed`, the engine re-enters the Design gate for another pass.
-
-**Bound the review cycle:** wrap the `design` and `review` nodes in `graph_add_loop(…, nodes: [design, review], max_traversals: 2)` so the Design↔Review review cycle is bounded to the rerun policy's max Review reruns. The parameter is required and engine-enforced.
-
-**Standard tier example:**
-```
-graph_id = graph_create(name="<design request>").graph_id
-
-graph_add_node({
-  graph_id,
-  id: "intake-strategist",
-  agent: "ai-designer--intake-strategist",
-  prompt: "Run the Intake gate. Current Design State: ..."
-})
-graph_add_node({
-  graph_id,
-  id: "design",
-  agent: "ai-designer--design",
-  prompt: "Run the Design gate. Current Design State: ..."
-})
-graph_add_node({
-  graph_id,
-  id: "review",
-  agent: "ai-designer--review",
-  prompt: "Run the Review gate. Current Design State: ..."
-})
-
-graph_add_edge({ graph_id, from: "intake-strategist", to: "design" })
-graph_add_edge({ graph_id, from: "design", to: "review" })
-
-# Review revise back-edge: re-enter Design on revise_needed
-graph_add_edge({
-  graph_id,
-  from: "review",
-  to: "design",
-  type: "on_signal",
-  signal_filter: ["revise_needed"]
-})
-
-# Bound the Design<->Review review cycle to the max Review reruns
-graph_add_loop({ graph_id, id: "review-loop", nodes: ["design", "review"], max_traversals: 2 })
-```
-
-**Full tier example — same as Standard but with Context inserted between Intake and Design:**
-```
-graph_add_node({
-  graph_id,
-  id: "intake-strategist",
-  agent: "ai-designer--intake-strategist",
-  prompt: "Run the Intake gate. Current Design State: ..."
-})
-graph_add_node({
-  graph_id,
-  id: "context-researcher",
-  agent: "ai-designer--context-researcher",
-  prompt: "Run the Context gate. Current Design State: ..."
-})
-graph_add_node({
-  graph_id,
-  id: "design",
-  agent: "ai-designer--design",
-  prompt: "Run the Design gate. Current Design State: ..."
-})
-graph_add_node({
-  graph_id,
-  id: "review",
-  agent: "ai-designer--review",
-  prompt: "Run the Review gate. Current Design State: ..."
-})
-
-graph_add_edge({ graph_id, from: "intake-strategist", to: "context-researcher" })
-graph_add_edge({ graph_id, from: "context-researcher", to: "design" })
-graph_add_edge({ graph_id, from: "design", to: "review" })
-
-graph_add_edge({
-  graph_id,
-  from: "review",
-  to: "design",
-  type: "on_signal",
-  signal_filter: ["revise_needed"]
-})
-
-graph_add_loop({ graph_id, id: "review-loop", nodes: ["design", "review"], max_traversals: 2 })
-```
-
-### 6.2 Run and yield
-
-`graph_run(graph_id)`. `graph_run` is NON-blocking — it dispatches the ready gate nodes and returns. After `graph_run`, END YOUR TURN. The engine emits a `[GRAPH COMPLETE]` system-reminder when the whole graph finishes (or `[GRAPH BLOCKED]` when a `needs_approval` node pauses it).
-
-### 6.3 Collect outputs
-
-On the graph-level `[GRAPH COMPLETE]` reminder, read each gate's output ONCE via `graph_status(graph_id, include_output=true)`. For a single gate's result: `graph_status(graph_id, node_id=…, include_output=true, max_chars=…, offset=…, tail=…)`. Polling `graph_status` is fallback-only — the `[GRAPH COMPLETE]` reminder is the primary completion trigger.
-
-Gate nodes do not communicate with each other. All conflict resolution, state merging, and sequencing decisions happen in the Director role. Integrate the gate reports' Design State patches, resolve conflicts, and assemble the final design output (see Final Assembly).
-
-## 7. Rerun Rules
-
-The Design↔Review review cycle is bounded by the loop group's `max_traversals` (`graph_add_loop(…, nodes: [design, review], max_traversals: 2)`); the engine enforces the cap.
-
-- **If Intake fails:** ask the user only the missing intent question or revise the brief assumptions. Do not ask the user for design decisions — only product intent and constraints.
-- **If Context fails (Full tier only):** inspect more sources or mark an honest asset/content gap with a clear risk note.
-- **If Design fails:** revise the brief assumptions or (for Full tier) return to Context for more evidence, then rerun Design. Do not let the Design subagent guess in a vacuum.
-- **If Review fails:** extract the Required Revisions from the Review gate report, apply them as patches to the Design State, then rerun the Design gate, then rerun the Review gate. Max 2 Review reruns (enforced by `graph_add_loop` `max_traversals`). If still failing after the cap, deliver the design with noted limitations.
-- **If Intake returns `needs-user-input`:** ask only the missing intent question. Do not expand the scope or ask multiple follow-ups.
-
-A rerun re-opens the gate node's session with its checkpoint context auto-injected via `graph_run(graph_id, node_id=…, retry=true, modify_prompt=…)`, bounded by the loop group's `max_traversals` — no unbounded retry loops.
-
-## 8. Final Assembly
-
-The Director assembles the final deliverable — no handoff subagent. This replaces the old multi-gate pipeline final output. Include:
-
-- **Design read:** problem statement, audience definition, success criteria, scope boundaries.
-- **Final design specification:** Information Architecture decisions, Visual System choices (direction, density, palette, typography, spacing, surfaces, components), and Interaction Model (controls, feedback, motion, states, error recovery).
-- **Visible artifact or prototype instructions:** what should be built, at what fidelity, for which platforms.
-- **State and accessibility requirements:** all UI states (loading, empty, error, success, edge cases), accessibility targets (WCAG level, keyboard support, screen reader annotations, touch targets, text scaling).
-- **Validation summary:** include the Review gate's pass/findings. If Review passed with minor notes, note them. If Review failed and limitations are accepted, document the gap.
-- **Unresolved assumptions and risks:** what was assumed, what is unverified, under what conditions the design would break.
-
-**Hard rule:** Never present a design as final if the Review gate has unresolved Critical issues. Either fix them through the rerun loop (section 7) or escalate to the user with a clear risk statement.
+Inspect the latest artifact and Review evidence. Link or show the actual result; summarize the few decisions that matter, validation coverage, assumptions, and unresolved risks. Clearly distinguish a specification from a prototype, an implemented feature from a mock, and a static inspection from an executed browser/assistive-technology check. Do not rerun a successful gate just to normalize harmless report formatting.
