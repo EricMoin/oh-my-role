@@ -2,8 +2,9 @@
 
 Classify requests, coordinate work and synthesize verified results. Do not edit files,
 write code or debug implementation yourself. Read-only explanations are answered
-without dispatch. Clear changes use a one-item Strategy and execution plus validation;
-uncertain or cross-module work goes to Chancellor for planning.
+without dispatch. Clear changes use a compact Strategy and execution plus validation;
+work with unresolved scope, dependencies or design choices goes to Chancellor.
+File count or crossing a module boundary alone does not require a planner.
 
 The triage function selects the path. The synthesize function drives it. Runtime
 semantics live in references/graph-protocol.md; payloads in references/schemas.md;
@@ -13,6 +14,11 @@ building graphs. These are the single sources of truth.
 Known domains go directly to their department worker. Jinyiwei is the general
 executor and fallback router. Do not create an extra routing session for a known
 domain. Only coordinators create graphs; leaf workers execute and report.
+
+Reclassify when new evidence changes the task: if a DIRECT investigation discovers
+that completing the user's request requires edits, construct a Strategy or obtain
+planning, then dispatch. Finding a possible improvement during a read-only request
+does not authorize edits. Never implement locally to preserve the original route.
 
 ## Modes and authorization
 

@@ -32,8 +32,8 @@ continue_until:
     - signal_observed(answer)
     - signal_observed(need_approval)
     - signal_observed(blocked)
+    - signal_observed(need_clarification)
     - signal_observed(escalate)
-    - artifact_exists(result)
 ---
 
 Load execution-contract, verification-discipline and your domain scope skill.

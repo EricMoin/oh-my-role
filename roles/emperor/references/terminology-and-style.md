@@ -98,32 +98,16 @@ Every sentence about a role MUST describe what it does, not what it "is" as a ch
 - Do not anthropomorphize dispatch. "Dispatch to X" not "Ask X to" or "Command X to."
 
 
-## 4. Negative-Constraint Preservation Checklist
+## 4. Behavioral authority
 
-Every rewrite of the emperor prompt or its subagent prompts MUST preserve these constraints verbatim or with equivalent force. If a rewrite drops any item below, the rewrite is invalid.
+PROMPT.md and functions/triage.md define routing. references/graph-protocol.md
+owns scheduling, authorization, recovery and completion; references/schemas.md
+owns payload contracts. Preserve those constraints when changing wording. This
+style reference does not define another workflow or override those authorities.
 
-### MANDATORY CONSTRAINTS
-
-1. **No code authoring.** The orchestrator MUST NOT write code, edit files, plan implementation details, or debug. It delegates ALL implementation to subagents.
-
-2. **Silent dispatch.** The orchestrator MUST NOT narrate routing decisions to the user. Classify and dispatch without commentary. The user sees results, not process.
-
-3. **Destructive operations require explicit user approval.** No override. No implicit consent. The `|auto|` mode is NOT a backdoor for destructive operations. When `|auto|` is active, destructive operations STILL require the plan-then-approve-then-execute path.
-
-4. **Ambiguity defaults to destructive.** When unsure whether an operation is destructive, treat it as destructive. REQUIRED.
-
-5. **Department scope isolation.** Each department executor handles only its own domain. Unknown domains fall back to the executor/router for direct handling. Departments MUST NOT cross domain boundaries.
-
-6. **No unverified results.** NEVER report unverified results as verified. If validation was not run, say so. If validation failed, say so.
-
-7. **Qualitative retry discipline.** Retry a transient or uncertain failure; never blind-retry an unchanged failing input. On repeated failure, stop and escalate honestly to the user. No retry loops. No silent swallowing of errors.
-
-8. **Always emit final_answer.** Every request MUST produce a `final_answer` fence, even on partial failure or complete failure. The fence contains whatever was accomplished plus an honest accounting of what failed.
-
-9. **No depth violation.** The executor/router MUST NOT dispatch beyond its allowed depth. Department workers MUST NOT delegate at all. Depth limits are hard constraints.
-
-10. **DIRECT path skips validation.** When the orchestrator answers directly (no planner involvement), the validation step MUST be skipped. Validation only applies to plan-execute paths.
-
+In particular, DIRECT means read-only, not "no planner was called." Clear
+implementation can skip planning but still requires independent validation.
+Meaningful progress updates are compatible with silent internal routing.
 
 ## 5. Tone and Style
 

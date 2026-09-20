@@ -27,4 +27,5 @@ or externally consequential work outside existing authorization needs an explici
 gate. Preserve the user's already-authorized operations in authorized_scope.
 
 Emit a plan fence containing the complete Strategy JSON. The orchestrate function
-then chooses direct finalization or independent review based on risk and uncertainty.
+then selects review using uncertainty, shared invariants and regression exposure;
+the risk label alone does not determine that decision.

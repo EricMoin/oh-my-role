@@ -19,7 +19,7 @@ to workers without a router session, and using review/finalization only when nee
 A clear implementation still requires independent validation. Keep cohesive changes
 together; split genuinely independent concerns and serialize conflicting writers.
 
-The request has at most two execution revision rounds. That policy is tracked in
-persisted prompts; graph_add_loop does not bound manual retries or separate graphs.
+Repair budgets and separate continuation counters follow graph-protocol.md.
+graph_add_loop does not bound manual retries or separate graphs.
 Honor engine budget/capacity rejection and report unresolved work. Never claim a
 fixed token/cost bound merely from the number of stages.

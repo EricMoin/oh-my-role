@@ -19,12 +19,12 @@
   },
   "execution": {
     "version": 2,
-    "name": "example-v1-execute-r0",
+    "name": "example-v1-execute-r0-c0",
     "nodes": [
       {
-        "id": "exec-1-r0",
+        "id": "exec-1-r0-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work.",
+        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
         "needs_approval": true,
         "join": {
           "strategy": "all"
@@ -33,9 +33,9 @@
         "max_retries": 0
       },
       {
-        "id": "exec-2-r0",
+        "id": "exec-2-r0-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and actual prerequisite report.",
+        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
         "needs_approval": true,
         "join": {
           "strategy": "all"
@@ -46,8 +46,8 @@
     ],
     "edges": [
       {
-        "from": "exec-1-r0",
-        "to": "exec-2-r0",
+        "from": "exec-1-r0-c0",
+        "to": "exec-2-r0-c0",
         "type": "on_signal",
         "signal_filter": [
           "answer"
@@ -57,12 +57,12 @@
   },
   "revision": {
     "version": 2,
-    "name": "example-v1-execute-r1",
+    "name": "example-v1-execute-r1-c0",
     "nodes": [
       {
-        "id": "exec-1-r1",
+        "id": "exec-1-r1-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work.",
+        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 1, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
         "needs_approval": true,
         "join": {
           "strategy": "all"
@@ -71,9 +71,9 @@
         "max_retries": 0
       },
       {
-        "id": "exec-2-r1",
+        "id": "exec-2-r1-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and actual prerequisite report.",
+        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 1, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
         "needs_approval": true,
         "join": {
           "strategy": "all"
@@ -84,8 +84,8 @@
     ],
     "edges": [
       {
-        "from": "exec-1-r1",
-        "to": "exec-2-r1",
+        "from": "exec-1-r1-c0",
+        "to": "exec-2-r1-c0",
         "type": "on_signal",
         "signal_filter": [
           "answer"
@@ -95,14 +95,52 @@
   },
   "validation": {
     "version": 2,
-    "name": "example-v1-validate-r0",
+    "name": "example-v1-validate-r0-c0",
     "nodes": [
       {
-        "id": "validate-r0",
+        "id": "validate-r0-c0",
         "agent": "emperor--validator",
-        "prompt": "Validate every approved item against current workspace. Author must embed example-v1 Strategy, current reports and cumulative changed paths."
+        "prompt": "Validate every approved item against current workspace. Author must embed example-v1 Strategy, current reports and cumulative changed paths. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context."
       }
     ],
     "edges": []
+  },
+  "continuation": {
+    "version": 2,
+    "name": "example-v1-execute-r0-c1",
+    "nodes": [
+      {
+        "id": "exec-1-r0-c1",
+        "agent": "emperor--jinyiwei--data",
+        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 0, continuation_index: 1. Continue only remaining work after the recorded approval; include completed work and authorization. This is not a repair round. Carry repair_limit: 2 from the initial run context.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      },
+      {
+        "id": "exec-2-r0-c1",
+        "agent": "emperor--jinyiwei--backend",
+        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 0, continuation_index: 1. Carry repair_limit: 2 from the initial run context.",
+        "needs_approval": true,
+        "join": {
+          "strategy": "all"
+        },
+        "timeout_ms": 300000,
+        "max_retries": 0
+      }
+    ],
+    "edges": [
+      {
+        "from": "exec-1-r0-c1",
+        "to": "exec-2-r0-c1",
+        "type": "on_signal",
+        "signal_filter": [
+          "answer"
+        ]
+      }
+    ]
   }
 }

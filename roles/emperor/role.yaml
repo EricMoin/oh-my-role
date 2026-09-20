@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.11.0"
+version: "2.12.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -13,7 +13,7 @@ functions:
   - triage
   - synthesize
   - effort
-  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
+  # Revisions use fresh DAGs under the request budget in graph-protocol.md.
 
 auto_activate: [triage, synthesize]
 

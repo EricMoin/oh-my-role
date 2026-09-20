@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.12.0
+
+- Preserve direct domain execution; choose planning/review by uncertainty and
+  affected invariants rather than file counts or the risk label alone.
+- Require explicit worker/Validator outcome signals; report incomplete execution
+  as escalation and check prerequisite reports before dependent work.
+- Restore pause, escalation, handoff and progress contracts plus concrete recovery
+  and verification-command discovery guidance.
+- Separate approval/clarification continuation counters from repair rounds; record
+  finite task-specific limits with defaults instead of an unconditional two-round cap.
+- Reuse prior independent verification only when all relevant inputs are unchanged;
+  retain a current verdict for every approved item.
+- Remove conflicting behavior rules from the style reference and add real rolebox
+  condition/signal tests; expand behavioral specifications from 13 to 45 cases and
+  from 3 to 6 scenarios. Live model performance comparison remains unmeasured.
+
 ## 2.11.0
 
 - Fix executor tool inheritance and restore discoverable Quality routing.

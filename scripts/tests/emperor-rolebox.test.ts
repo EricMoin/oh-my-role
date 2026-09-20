@@ -14,6 +14,8 @@ const { AdvanceEngine } = await load('src/graph/engine/engine-advance.ts');
 const { SignalBridge } = await load('src/graph/engine/signal-bridge.ts');
 const { cancelNodes } = await load('src/graph/engine/cancellation.ts');
 const { GraphToolSet } = await load('src/graph/tools/graph-tools.ts');
+const { mapDispatchStatusToSignal } = await load('src/graph/engine/engine-recovery.ts');
+const { evaluateCondition } = await load('src/function/conditions.ts');
 const examples = JSON.parse(readFileSync(resolve(root, 'roles/emperor/references/graph-examples.json'), 'utf8'));
 
 function rig(declaration: any) {
@@ -73,19 +75,19 @@ test('approval gate has no mutation descendants and approval does not execute wo
 test('runtime approval retires descendants; only a new continuation performs remaining work', async () => {
   const { state, engine, calls, dispatch } = rig(examples.execution);
   await engine.dispatchReady();
-  await engine.onNodeSignalEmitted('exec-1-r0', 'need_approval', { subtask_id: 1, remaining_work: 'authorized migration' });
-  expect(state.nodes.get('exec-1-r0').status).toBe('blocked');
-  expect(calls).toEqual(['exec-1-r0']);
-  await cancelNodes(state, ['exec-2-r0'], {}, dispatch);
-  await engine.approveNode('exec-1-r0', { approved_ids: [1], authorized_scope: ['authorized migration'] });
-  expect(calls).toEqual(['exec-1-r0']);
-  const continuation = rig(examples.revision);
+  await engine.onNodeSignalEmitted('exec-1-r0-c0', 'need_approval', { subtask_id: 1, remaining_work: 'authorized migration' });
+  expect(state.nodes.get('exec-1-r0-c0').status).toBe('blocked');
+  expect(calls).toEqual(['exec-1-r0-c0']);
+  await cancelNodes(state, ['exec-2-r0-c0'], {}, dispatch);
+  await engine.approveNode('exec-1-r0-c0', { approved_ids: [1], authorized_scope: ['authorized migration'] });
+  expect(calls).toEqual(['exec-1-r0-c0']);
+  const continuation = rig(examples.continuation);
   await continuation.engine.dispatchReady();
-  expect(continuation.calls).toEqual(['exec-1-r1']);
-  await continuation.engine.onNodeSignalEmitted('exec-1-r1', 'answer', { subtask_id: 1 });
-  expect(continuation.calls).toEqual(['exec-1-r1', 'exec-2-r1']);
-  await continuation.engine.onNodeSignalEmitted('exec-2-r1', 'answer', { subtask_id: 2 });
-  expect(continuation.calls).toEqual(['exec-1-r1', 'exec-2-r1']);
+  expect(continuation.calls).toEqual(['exec-1-r0-c1']);
+  await continuation.engine.onNodeSignalEmitted('exec-1-r0-c1', 'answer', { subtask_id: 1 });
+  expect(continuation.calls).toEqual(['exec-1-r0-c1', 'exec-2-r0-c1']);
+  await continuation.engine.onNodeSignalEmitted('exec-2-r0-c1', 'answer', { subtask_id: 2 });
+  expect(continuation.calls).toEqual(['exec-1-r0-c1', 'exec-2-r0-c1']);
 });
 
 test('a rejection resolves a blocked gate without execution', async () => {
@@ -95,6 +97,38 @@ test('a rejection resolves a blocked gate without execution', async () => {
   await engine.rejectNode('approval-v1', 'user declined');
   expect(state.nodes.get('approval-v1').status).not.toBe('blocked');
   expect(calls).toEqual(['approval-v1']);
+});
+
+test('a completed dispatch preserves explicit failure and never launches its answer-only consumer', async () => {
+  const { state, engine, calls } = rig(examples.execution);
+  await engine.dispatchReady();
+  const payload = { schema_version: 1, plan_revision: 'example-v1', subtask_id: 1,
+    reason: 'required migration check failed', completed_work: ['migration draft'],
+    remaining_work: ['repair migration'], category: 'acceptance_failure', attempts: ['scoped check'],
+    report: { schema_version: 1, plan_revision: 'example-v1', subtask_id: 1,
+      summary: 'draft only', files_modified: ['migration.sql'],
+      verification: [{ id: 'migration-check', command: 'check-migration', scope: 'migration.sql',
+        status: 'failed', exit_code: 1, summary: 'constraint mismatch' }],
+      incomplete_items: ['repair migration'], research_evidence: [] } };
+  const signal = mapDispatchStatusToSignal('completed', {
+    terminatingSignal: { type: 'escalate', payload },
+  });
+  expect(signal).toEqual({ type: 'escalate', payload });
+  await engine.onNodeSignalEmitted('exec-1-r0-c0', signal.type, signal.payload);
+  expect(calls).toEqual(['exec-1-r0-c0']);
+  expect(state.signalLedger.get('exec-1-r0-c0').signals.escalate).toEqual(payload);
+});
+
+test('clarification pauses normalize at the dispatch seam without releasing dependent work', async () => {
+  for (const cause of ['blocked', 'need_clarification']) {
+    const { state, engine, calls } = rig(examples.execution);
+    await engine.dispatchReady();
+    const signal = mapDispatchStatusToSignal(cause);
+    expect(signal).toEqual({ type: 'need_approval', payload: { hitl: cause } });
+    await engine.onNodeSignalEmitted('exec-1-r0-c0', signal.type, signal.payload);
+    expect(state.nodes.get('exec-1-r0-c0').status).toBe('blocked');
+    expect(calls).toEqual(['exec-1-r0-c0']);
+  }
 });
 
 test('second validation round has its own node and current producer signal payload', async () => {
@@ -127,6 +161,25 @@ test('full resolver preserves stage activation, canonical references and exclude
     if (!agent.id.startsWith('emperor--jinyiwei')) expect(names).not.toContain('execute');
     for (const name of agent.config.auto_activate ?? []) expect(names).toContain(name);
     expect(agent.references.some((ref: any) => ref.name === 'graph-protocol')).toBe(true);
+    if (agent.id.startsWith('emperor--jinyiwei') || agent.id === 'emperor--validator') {
+      for (const fn of agent.functions.filter((fn: any) => ['execute', 'report', 'route', 'validate'].includes(fn.name))) {
+        const env = { sessionID: `emperor-contract-${agent.id}-${fn.name}`, fnName: fn.name,
+          state: { kv: {}, evidenceObserved: {}, toolsObserved: [] },
+          artifacts: { exists: () => true, read: () => 'result fence exists' },
+          requiredEvidence: [], userMessagedThisTurn: false, workspaceDir: root };
+        expect(evaluateCondition(fn.continue_until, env)).toBe(false);
+        for (const type of ['progress', 'handoff']) {
+          env.state.kv = { __signals_observed: { [type]: {} } };
+          expect(evaluateCondition(fn.continue_until, env)).toBe(false);
+        }
+        const signals = agent.id === 'emperor--validator' ? ['answer', 'revise_needed']
+          : ['answer', 'escalate', 'blocked', 'need_approval', 'need_clarification'];
+        for (const type of signals) {
+          env.state.kv = { __signals_observed: { [type]: {} } };
+          expect(evaluateCondition(fn.continue_until, env)).toBe(true);
+        }
+      }
+    }
     for (const child of agent.subagents) visit(child);
   };
   visit(emperor);

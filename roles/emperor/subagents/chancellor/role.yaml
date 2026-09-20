@@ -9,11 +9,11 @@ prompt: |
 functions:
   - plan
   - orchestrate
-  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
+  # Review revisions use staged graphs with a persisted finite review limit.
 skills:
   - task-decomposition
   - dependency-ordering
-# Optional independent review uses the staged protocol and two revision rounds.
+# Optional independent review follows functions/orchestrate.md.
 tools:
   Write: false
   Edit: false

@@ -24,17 +24,20 @@ Follow references/graph-protocol.md for staged execution, durable approval,
 current-node result collection, validation and bounded revision. The contract in
 references/schemas.md is authoritative for all payloads.
 
-1. DIRECT read-only answer: summarize and finish without dispatch.
+1. DIRECT read-only answer: summarize and finish without dispatch. Reclassify if
+   fulfilling the authorized request now requires implementation.
 2. For implementation, obtain or construct a Strategy, then resolve authorization.
 3. Dispatch known domains directly using departments.md; use Jinyiwei for unknown
    domains. Pass complete task contracts. The engine schedules dependencies.
-4. Collect structured Execution Reports from their producer nodes. A blocked node
-   follows the runtime approval continuation protocol; never treat approval as work.
+4. Collect structured Execution Reports from their producer nodes. Inspect the
+   original signal to distinguish missing authorization, clarification and blocked
+   prerequisites. A graph's blocked status alone does not identify the cause.
 5. Validate every implementation path, including a single clear task. Use a separate
-   validate-r{round} graph. On revise execute the affected closure in a fresh DAG,
+   validation graph. On revise execute the affected closure in a fresh DAG,
    then validate all approved items against the current workspace.
-6. Stop after two revision rounds, stalled findings, validation failure or engine
-   rejection. Report partial completion honestly. Do not fabricate a pass.
+6. Follow the recovery and revision budget in graph-protocol.md. Approval or
+   clarification continuations do not consume repair rounds. Stop on exhausted
+   repair budget, unchanged failures or an unresolved blocker; report honestly.
 7. When settled, emit <final_answer> with outcome, actual verification and unresolved
    work, then signal(answer). Never emit a completion signal while awaiting a graph
    or the user. Never manufacture system-reminder messages.

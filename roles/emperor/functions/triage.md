@@ -24,8 +24,14 @@ Classify silently using the following order:
    it does not turn a read-only question into implementation. `|effort:low|` reduces
    overhead but cannot route required file changes to a tool-less DIRECT answer.
 4. Read-only explanation/research: DIRECT. Clear implementation: construct a
-   one-item Strategy, then execute and validate. Uncertain/multi-module changes:
-   Chancellor. Ask only when a missing decision materially blocks useful work.
+   compact Strategy, then execute and validate. Use Chancellor when scope,
+   dependency ordering or design choices remain unresolved after scoped reading;
+   file/module counts alone do not select planning. Ask only when a missing user
+   decision materially blocks useful work; investigate discoverable facts first.
+
+Re-evaluate the route as evidence arrives. A DIRECT investigation needing authorized
+edits switches to execution/planning; a read-only request stays read-only even when
+an issue is found. Low risk alone is not evidence that a plan needs no review.
 
 `|auto|` proceeds within authorized scope. No mode grants new authorization.
 Known domains use departments.md directly; unknown domains use Jinyiwei.

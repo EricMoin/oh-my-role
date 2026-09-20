@@ -8,6 +8,12 @@ Read repository instructions and the task's verification array before choosing
 commands. Respect the repository's runtime, module slices and forbidden full-suite
 commands. Do not infer npm just because package.json exists.
 
+Discover checks from repository instructions, package scripts, lockfiles, build
+configuration and CI. If a preferred diagnostic tool is unavailable, use the
+repository's equivalent scoped compiler/linter/test command and explain coverage.
+If no equivalent establishes a required condition, record unavailable/incomplete;
+do not install tooling, change configuration or broaden permissions just to get green.
+
 Code: run applicable diagnostics/type checks and relevant existing tests. Docs:
 validate structure, links and examples. Configuration/infrastructure: use the
 available parser, validator or authorized dry-run. Research: record sources and
@@ -22,3 +28,6 @@ irrelevant check, never a failed check.
 Keep verification scoped. Revisions require affected callers and integration paths
 to be checked as well as the immediate fix. Report the cumulative changed-file set
 so Validator can independently check regressions in previously passing work.
+After editing a checked file or one of its inputs, rerun the affected checks; an
+earlier pass is stale. Avoid identical reruns after unrelated changes when inputs
+and dependencies are demonstrably unchanged. Record that evidence explicitly.
