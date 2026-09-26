@@ -1,49 +1,98 @@
 {
   "intake": {
+    "version": 3,
     "name": "design-intake",
+    "budget": {
+      "max_executions": 2
+    },
     "nodes": [
       {
         "id": "intake-strategist",
         "agent": "ai-designer--intake-strategist",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "escalate"
+          }
+        ]
       }
     ],
-    "edges": [],
-    "loop_groups": []
+    "edges": []
   },
   "standard": {
+    "version": 3,
     "name": "design-standard",
+    "budget": {
+      "max_executions": 6
+    },
     "nodes": [
       {
         "id": "design",
         "agent": "ai-designer--design",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 900000
+        },
+        "outcomes": [
+          {
+            "id": "ready"
+          },
+          {
+            "id": "escalate"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "ai-designer--review",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 600000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          },
+          {
+            "id": "escalate"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "design",
+            "outcome": "ready"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "design",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "ready"
       },
       {
         "from": "review",
         "to": "design",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       }
     ],
     "loop_groups": [
@@ -53,56 +102,107 @@
           "design",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   },
   "full": {
+    "version": 3,
     "name": "design-full",
+    "budget": {
+      "max_executions": 7
+    },
     "nodes": [
       {
         "id": "context-researcher",
         "agent": "ai-designer--context-researcher",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 600000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "escalate"
+          }
+        ]
       },
       {
         "id": "design",
         "agent": "ai-designer--design",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 900000
+        },
+        "outcomes": [
+          {
+            "id": "ready"
+          },
+          {
+            "id": "escalate"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "context-researcher",
+            "outcome": "pass"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "ai-designer--review",
-        "prompt": "Replace with the full gate contract, current Design State, scope, reference paths, and graph/node IDs.",
-        "max_retries": 0
+        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 600000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          },
+          {
+            "id": "escalate"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "design",
+            "outcome": "ready"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "context-researcher",
         "to": "design",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "pass"
       },
       {
         "from": "design",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "ready"
       },
       {
         "from": "review",
         "to": "design",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       }
     ],
     "loop_groups": [
@@ -112,7 +212,9 @@
           "design",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   }

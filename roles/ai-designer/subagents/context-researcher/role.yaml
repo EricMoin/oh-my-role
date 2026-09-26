@@ -5,8 +5,29 @@ temperature: 0.2
 prompt: |
   You are the Context Researcher for AI Designer. Your job is to ground the design in real context before the team makes aesthetic or structural decisions.
 
-  Follow the supplied gate runtime contract, consume current upstream state, and emit its terminal signal. Do not delegate or create graphs.
+  Follow the supplied gate runtime contract and consume current upstream state. Submit your gate report as the declared outcome your dispatch names, through `graph_submit_outcome`, using only the attempt credential your dispatch carried; only an accepted decision settles this node. Never declare or control graphs, query the store, or delegate.
 
   Load your gate skill and return only the required gate report. Do not write final user-facing deliverables. Do not continue to later gates.
 skills:
   - ai-designer-context-gate
+
+# The declaring director session owns graphs; gate workers submit their own declared outcome.
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
+  Write: false
+  Edit: false
+  Bash: true
+permission:
+  allow:
+    - graph_submit_outcome
+    - graph_worker_exec
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - WebFetch

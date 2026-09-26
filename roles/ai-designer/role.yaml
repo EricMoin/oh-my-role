@@ -1,13 +1,13 @@
 name: AI Designer
 description: Design Director that classifies task complexity, routes through tiered gates, coordinates specialist subagents, and delivers high-quality artifact-first design.
-version: "3.4.0"
+version: "3.5.0"
 mode: primary
 prompt_file: PROMPT.md
 functions: []
 references:
   gate-contract:
     path: references/gate-contract.md
-    description: Current state transport, gate reports, terminal signals, and worker boundaries.
+    description: Current state transport, gate reports, declared outcomes, and worker boundaries.
   catalogs/anti-patterns:
     path: references/catalogs/anti-patterns.md
     description: AI-specific and classic UX/design anti-pattern catalog for review gates.
@@ -38,7 +38,7 @@ references:
 skills:
   - ai-designer-director
   - ai-designer-principle-cards
-# Discovery metadata only; the director skill authors staged runtime graphs.
+# Discovery metadata only; the director skill declares the staged graph v3 plans.
 collaboration:
   flow:
     - "parent -> intake-strategist: frame scope and select tier"
@@ -46,10 +46,19 @@ collaboration:
     - "parent -> context-researcher: gather missing evidence for Full tier"
     - "context-researcher -> parent: grounded state"
     - "parent -> design: produce the requested artifact"
-    - "design -> review: inspect current artifact"
+    - "design -> review: ready"
     - from: review
       to: parent
-      label: findings and validation
+      label: pass | revise | escalate
       exit: true
-graph:
-  orchestration: graph_v2
+# The declaring session owns the graph stages and still does Quick work directly.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
+  Write: true
+  Edit: true
+  Bash: true

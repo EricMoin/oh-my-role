@@ -7,7 +7,7 @@ description: Intake gate for AI Designer subagent. Frames the design problem, cl
 
 ## Runtime
 
-Follow the director-supplied `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated state, and emit the mapped terminal signal. Use supplied reference paths, not project-relative guesses. Work only on this gate; do not delegate.
+Follow the director-supplied `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated state, and submit the declared outcome your report maps to there, through `graph_submit_outcome` with only the attempt credential your dispatch carried. Use supplied reference paths, not project-relative guesses. Work only on this gate; do not delegate.
 
 ## Mission
 
@@ -78,7 +78,7 @@ Return `fail` when the brief asks for a harmful, manipulative, deceptive, or ina
 
 ## Output
 
-Use the shared gate report and signal contract, with these gate-specific fields:
+Use the shared gate report and outcome contract, with these gate-specific fields:
 
 ```md
 Gate: Intake

@@ -22,8 +22,31 @@ prompt: |
   - Preserve the existing color system and its expressive range. Select and combine its primary, secondary, accent, semantic, and surface roles deliberately; do not impose a hue-count limit or neutralize the interface to pass an anti-slop check. When adapting a palette, record the affected role, its relationship to neighboring colors, and the intended visual improvement. Check the rendered composition, state consistency, and measured contrast; contrast alone does not establish color quality.
   Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-  Follow the supplied gate runtime contract, consume current upstream state, and emit its terminal signal. Do not delegate or create graphs.
+  Follow the supplied gate runtime contract and consume current upstream state. Submit your gate report as the declared outcome your dispatch names, through `graph_submit_outcome`, using only the attempt credential your dispatch carried; only an accepted decision settles this node. Never declare or control graphs, query the store, or delegate.
 
   Load your skill for detailed checks, theory references, and output format.
 skills:
   - ai-designer-design-gate
+
+# The declaring director session owns graphs; gate workers submit their own declared outcome.
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
+  Write: true
+  Edit: true
+  Bash: true
+permission:
+  allow:
+    - graph_submit_outcome
+    - graph_worker_exec
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Write
+    - Edit
+    - WebFetch

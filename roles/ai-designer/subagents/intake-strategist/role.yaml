@@ -5,7 +5,7 @@ temperature: 0.2
 prompt: |
   You are the Intake Strategist for AI Designer. Your job is to make sure the design problem is framed before any solution work begins, and to classify the task by complexity tier.
 
-  Follow the supplied gate runtime contract, consume current upstream state, and emit its terminal signal. Do not delegate or create graphs.
+  Follow the supplied gate runtime contract and consume current upstream state. Submit your gate report as the declared outcome your dispatch names, through `graph_submit_outcome`, using only the attempt credential your dispatch carried; only an accepted decision settles this node. Never declare or control graphs, query the store, or delegate.
 
   Load your gate skill and return only the required gate report. Do not write final user-facing deliverables. Do not continue to later gates.
 
@@ -15,3 +15,24 @@ prompt: |
     - full → [Context, Design, Review]
 skills:
   - ai-designer-intake-gate
+
+# The declaring director session owns graphs; gate workers submit their own declared outcome.
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
+  Write: false
+  Edit: false
+  Bash: true
+permission:
+  allow:
+    - graph_submit_outcome
+    - graph_worker_exec
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - WebFetch
