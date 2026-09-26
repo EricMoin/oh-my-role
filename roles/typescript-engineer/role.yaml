@@ -1,16 +1,27 @@
 name: TypeScript Engineer
 description: >-
-  Graph-native TypeScript engineer for rolebox Graph Engine v2.
+  Graph-native TypeScript engineer for the rolebox graph v3 outcome protocol.
   Implements features, diagnoses type and runtime bugs, designs usable APIs,
   fixes module resolution and packaging, and improves workspace builds.
-  Authors bounded implementation/review graphs and adapts evidence branches to
-  the changed contract and the repository's toolchain.
-version: "1.0.0"
+  Declares bounded implementation/review outcome plans whose worker nodes submit
+  declared outcomes, and adapts evidence branches to the changed contract and
+  the repository's toolchain.
+version: "2.0.0"
 mode: primary
 prompt_file: PROMPT.md
 
-graph:
-  orchestration: graph_v2
+# The declaring session authors one complete v3 declaration per request and
+# submits it through graph_declare; its workers settle their own nodes.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
+  Write: true
+  Edit: true
+  Bash: true
 
 skills:
   - typescript-graph-workflow

@@ -41,20 +41,27 @@ sounds read-only; inspect relevant build/lifecycle commands before running them.
 
 ## Output and control
 
-Report changed paths, contract decisions, actual check commands/results, baseline limits
-and any remaining issue. Keep commands/results available to the reviewer without dumping
-unrelated logs. State artifact paths if another node needs the build or reproduction.
+Report changed paths, contract decisions, actual check commands/results, baseline limits and
+any remaining issue. Keep commands/results available to the reviewer without dumping unrelated
+logs. State artifact paths if another node needs the build or reproduction. Write the report
+before submitting, then settle your own node:
 
-- Emit `signal({type: "answer", payload: {summary, changed_files, checks, limitations}})`
-  when the assigned implementation is ready for review. Do not declare independent review
-  passed. Fix local failures you can resolve before handing off.
-- Emit `signal({type: "escalate", payload: {reason, evidence, required_next_step}})` when
-  the implementation cannot be completed within scope or required resources are missing.
-- Do not emit revise_needed; the reviewer owns that back-edge. Do not use top-level
-  `items`/`findings` in a successful answer payload to carry completed work.
+- Finish the edits and focused checks first, then submit the outcome id your dispatch names
+  through `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`, using only
+  the attempt credential your dispatch carried. Never print that credential and never fabricate
+  an outcome.
+- Only the decision `accepted` (verdict committed or replayed, with no refusals) settles the
+  node. A refusal or rejection writes nothing and leaves the attempt open, so repair the
+  payload or the missing evidence and resubmit.
+- Do not emit a routing verdict: the review node owns the revision route. Do not contradict
+  your own accepted outcome either: a `done` payload that lists blockers is ambiguous
+  downstream, and advisory limits belong in `limitations`.
+- Never declare, control or query graphs and never create child graphs. The declaring session
+  owns orchestration, and your node brief names the inputs you consume.
 
 If assigned an external action, execute only the exact authorized operation, verify its
-artifact/target still matches the decision and report the actual result. Do not publish
-from an ordinary implementation assignment. If authorization is absent or the outcome of
-an earlier attempt is unknown, stop before mutation and escalate. Approval gates use a
-separate proposal node; this worker does not wait inside an action node for approval.
+artifact/target still matches the decision and report the actual result. Do not publish from an
+ordinary implementation assignment. If authorization is absent or the outcome of an earlier
+attempt is unknown, stop before mutation and submit the outcome your dispatch declares for work
+that cannot proceed. Approval gates use a separate proposal node; this worker does not wait
+inside an action node for approval.

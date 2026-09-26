@@ -1,47 +1,107 @@
 [
   {
-    "version": 2,
     "name": "mechanical",
+    "version": 3,
+    "budget": {
+      "max_executions": 2
+    },
     "nodes": [
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          }
+        ]
       }
     ],
     "edges": []
   },
   {
-    "version": 2,
     "name": "standard",
+    "version": 3,
+    "budget": {
+      "max_executions": 6
+    },
     "nodes": [
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real review brief: acceptance criteria, changed paths, the evidence to inspect and the declared inputs to consume. Submit pass when the criteria are supported, or revise with concrete fixable defects. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "change",
+            "outcome": "done"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "change",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       },
       {
         "from": "review",
         "to": "change",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       }
     ],
     "loop_groups": [
@@ -51,78 +111,146 @@
           "change",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   },
   {
-    "version": 2,
     "name": "expanded",
+    "version": 3,
+    "budget": {
+      "max_executions": 12
+    },
     "nodes": [
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          }
+        ]
       },
       {
         "id": "types",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: evidence. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the evidence brief: the concern to establish, the commands to run, and the upstream change to inspect. Submit the declared report outcome even when the observation is a failing check; a report is not a product verdict. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "report"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "change",
+            "outcome": "done"
+          }
+        ]
       },
       {
         "id": "consumer",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: evidence. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the evidence brief: the concern to establish, the commands to run, and the upstream change to inspect. Submit the declared report outcome even when the observation is a failing check; a report is not a product verdict. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "report"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "change",
+            "outcome": "done"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: synthesis. Replace this schematic prompt with the complete task brief and explicit signal contract before use.",
+        "prompt": "Template placeholder - replace with the real review brief: acceptance criteria, changed paths, the evidence to inspect and the declared inputs to consume. Submit pass when the criteria are supported, or revise with concrete fixable defects. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          }
+        ],
         "join": {
           "strategy": "all"
-        }
+        },
+        "inputs": [
+          {
+            "from": "types",
+            "outcome": "report"
+          },
+          {
+            "from": "consumer",
+            "outcome": "report"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "change",
         "to": "types",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       },
       {
         "from": "change",
         "to": "consumer",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       },
       {
         "from": "types",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "report"
       },
       {
         "from": "consumer",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "report"
       },
       {
         "from": "review",
         "to": "change",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       }
     ],
     "loop_groups": [
@@ -134,68 +262,137 @@
           "consumer",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   },
   {
-    "version": 2,
     "name": "approval",
+    "version": 3,
+    "budget": {
+      "max_executions": 8
+    },
     "nodes": [
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real review brief: acceptance criteria, changed paths, the evidence to inspect and the declared inputs to consume. Submit pass when the criteria are supported, or revise with concrete fixable defects. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "change",
+            "outcome": "done"
+          }
+        ]
       },
       {
         "id": "proposal",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: approval-proposal. Replace this schematic prompt with the complete task brief and explicit signal contract before use.",
-        "needs_approval": true
+        "prompt": "Template placeholder - replace with the approval-proposal brief: the exact artifact, destination/version, command and material irreversible effects. Perform no external mutation. Submit the declared approval_required outcome - a request, never permission - through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "approval_required"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "review",
+            "outcome": "pass"
+          }
+        ]
       },
       {
         "id": "publish",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: action. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the authorized action brief: the approved artifact and target and the exact command, consumed from the declared upstream approval_required input. Verify the artifact and scope still match before executing. Submit done or failed through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "proposal",
+            "outcome": "approval_required"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "change",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       },
       {
         "from": "review",
         "to": "change",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       },
       {
         "from": "review",
         "to": "proposal",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "pass"
       },
       {
         "from": "proposal",
         "to": "publish",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "approval_required"
       }
     ],
     "loop_groups": [
@@ -205,83 +402,165 @@
           "change",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   },
   {
-    "version": 2,
     "name": "api-design",
+    "version": 3,
+    "budget": {
+      "max_executions": 9
+    },
     "nodes": [
       {
         "id": "candidate-a",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: investigation. Replace with the API design brief, shared caller cases and design-stage signal contract before use."
+        "prompt": "Template placeholder - replace with the API candidate brief: the candidate approach, the shared caller cases, and the cancellation, cleanup and compatibility criteria. Submit the declared report outcome through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "report"
+          }
+        ]
       },
       {
         "id": "candidate-b",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: investigation. Replace with the API design brief, shared caller cases and design-stage signal contract before use."
+        "prompt": "Template placeholder - replace with the API candidate brief: the candidate approach, the shared caller cases, and the cancellation, cleanup and compatibility criteria. Submit the declared report outcome through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "report"
+          }
+        ]
       },
       {
         "id": "choose",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: synthesis. Replace with the API design brief, shared caller cases and design-stage signal contract before use.",
+        "prompt": "Template placeholder - replace with the design-synthesis brief: compare both candidate reports against the shared cases. Submit selected with the chosen contract and its implementation acceptance criteria, or blocked when a required choice stays unresolved. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "selected"
+          },
+          {
+            "id": "blocked"
+          }
+        ],
         "join": {
           "strategy": "all"
-        }
+        },
+        "inputs": [
+          {
+            "from": "candidate-a",
+            "outcome": "report"
+          },
+          {
+            "from": "candidate-b",
+            "outcome": "report"
+          }
+        ]
       },
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Mode: implement. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "choose",
+            "outcome": "selected"
+          }
+        ]
       },
       {
         "id": "review",
         "agent": "typescript-engineer--verification",
-        "prompt": "Mode: review. Replace this schematic prompt with the complete task brief and explicit signal contract before use."
+        "prompt": "Template placeholder - replace with the real review brief: acceptance criteria, changed paths, the evidence to inspect and the declared inputs to consume. Submit pass when the criteria are supported, or revise with concrete fixable defects. Submit through graph_submit_outcome with the attempt credential this dispatch carries.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "change",
+            "outcome": "done"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "candidate-a",
         "to": "choose",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "report"
       },
       {
         "from": "candidate-b",
         "to": "choose",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "report"
       },
       {
         "from": "choose",
         "to": "change",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "selected"
       },
       {
         "from": "change",
         "to": "review",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       },
       {
         "from": "review",
         "to": "change",
-        "type": "on_signal",
-        "signal_filter": [
-          "revise_needed"
-        ]
+        "outcome": "revise"
       }
     ],
     "loop_groups": [
@@ -291,7 +570,9 @@
           "change",
           "review"
         ],
-        "max_traversals": 2
+        "max_traversals": 2,
+        "continuation_outcome": "revise",
+        "exit_outcome": "pass"
       }
     ]
   }

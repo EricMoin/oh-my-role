@@ -1,89 +1,101 @@
-# rolebox graph protocol
+# rolebox graph v3 protocol
 
-These contracts follow rolebox's graph tool interfaces and execution paths. The active
-runtime's tool schema is authoritative if its version differs. No shell command substitutes
-for calling the engine's graph tools during role execution.
+These contracts follow rolebox's graph v3 outcome protocol. The active runtime's tool schema
+is authoritative if its version differs. No shell command substitutes for calling the
+engine's graph tools during role execution.
 
-## Signals carry control flow
+## Tools
 
-| Node mode | Completion signal | Meaning |
+| Tool | What it does | Who may call it |
 |---|---|---|
-| Change application | answer | Requested edit and its local checks are recorded; independent review follows |
-| Evidence/investigation | answer | Investigation completed and its observations are available, including negative evidence |
-| Review/synthesis | answer | Required evidence supports acceptance; no unresolved required finding |
-| Review with a repair back-edge | revise_needed | Concrete correctable defects, with actionable items |
-| Any worker unable to fulfill its task | escalate | Missing environment/input or scope conflict prevents completion |
-| Declared approval-proposal gate | need_approval | Concrete proposal ready; action has not run |
+| `graph_declare({declaration})` | Strict parse, compile, capability preflight, persist and start/resume one graph in a single call; returns the persisted plan and `start.kind` | The declaring session (this role's parent) |
+| `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` | Settles the caller's own attempt with one declared outcome; the host derives attempt, submission and compiled-revision identity | Every worker, for its own node and attempt only |
+| `graph_control` | Out-of-band control decisions: failure, cancel, timeout, retry, budget-stop, approval-request, approve, reject | The declaring session |
+| `graph_status` | Reads committed state: phase, nodes, attempts, controls, approvals, budget, unsettled effects | The declaring session |
+| `graph_audit` | Diagnoses storage and recovery blockers without mutating state | The declaring session |
 
-Before the terminal/pausing signal, write a concise report for downstream consumption:
-scope and source state, changed files if applicable, commands and outcomes, observations,
-artifact paths and verification gaps. Then emit an explicit signal with a compact payload.
-Do not rely on the engine inferring answer when a worker stops speaking.
+Workers use `graph_worker_exec` for reading, editing, checks and commands in their workspace
+sandbox. Tool availability does not enlarge the role's or the node's scope.
 
-Use `signal({type: "revise_needed", payload: {items: [{id, file, problem, required_change,
-evidence}]}})` for a repairable review failure. IDs should remain stable across rounds.
-The engine reads top-level nonempty `items`, `findings` or `unresolved` in an answer payload
-as unresolved work in a loop, and can downgrade it to revision. Therefore evidence reports
-use `{assessment: "pass" | "fail" | "partial", observations: [...], checks: [...]}`;
-only review nodes produce the routing verdict. This is data/control separation, not a way
-to hide failure: final review must inspect every negative/partial report.
+## Declaration shape
 
-A read-only review without a repair loop returns its findings as an investigation report;
-do not emit revise_needed into a graph with nowhere to repair. Report inability to assess
-required claims as a blocker, not as an affirmative verdict.
+`graph_declare` receives the whole object: `version: 3`, `name` (the graph id), a finite root
+`budget.max_executions`, `nodes` and `edges`. Every node declares `outcomes`, `completion:
+{mode: "explicit"}` and `budget.timeout_ms`; every edge is `{from, to, outcome}` and binds an
+outcome its source node declares. A consumer declares `inputs: [{from, outcome}]` for each
+upstream result it reads and `join: {strategy: "all"}` when every prerequisite must complete.
+A cycle exists only inside a `loop_groups` entry carrying `max_traversals`,
+`continuation_outcome` and `exit_outcome`, and every edge carrying the continuation outcome
+stays inside its group. At least one declared outcome stays unbound so the graph can
+terminate. `max_retries` is rejected even as `0`, and `acceptance`, `contractRef` and
+`completion_policy` require host-installed capabilities.
 
-## Approval is a proposal followed by an action
+## Declared outcome vocabulary
 
-`needs_approval: true` does not make a node's code safe to execute. The engine pauses when
-that node emits `need_approval`. On `graph_approve(..., action: "approve")`, it completes
-the blocked node and activates forward answer edges; it does not resume that worker to
-perform the proposed action.
+| Node mode | Declared outcomes | Meaning |
+|---|---|---|
+| Change application | `done` | Requested edit and its local checks are recorded; independent review follows |
+| Change application | `failed`, `blocked`, `clarification_required` | Work incomplete, prerequisite missing, or a user choice required; never a passing report |
+| Evidence / investigation | `report` | Observation recorded, including a failing check; not a product verdict |
+| Review / synthesis | `pass`, `revise` | Required criteria supported, or concrete correctable defects with stable items |
+| Approval preparation | `approval_required` | A request prepared by a non-mutating proposal node; never permission |
 
-For a requested external action that needs a user decision:
+Write the report before submitting it. Nothing else settles a v3 node: a prose answer, a
+signal fence or an inferred completion is not an outcome, and only the declaration names the
+outcome ids a node may submit.
 
-1. Complete implementation, verification and a concrete action proposal first.
-2. Run a source-read-only `approval-proposal` node with `needs_approval: true`. It names
-   the exact artifact, destination/version, command and material irreversible effects,
-   emits `need_approval`, and performs no external mutation.
-3. Connect its answer edge to a separate change-applier node containing that exact action.
-   That node verifies that the artifact/scope still matches the approved proposal before
-   executing. If it differs, escalate rather than silently publishing something else.
-4. Present the concrete proposal on the blocked notification and call `graph_approve` only
-   from the user's applicable decision. A rejected gate outside a loop escalates and must
-   not activate the action; keep this gate outside the implementation repair loop.
+## Acceptance semantics
 
-Already-authorized actions need no duplicate user question. A request to prepare a package
-without publishing does not need a dormant publication branch. Ordinary local manifest,
-dependency and declaration changes need no human gate solely because of their file type.
-Unexpected authorization needs stop the affected worker before mutation; it escalates so
-the parent can prepare a proper gate. A stray `need_approval` from a node not declared with
-`needs_approval` is not a reliable pause mechanism.
+- The only settling decision is `accepted` with verdict `committed` or `replayed` and no
+  refusals. A rejection or refusal writes nothing and leaves the attempt open, so repair the
+  payload or the missing evidence and resubmit.
+- An identical retry after an uncertain delivery is idempotent; a conflicting submission
+  cannot overwrite a settled attempt. Once accepted, stop work on that attempt.
+- Routing follows accepted outcome ids, not payload keys: fields in a submitted data payload
+  are inert data the engine never inspects. What bounds a repeated identical revision is the
+  loop group's declared progress policy — the optional `{evaluator, version, subject,
+  max_unchanged}`, whose `subject` names one outcome-data field compared across rounds. Keep
+  the downstream discipline regardless: an accepting report should not carry unresolved arrays
+  that contradict its own outcome, advisory limits belong in `limitations`, and the review
+  node owns the routing verdict.
+- An edge routes on exactly the accepted outcome bound to it, and a consumer is released only
+  by the accepted results its declared inputs name. Node exit or graph phase proves neither.
 
-## Engine completion and recovery
+## Controls
 
-`graph_run` is non-blocking. Yield after launch and resume from notifications. Inspect node
-outputs and errors: a fully settled graph can still contain exhausted loops or escalation.
-On a transient environment problem resolved by the user/environment, retry the affected
-node using the live tool schema and inspect downstream invalidation. Do not use manual
-retry to conceal exhausted review cycles or repeat an external side effect with unknown
-outcome. Diagnose and reconcile that outcome first.
+`graph_control` commands act on the plan, not on business data. `failure` records a failed
+attempt out of band, distinct from the `failed` business outcome a worker submits. `retry`
+mints a NEW attempt for a diagnosed transient failure and consumes budget. `cancel` contains
+obsolete work and is not confirmed termination until state says so. `timeout` and
+`budget-stop` record an exhausted node or run. `approval-request` raises host-enforced
+approval for an IN-FLIGHT attempt and requires the installed policy plus the named approver
+session. `approve`/`reject` record a control decision: they neither submit an outcome nor
+perform the remaining action, and they do not resume an ended worker — the publication stays a
+separate downstream action node. A control decision is not permission to skip a declared gate,
+and a missing policy is a blocker.
 
-Do not mutate a running graph's topology as a substitute for handling its results. Cancel
-superseded work before constructing a replacement; carry forward observed failures and
-remaining budgets rather than resetting them silently.
+## Reading state
+
+Read `graph_status({graph_id, scope: "all", format: "json", include_output: true,
+include_history: true})` and select the intended producer with `run_id`/`node_id`. Inspect
+`attempts[].accepted` for the outcome identity and `attempts[].result` for the accepted data,
+together with controls, approvals, budget and unsettled effects. JSON output is not paginated
+by offset/max_chars; narrow by `run_id`/`node_id` if the host display truncates it. Graph
+phase is not business success: a complete graph can still contain failed outcomes, an
+exhausted loop group and unsettled effects. Use `graph_audit` for storage or recovery
+blockers; never delete or recreate an unreadable store.
 
 ## Source locations for maintenance
 
 In a rolebox checkout, verify protocol changes against:
 
-- `src/graph/tools/graph-tools.ts`: GraphAddNodeArgs, GraphAddLoopArgs, GraphRunArgs,
-  GraphStatusArgs and GraphApproveArgs.
-- `src/graph/engine/engine-advance.ts`: pause/approve paths and downstream activation.
-- `src/graph/engine/join-evaluator.ts`: fan-in and revision-edge root discovery.
-- `src/graph/engine/loop-group-executor.ts`: convergence and unresolved answer payloads.
-- `src/graph/engine/signal-propagation.ts`: repair traversal/staleness and invalidation.
-- `src/loader/role-loader.ts` and `src/resolver/skill-resolver.ts`: child discovery,
-  inheritance and skill resolution.
-
-The companion contract tests use these real modules with scripted node signals. They
-verify topology/runtime semantics, not model judgment or real package publication.
+- `src/graph/tools/graph-tools.ts` and `src/graph/tools/submit-outcome.ts`: tool schemas and
+  the submission path for declare, submit, control, status and audit.
+- `src/graph/compiler/parse-declaration-v3.ts` and `src/graph/compiler/compile.ts`: declaration
+  grammar, compile rules, terminals and loop-group validation.
+- `src/graph/outcome/runtime.ts` and `src/graph/outcome/acceptance.ts`: acceptance decisions,
+  verdicts, refusals, attempt credentials and runtime budget.
+- `src/graph/control/`: retry, stop, cancel and approval control commands.
+- `src/graph/query/render.ts`: status and audit rendering, including JSON output.
+- `src/loader/role-loader.ts` and `src/resolver/skill-resolver.ts`: child discovery, prompt
+  loading and skill resolution.
