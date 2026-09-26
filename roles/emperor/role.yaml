@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "2.12.0"
+version: "3.0.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -25,7 +25,7 @@ skills:
 references:
   graph-protocol:
     path: references/graph-protocol.md
-    description: Staged graph execution, durable approval, revision and result transport
+    description: Graph v3 execution, authorization, revision and accepted result transport
   schemas:
     path: references/schemas.md
     description: Schema definitions for dispatch payloads, strategy documents, and validation results
@@ -42,37 +42,18 @@ references:
     path: references/evidence-first-research.md
     description: Evidence-first research discipline — citation tiers, triggers, and core principles for verifying external API and library behavior
 
-# Descriptive authoring metadata only; graph-protocol.md defines staged graphs.
-collaboration:
-  flow:
-    - "parent -> chancellor: optional planning and review"
-    - "chancellor -> parent: versioned strategy"
-    - "parent -> approval: durable authorization gate"
-    - "approval -> parent: pending decision context"
-    - "parent -> jinyiwei: unknown-domain execution"
-    - "jinyiwei -> parent: execution report"
-    - "parent -> validator: independent validation"
-    - "validator -> parent: current workspace verdict"
-
-# Emperor never writes code directly — delegates all implementation to subagents.
-# Orchestration runs on the graph engine (graph_create / graph_add_node /
-# graph_add_edge / graph_add_loop / graph_run / graph_status / graph_cancel /
-# graph_approve). signal stays available (vocabulary-preserved, not deprecated).
+# The declaring session owns all graph stages; workers only submit outcomes.
 tools:
   Write: false
   Edit: false
   Bash: false
-  # The legacy dispatch_*/loop_*/function_state family is removed (Phase C).
-  # Emitted as explicit denials so no asset accidentally re-introduces them.
-
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
 permission: allow
-
-# Graph orchestration configuration. The legacy dispatch: block (parent-scoped concurrency
-# ceiling / maxConcurrent / syncPromptTimeoutMs / backgroundStaleTimeoutMs) is replaced by the graph
-# engine: per-node limits are carried on graph_add_node(timeout_ms/max_retries).
-# Resource ceilings, if any, are owned and enforced by the rolebox engine; concurrency is engine-managed.
-graph:
-  orchestration: graph_v2
 
 # Copilot: turn-end decision pipeline (see rolebox docs/copilot.md). The emperor is a
 # strict human-in-the-loop orchestrator — approval gates and open design questions are
@@ -91,12 +72,12 @@ copilot:
 
       Hand control back (advance: false) when the emperor is waiting for something that will arrive on its own, or waiting for the human:
       - Graph execution is in progress: the emperor is awaiting the [GRAPH COMPLETE] or [GRAPH BLOCKED] reminder, or has said it will report when the run finishes (e.g. "等图执行结束再通知我"). The engine reminder wakes it automatically — injecting "continue" here is harmful, never do it.
-      - The human must decide: a risk: high strategy awaiting explicit approval, a destructive-operation approval gate, a graph node blocked on needs_approval, an open product/architecture question, or a request for clarification.
+      - The human must decide: a strategy awaiting required explicit approval, a destructive-operation approval gate, a pending host approval or accepted approval_required request, an open product/architecture question, or a request for clarification.
       - Continuing would do nothing useful, or the situation is too ambiguous.
 
       Advance (advance: true) with one short nudge only when the emperor is stuck on mechanics and nothing external will wake it:
       - A completion reminder already arrived in the transcript but the emperor has not collected the results, or is narrating instead of acting — nudge with "continue".
-      - The emperor reports engine state loss and asks nothing — nudge with "state is lost, continue".
+      - The emperor has a recoverable status query to collect — nudge with "inspect graph_status". State loss or unreadable storage requires recovery; never nudge it to repeat execution.
 
       Never approve anything on the human's behalf. Never fabricate facts, tool results, or user intent. replyText must be short and imperative. When in doubt, hand control back (advance: false).
     transcript:

@@ -1,49 +1,26 @@
 ---
 name: orchestrate
-description: Finalize a strategy with optional independent review and bounded draft revision
-phase: planning
+description: Check a Strategy and return its review recommendation to Emperor
 priority: 10
-produces: final_strategy
-continue_until:
-  any:
-    - signal_observed(answer)
-    - artifact_exists(final_strategy)
+requires_evidence: [outcome_accepted]
 observe:
   - on: tool_after
-    capture_artifact: final_strategy
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision": "accepted"'
+    set_evidence: outcome_accepted
   - on: tool_after
-    tool: signal
-    when_args:
-      match:
-        type: answer
-    set_evidence: signal_answer
-continue_max: 8
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision":"accepted"'
+    set_evidence: outcome_accepted
+continue_until: evidence_met()
 ---
 
-Follow references/graph-protocol.md and schemas.md. The plan function supplies an
-initial Strategy. Do not draft it a second time by default.
-
-Check schema, dependencies, write conflicts and verification coverage first. Review
-is warranted by uncertain assumptions, competing designs, shared interfaces/data
-invariants, broad regression exposure or irreversible effects, even if risk is low.
-When those concerns are absent and the work is well understood, return the plan
-directly. Record the review decision and its concrete reason in Strategy.notes.
-When review is warranted, create a separate one-node reviewer graph with the draft.
-Read its current node signal payload/result; no cross-session artifact assumptions.
-
-On veto, create a drafter graph with the draft and concrete review findings, then
-review the revised Strategy. Choose and persist a finite review_limit before the
-first review (default two draft revisions); justify any task-specific override.
-Stop on a pass, unchanged findings without new evidence, or the recorded limit.
-Do not silently reset/extend it or wire prompts containing unavailable draft content.
-A remaining veto or unavailable review is unresolved: preserve it in notes and set
-risk: high. Never silently convert reviewer failure to pass. Unresolved correctness
-findings must be addressed or the affected scope excluded before execution; user
-authorization by itself does not establish that the plan is correct.
-
-Use finalizer only when conflicting draft/review content needs reconciliation;
-otherwise return the reviewed Strategy directly. Finalizer must preserve scope and
-surface unresolved findings, never enlarge authorization.
-
-Emit the Strategy object as signal(answer) payload and identical JSON in a result
-fence. A final_strategy fence may mirror it for local artifact compatibility.
+Check the Strategy from the plan function against schemas.md: dependencies, write
+conflicts, authorization and verification coverage. Do not draft it twice by default.
+Record whether independent review is warranted and why in Strategy.notes. Emperor
+owns review, drafter and finalizer dispatch; a graph worker cannot create child graphs.
+Return strategy with the full Strategy as data through graph_submit_outcome. Follow
+graph-protocol.md for handoff credentials, accepted receipts and failure handling.
+A plan/final_strategy fence is an optional local copy, never graph completion.

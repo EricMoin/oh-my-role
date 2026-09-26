@@ -26,7 +26,7 @@ class EmperorContracts(unittest.TestCase):
 
     def test_inherited_readonly_executor_is_rejected(self):
         p = self.root / 'subagents/jinyiwei/role.yaml'
-        p.write_text(p.read_text().replace('tools:\n  Write: true\n  Edit: true\n  Bash: true\n', ''))
+        p.write_text(p.read_text().replace('  Write: true\n  Edit: true\n  Bash: true\n', ''))
         self.assertTrue(any('Bash must explicitly be enabled' in e for e in validate(self.root)))
 
     def test_shared_skill_drift_is_rejected(self):
@@ -38,6 +38,21 @@ class EmperorContracts(unittest.TestCase):
         p = self.root / 'subagents/jinyiwei/subagents/backend/role.yaml'
         p.write_text(p.read_text().replace('auto_activate: [execute, report]', 'auto_activate: [report]'))
         self.assertTrue(any('execute must activate' in e for e in validate(self.root)))
+
+    def test_planner_cannot_become_a_nested_orchestrator(self):
+        p = self.root / 'subagents/chancellor/role.yaml'
+        p.write_text(p.read_text().replace('graph_declare: false', 'graph_declare: true'))
+        self.assertTrue(any('owned only by Emperor' in e for e in validate(self.root)))
+
+    def test_signal_only_worker_completion_is_rejected(self):
+        p = self.root / 'subagents/validator/functions/validate.md'
+        p.write_text(p.read_text().replace('evidence_met()', 'signal_observed(answer)'))
+        self.assertTrue(any('requires an accepted outcome' in e for e in validate(self.root)))
+
+    def test_ungated_submission_is_rejected(self):
+        p = self.root / 'subagents/validator/functions/validate.md'
+        p.write_text(p.read_text().replace('"decision": "accepted"', '"decision": "rejected"'))
+        self.assertTrue(any('missing accepted response gate' in e for e in validate(self.root)))
 
 if __name__ == '__main__':
     unittest.main()

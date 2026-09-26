@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from sync_emperor import ROOT, SHARED, check
 
-GRAPH_WRITES = ('graph_create', 'graph_add_node', 'graph_add_edge', 'graph_add_loop', 'graph_run', 'graph_cancel', 'graph_approve')
+PARENT_GRAPH_TOOLS = ('graph_declare', 'graph_control', 'graph_status', 'graph_audit')
 
 def validate(root=ROOT):
     errors = []
@@ -45,13 +45,36 @@ def validate(root=ROOT):
         for skill in SHARED:
             if skill not in config.get('skills', []):
                 errors.append(f'{agent}: missing shared skill registration {skill}')
-        if agent in agents:
-            for tool in GRAPH_WRITES:
-                if tools.get(tool) is not False:
-                    errors.append(f'{agent}: leaf must disable {tool}')
         for fn in ('execute', 'report'):
             if fn not in config.get('auto_activate', []):
                 errors.append(f'{agent}: {fn} must activate on dispatch')
+    for agent, (directory, config, tools) in discovered.items():
+        if agent == 'emperor--copilot':
+            continue
+        for tool in PARENT_GRAPH_TOOLS:
+            if tools.get(tool) is not (agent == 'emperor'):
+                errors.append(f'{agent}: {tool} must be owned only by Emperor')
+        if tools.get('graph_submit_outcome') is not (agent != 'emperor'):
+            errors.append(f'{agent}: graph_submit_outcome must be enabled only on workers')
+        if tools.get('graph_worker_exec') is not (agent != 'emperor'):
+            errors.append(f'{agent}: graph_worker_exec must be enabled only on workers')
+        if agent == 'emperor':
+            continue
+        for name in config.get('functions', []):
+            path = directory / 'functions' / f'{name}.md'
+            if not path.is_file():
+                errors.append(f'{agent}: missing function {name}')
+                continue
+            metadata = yaml.safe_load(path.read_text().split('---', 2)[1])
+            if (metadata.get('continue_until') != 'evidence_met()'
+                    or metadata.get('requires_evidence') != ['outcome_accepted']):
+                errors.append(f'{agent}/{name}: completion requires an accepted outcome')
+            gates = metadata.get('observe', [])
+            if not any(gate.get('tool') == 'graph_submit_outcome'
+                       and gate.get('set_evidence') == 'outcome_accepted'
+                       and gate.get('when_output', {}).get('contains') == '"decision": "accepted"'
+                       for gate in gates):
+                errors.append(f'{agent}/{name}: missing accepted response gate')
     for agent in ('emperor', 'emperor--approval', 'emperor--validator'):
         if agent not in discovered:
             errors.append(f'Missing role {agent}')

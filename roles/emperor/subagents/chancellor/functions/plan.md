@@ -1,15 +1,20 @@
 ---
 name: plan
-description: Decompose the task into dependency-ordered subtasks and emit a structured strategy
+description: Investigate and construct a versioned Strategy for Emperor
 priority: 20
-produces: plan
+requires_evidence: [outcome_accepted]
 observe:
   - on: tool_after
-    capture_artifact: plan
-transitions:
-  - when: "artifact_exists(plan)"
-    activate: ["orchestrate"]
-    deactivate: ["plan"]
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision": "accepted"'
+    set_evidence: outcome_accepted
+  - on: tool_after
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision":"accepted"'
+    set_evidence: outcome_accepted
+continue_until: evidence_met()
 ---
 
 Investigate with read-only tools and produce the Strategy from references/schemas.md.
@@ -26,6 +31,6 @@ Risk describes actual effects. Ordinary reversible edits are low risk; irreversi
 or externally consequential work outside existing authorization needs an explicit
 gate. Preserve the user's already-authorized operations in authorized_scope.
 
-Emit a plan fence containing the complete Strategy JSON. The orchestrate function
-then selects review using uncertainty, shared invariants and regression exposure;
-the risk label alone does not determine that decision.
+Finalize the Strategy using the orchestrate function's schema and review-decision
+checks, then submit strategy as data. Both functions are active; do not wait for a
+fence capture or a local artifact transition. Emperor schedules independent review.

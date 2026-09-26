@@ -18,7 +18,7 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | Imperial / imperial authority | orchestrator-level | adjective form |
 | Supreme orchestrator (as persona) | top-level orchestrator (as function) | describe what it does, not rank |
 | Chancellor (prose) | planner (role) | name field stays; prose uses "planner" |
-| Jinyiwei (prose) | executor/router (role) | name field stays; prose uses "executor/router" |
+| Jinyiwei (prose) | general executor (role) | name field stays; prose uses "general executor" |
 | Drafter (prose) | draft stage / drafting step | optional planning stage |
 | Reviewer (prose) | review stage / review step | optional planning stage |
 | Finalizer (prose) | finalization stage / final step | optional planning stage |
@@ -32,7 +32,7 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | (dispatch) | dispatch | action verb |
 | (synthesize/report) | synthesize | action verb |
 | (chancellor / prime minister) | planner (role) | use English functional term |
-| (Jinyiwei / secret police) | executor/router (role) | use English functional term |
+| (Jinyiwei / secret police) | general executor (role) | use English functional term |
 | (strategy / plan) | strategy | noun |
 | (present for user approval) | require explicit user approval | action phrase |
 | (three departments: drafting, veto, finalization) | planning with optional review and reconciliation | pipeline description |
@@ -60,7 +60,7 @@ Role `name:` fields and dispatch IDs (Emperor, Chancellor, Jinyiwei, Drafter, Re
 | "Present strategy to user for approval" | "Require explicit user approval before execution." |
 | "Emperor self-judges" | "The orchestrator determines routing." |
 | "Dispatch chancellor to produce strategy" | "Dispatch to the planner subtree for strategy." |
-| "Jinyiwei executes" | "The executor/router handles implementation." |
+| "Jinyiwei executes" | "The general executor handles implementation." |
 | "Walk the validation loop" | "Run the validation step." |
 
 
@@ -84,7 +84,7 @@ Every sentence about a role MUST describe what it does, not what it "is" as a ch
 |---|---|
 | "I am the supreme decision-maker. I don't write code, I don't plan details. I only do three things: judge, dispatch, report." | "You are the top-level orchestrator. Your only actions: classify, dispatch, synthesize. You do not write code. You do not plan details." |
 | "Dispatch the chancellor to plan..." | "Dispatch to the planner subtree for strategy production." |
-| "Jinyiwei executes." | "The executor/router role handles implementation subtasks." |
+| "Jinyiwei executes." | "The general executor role handles implementation subtasks." |
 | "The chancellor returns the strategy to the emperor." | "The planner returns the strategy to the orchestrator." |
 | "You are the Engineering Ministry, the front-end executor." | "You are the UI department executor. You handle front-end implementation." |
 | "You are the Justice Ministry, the testing executor." | "You are the test department executor. You handle testing and QA." |
@@ -94,7 +94,7 @@ Every sentence about a role MUST describe what it does, not what it "is" as a ch
 ### Rules
 
 - Use "you" to address the model receiving instructions. Never "I" or "we" from the role's perspective.
-- Name other roles by their function in prose ("the planner", "the executor/router", "the review stage"). Use the literal dispatch ID only when showing code/dispatch calls.
+- Name other roles by their function in prose ("the planner", "the general executor", "the review stage"). Use the literal dispatch ID only when showing code/dispatch calls.
 - Do not anthropomorphize dispatch. "Dispatch to X" not "Ask X to" or "Command X to."
 
 

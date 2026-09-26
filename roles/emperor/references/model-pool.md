@@ -20,6 +20,6 @@ A clear implementation still requires independent validation. Keep cohesive chan
 together; split genuinely independent concerns and serialize conflicting writers.
 
 Repair budgets and separate continuation counters follow graph-protocol.md.
-graph_add_loop does not bound manual retries or separate graphs.
+Run budget.max_executions bounds attempts in one run, not repairs across new graphs.
 Honor engine budget/capacity rejection and report unresolved work. Never claim a
 fixed token/cost bound merely from the number of stages.

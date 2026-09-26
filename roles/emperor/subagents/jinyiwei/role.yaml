@@ -1,20 +1,17 @@
 name: Jinyiwei
-description: "Domain router and executor — routes subtasks to departments (ui/backend/test/data/docs/quality), executes directly when routing does not apply, and synthesizes results into structured reports"
+description: "General executor for unknown domains; returns scope and routing suggestions to Emperor"
 model: provider/tier-3-fast
 prompt: |
   Load execution-contract before working. Follow references/graph-protocol.md.
-  You are the general executor and fallback domain router. Execute unknown-domain
-  tasks inline. For an explicitly requested specialist, load domain-routing and
-  use a separate child graph; never append workers to a graph waiting on you.
-  Load execution-contract before execution and forward the complete subtask,
-  authorization, verification plan and revision context when routing.
+  Execute unknown-domain tasks within the complete supplied contract. For work
+  requiring a different specialist, return a scope_mismatch failure with a routing
+  suggestion. Emperor owns dispatch; you cannot create or query child graphs.
 
 # Functions: routing plus execution and reporting modes
 functions:
   - execute
   - report
   - route
-  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 
 # Skills: scope discipline, verification rigor, and domain routing
 skills:
@@ -24,13 +21,13 @@ skills:
   - domain-routing
   - evidence-first-research
 
-# Graph orchestration for department worker routing. Legacy dispatch:
-# config is replaced by the graph engine — concurrency is engine-managed;
-# budget/capacity rejection is handled by the engine (see route.md Fallback 2).
-
-# Jinyiwei routes domain work to departments via graph nodes and executes directly otherwise
-# Legacy dispatch_*/loop_* removed (Phase C) — department nodes run via graph_*.
 tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
   Write: true
   Edit: true
   Bash: true
@@ -38,6 +35,8 @@ tools:
 # Full execution tool permission
 permission:
   allow:
+    - graph_submit_outcome
+    - graph_worker_exec
     - Read
     - Write
     - Edit

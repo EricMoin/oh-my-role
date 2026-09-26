@@ -2,39 +2,21 @@
 name: execute
 description: Implement the assigned security subtask with tool-based verification
 priority: 20
+requires_evidence: [outcome_accepted]
 observe:
   - on: tool_after
-    tool: todowrite
-    sync_todos: true
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision": "accepted"'
+    set_evidence: outcome_accepted
   - on: tool_after
-    tool: signal
-    when_args:
-      match:
-        type: blocked
-    capture_payload_as: blocked_info
-    set_evidence: signal_blocked
-  - on: tool_after
-    tool: signal
-    when_args:
-      match:
-        type: escalate
-    capture_payload_as: escalate_info
-    set_evidence: signal_escalate
-  - on: tool_after
-    tool: signal
-    when_args:
-      match:
-        type: need_approval
-    capture_payload_as: approval_request
-    set_evidence: signal_need_approval
-continue_until:
-  any:
-    - signal_observed(answer)
-    - signal_observed(need_approval)
-    - signal_observed(blocked)
-    - signal_observed(need_clarification)
-    - signal_observed(escalate)
+    tool: graph_submit_outcome
+    when_output:
+      contains: '"decision":"accepted"'
+    set_evidence: outcome_accepted
+continue_until: evidence_met()
 ---
+
 
 Load execution-contract, verification-discipline and your domain scope skill.
 The canonical task and result schemas are in references/schemas.md; graph lifecycle
@@ -57,5 +39,6 @@ You do NOT touch: application business logic unrelated to security, UI component
 
 Verify using the subtask verification plan and repository instructions. Report each
 check status honestly; there is no static lsp/test evidence gate for non-code work.
-On unauthorized destructive discovery emit need_approval and stop without answer.
+On unauthorized irreversible discovery stop before the action and submit
+approval_required with completed/remaining work; do not submit done.
 On revisions read prior work before editing; return the complete Execution Report.

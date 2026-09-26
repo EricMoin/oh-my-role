@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0
+
+- Migrate to Graph v3 declarations, explicit accepted outcomes and declared inputs.
+- Centralize all graph ownership in Emperor; planners and fallback executors no
+  longer create child graphs. Expose the current sandbox worker command channel.
+- Separate approval context, actual user authorization and host approval controls;
+  approval never completes unperformed work.
+- Track immutable graph/run/attempt identities, execution budgets, at-least-once
+  notifications and confirmed external effects during recovery.
+- Replace removed-engine tests with real v3 parser, acceptance, control, input and
+  worker-boundary coverage; move obsolete signal notes out of live references.
+
 ## 2.12.0
 
 - Preserve direct domain execution; choose planning/review by uncertainty and

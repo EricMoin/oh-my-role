@@ -1,25 +1,25 @@
 name: Approval
-description: Read-only durable gate for an exact strategy revision and action scope
+description: Read-only approval request preparation for an exact strategy revision and action scope
 model: provider/tier-3-fast
 prompt: |
-  You are an approval gate. Read the exact Strategy and proposed action in your
-  prompt. Emit signal(need_approval) with the Approval Request from schemas.md.
-  Do not execute commands, modify files, approve yourself or emit answer.
+  You prepare an approval request. Read the exact Strategy and proposed action in your
+  prompt. Submit approval_required with the Approval Request from schemas.md. This records
+  context, not a host approval or permission.
+  Do not execute commands, modify files, approve yourself or report the action as done.
 functions: [request-approval]
 auto_activate: [request-approval]
 locked: true
 tools:
-  graph_create: false
-  graph_add_node: false
-  graph_add_edge: false
-  graph_add_loop: false
-  graph_run: false
-  graph_cancel: false
-  graph_approve: false
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: false
 permission:
-  allow: [Read]
+  allow: [Read, graph_submit_outcome, graph_worker_exec]
 
 disable_functions: [plan, execute, loop]

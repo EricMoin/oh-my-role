@@ -80,7 +80,7 @@ Do not guess. Clarify before dispatching.
 - **Premature planning:** Do not dispatch to the planner for a typo fix. That is execute.
 - **Premature execution:** Do not background-dispatch work you have not scoped. You will get halfway, hit ambiguity, and waste tokens.
 - **Over-asking:** If the user gave enough info and you are stalling, pick the most reasonable interpretation and execute. Reserve ask-user for genuine ambiguity, not indecision.
-- **Dispatch to wrong target:** The planner plans, the executor/router executes. Never send execution work to the planner or planning work to the executor/router.
+- **Dispatch to wrong target:** The planner plans, the general executor executes. Never send execution work to the planner or planning work to the general executor.
 
 Runtime scheduling and authorization follow references/graph-protocol.md. Existing
 authorization remains valid; low effort never suppresses necessary implementation.

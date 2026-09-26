@@ -4,14 +4,13 @@ description: Versioned inter-agent payloads and producer/consumer contracts
 ---
 # Inter-agent contracts (schema_version: 1)
 
-All role-authored contract payloads are JSON objects with schema_version: 1. A producer
-emits identical JSON in signal payload and result fence. Strategy may additionally appear
-in plan/draft/final_strategy fences; these are local artifacts, not cross-session
-transport. Read node outputs/signals as specified in graph-protocol.md. Reject
-conflicting channels, unknown versions, missing required fields and unknown IDs.
-Runtime-generated signals (for example inferred answer or dispatch errors) may
-lack this schema. Treat them as runtime events and inspect producer output; never
-invent a valid report or mistake them for verified task completion.
+All role-authored business payloads are JSON objects with schema_version: 1.
+Submit them as graph_submit_outcome.data using the declared outcome_id. Accepted
+attempt results are the transport authority. Optional result/plan/draft/final_strategy
+fences mirror data for readability only; they never release consumers. Credentials
+must not appear in business data. Reject unknown versions, missing fields and IDs.
+The Strategy plan_revision is separate from the engine's compiled plan_revision.
+Host controls, failed executions and notifications are not business reports.
 
 ## Strategy
 
@@ -83,9 +82,9 @@ check. A nonzero exit is never passed. Report missing required checks as incompl
 Include every planned check exactly once by id; additional checks have distinct IDs.
 An assumption without supporting evidence does not satisfy required research.
 
-Signal answer only when incomplete_items is empty, required checks are satisfied
-and the assigned acceptance condition has supporting evidence. Otherwise emit
-escalate with the partial report as defined below. Record any remaining requirement
+Submit done only when incomplete_items is empty, required checks are satisfied
+and the assigned acceptance condition has supporting evidence. Otherwise submit
+failed with the partial report as defined below. Record any remaining requirement
 in incomplete_items even when its check was omitted from the original plan.
 The worker report enables dependency scheduling; independent Validator acceptance
 is still required. A result fence alone is not permission to advance consumers.
@@ -103,8 +102,8 @@ verification is revise with a precise note, not a fabricated pass.
 If relying on a prior independent check, cite its graph/node/check identity in note,
 with the basis for unchanged inputs; retain actual command/output records for the
 coordinator. If those records are missing, the check cannot be reused.
-Signal answer for pass; revise_needed for revise. Both carry this same object.
-The validator's local revise_items artifact is not visible in the parent session.
+Submit pass or revise with this object as data. The parent reads the accepted
+attempt result, not a local artifact.
 
 ## Approval Request and Decision
 
@@ -113,41 +112,40 @@ action, authorized_scope}. Execution discovery: {schema_version: 1,
 plan_revision, subtask_id, action, authorized_scope, completed_work, remaining_work}.
 Strings/arrays must contain concrete scope, not blanket "all actions" approval.
 
-Decision payload: {schema_version: 1, plan_revision, approved_ids, authorized_scope}.
-Recover the request from the graph node before accepting a decision. Filter skipped
-IDs and their transitive dependents. Graph approval completes the gate; a new worker
-executes remaining work. Read graph-protocol.md before resolving runtime discovery.
+Decision record: {schema_version: 1, plan_revision, approved_ids, authorized_scope}.
+Recover the exact request from accepted graph data. Filter skipped IDs and their
+transitive dependents. Persist the actual user decision and request graph/run/node
+identity in the continuation prompt. This business record is not a graph_control
+argument and does not grant host approval authority. Host-enforced approval follows
+graph-protocol.md; control decisions do not complete unperformed work.
 
-For a resolved prerequisite/clarification pause, additionally record resolution:
-{source, summary}. This is evidence resolving that blocker, not new authorization
-for unrelated actions. The actual decision must match the producer's request.
+For a resolved prerequisite/clarification request, also record resolution:
+{source, summary}. This resolves that blocker, not authorization for unrelated work.
 
-## Other execution signals
+## Non-success execution outcomes
 
 Common fields: {schema_version: 1, plan_revision, subtask_id, reason,
 completed_work: string[], remaining_work: string[]}. Use concrete evidence and
 preserve actual changed paths in completed_work or a nested Execution Report.
 
-| Signal | Additional fields | Meaning |
+| Outcome | Additional fields | Meaning |
 |---|---|---|
 | blocked | blocker, needed_evidence | A concrete prerequisite is unavailable; pause and preserve work |
-| need_clarification | question, options: string[] | A user decision materially affects correctness/scope; pause |
-| escalate | category, attempts: string[], report: ExecutionReport or null | Cannot complete this run; terminate without releasing answer-only consumers |
-| handoff | suggested_domain, context | Routing suggestion only; does not dispatch or complete work |
-| progress | milestone, evidence: string[] | Informational progress only; does not establish completion |
+| clarification_required | question, options: string[] | A user decision materially affects correctness/scope; pause |
+| failed | category, attempts: string[], report: ExecutionReport or null | Cannot complete this run; terminate without releasing done-only consumers |
+
+Routing suggestions use failed(category: scope_mismatch) with suggested_domain and
+context. Progress updates are prose only; they never settle an attempt.
 
 category is acceptance_failure, prerequisite_failure, scope_mismatch, tool_failure
 or protocol_failure. A partial report is required if any execution/checks occurred;
 null is permitted only before work started. Missing required checks are failures of
 acceptance even when the cause is unavailable tooling. Preserve both the gap and cause.
-Do not issue answer after any pause/escalation. Handoff cannot substitute for a
-terminal signal: if the assigned work cannot continue, emit escalate(scope_mismatch)
-with the remaining scope. Leaf workers never dispatch their suggested replacement.
-Routers preserve the child's payload and attach graph_chain: [{graph_id, node_id}]
-from outer router to innermost worker; do not replace a child failure with answer.
-
-These describe producer intent. Graph state may normalize a paused signal; follow
-graph-protocol.md to recover its original cause and retire the paused node safely.
+Do not submit done after another outcome settles. Workers cannot dispatch a
+replacement or read sibling credentials. Only Emperor schedules remaining work.
+These are distinct business outcomes; none is automatically normalized to approval
+or interpreted as graph_control. The coordinator inspects the accepted outcome
+and data, then follows graph-protocol.md for containment and continuation.
 
 ## Revision Context
 

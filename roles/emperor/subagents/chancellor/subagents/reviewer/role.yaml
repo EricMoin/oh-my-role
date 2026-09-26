@@ -8,32 +8,30 @@ temperature: 0.2
 prompt: |
   Independently audit the complete versioned strategy and emit a concrete verdict.
   Load veto-criteria. Use references/schemas.md as the only payload definition,
-  and references/graph-protocol.md for stage ownership. Emit identical structured
-  signal payload and JSON result fence; optional local artifact fences may mirror it.
+  and references/graph-protocol.md for stage ownership. Submit the declared outcome with the complete data object. Optional local
+  artifact fences may mirror data; only an accepted outcome completes the node.
 
 skills:
   - veto-criteria
 permission:
   allow:
+    - graph_submit_outcome
+    - graph_worker_exec
     - Read
     - Grep
     - Glob
 tools:
-  graph_create: false
-  graph_add_node: false
-  graph_add_edge: false
-  graph_add_loop: false
-  graph_run: false
-  graph_cancel: false
-  graph_approve: false
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: false
-  # Leaf stage — no orchestration tools. Legacy dispatch_* are removed (Phase C);
-  # this stage is driven by the parent graph (graph_run dispatches it).
 functions:
   - review
-  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 
 auto_activate: [review]
 disable_functions: [plan, execute, loop]

@@ -1,146 +1,416 @@
 {
+  "planning": {
+    "version": 3,
+    "name": "example-v1-planning-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
+    "nodes": [
+      {
+        "id": "planning-v1",
+        "agent": "emperor--chancellor",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Produce the Strategy; Emperor schedules any further review.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "strategy"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "review": {
+    "version": 3,
+    "name": "example-v1-review-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
+    "nodes": [
+      {
+        "id": "review-v1",
+        "agent": "emperor--chancellor--reviewer",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Review the supplied actual Strategy and return the Review Verdict.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "veto"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "draft": {
+    "version": 3,
+    "name": "example-v1-draft-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
+    "nodes": [
+      {
+        "id": "draft-v1",
+        "agent": "emperor--chancellor--drafter",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Revise the actual Strategy using supplied review findings.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "strategy"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
+  "finalization": {
+    "version": 3,
+    "name": "example-v1-finalization-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
+    "nodes": [
+      {
+        "id": "finalization-v1",
+        "agent": "emperor--chancellor--finalizer",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Reconcile the supplied Strategy without expanding scope.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "strategy"
+          }
+        ]
+      }
+    ],
+    "edges": []
+  },
   "approval": {
-    "version": 2,
-    "name": "example-v1-approval",
+    "version": 3,
+    "name": "example-v1-approval-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
     "nodes": [
       {
         "id": "approval-v1",
         "agent": "emperor--approval",
-        "prompt": "Request approval of example-v1 with proposed_ids [1,2]; include the complete Strategy and concrete action scope from the request.",
-        "needs_approval": true,
-        "join": {
-          "strategy": "all"
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Prepare the exact Approval Request only. This records context, never approval; do not perform the operation.",
+        "completion": {
+          "mode": "explicit"
         },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "approval_required"
+          }
+        ]
       }
     ],
     "edges": []
   },
   "execution": {
-    "version": 2,
+    "version": 3,
     "name": "example-v1-execute-r0-c0",
+    "budget": {
+      "max_executions": 3
+    },
     "nodes": [
       {
         "id": "exec-1-r0-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. ",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
-        },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        }
       },
       {
         "id": "exec-2-r0-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. ",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
         },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        "inputs": [
+          {
+            "outcome": "done",
+            "from": "exec-1-r0-c0"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "exec-1-r0-c0",
         "to": "exec-2-r0-c0",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       }
     ]
   },
   "revision": {
-    "version": 2,
+    "version": 3,
     "name": "example-v1-execute-r1-c0",
+    "budget": {
+      "max_executions": 3
+    },
     "nodes": [
       {
         "id": "exec-1-r1-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 1, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. ",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
-        },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        }
       },
       {
         "id": "exec-2-r1-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 1, continuation_index: 0. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. ",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
         },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        "inputs": [
+          {
+            "outcome": "done",
+            "from": "exec-1-r1-c0"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "exec-1-r1-c0",
         "to": "exec-2-r1-c0",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       }
     ]
   },
-  "validation": {
-    "version": 2,
-    "name": "example-v1-validate-r0-c0",
-    "nodes": [
-      {
-        "id": "validate-r0-c0",
-        "agent": "emperor--validator",
-        "prompt": "Validate every approved item against current workspace. Author must embed example-v1 Strategy, current reports and cumulative changed paths. Persist revision_round: 0, continuation_index: 0. Carry repair_limit: 2 from the initial run context."
-      }
-    ],
-    "edges": []
-  },
   "continuation": {
-    "version": 2,
+    "version": 3,
     "name": "example-v1-execute-r0-c1",
+    "budget": {
+      "max_executions": 3
+    },
     "nodes": [
       {
         "id": "exec-1-r0-c1",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Execute subtask 1, example-v1. Author must embed the complete subtask, authorization and verification plan; on revision also the prior report and remaining work. Persist revision_round: 0, continuation_index: 1. Continue only remaining work after the recorded approval; include completed work and authorization. This is not a repair round. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
-        },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        }
       },
       {
         "id": "exec-2-r0-c1",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Execute dependent subtask 2, example-v1. Author must embed the complete task contract and check prerequisite reports from engine upstream context before dependent work. Persist revision_round: 0, continuation_index: 1. Carry repair_limit: 2 from the initial run context.",
-        "needs_approval": true,
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "done"
+          },
+          {
+            "id": "failed"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "clarification_required"
+          },
+          {
+            "id": "approval_required"
+          }
+        ],
         "join": {
           "strategy": "all"
         },
-        "timeout_ms": 300000,
-        "max_retries": 0
+        "inputs": [
+          {
+            "outcome": "done",
+            "from": "exec-1-r0-c1"
+          }
+        ]
       }
     ],
     "edges": [
       {
         "from": "exec-1-r0-c1",
         "to": "exec-2-r0-c1",
-        "type": "on_signal",
-        "signal_filter": [
-          "answer"
-        ]
+        "outcome": "done"
       }
     ]
+  },
+  "validation": {
+    "version": 3,
+    "name": "example-v1-validate-r0-c0",
+    "budget": {
+      "max_executions": 2
+    },
+    "nodes": [
+      {
+        "id": "validate-r0-c0",
+        "agent": "emperor--validator",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Validate the entire approved Strategy against the current workspace, actual reports and cumulative changed files.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "pass"
+          },
+          {
+            "id": "revise"
+          }
+        ]
+      }
+    ],
+    "edges": []
   }
 }

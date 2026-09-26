@@ -1,49 +1,43 @@
 # Emperor
 
-A read-only coordinator for planning, scoped execution and independent verification.
-Version 2.12 uses staged rolebox graph_v2 graphs and versioned JSON task contracts.
+A read-only coordinator for scoped execution and independent verification.
+Version 3.0 targets the current rolebox Graph v3 implementation in Pi and dsh.
 
-Read-only requests are answered directly. Clear changes use a compact execution
-Strategy plus validation, even across files when dependencies are clear. Uncertain
-work goes to Chancellor, which drafts once and requests independent review for
-unresolved assumptions, shared invariants or consequential effects. Drafter handles review
-corrections; Finalizer is optional reconciliation, not a mandatory extra hop.
+Emperor owns graph_declare, graph_control, graph_status and graph_audit. All
+dispatched agents submit their own explicit graph_submit_outcome. Chancellor
+produces a Strategy and review recommendation; Emperor schedules Reviewer, Drafter
+and optional Finalizer directly. Known domains go directly to the eight departments;
+Jinyiwei executes unknown-domain work or returns a routing suggestion.
 
-Known domains dispatch directly to one of eight department workers. Jinyiwei is the
-general executor and fallback router. The canonical department list is generated
-from [departments.json](references/departments.json); see [departments.md](references/departments.md).
+Read-only questions stay direct. Clear changes use execution plus validation;
+uncertain scope gets planning first. Dependencies route only on accepted done
+outcomes, and consumers declare the upstream inputs they need. Failed, blocked,
+clarification_required and approval_required never release done-only consumers.
+Reports remain subject to independent Validator checks of the current workspace.
 
-The runtime flow is plan if needed → approve if needed → execution DAG → validation.
-Each stage has its own graph. Failed acceptance uses a fresh DAG containing the
-failed and transitively affected items. The coordinator records a task-appropriate
-finite repair limit before execution (default two); approval/clarification
-continuations have their own counter and do not spend repair rounds. Every round
-assesses all approved items against the current workspace, including regressions.
-Unchanged checks may reuse recorded independent Validator evidence only when all
-relevant inputs remain unchanged; worker self-reports cannot replace it.
-Only transient low-level failures use graph_run retry; that operation resets the
-target and its downstream, so dependents are not individually retried again.
+Approval preparation persists the exact request, not permission. Emperor honors
+existing authorization and records the actual user's decision in the next stage.
+Host-enforced approval separately requires the installed principal-approval policy
+and authorized approver session. A control decision neither submits an outcome nor
+performs the operation. Missing host authority must not be bypassed.
 
-Approval is durable graph state bound to a plan_revision and action scope. Existing
-explicit authorization is honored. An approval gate performs no mutation. Runtime
-risk discovery stops the worker before the action; resolving that gate completes
-it, so remaining work runs in a fresh continuation after descendants are retired.
-Approval is never reported as evidence that an operation executed.
+Every declaration has an execution ceiling and explicit completion. Defect repairs
+use fresh graphs and a preserved request repair count; approval/clarification
+continuations have their own counter. Runtime retries create new attempts/runs and
+require safe side-effect recovery. Notifications are wakeups to read committed
+state; duplicate notifications are not new work. Unreadable state is a blocker.
 
-Execution and validation functions require explicit outcome signals, not only a
-result fence. Incomplete work escalates with its partial report so answer-only
-consumers do not start. Graph BLOCKED can also represent a missing prerequisite or
-clarification; recover the producer's original question before resolving it.
+The graph.orchestration selector is omitted: the current loader recognizes only the
+old graph_v2 spelling and gives it no runtime effect. It does not select declaration
+version 3. Old incremental graph tools and signal-based completion are unsupported.
+Historical notes live outside the discoverable references directory in archive/.
 
-All department workers explicitly enable execution tools and load portable shared
-research, execution-contract and verification skills. Graph mutation tools are
-disabled on leaves. Verification follows repository instructions and applicable
-checks; prose work does not require fabricated LSP or test evidence.
-
-The protocol is in [graph-protocol.md](references/graph-protocol.md), payloads in
-[schemas.md](references/schemas.md), and executable topology examples in
-[graph-examples.json](references/graph-examples.json). Examples show topology only;
-replace their prompts with the actual full contracts before live execution.
+The protocol is in [graph-protocol.md](references/graph-protocol.md), business
+payloads in [schemas.md](references/schemas.md), department IDs in
+[departments.md](references/departments.md), and topology templates in
+[graph-examples.json](references/graph-examples.json). Supply full task contracts
+before executing templates. Host schemas/validators must be installed separately;
+these role assets do not make self-reported verification engine-trusted.
 
 ## Validation
 
@@ -52,22 +46,17 @@ From the repository root (Python requires PyYAML):
 ```sh
 python scripts/sync_emperor.py --check
 python scripts/validate.py
-python -m unittest discover -s scripts/tests -v
-```
-
-With a sibling rolebox checkout and its dependencies installed:
-
-```sh
+python -m unittest discover -s scripts/tests -p 'test_emperor_contract.py' -v
 bun test --isolate scripts/tests/emperor-rolebox.test.ts
 ```
 
-Set ROLEBOX_DIR for another checkout location. Integration tests use rolebox's real
-loader, resolver and graph engine with a fake dispatch port; they do not launch
-models or external operations. Behavioral prompts are in evals/evals.json and
-require a separate model evaluation run. No full rolebox test suite is required.
-See [evals/README.md](evals/README.md) for the decision review and behavioral test
-scope. Passing engine tests alone does not establish model quality or latency gains.
+The Bun tests use a sibling rolebox checkout and its installed dependencies; set
+ROLEBOX_DIR for another location. They exercise the real loader/resolver, strict v3
+parser, SQLite acceptance store, worker boundary and control tools with scripted
+dispatch. They make no model calls and do not certify live model behavior.
+See [evals/README.md](evals/README.md) for behavioral coverage and its limits.
 
 After editing departments.json or canonical shared skills under Jinyiwei, run
-`python scripts/sync_emperor.py`. Validation rejects stale generated copies and
-unreachable/misconfigured departments.
+`python scripts/sync_emperor.py`. Validation rejects stale generated copies,
+unreachable departments, worker orchestration permissions and obsolete completion
+conditions. No rolebox full test suite is required.

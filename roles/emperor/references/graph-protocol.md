@@ -1,155 +1,200 @@
 ---
 name: graph-protocol
-description: Canonical staged graph execution, approval, revision and result transport
+description: Graph v3 declarations, accepted outcomes, authorization and bounded recovery
 ---
 # Graph protocol
 
-This is the sole runtime protocol for Emperor and its coordinating agents.
-Functions select stages; skills describe task methods. Do not infer graph behavior
-from legacy dispatch terminology. Use the actual graph IDs returned by graph_create.
-Topology examples are in graph-examples.json; replace example prompts with real
-contracts before execution.
+Emperor uses the current rolebox Graph v3 API: graph_declare,
+graph_submit_outcome, graph_control, graph_status and graph_audit. The runtime
+source is rolebox's docs/graph-outcome-protocol.md and src/graph/. Examples in
+graph-examples.json are topology templates; embed real contracts before dispatch.
 
-## Stages and ownership
+## Ownership and stages
 
-Use separate, named graphs for planning, approval, execution and validation.
-Names include request ID, plan_revision, revision_round and continuation_index.
-Both counters start at 0. Persist them and the full Strategy in node prompts.
-Before execution choose a finite repair_limit (default 2), respecting user/runtime
-resource constraints. A different limit needs a task-specific reason, recorded in
-the run context; the default is not a reason to truncate known necessary work.
-Increment revision_round only for a batch correcting diagnosed execution/acceptance
-failures; increment continuation_index when resuming after approval or clarification.
-Keep the repair count across plan revisions; a new graph does not reset it.
-Never pre-author unknown execution subtasks before planning returns.
-Only the graph creator schedules its nodes. A coordinator needing workers creates
-its own child graph; it must not wait for completion of a graph containing itself.
+Only Emperor, the declaring session, orchestrates. Every dispatched agent is a
+worker, including Chancellor and Jinyiwei. Workers may submit their own outcome;
+they cannot declare/control graphs, query the global store or create child graphs.
+The subagent directory hierarchy is a catalog of agent IDs, not runtime authority.
+Emperor dispatches every planning, review, draft, reconciliation and execution
+stage directly. Jinyiwei executes unknown-domain work or returns a routing suggestion.
 
-Read-only answers need no graph. Clear implementation gets a compact Strategy and
-execute → validate: one item per cohesive concern, with separate items for distinct
-domains or independently deliverable work. A known multi-file change need not invoke
-Chancellor. Unresolved scope, dependencies or design choices need planning.
-Known domains bind directly to the dispatch ID in departments.md. Unknown domains
-use emperor--jinyiwei. Workers never delegate. Routing does not grant permissions.
-Before dispatch, resolve blocking correctness findings in Strategy.notes or exclude
-the affected scope and dependents. User permission cannot turn a review veto into
-evidence that the proposed implementation is correct.
+Read-only answers need no graph. Clear changes use a compact Strategy followed by
+execution and independent validation. Unresolved scope, dependencies or design
+choices go to emperor--chancellor. After receiving its Strategy, Emperor decides
+whether independent review is needed for uncertain assumptions, shared invariants,
+regression exposure or irreversible effects. Dispatch emperor--chancellor--reviewer
+with the actual draft. On veto, dispatch emperor--chancellor--drafter with findings,
+then review again. Use emperor--chancellor--finalizer only for reconciliation.
+Persist a finite review_limit (default two draft revisions) and its reason. Never
+execute through unresolved correctness vetoes merely because permission was granted.
 
-For each execution graph:
-- One node per selected subtask, ID exec-{subtask_id}-r{revision_round}-c{continuation_index}.
-- Include the FULL subtask, plan revision, authorized scope, verification checks,
-  settled prerequisite reports, and previous report plus correction on revisions.
-  Results from dependencies in the same graph arrive via engine upstream context;
-  do not invent reports before those workers run. A consumer must check that each
-  prerequisite has a valid, complete report before starting dependent work.
-- Set needs_approval: true, timeout_ms: 300000, max_retries: 0.
-- Add on_signal(answer) dependency edges and join: {strategy: "all"} for joins.
-- Serialize overlapping write_scope paths even without a data dependency. Unknown
-  write scope is not evidence of independence; resolve it or serialize the writers.
-- Run graph_run(dry_run=true) before the real run. On validation failure repair the
-  graph before dispatch; do not bypass it with ad hoc execution.
-- graph_run is non-blocking. End the turn and await GRAPH COMPLETE or GRAPH BLOCKED.
-  Status polling is fallback-only. Do not emit final_answer while work is pending.
+Use separate named graphs for stages whose prompts depend on collected results.
+Names include request ID, strategy revision, revision_round and continuation_index.
+Both counters start at 0. Persist the full Strategy and counters in node prompts.
+Strategy.plan_revision is a business identifier; graph_declare.plan_revision is the
+runtime's compiled content digest. Track both; never substitute one for the other.
+Changing an immutable declaration requires a new graph name. Re-declaring the same
+name and definition is recovery, not a way to restart completed work.
 
-## Approval and authorization
+## Declare and start
 
-A pending decision is durable graph state, not a remembered chat message.
-For actions outside existing authorization or explicit plan mode, create an approval
-graph with one emperor--approval node, needs_approval: true, and NO execution descendants.
-Its prompt contains the exact Strategy, plan_revision, proposed IDs and action scope.
-The gate emits need_approval with that context and performs no mutation.
-Recover pending decisions using graph_status (including persisted graphs), then
-render the concrete operation for the user. Existing explicit authorization remains
-valid within its scope; do not ask again for the same authorized operation.
+Submit the entire object through graph_declare({declaration: {...}}):
+- version: 3, name, nodes and edges are required.
+- Every node declares outcomes and completion: {mode: "explicit"}.
+- An edge is {from, to, outcome}; only that accepted outcome activates it.
+- A consumer declares inputs: [{from, outcome}] for each report it reads. Edges
+  schedule work; they do not automatically provide every upstream payload.
+- Use join: {strategy: "all"} when all prerequisites must complete. Route execution
+  dependencies only on done. Never route them on blocked, approval_required,
+  clarification_required or failed.
+- Put timeouts inside node.budget: {timeout_ms: 300000}, adjusting to actual work.
+  Do not author max_retries; even zero is rejected. Set a finite run-level
+  budget.max_executions covering selected nodes and any explicitly allowed retry.
+  Each new attempt spends an execution, including entry nodes and retries. There
+  is no refund for a settled/cancelled attempt and no automatic retry policy.
 
-On approval, call graph_approve with action="approve" and payload containing
-plan_revision, approved_ids and authorized_scope. On partial approval remove skipped
-IDs and their TRANSITIVE dependents before recording that payload. Build execution
-only from this approved set. A changed plan invalidates approval for changed scope.
-On rejection call graph_approve(action="reject", reason=...) on the blocked gate,
-then cancel remaining runnable work. graph_cancel alone leaves blocked gates intact.
-Do not execute the rejected plan.
+Each execution node carries the FULL subtask, Strategy revision, authorization,
+verification plan, prior reports/corrections and settled external prerequisites.
+Use exec-{subtask_id}-r{revision_round}-c{continuation_index}. Same-graph prerequisites
+arrive through declared inputs; never fabricate them before their producers run.
+Serialize overlapping write_scope paths. Unknown scope is not proof of independence.
 
-Runtime discovery: an execution node marked needs_approval may emit need_approval
-with completed work, remaining action, scope and affected subtask ID. It stops there.
-Before resolving it, cancel ALL transitive descendants in its execution graph so
-approval cannot send a partial result to a consumer. Wait for other active branches
-to settle; collect their real reports. Present the missing authorization to the user.
-Approval marks the old node COMPLETED; it DOES NOT resume its worker session and
-is NOT evidence that the remaining action ran. After approval, create a new execution
-graph containing a continuation of that item plus its cancelled dependents. Pass
-completed work, remaining action and explicit authorization; read files and edit in
-place. Do not repeat completed side effects. Rejection resolves the blocked gate with graph_approve(action="reject", reason=...),
-then cancels the branch. Cancelling alone does not resolve a blocked gate.
-If a fallback router forwards a blocked child, retain the entire graph/node chain.
-Retire descendants before resolving gates from deepest child to outer router, and
-use one fresh continuation for the actual remaining item. On rejection reject each
-blocked gate, then cancel obsolete runnable graphs. Never leave a child gate orphaned.
-A malformed/absent approval context is unresolved, never implicit permission.
+The declaration call performs strict parsing, compilation and capability preflight,
+and the registered host entry starts/resumes execution. There is no separate run
+or dry-run tool. Check persisted AND start.kind: started/resumed are distinct from
+saved/blocked/refused. A saved plan is not proof of dispatch. Inspect refusals and
+status before recovery; do not create a duplicate graph just because startup is slow.
+Missing schema, command, completion or approval capabilities cannot be installed by
+asserting supported_validators. Preserve required gates and report the missing host
+configuration. Natural completion requires a host-authorized policy; use explicit
+submission for all Emperor templates.
 
-Graph BLOCKED is a runtime state, not proof of a missing permission. rolebox can
-normalize blocked/need_clarification dispatch states to need_approval. Inspect the
-producer's original signal and output before deciding what is needed. Missing
-prerequisites require evidence or a correction; clarification requires an answer to
-the actual question, not blanket approval. Preserve any still-needed authorization.
-For a resolved non-authorization blocker use the same cancel-descendants, retire-gate,
-fresh-continuation mechanics, recording the resolution in the graph decision payload.
-Do not approve an unresolved blocker merely to clear its graph state.
+## Worker results
 
-## Results across sessions
+Pi provides sandboxed native worker tools. dsh graph workers expose only
+graph_submit_outcome and graph_worker_exec; use the latter for reading, editing,
+checks and commands in the workspace sandbox. Planning/review/approval workers
+use read-only commands only; Validator runs authorized checks without edits. Tool
+availability does not enlarge role or task scope. If Context7 or other research
+tools are unavailable inside this boundary, use available local source/official
+evidence or report the missing evidence; never bypass the host execution guard.
 
-Read graph_status(graph_id, node_id, include_output=true, stream=true). Use the
-producer node's signal_stream events and payload, or its materialized result fence.
-Artifacts and signal_observed predicates are session-local. Never expect a child's
-capture_payload_as artifact to appear in the parent session. Read the current graph
-and current node run only; paginate truncated output before interpreting it.
-Validate payloads against schemas.md. Emit structured JSON result fences carrying
-the SAME object as the signal payload. Conflicting channels or invalid payloads are
-protocol failures, not success. Human summaries are separate from machine payloads.
-An engine-inferred answer or COMPLETED status alone is not an Execution Report and
-cannot establish acceptance. Inspect and contain any dependent work if an invalid
-success signal has already released it. Worker answer means ready for independent
-validation, not accepted by the coordinator.
+Workers read their own host handoff, declared outcomes and materialized inputs.
+Submit graph_submit_outcome({graph_id, node_id, outcome_id, credential, data}) using
+only that attempt's credential. Never print credentials in reports/fences or read
+host state to discover them. The host derives attempt, submission and compiled
+revision identities; workers do not supply those as tool arguments.
 
-## Validation and revision
+Business data follows schemas.md. Outcome vocabulary:
+- Strategy stages: strategy; independent review: pass or veto.
+- Execution: done, failed, blocked, clarification_required, approval_required.
+- Independent validation: pass or revise.
+- Approval preparation: approval_required (a request, never permission).
 
-After settled execution and any continuations, create a separate validation graph
-with a unique validate-r{revision_round}-c{continuation_index} node. Its prompt contains
-the Strategy, all latest reports and the union of files changed across rounds.
-Supply prior Validator reports and their actual check outputs/input records when
-considering evidence reuse; absent those records, rerun checks. Validator checks the
-current workspace, including previously passing items and affected integration paths. A partial or
-failed worker report is a recovery input, never a successful prerequisite. Diagnose
-and repair it before dispatching its consumers; independently validate before final
-acceptance. If blocked, report partial outcomes without claiming the request passed.
+Only decision: accepted with verdict: committed or replayed and no refusals settles
+a submission. Rejection/refusal leaves no successful result and cannot release a
+consumer. Inspect diagnostics and repair the payload or missing evidence; do not
+remove a required gate. An identical retry after an uncertain delivery is idempotent;
+a conflicting submission cannot overwrite a settled attempt. Once accepted, stop
+work on that attempt. signal and result fences do not complete Graph v3 nodes.
+Optional result fences mirror data only for readability; accepted results are the
+transport authority. Local function evidence tracks the accepted tool response,
+not merely a call, signal or fence.
 
-On revise, compute the transitive dependent closure of failed IDs and add items
-whose write scopes or verification targets overlap the changed files. Deduplicate.
-Create a fresh execution DAG for this selected set; external prerequisites carry
-forward only verified reports. Do not manually retry each dependent. The engine
-owns dependency scheduling within that DAG. Pass prior work explicitly: a new node
-has no guaranteed previous conversation. Revalidate the whole approved set.
+These templates do not register business JSON schemas or trusted command validators.
+Their structural acceptance is not independent verification of an Execution Report.
+Consumers must check schemas.md and prerequisite completeness before working;
+Emperor still requires Validator. If installed host contracts/gates are required,
+reference their exact identities; never invent a schema or policy capability.
 
-Apply the recorded repair_limit; count rounds from persisted graph/node prompts.
-Approval/clarification continuation and waiting consume no repair round. A continuation
-that also corrects a diagnosed defect does consume one; renaming it cannot evade the
-budget. Stop earlier on repeated identical findings without new evidence or an
-unresolved blocker. A Validator infrastructure failure is not an acceptance failure:
-apply bounded transient recovery before deciding it is unavailable. These are
-orchestrator policy limits, NOT graph_add_loop traversal guarantees. No revision
-back-edges are authored. Do not silently extend the limit, reset it on a new plan
-revision, or relabel failed repairs as continuations. If it prevents completion,
-report the concrete remaining work; a changed user constraint may explicitly revise
-the limit while preserving the actual count.
+## Read and wait
 
-Low-level graph_run(retry=true) is reserved for a transient failed node in a
-quiescent graph. It resets the target AND its transitive downstream; do not retry
-those descendants again. Never retry blocked/running nodes. Do not assume session
-reuse or idempotence: pass the prior report and inspect existing files first.
+After confirmed start, yield for real GRAPH COMPLETE / GRAPH BLOCKED notifications.
+They identify graph/run and carry a stable notification ID, not business reports.
+Delivery is at least once: duplicates do not authorize duplicate dispatch. Query
+committed state before acting. Status polling is fallback-only, never a busy loop.
+
+Read graph_status with graph_id, scope: "all", format: "json", include_output: true
+and include_history: true; use run_id and node_id to select the intended producer.
+Read attempts[].accepted (outcome identity) and attempts[].result (accepted data),
+controls, approvals, budget and unsettled_effects. JSON output is not paginated by offset/max_chars; narrow by run_id/node_id
+if the host display truncates it. Those pagination fields apply to non-JSON output. No signal_stream or stream argument is used.
+Never confuse historical attempts with the current result. A complete graph may
+contain a failed/blocked business outcome and may still have unsettled effects.
+Inspect every required report; neither graph phase nor worker exit proves success.
+
+## Authorization and approval
+
+Honor existing explicit authorization. Ordinary reversible edits do not require a
+new permission gate. Explicit plan mode or genuinely unauthorized consequential
+work must wait for the user's decision on a concrete Strategy and action scope.
+An optional read-only emperor--approval node prepares and persists an Approval
+Request as approval_required, with no execution descendants. This accepted request
+is a durable context record, NOT a host approval or successful execution. Recover
+it from accepted data; ask about the exact revision. A question is not consent.
+Record the actual Decision and request graph/run/node identity in the next stage's
+immutable prompt. Partial approval excludes skipped IDs and all transitive dependents.
+A scope change requires matching authorization. Do not fabricate user consent.
+
+Host-enforced approval is a separate control plane. If the task/host requires it,
+use a declared outcome with principal-approval@1 and the installed approval policy;
+an informational approval_required outcome or chat message cannot replace that gate.
+The declaring session raises graph_control(command: "approval-request", graph_id,
+node_id, attempt_id, reason, approver_session_id, expires_at) for an IN-FLIGHT attempt.
+The deadline is epoch milliseconds; the installed policy must authorize the named
+approver. A settled informational request cannot be paused retroactively. The
+reason binds the exact Strategy revision, proposed IDs and concrete action scope.
+Only the policy-authorized approver session issues approve/reject with reason.
+Independent review forbids self-approval; operator-confirmation must be explicitly
+installed and still requires real user authorization. A session identity does not
+prove a human action. Missing policy/authority is a blocker, never a reason to
+choose another session or remove principal-approval. Do not impersonate the approver.
+
+Approve/reject records a control decision; it neither submits a business outcome nor
+performs the remaining action. Do not invent an approval payload parameter. Check
+the recorded decision and attempt state. Do not assume approval resumes an ended
+worker. Reject/cancel obsolete runs through authorized controls and verify effects.
+
+For runtime discovery, the worker stops before the action and submits
+approval_required with completed/remaining work. Missing prerequisites use blocked;
+actual user choices use clarification_required. These are distinct accepted business
+outcomes with no done edge, not normalized signals or automatic control requests.
+Collect settled sibling work and contain the obsolete run with graph_control cancel
+where work remains. Confirm external effects before starting overlapping work.
+After the actual blocker/authorization is resolved, create a fresh continuation
+with the remaining item and its unperformed dependents, carrying the original
+request and resolution. Inspect existing files and never repeat completed effects.
+No control approval can convert a partial worker report into done.
+
+## Validation and recovery
+
+After execution and continuations settle, dispatch a separate Validator with every
+approved item, latest reports, cumulative changed paths and prior independent check
+records. Validate the current workspace, including previously passing items and
+affected integrations. Missing evidence cannot be treated as a prior passing check.
+On revise, select failed IDs, their transitive dependents and overlapping write or
+verification scopes. Execute that closure in a fresh DAG, then revalidate the whole
+approved set. Partial reports are recovery inputs, never successful prerequisites.
+
+Choose a finite repair_limit before execution (default 2); persist overrides with a
+task-specific reason. Preserve the actual repair count across graphs and plan
+revisions. Waiting and pure approval/clarification continuation do not spend repair
+rounds; a continuation correcting a diagnosed defect does. Stop on unchanged failures
+without new evidence, exhausted budget or unresolved blockers; report remaining work.
+
+Use graph_control retry only for a diagnosed transient failure after confirming
+external execution/effects. A node retry mints a NEW attempt and consumes budget;
+it does not reset every descendant. A run retry creates a NEW run with the SAME
+immutable plan only after terminal state and accounted effects. Neither guarantees
+session reuse or side-effect idempotence. Inspect and explicitly supply prior work.
+A cancellation request or timeout is not confirmed termination. Never duplicate an
+unknown live execution. Use graph_audit for storage/recovery blockers; never delete
+or recreate an unreadable store, decode old state yourself, or treat state loss as
+permission to rerun. Recover consistent host state or report the concrete blocker.
 
 ## Completion
 
-Collect actual results, cancel obsolete active nodes and emit a concise final_answer
-with completed, excluded and unresolved items plus verification evidence. Call
-signal(answer) with the same summary only when the request is settled. Approval,
-missing tools and unavailable verification are not successful execution.
+Collect accepted results and independent verification. Settle/cancel obsolete work,
+check unconfirmed external effects, then emit final_answer with completed, excluded
+and unresolved items and actual checks. Do not claim success while required work or
+verification is missing. Approval and graph completion alone are not task completion.

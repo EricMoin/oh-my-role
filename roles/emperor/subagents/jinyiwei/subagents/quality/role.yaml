@@ -15,18 +15,19 @@ prompt: |
 
   You have full Read, Write, Edit, and Bash execution tools. Use the task-specific verification plan and repository instructions before reporting results. You never delegate — execute directly.
 tools:
-  graph_create: false
-  graph_add_node: false
-  graph_add_edge: false
-  graph_add_loop: false
-  graph_run: false
-  graph_cancel: false
-  graph_approve: false
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
   Write: true
   Edit: true
   Bash: true
 permission:
   allow:
+    - graph_submit_outcome
+    - graph_worker_exec
     - Read
     - Write
     - Edit
@@ -39,7 +40,6 @@ permission:
 functions:
   - execute
   - report
-  # loop removed (Phase C): loop_* tools deprecated, zero consumers; bounded cycles run via graph_add_loop
 skills:
   - verification-discipline
   - evidence-first-research
