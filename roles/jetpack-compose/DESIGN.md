@@ -1,10 +1,10 @@
 # Jetpack Compose role design
 
 The lead owns design and production edits. Five read-only specialists supply targeted
-evidence through rolebox graph v2. Ordinary bounded work stays inline. Significant work
-starts with invariants, ownership, lifetime and a minimal coherent boundary; reviews
-inspect an actual stable implementation snapshot. Early consultations resolve specific
-uncertainties and do not approve unwritten code.
+evidence through the rolebox graph v3 outcome protocol. Ordinary bounded work stays
+inline. Significant work starts with invariants, ownership, lifetime and a minimal
+coherent boundary; reviews inspect an actual stable implementation snapshot. Early
+consultations resolve specific uncertainties and do not approve unwritten code.
 
 The previous workflow duplicated mandatory phases across the parent prompt, auto-injected
 engineer function and gate skills. Tests were judged by ratios, per-component coverage
@@ -13,10 +13,11 @@ This encouraged mechanical compliance and provided no explicit protection agains
 visibility changes made solely for tests. The revised role tests production behavior,
 preserves private details, and permits extraction only for a meaningful responsibility.
 
-Independent reviews run concurrently as root nodes. Edges express real evidence
-dependencies. They pass reports, not automatic shared-state patches. The lead synthesizes
-findings and performs bounded repairs between review batches. There is no imaginary
-writer in a cycle of read-only reviewers. A completed graph is not an accepted change.
+Independent reviews run concurrently as root nodes. Edges route on accepted outcomes and
+declared consumer inputs express real evidence dependencies; accepted results are data,
+not automatic shared-state patches. The lead synthesizes findings and performs bounded
+repairs between review batches. There is no imaginary writer in a cycle of read-only
+reviewers. A completed graph is not an accepted change.
 
 Sources of truth:
 

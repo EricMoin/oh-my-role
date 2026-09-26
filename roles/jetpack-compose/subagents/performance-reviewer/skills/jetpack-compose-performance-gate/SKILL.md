@@ -38,9 +38,22 @@ This gate is critical when the change modifies UI that appears in a list, animat
 - **Fail**: Blocking issues found: recomposition storm in a user-visible composable, stability regression (previously skippable composable became non-skippable), missing Baseline Profile that causes startup regression, or performance claim made without supporting evidence.
 - **Pass with advisory notes**: Minor optimization opportunities exist (unused compiler report generation, suboptimal lazy list item sizing, missing `contentType` for heterogeneous lists) but no measurable user-facing regression is expected.
 
+Map these criteria to the outcome you settle: a clean pass or pass with advisory notes settles
+`pass`; a fail settles `revise`; unavailable essential evidence or user intent settles
+`escalate` — never a fabricated pass.
+
 ## Output Format
 
-Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
+Finish the gate report before submitting. Settle the node by submitting the declared outcome id
+the dispatch names through `graph_submit_outcome`, with only the attempt credential that
+dispatch carried and this report as `schema_version: 1` data following
+`references/schemas.md`. Only an accepted decision (verdict committed or replayed, with no
+refusals) settles the node; a refusal writes nothing, so repair the payload or the missing
+evidence and resubmit. Read and check only through `graph_worker_exec`, stay read-only, and
+never declare, control, query or audit graphs or create child graphs. The report carries the
+fields below, with `status` reporting `pass`, `fail` or `needs-user-input` per
+`references/schemas.md`; the settled outcome id is submitted separately (clean -> `pass`, fail
+with concrete blockers -> `revise`, needs-user-input -> `escalate`):
 
 ```yaml
 gate: performance

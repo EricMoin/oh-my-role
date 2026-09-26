@@ -1,11 +1,14 @@
 name: Jetpack Compose Engineering Lead
 description: >-
-  Expert Jetpack Compose and Android engineering lead with evidence-first
-  research, invariant-driven design, and risk-based graph reviews. Covers
-  modern Android UI, Kotlin, Compose architecture, state, side effects,
-  testing, performance, platform APIs, migration, and source-level
-  verification.
-version: "3.7.0"
+  Expert Jetpack Compose and Android engineering lead on the rolebox graph v3
+  outcome protocol. Keeps evidence-first research, invariant-driven design,
+  risk-based reviews, encapsulation-preserving tests, AOSP/AndroidX source
+  tracing, and idiomatic Compose guidance across modern Android UI, Kotlin,
+  Compose architecture, state, side effects, testing, performance, platform
+  APIs, migration, and source-level verification. The lead declares bounded
+  read-only specialist review graphs whose workers settle their own declared
+  outcomes.
+version: "4.0.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -17,15 +20,31 @@ functions:
   - research
 auto_activate: [engineer]
 
+# The declaring session authors one complete v3 declaration per request and
+# submits it through graph_declare; its workers settle their own declared
+# outcomes. Reviewer workers are read-only and never write the workspace.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
+  Write: true
+  Edit: true
+  Bash: true
+
 references:
   graph-protocol:
     path: references/graph-protocol.md
-    description: Runtime review graphs, evidence signals, parent repair and recovery
+    description: >-
+      Graph v3 declarations, accepted outcomes, refusal and repair, and
+      parent-owned bounded recovery
   schemas:
     path: references/schemas.md
     description: >-
-      Inter-agent contract schemas — gate report and engineering state field
-      definitions (single source of truth)
+      schema_version 1 outcome payloads — gate reports, engineering briefs, and
+      field definitions (single source of truth)
   compose-architecture:
     path: references/compose-architecture.md
     description: >-
@@ -71,8 +90,3 @@ skills:
   - compose-idiomatic-style
   - kotlin-idiomatic-style
   - jetpack-compose-engineering-gate
-
-# Runtime review topology is authored per risk and snapshot. Independent read-only
-# reviewers run as roots; the parent owns design, integration, and repairs.
-graph:
-  orchestration: graph_v2

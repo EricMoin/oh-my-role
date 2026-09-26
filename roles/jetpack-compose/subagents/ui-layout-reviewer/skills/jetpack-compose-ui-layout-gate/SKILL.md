@@ -36,9 +36,22 @@ This gate is critical when the change creates new screens or composables, modifi
 - **Fail**: One or more blocking issues found — accessibility violations (missing semantics, insufficient touch targets), layout overflow or constraint errors, broken theming inconsistency, or missing adaptive support for a required device configuration.
 - **Pass with advisory notes**: Layout and theming are correct but minor improvements are available (additional @Preview annotations, more granular WindowSizeClass breakpoints, additional accessibility hints).
 
+Map these criteria to the outcome you settle: a clean pass or pass with advisory notes settles
+`pass`; a fail settles `revise`; unavailable essential evidence or user intent settles
+`escalate` — never a fabricated pass.
+
 ## Output Format
 
-Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
+Finish the gate report before submitting. Settle the node by submitting the declared outcome id
+the dispatch names through `graph_submit_outcome`, with only the attempt credential that
+dispatch carried and this report as `schema_version: 1` data following
+`references/schemas.md`. Only an accepted decision (verdict committed or replayed, with no
+refusals) settles the node; a refusal writes nothing, so repair the payload or the missing
+evidence and resubmit. Read and check only through `graph_worker_exec`, stay read-only, and
+never declare, control, query or audit graphs or create child graphs. The report carries the
+fields below, with `status` reporting `pass`, `fail` or `needs-user-input` per
+`references/schemas.md`; the settled outcome id is submitted separately (clean -> `pass`, fail
+with concrete blockers -> `revise`, needs-user-input -> `escalate`):
 
 ```yaml
 gate: ui-layout

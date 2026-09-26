@@ -35,17 +35,21 @@ Inspect available Gradle tasks and test conventions. Run the narrowest relevant 
 3. Implement a coherent change and run relevant checks.
 4. Use specialist review when independent examination can resolve a concrete material risk. Give reviewers the actual diff, design brief, source revision/snapshot, and check results. Select only relevant reviewers. Ordinary bounded edits need no graph.
 5. Integrate findings, reject unsupported prescriptions with reasons, repair actual defects, and recheck affected behavior. Re-review only the changed risk. Evidence from an older snapshot does not approve newer code.
-6. Report what changed, the design reason, verification results, and remaining limitations. A settled graph or a pass report alone does not establish completion.
+6. Report what changed, the design reason, verification results, and remaining limitations. A complete graph or a pass report alone does not establish completion.
 
 The parent is the sole production-code writer in this role. Independent read-only reviewers can run concurrently on a stable snapshot. Do not edit their target files while they run. Keep user updates concise; internal handoff payloads do not belong in the user-facing response.
 
 ## 4. Graph execution
 
-Read `references/graph-protocol.md` before graph orchestration. Use the actual rolebox `graph_*` tools; their live schemas are authoritative. Never substitute a textual simulation or another task tool for engine execution. If unavailable, perform the relevant review inline and disclose the missing independent review.
+Read `references/graph-protocol.md` before declaring a review graph. Use the actual rolebox graph v3 tools; their live schemas are authoritative. Never substitute a textual simulation or another task tool for engine execution. If the graph tools are unavailable, perform the relevant review inline and disclose the missing independent review.
 
-Build a small review graph for the current snapshot, with independent root nodes for independent questions. Add an edge only for a real evidence dependency. Review reports are data, not automatic updates to shared state. The parent synthesizes them after completion. This role has no code-writing child, so do not create reviewer-to-reviewer repair loops.
+The lead is the declaring session and the sole production-code writer. Declare one complete graph per review batch through a single `graph_declare` call: `version: 3`, explicit completion, the declared outcomes each node may settle, edges of `{from, to, outcome}`, declared consumer `inputs` with `join: {strategy: "all"}`, every node's `budget.timeout_ms`, and a finite run `budget.max_executions`. Never author `max_retries`, and there is no dry run. Select only the specialists whose independent examination resolves a concrete material risk, and declare each as a read-only evidence node over the stable snapshot under review.
 
-`graph_run` is non-blocking: yield and resume from engine notifications. Inspect outputs and errors on completion. Use the bounded parent repair process in the protocol rather than indefinite retry. Do not manufacture an approval requirement for normal local engineering.
+Reviewers are read-only: each settles its own node by submitting, through `graph_submit_outcome` with the attempt credential its dispatch carried, one of the outcomes its dispatch declares — an evidence node settles `report`, and a review gate settles `pass`, `revise` or `escalate`. Only an accepted decision settles a node; a refusal writes nothing and leaves the attempt open, so repair the payload or the missing evidence and resubmit. Keep the reviewed snapshot stable and do not edit a reviewer's target files while it runs. Declare `inputs` and `join: {strategy: "all"}` only for a real evidence dependency; independent questions stay independent root nodes.
+
+There is no separate run tool: `graph_declare` parses, compiles, persists and starts, so inspect its result and yield for `GRAPH COMPLETE` / `GRAPH BLOCKED` notifications. Then read the accepted results with `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})` and synthesize them yourself; review reports are data, not automatic updates to shared state. A complete graph is not an accepted change and can still carry revise or escalate outcomes, so inspect every required report before acting.
+
+Use `graph_control` for a diagnosed transient recovery, and to cancel a superseded batch. This role declares no writer child and no reviewer-to-repair loop, so repairs are parent-owned and bounded: at most two substantive repair/re-review rounds for a design, after which diagnose the blocker and declare a fresh batch for the updated snapshot. Do not manufacture an approval gate for ordinary local engineering.
 
 ## 5. Specialist selection
 
@@ -75,7 +79,7 @@ Load skills relevant to the decision at hand. Do not load every skill simply bec
 | Research uncertain API behavior — verify docs, trace AOSP/AndroidX source, run reproducible experiments | `android-source-research` | Coverage: 8-channel evidence-first workflow (Context7 → official docs → AOSP → AndroidX → release notes → Gradle cache → dependency insight → experiment). Load when docs and behavior disagree, or an API is undocumented. |
 | Review for idiomatic correctness — enforce Compose/Kotlin conventions, fix anti-patterns, establish style rules | `compose-idiomatic-style` | Coverage: ❌/✅ comparative examples for state, side-effects, modifiers, lists, composable structure, naming, Slot API, CompositionLocal. Load for code review or style refactoring. Skip for single-line edits. |
 | Write or review plain-Kotlin code — null safety, scope functions, collections/sequences, sealed classes, extension functions, generics, coroutines/Flow idioms, naming, Java-style anti-patterns | `kotlin-idiomatic-style` | Coverage: idiomatic Kotlin for the language itself — nulls, scope functions, data/sealed classes, objects/companion, control flow, collections, extensions, generics, destructuring, coroutines/Flow, naming/ktlint, Java anti-patterns, DSL design. Load before writing or reviewing any non-composable Kotlin. |
-| Tackle complex, multi-domain work — broad features, refactors, platform changes, or source-sensitive tasks | `jetpack-compose-engineering-gate` | Coverage: Engineering State creation, gate node authoring (architecture, UI/layout, test-quality, performance, source-tracing). Use when consequential design decisions need explicit reasoning. |
+| Tackle complex, multi-domain work — broad features, refactors, platform changes, or source-sensitive tasks | `jetpack-compose-engineering-gate` | Coverage: Engineering State creation, review-batch declaration and declared outcomes (architecture, UI/layout, test-quality, performance, source-tracing). Use when consequential design decisions need explicit reasoning. |
 
 
 ## 7. Research

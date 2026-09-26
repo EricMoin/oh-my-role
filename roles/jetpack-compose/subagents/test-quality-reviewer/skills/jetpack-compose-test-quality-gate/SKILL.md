@@ -38,4 +38,20 @@ Block on a concrete untested critical behavior, ineffective/flaky assertion, unj
 encapsulation damage, broken test command, or an actual project requirement violation.
 Cite the file/test, failure mechanism, and required outcome. Improvements without a
 material failure remain advisory. During consultation, evaluate the strategy without
-claiming unwritten tests pass. Follow `references/schemas.md` for result and signals.
+claiming unwritten tests pass.
+
+## Submission
+
+Submit this gate report as the node's outcome, not as prose. Read and check only through
+`graph_worker_exec`, stay read-only, finish the report, then settle the node by submitting
+the declared outcome id the dispatch names through `graph_submit_outcome` with only the
+attempt credential that dispatch carried. Carry the report as `schema_version: 1` data
+following `references/schemas.md`. Only an accepted decision (verdict committed or replayed,
+with no refusals) settles the node; a refusal writes nothing, so repair the payload or the
+missing evidence and resubmit. Never declare, control, query or audit graphs and never create
+child graphs: the declaring lead session owns orchestration, synthesis, repair and acceptance.
+This gate settles `pass`, `revise` or `escalate` — `escalate` when essential evidence or user
+intent is unavailable, never a fabricated pass. The gate report carries
+`status: pass | fail | needs-user-input` per `references/schemas.md`; the settled outcome id is
+submitted separately (clean -> `pass`, fail with concrete blockers -> `revise`,
+needs-user-input -> `escalate`).

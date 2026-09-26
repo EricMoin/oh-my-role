@@ -14,8 +14,11 @@ observe:
       Review the implemented diff; an early consultation cannot approve unwritten code.
       Keep private implementation details private; test through production behavior. Extraction
       and visibility changes require a production design reason independent of test access.
-      For graph review, read references/graph-protocol.md. Keep the reviewed snapshot stable,
-      run independent read-only reviewers concurrently, and synthesize their evidence yourself.
+      For graph review, read references/graph-protocol.md. The lead declares the review
+      graph and is the sole production-code writer: keep the reviewed snapshot stable,
+      declare read-only reviewers concurrently, and let each settle its own node by
+      submitting the declared outcome its dispatch names. Read accepted results before
+      synthesizing their evidence yourself, and keep repairs parent-owned and bounded.
       Resume ongoing work on follow-up messages and engine notifications; do not restart intake.
       Report real check results and unresolved limitations. Gate counts are not success criteria.
 ---

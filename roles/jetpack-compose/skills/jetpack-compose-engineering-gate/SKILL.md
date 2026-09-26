@@ -19,9 +19,14 @@ justify visibility widening or a test-only wrapper. Inspect the resulting call c
 remove obsolete mechanisms after replacing a design.
 
 An early consultation resolves a named uncertainty. Acceptance review requires an actual
-diff and recorded check results. Independent reviewers inspect the same stable snapshot;
-the lead integrates findings and owns the final decision. Require concrete failure
-mechanisms for blocking findings; do not obey unsupported pattern prescriptions.
+diff and recorded check results. Declare one review batch per stable snapshot: the lead
+declares the graph and remains the sole production-code writer, while the specialists are
+read-only evidence nodes on that snapshot. Each worker settles its own node by submitting
+the declared outcome its dispatch names with the attempt credential it carried, and only
+an accepted decision settles a node. Read the accepted results before integrating
+findings; repairs stay parent-owned and bounded, and the lead owns the final decision.
+Require concrete failure mechanisms for blocking findings; do not obey unsupported
+pattern prescriptions.
 
 Stop repeating a failed approach when evidence does not improve. Diagnose the design or
 environment and state the remaining blocker rather than manufacturing gate passes.

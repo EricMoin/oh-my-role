@@ -15,7 +15,7 @@ This gate is a novel capability unique to the Android Compose role. When officia
 - Engineering State block from the Engineering Lead containing: compose_bom_version, agp_version, kotlin_version, and relevant library dependency versions from the project's `build.gradle.kts` or `libs.versions.toml`.
 - Specific behavioral questions, claims, or code patterns requiring source-level investigation.
 - Code diff referencing APIs whose behavior is under question.
-- Reference documents: `references/source-research.md` for the evidence hierarchy, AndroidX monorepo navigation guide, cs.android.com navigation guide, and citation format; `references/evidence-first-research.md` for citation discipline and escalation rules; `references/schemas.md` for the gate report contract.
+- Reference documents: `references/source-research.md` for the evidence hierarchy, AndroidX monorepo navigation guide, cs.android.com navigation guide, and citation format; `references/evidence-first-research.md` for citation discipline and the lead's escalation rules; `references/schemas.md` for the gate report contract.
 
 ## Applicable Checks
 
@@ -35,9 +35,26 @@ This gate is a novel capability unique to the Android Compose role. When officia
 - **Fail**: Claims are contradicted by source inspection but not corrected in the report. Source is claimed without a verifiable citation (missing file/line/tag). An assumption is presented as a verified fact. No reproducible experiment was conducted when source and docs disagree.
 - **Pass with advisory notes**: Source is located but some behavior remains ambiguous (e.g., the code branches based on a runtime flag not present in the project configuration). A reproducible experiment is designed or recommended in advisory_notes to resolve the ambiguity.
 
+Map these criteria into the tracing report you submit as the declared `report` outcome: a clean
+pass or pass with advisory notes records `pass` in the report status field; a fail records `fail`
+there; unavailable essential evidence or user intent records `needs-user-input` — never a
+fabricated pass. This node settles its single declared outcome `report` for any finding, including
+a failing check and unavailable essential evidence, so neither status changes the settled outcome
+id, and the declaring lead owns any escalation the finding implies.
+
 ## Output Format
 
-Return YAML in a single `result` fence, following `references/schemas.md`, then emit the explicit assessment signal:
+Finish the gate report before submitting. Settle the node by submitting the declared outcome id
+the dispatch names through `graph_submit_outcome`, with only the attempt credential that
+dispatch carried and this report as `schema_version: 1` data following
+`references/schemas.md`. Only an accepted decision (verdict committed or replayed, with no
+refusals) settles the node; a refusal writes nothing, so repair the payload or the missing
+evidence and resubmit. Read and check only through `graph_worker_exec`, stay read-only, and
+never declare, control, query or audit graphs or create child graphs. The report carries the
+fields below, with `status` reporting `pass`, `fail` or `needs-user-input` per
+`references/schemas.md`; the settled outcome id is submitted separately and is always the
+declared `report`, whatever the status and for any finding this node reports — the review-gate
+outcome ids that other gates settle do not apply here, and the declaring lead owns any escalation:
 
 ```yaml
 gate: source-tracing

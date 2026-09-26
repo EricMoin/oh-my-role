@@ -53,11 +53,13 @@ roles:
       profiles, and ships cross-platform Flutter and Dart applications
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "3.7.0"
+    version: "4.0.0"
     description: Jetpack Compose Engineering Lead with evidence-first research,
-      invariant-driven design, risk-based graph reviews,
+      invariant-driven design, risk-based reviews,
       encapsulation-preserving tests, AOSP/AndroidX source tracing, and idiomatic
       Compose guidance — builds, tests, profiles, and ships Android applications
+      on the rolebox graph v3 outcome protocol, declaring bounded read-only
+      specialist review graphs whose workers settle their own declared outcomes
     tags: [android, kotlin, jetpack-compose, compose, mobile, research,
         source-tracing]
   emperor:

@@ -28,5 +28,20 @@ diff and callers. Do not equate a named architecture pattern with correctness.
 
 Blocking findings need a concrete failure mechanism, file:line evidence, and an outcome
 that fixes the issue. Preferences are advisory. Do not prescribe a replacement design
-without considering its callers, lifetime and total complexity. Follow
-`references/schemas.md` for result and signals.
+without considering its callers, lifetime and total complexity.
+
+## Submission
+
+Submit this gate report as the node's outcome, not as prose. Read and check only through
+`graph_worker_exec`, stay read-only, finish the report, then settle the node by submitting
+the declared outcome id the dispatch names through `graph_submit_outcome` with only the
+attempt credential that dispatch carried. Carry the report as `schema_version: 1` data
+following `references/schemas.md`. Only an accepted decision (verdict committed or replayed,
+with no refusals) settles the node; a refusal writes nothing, so repair the payload or the
+missing evidence and resubmit. Never declare, control, query or audit graphs and never create
+child graphs: the declaring lead session owns orchestration, synthesis, repair and acceptance.
+This gate settles `pass`, `revise` or `escalate` — `escalate` when essential evidence or user
+intent is unavailable, never a fabricated pass. The gate report carries
+`status: pass | fail | needs-user-input` per `references/schemas.md`; the settled outcome id is
+submitted separately (clean -> `pass`, fail with concrete blockers -> `revise`,
+needs-user-input -> `escalate`).
