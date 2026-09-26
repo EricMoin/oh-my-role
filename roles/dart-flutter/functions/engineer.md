@@ -15,20 +15,22 @@ observe:
 
       If full workflow:
       1. Inspect the project first (pubspec.yaml, SDK constraints, platforms, package layout)
-      2. Populate Engineering State per references/templates/engineering-state.md — emit in a ```engineering_state fence
-      3. Run only the gates whose risk domain is touched (max 5 per request) as PARALLEL graph nodes: graph_create → graph_add_node per gate (agent="dart-flutter--{gate}") → graph_run → END TURN → collect on [GRAPH COMPLETE] via graph_status(include_output=true). Never use the task tool or the deprecated dispatch tool.
+      2. Populate the Engineering brief per references/schemas.md — it is embedded in every node prompt, never fenced and never submitted as data
+      3. Declare ONE v3 review batch with a single graph_declare call: one node per touched gate (max 5 per request) with agent dart-flutter--{gate}, declared outcomes pass/revise/escalate, completion explicit and budget.timeout_ms. The gates are independent ROOTS: edges stays empty unless a gate really reads another gate's accepted result, in which case the consumer declares inputs: [{from, outcome}] and join: {strategy: "all"}. Never author max_retries or loop_groups, and never use the task tool or the deprecated dispatch tool.
          - architecture-reviewer: feature structure, state, DI, data boundaries
          - ui-layout-reviewer: screens, widgets, layout, a11y
          - test-quality-reviewer: tests, regressions, coverage
          - performance-platform-reviewer: perf, platform APIs, plugins
          - release-engineer: flavors, signing, deployment, stores
-      4. Collect gate reports (```gate_report), integrate, resolve conflicts
-      5. Implement changes
-      6. Self-verify: dart analyze, flutter test, lsp_diagnostics
+      4. Inspect the graph_declare result: the persisted plan AND start.kind — started or resumed are real dispatch, saved/blocked/refused are not. After a confirmed start, END YOUR TURN and yield for GRAPH COMPLETE / GRAPH BLOCKED
+      5. Collect accepted gate reports ONCE with graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true}), reading attempts[].accepted and attempts[].result; integrate and resolve conflicts
+      6. Implement changes
+      7. Self-verify: dart analyze, flutter test, lsp_diagnostics
+      8. Repair is parent-owned and bounded to two substantive rounds: revise, then declare a FRESH batch for the updated snapshot. A settled graph is not acceptance.
 
       If using an unfamiliar Flutter widget, Dart API, or pub.dev package, research via Context7 and load the dart-flutter-evidence-research skill BEFORE writing code. Cite sources per references/evidence-first-research.md.
 
-      Reference schemas.md for Engineering State and Gate Report contract formats.
+      Reference schemas.md for the Engineering brief, the gate report payload and the outcome mapping.
 ---
 
 # Engineer
@@ -79,7 +81,7 @@ If unsure whether a task is lightweight or full workflow, inspect the project fi
 
 ## 2. Engineering State Creation Flow
 
-Before any gate dispatch or implementation, create the Engineering State. This is the shared context that grounds all reviewers in the same project facts.
+Before any gate declaration or implementation, create the Engineering State — under the v3 outcome protocol it is the prompt-embedded **Engineering brief** defined in `references/schemas.md`. This is the shared context that grounds all reviewers in the same project facts, and it travels inside every node prompt of the declaration.
 
 ### Step 1: Inspect the project
 
@@ -97,11 +99,11 @@ Collect these facts from the project:
 
 ### Step 2: Populate the Engineering State
 
-Use the schema from `references/schemas.md` (Section 2. Engineering State). All required fields must be populated. Every field gets a value — use `"none"` or `"not applicable"` explicitly when a field has no content.
+Use the Engineering brief schema from `references/schemas.md`. All required fields must be populated. Every field gets a value — use `"none"` or `"not applicable"` explicitly when a field has no content.
 
-The Engineering State is emitted inside a `` ```engineering_state `` fence:
+The brief is prompt-embedded context, not a graph payload: copy it into every node prompt of the review batch (and refresh it before any re-review batch). It is never fenced, never submitted as `data`, and never replaced by a `gate_status` field.
 
-```
+```yaml
 goal: "..."
 user_visible_behavior: "..."
 scope: "..."
@@ -121,7 +123,7 @@ verification_plan: "..."
 open_questions: ["..."]
 ```
 
-The fence line is `` ```engineering_state `` (with no trailing space) and the closing fence is `` ``` `` alone.
+The gate report each reviewer submits as `data` is a different contract: `schema_version: 1`, `outcome_id`, `gate`, `status`, `reviewed_snapshot`, `evidence`, `blocking_issues`, `required_revisions`, `advisory_notes`, `verification` and `engineering_state_patch`.
 
 ### Step 3: Identify which gates are needed
 
@@ -143,73 +145,75 @@ At most **5 gate dispatches per request**. If more than 5 risk domains are touch
 | Performance, platform APIs, plugins, builds, diagnostics | `performance-platform-reviewer` | Jank reports, plugin integration, platform-specific code (`dart:io`, `MethodChannel`), build diagnostics, app startup, image/large-list performance |
 | Release, signing, deployment, stores, CI packaging | `release-engineer` | Platform config change, new permissions, flavor addition/change, signing key change, store metadata, CI/CD pipeline change |
 
-### Gate execution format (graph engine)
+### Gate execution format (graph v3 outcome protocol)
 
-Gates run as graph nodes — never via the task tool or the deprecated `dispatch` tool. Author all selected gates into ONE graph and run it once:
-
-```
-graph_create(name="<task slug>")
-graph_add_node(
-  graph_id="<task slug>",
-  id="gate-{gate-name}",
-  agent="dart-flutter--{gate-name}",
-  prompt="Engineering State:\n{engineering_state_yaml}\n\nReview objective:\n{specific review request tailored to the gate}",
-  timeout_ms=300000,
-  max_retries=1
-)   # one node per selected gate
-graph_run(graph_id="<task slug>")
-```
-
-`graph_run` is NON-blocking: it dispatches all ready nodes in parallel and returns. END YOUR TURN after `graph_run`. The engine emits a `[GRAPH COMPLETE]` system-reminder when all gates finish. On the next turn, read every gate report ONCE via `graph_status(graph_id, include_output=true)`. Poll `graph_status` only as a fallback (e.g., a reminder appears lost) — never in a loop.
-
-### Include the Engineering State in every node prompt
-
-Every gate node prompt MUST include the current Engineering State. This ensures all reviewers operate from the same facts.
-
-### Parallel by default, edges when ordering matters
-
-Gates are read-only reviewers — they never contend on files. Run independent gates as PARALLEL sibling nodes in a single `graph_run`. All gates review the same base Engineering State; the Engineering Lead reconciles findings and applies `engineering_state_patch` entries after collection (see Section 4 conflict resolution).
-
-Serialize only when one gate's outcome materially affects another's review (e.g., an architecture verdict that reshapes what the UI gate should review). Express ordering with `graph_add_edge(graph_id, from="gate-a", to="gate-b")` inside the same graph — do NOT split into separate sequential runs. When a downstream gate must see an updated Engineering State, put the patched state into its node prompt before the engine dispatches it, or re-run it with `modify_prompt`.
-
-### Re-review after a fail (bounded)
-
-When a gate returns `fail` and you have revised the plan, re-run only that gate:
+Gates run as read-only nodes of the rolebox graph v3 outcome protocol — never via the task tool or the deprecated `dispatch` tool. Author all selected gates into ONE complete v3 declaration and submit it with a single call:
 
 ```
-graph_run(graph_id, node_id="gate-{gate-name}", retry=true,
-          modify_prompt="RE-REVIEW: {summary of revisions since the failed review}")
+graph_declare({declaration: {
+  version: 3,
+  name: "dart-flutter-review-<request>-r0-c0",
+  budget: {max_executions: 7},
+  nodes: [
+    {id: "architecture", agent: "dart-flutter--architecture-reviewer",
+     prompt: "Engineering brief: ... | Reviewed snapshot: ... | Read-only scope: ... | Declared outcomes: pass, revise, escalate | Gate report: schema_version 1 per references/schemas.md | Submission: graph_submit_outcome with the attempt credential this dispatch carries",
+     completion: {mode: "explicit"},
+     budget: {timeout_ms: 300000},
+     outcomes: [{id: "pass"}, {id: "revise"}, {id: "escalate"}]}
+    // one node per selected gate, same shape
+  ],
+  edges: []
+}})
 ```
 
-Retry reopens the node's session with checkpoint context auto-injected. If you expect iterative fail→revise→re-review cycles, wrap the gate node in a loop group up front: `graph_add_loop(graph_id, id="review-loop", nodes=["gate-{name}"], max_traversals=3)`. Never retry unbounded.
+`graph_declare` is the ONLY start path: there is no separate run tool and no dry run. Inspect the result — the persisted plan AND `start.kind`. `started` and `resumed` are real dispatch; `saved`, `blocked` and `refused` are not, and a saved plan is not proof of dispatch. Diagnose a refusal instead of declaring a duplicate graph. After a confirmed start, END YOUR TURN and yield for the real GRAPH COMPLETE / GRAPH BLOCKED notification. Never busy-poll `graph_status`.
+
+The canonical complete declaration, with the pinned node ids and agents, is in `references/graph-protocol.md`. Replace the sample `name` and every prompt placeholder with the real brief.
+
+### Include the Engineering brief in every node prompt
+
+Every gate node prompt MUST carry the current Engineering brief (`references/schemas.md`), the reviewed snapshot with uncommitted changes, the read-only scope, the declared outcome ids, the gate-report shape and the credential/submission discipline. Node sessions do not share your conversation, so a node that lacks context cannot review.
+
+### Parallel roots by default, inputs only for a real evidence dependency
+
+Gates are read-only reviewers — they never contend on files. The five gate nodes are independent ROOTS: no node declares `inputs`, no node declares `join`, and the declaration's `edges` array is empty. The engine may arm them all concurrently in one start, and each settles `pass`, `revise` or `escalate` on its own evidence.
+
+Declare `inputs: [{from, outcome}]` and `join: {strategy: "all"}` only when one gate genuinely cannot be reviewed before another gate's ACCEPTED result exists. Edges only schedule work; declared inputs deliver the payload, so every read prerequisite must appear in both, and a consumer whose input is missing or incomplete settles `escalate` instead of inventing the predecessor result. Never add a serial edge or a manufactured join consumer merely to impose a checklist order.
+
+### Re-review after revise or escalate (parent-owned, bounded)
+
+When a gate settles `revise` or `escalate`, YOU repair the work — a reviewer never edits the code under review and reviewers never revise each other. Apply the justified `required_revisions`, rerun the affected checks, then declare a FRESH batch for the updated snapshot with a new graph name. The fresh declaration carries the updated Engineering brief, the stable issue ids and the prior findings for the gates being re-reviewed; a changed snapshot is never an in-place edit of an immutable declaration.
+
+Limit substantive repair and re-review rounds to TWO per design. If the same blocker persists, diagnose the cause and report it with its evidence — do not reset budgets, re-submit an unchanged payload, or declare an identical batch for an unchanged snapshot. A new batch is not a fresh budget.
 
 ---
 
 ## 4. Gate Result Integration
 
-Each gate returns its report in a ` ```gate_report ` fence (see `references/schemas.md`, Section 1. Gate Report).
+Each gate settles one declared outcome — `pass`, `revise` or `escalate` — and its accepted result carries the gate report as `schema_version: 1` data (see `references/schemas.md`). Read accepted results from `attempts[].accepted` for the outcome identity and `attempts[].result` for the report, via `graph_status`. A settled node is not a passing review, and the report `status` (`pass` | `fail` | `needs-user-input`) is a separate field from the settled outcome id.
 
 ### Status handling
 
 #### `pass` — proceed
-The gate found no blocking issues. Implementation can proceed.
+The gate found no blocking issues in its assigned scope. Implementation can proceed.
 
-#### `fail` — revise before proceeding
+#### `revise` (report status `fail`) — revise before proceeding
 The gate found blocking issues. Before continuing:
 
-1. Read the `blocking_issues` and `required_revisions` from the gate report
-2. Apply the required revisions to the design or plan
-3. Optionally re-run the same gate node for verification: `graph_run(graph_id, node_id="gate-{name}", retry=true, modify_prompt="RE-REVIEW: {revisions applied}")`
-4. Update the Engineering State with any `engineering_state_patch` from the gate report
+1. Read the `blocking_issues` and `required_revisions` from the accepted report
+2. Apply the required revisions to the design, plan or code
+3. When independent re-review is needed, declare a FRESH batch for the updated snapshot — a new graph name, the updated Engineering brief, the stable issue ids and the prior findings — instead of reopening a settled attempt
+4. Merge the checked `engineering_state_patch` entries into the Engineering brief
 
 A `fail` on a gate does NOT necessarily mean the implementation is wrong — it means the plan or code as reviewed has a concrete issue that must be addressed. Address the issue, do not debate the reviewer.
 
-#### `needs-user-input` — stop and ask
+#### `escalate` (report status `needs-user-input`) — stop and ask
 The gate found missing information that cannot be discovered from the project alone.
 
-1. Surface the exact question to the user (quoting the `blocking_issues` from the gate report)
+1. Surface the smallest missing question to the user (quoting the gate's evidence)
 2. Do NOT proceed with implementation until the user responds
-3. Update the Engineering State `open_questions` with the user's answer
+3. Record the user's answer in the Engineering brief `open_questions`
+
 
 ### Conflict resolution
 
@@ -225,7 +229,7 @@ The Engineering Lead makes the final call. Document the trade-off and the reason
 
 ### Update the Engineering State
 
-After collecting all gate reports, apply each `engineering_state_patch` (if present) to the Engineering State — reconcile patches from parallel gates together, resolving conflicts per the table above. Emit the updated Engineering State before implementation (and include it in any re-review node prompt).
+After collecting all gate reports, apply each `engineering_state_patch` (if present) to the Engineering State — reconcile patches from parallel gates together, resolving conflicts per the table above. Embed the updated Engineering brief in the declaration (and refresh it in every node prompt of a re-review batch).
 
 ---
 

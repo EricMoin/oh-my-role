@@ -1,104 +1,28 @@
-# Inter-Agent Contract Schemas
+# Inter-agent contracts (schema_version: 1)
 
-**Purpose**: Canonical schemas for every inter-agent contract in the Dart-Flutter role. All producers conform exactly. All consumers reject field drift.
+Every role-authored business payload is a JSON object with `schema_version: 1`.
+Submit it as the `data` argument of
+`graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` for the
+outcome id the node declares. Accepted attempt results are the transport authority:
+the lead reads them from `attempts[].result` with `graph_status`. A prose message, a
+chat update or an inferred completion is not transport and releases no consumer.
+Never put the attempt credential, the graph id or host state into business data.
+Reject unknown schema versions, missing required fields and unknown ids.
 
-**Rule**: One schema per contract. No producer renames, adds, or removes fields without updating this document first (see [Field Drift Prevention](#field-drift-prevention)).
+The Strategy `plan_revision` is the coordinator's business identifier; the engine's
+compiled `plan_revision` is a content digest of the declaration. Track both and
+never substitute one for the other.
 
-**The `result` fence is the universal return envelope.** Every dispatched subagent returns its payload inside a `` ```result `` fence. The PAYLOAD schema is determined by the producer — reviewers return `gate_report`, Engineering Lead returns `engineering_state`. The consumer knows which schema to expect from the dispatch it made.
+## Engineering brief (prompt-embedded contract)
 
----
+The Engineering brief replaces the former Engineering State fence. It is embedded in
+every node prompt of a review batch; it is not a graph payload and it is never
+submitted as `data`. The lead creates it before declaring the batch, and each gate
+node reads it from its own dispatch.
 
-## 1. Gate Report
+**Producer**: Engineering Lead. **Consumers**: all five gate nodes.
 
-**Fence**: `` ```gate_report `` (nested inside `` ```result ``)
-
-**Producer**: All 5 reviewer subagents (architecture-reviewer, ui-layout-reviewer, test-quality-reviewer, performance-platform-reviewer, release-engineer)
-
-**Consumer**: Engineering Lead
-
-**Purpose**: Structured review verdict from one specialist gate.
-
-### Fields
-
-| Name | Type | Required | Constraints | Description |
-|------|------|----------|-------------|-------------|
-| `gate` | string | yes | `architecture` \| `ui-layout` \| `test-quality` \| `performance-platform` \| `release` | Which gate produced this report. |
-| `status` | string | yes | `pass` \| `fail` \| `needs-user-input` | Gate verdict. |
-| `evidence` | string[] | yes | ≥1 entry | File paths with line numbers, test output, commands, doc citations — each traceable to a concrete source. |
-| `blocking_issues` | string[] | conditional | present when `fail` | One concrete violation per entry. |
-| `required_revisions` | string[] | conditional | present when `fail` | One actionable revision per entry. |
-| `advisory_notes` | string[] | no | — | Non-blocking observations, out-of-scope concerns. |
-| `verification` | string | yes | — | Command or procedure to verify the gate passes after revisions. |
-| `engineering_state_patch` | object | no | — | Fields to update in the Engineering State. Keys must match Engineering State field names. |
-
-### Forbidden Fields
-
-| Field | Reason |
-|-------|--------|
-| `next_gate` | Sequencing is the Engineering Lead's role, not the reviewer's. |
-| `summary` | Use `advisory_notes` instead. |
-| Flat list format | Must use structured YAML. |
-
-### Examples
-
-```yaml
-gate: architecture
-status: pass
-evidence:
-  - "lib/features/auth/auth_screen.dart:L45 — repo injected via constructor"
-  - "dart analyze — zero errors"
-  - "test/features/auth/auth_repository_test.dart — FakeAuthRepository used"
-blocking_issues: []
-required_revisions: []
-verification: "dart analyze && flutter test test/features/auth/"
-```
-
-```yaml
-gate: ui-layout
-status: fail
-evidence:
-  - "lib/screens/profile_screen.dart:L88 — TextField without semantic label"
-  - "Accessibility scanner: 'EditText has no contentDescription'"
-blocking_issues:
-  - "Two form inputs lack accessibility labels (name L88, email L102)"
-  - "Profile screen overflows on 40+ char email"
-required_revisions:
-  - "Add Semantics or label property to both TextFields"
-  - "Wrap email field row in Flexible"
-verification: "dart analyze && flutter test test/screens/profile_screen_test.dart"
-engineering_state_patch:
-  risks:
-    - "Accessibility gaps in form inputs — flagged by UI layout gate"
-```
-
-```yaml
-gate: release
-status: needs-user-input
-evidence:
-  - "pubspec.yaml — platforms not configured beyond defaults"
-  - "android/app/build.gradle — signing config references missing keystore"
-verification: ""
-engineering_state_patch:
-  open_questions:
-    - "Target platforms: iOS, web, or both?"
-    - "Keystore managed via CI secrets or local setup?"
-```
-
----
-
-## 2. Engineering State
-
-**Fence**: `` ```engineering_state `` (nested inside `` ```result ``)
-
-**Producer**: Engineering Lead
-
-**Consumer**: All 5 reviewer subagents
-
-**Purpose**: Shared context grounding all reviewers in the same project facts, conventions, and constraints. Created before any non-trivial gate dispatch.
-
-### Fields
-
-| Name | Type | Required | Constraints | Description |
+| Field | Type | Required | Constraints | Description |
 |------|------|----------|-------------|-------------|
 | `goal` | string | yes | 1-3 sentences | What the task achieves (end state). |
 | `user_visible_behavior` | string | yes | 1-3 sentences | What the user observes after deployment. |
@@ -106,7 +30,7 @@ engineering_state_patch:
 | `out_of_scope` | string | yes | — | What will NOT change. Prevents scope creep during review. |
 | `project_facts` | string | yes | — | Package name, SDK, key dependencies, relevant facts. |
 | `sdk_package_constraints` | string | yes | — | Flutter SDK, Dart SDK, pinned key packages. |
-| `target_platforms` | string[] | yes | ≥1 entry | e.g. `["android"]`, `["android", "ios", "web"]` |
+| `target_platforms` | string[] | yes | ≥1 entry | e.g. `["android"]`, `["android", "ios", "web"]`. |
 | `existing_architecture` | string | yes | — | State mgmt, DI, routing, data layers, folder layout. |
 | `state_management` | string | yes | — | Riverpod, Bloc, Provider, ChangeNotifier, none. |
 | `routing` | string | yes | — | go_router, Navigator 2.0/1.0, auto_route, none. |
@@ -118,12 +42,12 @@ engineering_state_patch:
 | `verification_plan` | string | yes | — | Commands, platforms, scenarios to verify correctness. |
 | `open_questions` | string[] | no | — | Questions needing user input or research. Omit if none. |
 
-### Forbidden Fields
+### Forbidden fields
 
 | Field | Reason |
 |-------|--------|
-| `implementation_details` | Engineering State captures WHAT/WHY, not HOW. |
-| `gate_status` | Gate status is a runtime artifact, not shared context. |
+| `implementation_details` | The brief captures WHAT and WHY, not HOW. |
+| `gate_status` | Gate status is an accepted-outcome artifact, not shared context. |
 | Undefined field names | Consumers parse by field name. Unknown fields cause silent drift. |
 
 ### Example
@@ -136,91 +60,230 @@ user_visible_behavior: >
 scope:
   - "lib/features/auth/presentation/forgot_password_screen.dart — new screen"
   - "lib/features/auth/domain/use_cases/request_password_reset.dart — new use case"
-  - "lib/features/auth/data/repositories/auth_repository.dart — add requestPasswordReset"
-  - "lib/navigation/app_router.dart — add forgot-password route"
 out_of_scope:
   - "Deep-link handling for reset link (server-side)"
-  - "Password strength validation (unchanged)"
 project_facts: "com.example.myapp / Flutter 3.24 / go_router 14.0 / riverpod 2.5 / dio 5.4"
-sdk_package_constraints: "Flutter >=3.22.0 <4.0.0 / Dart >=3.4.0 <4.0.0 / go_router 14.0.x / riverpod 2.5.x"
+sdk_package_constraints: "Flutter >=3.22.0 <4.0.0 / Dart >=3.4.0 <4.0.0 / go_router 14.0.x"
 target_platforms: ["android", "ios"]
-existing_architecture: "Feature-first layout. Riverpod state. go_router navigation. Manual DI via Riverpod overrides. Repository pattern with Dio HTTP."
+existing_architecture: "Feature-first layout. Riverpod state. go_router navigation. Manual DI via Riverpod overrides."
 state_management: "Riverpod (flutter_riverpod, riverpod_annotation)"
 routing: "go_router (declarative, redirect guards)"
 data_persistence: "None for auth — ephemeral token. shared_preferences for settings."
 code_generation: "freezed + json_serializable. build_runner pre-commit."
 localization: "gen_l10n — ARB in lib/l10n/. English MVP."
-testing_conventions: "Unit tests mirror lib/. Riverpod uses ProviderContainer. Widget tests use ProviderScope. CI: flutter test --coverage."
+testing_conventions: "Unit tests mirror lib/. Widget tests use ProviderScope. CI: flutter test --coverage."
 risks:
   - "No existing password reset pattern — first auth flow of its kind"
-  - "Dio auth interceptor shared — reset must not trigger token refresh loop"
-verification_plan: "flutter test test/features/auth/ && manual: tap 'Forgot password?', enter email, confirm message, verify back nav"
+verification_plan: "flutter test test/features/auth/ && manual: tap 'Forgot password?', confirm message"
 open_questions:
   - "Success message: snackbar or full-screen confirmation?"
 ```
 
----
+## Gate report (submitted as accepted outcome data)
 
-## Revision Input (Re-Execution Contract)
+Each read-only gate writes this report and submits it as the `data` payload of the
+outcome it settles. The report carries `schema_version: 1` and the settled outcome
+id, so the accepted result is self-identifying.
 
-**Direction**: Engineering Lead → subagent (closed-loop revise rounds)
+**Producer**: all five gate subagents. **Consumer**: Engineering Lead.
 
-When a gate returns `fail`, the Lead revises code and re-runs the same gate node via `graph_run(graph_id, node_id="gate-{name}", retry=true, modify_prompt=…)` — retry reopens the node's session with checkpoint context. If the original node was cleaned up and a fresh node is required, its prompt MUST carry:
+### Fields
 
-| Field | Source | Purpose |
-|-------|--------|---------|
-| Gate identifier | Original `gate` field | Which gate is being re-run |
-| Prior `blocking_issues` | Failed gate report | What was wrong |
-| Prior `required_revisions` | Failed gate report | What was asked for |
-| Fix description | Engineering Lead | What was changed |
-| Revision flag | Engineering Lead | "This is a revision — re-evaluate against the same engineering state" |
+| Name | Type | Required | Constraints | Description |
+|------|------|----------|-------------|-------------|
+| `schema_version` | integer | yes | exactly `1` | Payload contract version. |
+| `outcome_id` | string | yes | `pass` \| `revise` \| `escalate` | The declared outcome id this submission settles. |
+| `gate` | string | yes | `architecture` \| `ui-layout` \| `test-quality` \| `performance-platform` \| `release` | Which gate produced this report; identical to the node id and to the gate dispatch matrix in `role.yaml`. |
+| `status` | string | yes | `pass` \| `fail` \| `needs-user-input` | Gate verdict. Closed set; there is no conditional-pass status. |
+| `reviewed_snapshot` | string | yes | — | The revision, diff or artifact identifier actually inspected, including uncommitted changes. |
+| `evidence` | string[] | yes | ≥1 entry | File paths with line numbers, test output, commands or doc citations; distinguish inspected from executed. Each entry traceable to a concrete source. |
+| `blocking_issues` | object[] | conditional | required when `status: fail`; `[]` otherwise | One concrete violation per entry with a stable issue id, the failure mechanism and its evidence. |
+| `required_revisions` | string[] | conditional | required when `status: fail`; `[]` otherwise | One actionable revision per entry, addressing the blocker without prescribing incidental implementation. |
+| `advisory_notes` | string[] | no | — | Non-blocking observations and out-of-scope concerns. |
+| `verification` | string[] | yes | ≥1 entry | Checks actually performed and missing evidence; proposed checks are labelled as proposed. |
+| `engineering_state_patch` | object | no | keys must match Engineering brief field names | Proposed corrections to brief facts, merged only by the lead. |
 
-One failed gate per retry node. The subagent re-evaluates from the unchanged Engineering State and produces a fresh gate report.
+### Forbidden fields
 
----
+| Field | Reason |
+|-------|--------|
+| `next_gate` | Sequencing is the Engineering Lead's role, not the reviewer's. |
+| `summary` | Use `advisory_notes` instead. |
+| `credential`, graph or host identity | Host state never enters business data. |
+| Any fence envelope (`result`, `gate_report`, or similar) | The payload is the `data` argument itself, not text inside a fence. |
+| Undefined top-level field names | Consumers reject field drift; propose the field here first. |
 
-## Producer Conformance Table
+### Status semantics
 
-| Contract | Producer | Consumer | Fence |
-|----------|----------|----------|-------|
-| Gate Report | architecture-reviewer | Engineering Lead | `` ```gate_report `` |
-| Gate Report | ui-layout-reviewer | Engineering Lead | `` ```gate_report `` |
-| Gate Report | test-quality-reviewer | Engineering Lead | `` ```gate_report `` |
-| Gate Report | performance-platform-reviewer | Engineering Lead | `` ```gate_report `` |
-| Gate Report | release-engineer | Engineering Lead | `` ```gate_report `` |
-| Engineering State | Engineering Lead | all 5 reviewers | `` ```engineering_state `` |
+- `pass` means no supported blocking issue exists in the assigned scope. It is not
+  proof of the entire feature. Advice with no blocker is a pass with advisory notes.
+- `fail` requires at least one blocking issue with a concrete failure mechanism and
+  one required revision per blocker.
+- `needs-user-input` names the smallest missing question or recovery action and who
+  can resolve it. Never turn inability to assess into a pass.
 
----
+### Status to settled outcome
 
-## Field Drift Prevention
+| Gate report status | Settled outcome | Carries |
+| --- | --- | --- |
+| `pass` | `pass` | — |
+| `fail` with concrete blockers | `revise` | Stable `required_revisions` |
+| `needs-user-input` | `escalate` | The smallest missing question or recovery action |
+
+The settled outcome id is a separate field of the submission; the report status is
+never renamed to the outcome id and the outcome id never replaces the status.
+
+### Examples
+
+```json
+{
+  "schema_version": 1,
+  "outcome_id": "pass",
+  "gate": "architecture",
+  "status": "pass",
+  "reviewed_snapshot": "com.example.myapp@abc1234 + uncommitted working tree",
+  "evidence": [
+    "lib/features/auth/auth_screen.dart:L45 — repository injected via constructor",
+    "dart analyze — zero errors"
+  ],
+  "blocking_issues": [],
+  "required_revisions": [],
+  "advisory_notes": [],
+  "verification": ["dart analyze && flutter test test/features/auth/"],
+  "engineering_state_patch": {}
+}
+```
+
+```json
+{
+  "schema_version": 1,
+  "outcome_id": "revise",
+  "gate": "ui-layout",
+  "status": "fail",
+  "reviewed_snapshot": "com.example.myapp@abc1234 + uncommitted working tree",
+  "evidence": [
+    "lib/screens/profile_screen.dart:L88 — TextField without a semantic label",
+    "lib/screens/profile_screen.dart:L102 — email row overflows at 40+ characters"
+  ],
+  "blocking_issues": [
+    {
+      "id": "UI-1",
+      "issue": "Two form inputs lack accessibility labels, so screen readers cannot name them",
+      "evidence": "lib/screens/profile_screen.dart:L88, L102"
+    }
+  ],
+  "required_revisions": ["Give both TextFields an accessible label"],
+  "advisory_notes": ["Consider grouping the form fields for faster keyboard traversal"],
+  "verification": ["flutter test test/screens/profile_screen_test.dart"],
+  "engineering_state_patch": {
+    "risks": ["Accessibility gaps in form inputs — flagged by the UI layout gate"]
+  }
+}
+```
+
+## Outcome vocabulary
+
+| Domain | Declared outcomes | Meaning |
+| --- | --- | --- |
+| Execution | `done`, `failed`, `blocked`, `clarification_required`, `approval_required` | Change applied and its local checks recorded; work incomplete; a concrete prerequisite unavailable; a user decision required; an approval request prepared. None of these is a passing report on its own. |
+| Review | `pass`, `revise` | Required criteria supported in the assigned scope, or concrete correctable defects with stable `required_revisions`. |
+| Escalation | `escalate` | Essential evidence or user intent is unavailable; carries the smallest missing question or recovery action. |
+| Evidence | `report` | The assigned assessment completed, including negative findings; not a product verdict. |
+
+This role's mapping:
+
+- All five gate nodes — `architecture`, `ui-layout`, `test-quality`,
+  `performance-platform` and `release` — are review gates. Each settles `pass` when
+  no supported blocking issue exists in its assigned scope, `revise` for concrete
+  blocking issues with stable `required_revisions`, and `escalate` when essential
+  evidence or user intent is unavailable.
+- The batch declares no execution node, no evidence node, no validation node and no
+  approval node, because the lead owns production writes, synthesis, repair,
+  acceptance and any user approval. `done`, `failed`, `blocked`,
+  `clarification_required`, `approval_required` and `report` are therefore
+  documented for completeness of the engine vocabulary and are never submitted by
+  these five read-only specialists.
+- `revise` and `escalate` return findings to the lead. The lead owns the repair and
+  any fresh review batch for a changed snapshot, and a settled graph is not
+  acceptance of the reviewed design.
+
+## Submission and acceptance
+
+Submitting is the only way an attempt settles, and only the decision `accepted`
+with verdict `committed` or `replayed` and no refusals settles it. A rejection or a
+refusal writes nothing and leaves the attempt open: repair the payload or the
+missing evidence and resubmit. An identical retry after an uncertain delivery is
+idempotent; a conflicting submission cannot overwrite a settled attempt. Once
+accepted, stop work on that attempt. Never fabricate an outcome, never print the
+credential, and never rely on a prose verdict or an inferred completion.
+
+A settled graph is not acceptance of the reviewed design: a run can complete while
+carrying a `revise` or `escalate` gate report, and the accepted result stays
+readable through `graph_status` so the lead can synthesize it.
+
+## Parent-owned repair and fresh re-review batch
+
+When a gate settles `revise` or `escalate`, the lead repairs the work; a worker
+never does.
+
+1. Read the accepted `blocking_issues`, `required_revisions` and
+   `engineering_state_patch` from `attempts[].result`; merge patch entries only
+   after checking them against the project.
+2. Apply the justified revisions to the code, then rerun the affected checks.
+3. For independent re-review, declare a FRESH review batch for the updated snapshot:
+   a new graph name, the updated Engineering brief in every node prompt, the stable
+   issue ids and the prior findings for the gates being re-reviewed. There is no
+   retry flag, no in-place prompt modification and no engine-managed repair cycle in
+   this topology.
+4. Limit substantive repair and re-review rounds to two per design. If the same
+   blocker persists after the second round, diagnose the cause and report it with
+   its evidence rather than resetting budgets, re-submitting the same payload or
+   declaring an identical batch for an unchanged snapshot.
+
+A re-review batch carries one gate per affected risk domain; it never re-opens a
+settled attempt, and it never asks a reviewer to edit the code under review.
+Reviewers never revise each other.
+
+## Producer conformance
+
+| Contract | Producer | Consumer | Transport |
+|----------|----------|----------|-----------|
+| Gate report | architecture-reviewer | Engineering Lead | `data` argument of `graph_submit_outcome` |
+| Gate report | ui-layout-reviewer | Engineering Lead | `data` argument of `graph_submit_outcome` |
+| Gate report | test-quality-reviewer | Engineering Lead | `data` argument of `graph_submit_outcome` |
+| Gate report | performance-platform-reviewer | Engineering Lead | `data` argument of `graph_submit_outcome` |
+| Gate report | release-engineer | Engineering Lead | `data` argument of `graph_submit_outcome` |
+| Engineering brief | Engineering Lead | all 5 gate nodes | embedded in the node prompt of the declaration |
+
+## Field drift prevention
 
 **Principle**: This document is the single source of truth. No producer unilaterally changes a contract.
 
 **Before changing any field**:
 
 1. Propose the change here first (add or modify the field table).
-2. Update all producers (subagent gate skills for gate_report, Engineering Lead workflow for engineering_state).
-3. Update all consumers (Engineering Lead for gate_report, all 5 reviewers for engineering_state).
+2. Update all producers (subagent gate skills and role prompts for the gate report, the Engineering Lead workflow for the Engineering brief).
+3. Update all consumers (Engineering Lead for the gate report, all 5 reviewers for the Engineering brief).
 4. If backward-incompatible, version the contract or coordinate a simultaneous update.
 
 **If a consumer receives a field not in this document**: reject it — producer error.
 
 **If a producer needs a new field**: add it here first, then implement.
 
-### Conformance Status
+### Conformance status
 
 | Producer | Contract | Status |
 |----------|----------|--------|
-| architecture-reviewer | Gate Report | Conforms — structured YAML per Architecture Gate skill |
-| ui-layout-reviewer | Gate Report | Conforms — structured YAML per UI/Layout Gate skill |
-| test-quality-reviewer | Gate Report | Conforms — structured YAML per Test Quality Gate skill |
-| performance-platform-reviewer | Gate Report | Conforms — structured YAML per Perf/Platform Gate skill |
-| release-engineer | Gate Report | Conforms — structured YAML per Release Gate skill |
-| Engineering Lead | Engineering State | Conforms — template enforced via `flutter-engineering-gate` skill |
+| architecture-reviewer | Gate report | Conforms — schema_version 1 data per the Architecture Gate skill |
+| ui-layout-reviewer | Gate report | Conforms — schema_version 1 data per the UI/Layout Gate skill |
+| test-quality-reviewer | Gate report | Conforms — schema_version 1 data per the Test Quality Gate skill |
+| performance-platform-reviewer | Gate report | Conforms — schema_version 1 data per the Perf/Platform Gate skill |
+| release-engineer | Gate report | Conforms — schema_version 1 data per the Release Gate skill |
+| Engineering Lead | Engineering brief | Conforms — embedded in every node prompt of the declaration |
 
-### Deprecation Policy
+### Deprecation policy
 
 1. Mark deprecated fields with `[DEPRECATED]` in the field table.
 2. Producers stop emitting deprecated fields within one version cycle.
 3. Consumers continue accepting them for one cycle after deprecation.
-4. After one cycle, remove from this document. Producers still emitting are non-conformant.
+4. After one cycle, remove from this document. Producers still emitting are non-conformant. Late or malformed fields for required data are rejected at submission time: repair the payload and resubmit.
