@@ -168,19 +168,40 @@ No control approval can convert a partial worker report into done.
 
 ## Validation and recovery
 
-After execution and continuations settle, dispatch a separate Validator with every
-approved item, latest reports, cumulative changed paths and prior independent check
-records. Validate the current workspace, including previously passing items and
-affected integrations. Missing evidence cannot be treated as a prior passing check.
+After execution and continuations settle, dispatch one Validator with every approved
+item, latest reports, cumulative changed paths, prior independent check records and
+the prior Validate Result.
+
+Declare a validation graph exactly when one of these holds: (a) no Validate Result
+exists yet for the current approved set, (b) the previous Validate Result returned
+revise and its corrections have landed, or (c) the approved item set changed. The
+initial validation of every implementation path is required and batching never removes
+it. Never declare a validation graph after each individual fix. Accumulate every
+pending correction into one execute graph, then validate that batch once. A validation
+dispatch that never launched is not a validate round.
+
 On revise, select failed IDs, their transitive dependents and overlapping write or
-verification scopes. Execute that closure in a fresh DAG, then revalidate the whole
-approved set. Partial reports are recovery inputs, never successful prerequisites.
+verification scopes. Execute that closure in a fresh DAG, then validate the approved
+set again under the same batching rule. Every approved item receives a current
+verdict: an item whose check inputs are unchanged is carried under the rule below, and
+an item whose inputs changed is rerun. Partial reports are recovery inputs, never
+successful prerequisites.
 
 Choose a finite repair_limit before execution (default 2); persist overrides with a
 task-specific reason. Preserve the actual repair count across graphs and plan
 revisions. Waiting and pure approval/clarification continuation do not spend repair
-rounds; a continuation correcting a diagnosed defect does. Stop on unchanged failures
-without new evidence, exhausted budget or unresolved blockers; report remaining work.
+rounds; a continuation correcting a diagnosed defect does.
+
+Choose a finite validate_limit before execution (default 3) and persist any override
+with a validate_limit_reason. It bounds the number of Validator graphs dispatched for
+one request, counting the initial validation and every revalidation. Preserve the
+consumed validate-round count across graphs and plan revisions; a validation dispatch
+that never launched or was refused for capacity does not spend a validate round. When
+the limit is reached, stop and report the remaining unverified items instead of
+declaring another validation graph.
+
+Stop on unchanged failures without new evidence, exhausted budget or unresolved
+blockers; report remaining work.
 
 Use graph_control retry only for a diagnosed transient failure after confirming
 external execution/effects. A node retry mints a NEW attempt and consumes budget;
@@ -191,6 +212,85 @@ A cancellation request or timeout is not confirmed termination. Never duplicate 
 unknown live execution. Use graph_audit for storage/recovery blockers; never delete
 or recreate an unreadable store, decode old state yourself, or treat state loss as
 permission to rerun. Recover consistent host state or report the concrete blocker.
+
+## Incremental validation and check reuse
+
+Record the workspace digest of every validation round. The workspace digest is the
+SHA-256 of the sorted list of (repository-relative path, SHA-256 of file bytes) pairs
+over the union of every approved item's check input set; an item digest uses the same
+construction over that item's check input set alone. A check input set is the item's
+write_scope paths plus every caller, fixture, dependency manifest, lockfile and shared
+configuration file that the command reads; when an item's verification array declares
+several required checks, the item's check input set is the union of their input sets.
+The Validator retains the (path, hash) list behind every digest it reports, so a later
+round compares path sets and not only hashes. Sandbox-provided paths (HOME, TMPDIR,
+scratch copies, tool locations), session identity, prompt text and step count are not
+check inputs and MUST NOT enter a digest. The identity of the tool that executes a
+check is an input even though its path is not: the check record carries the resolved
+command path and the tool's reported version, and a changed tool version forces a
+rerun.
+
+Every approved item receives a current verdict. Each Validate Result item declares a
+basis of rerun or carried. The Validator, never the coordinator, decides the basis.
+A carried basis is permitted only when all of these hold:
+
+1. Every path in the item's check input set is provably outside the changed-path set
+   between the revision whose workspace digest was recorded and the current revision,
+   taken from the cumulative changed-path list and the retained (path, hash) lists. If
+   the input set cannot be enumerated, or any input changed, or its impact is
+   uncertain, the item is rerun. When an item's verification array declares several
+   required checks, its check input set is the union of their input sets.
+2. The prior check's graph/node/check identity, command, resolved tool path, reported
+tool version, exit code and input digest are recorded and available to the Validator.
+3. The Validator recomputes the current digest itself and it equals the recorded one.
+4. The prior check passed: its recorded exit code is 0 and the prior Validate Result
+   marked that item pass. A carried failing check is never a pass.
+
+Missing, incomplete or mismatching carrier data is refused and the item is rerun. A
+record without the resolved tool path or the reported tool version is incomplete
+carrier data and forces a rerun, and a version that differs from the one the Validator
+resolves forces a rerun. A rerun costs one line: it requires a nonempty rerun_reason
+naming the changed input or the uncertainty that forced it. Every rerun records the
+executed check identity, command, resolved tool path, reported tool version, exit code
+and input digest in the item's check field. A rerun that records none can never be
+carried.
+
+The coordinator MUST NOT rerun a typecheck, test or lint command that a Validator has
+recorded as current for the same revision digest. It may re-establish revision
+identity by recomputing the digest, and it may rerun a command when the digest changed
+since the recorded check or when no Validator record exists for that digest. A
+whole-project typecheck or test gate is a revision-level check: when the approved
+verification plan and repository policy provide one it runs once per revision, owned
+by the validation round, and MUST NOT appear in every node's verification array. Where
+repository policy bans a full suite, the validation round records the scoped substitute
+and the remaining gap; this rule does not override that ban.
+
+## Repeated checks and flakiness
+
+Repetition measures a check; it never obtains a passing result. A check that failed its
+first attempt cannot be recorded passed because a later repetition passed.
+
+Bounded repetition: a nondeterministic check may run at most three times in one
+validation round and never more than five times for one item across a request. Record
+the attempt count and the observed failure rate (failures over attempts) with every
+repetition.
+
+Classify the failure against a pristine baseline: run the same command against the
+recorded input digest of the previously validated revision, or a clean checkout at the
+recorded commit. If no pristine baseline can be established, the check is revise or
+failed with a precise note; it is never a fabricated pass.
+
+- regression: the baseline passes and the current revision fails. The check fails.
+- pre_existing: the baseline fails the same way. The failure is unchanged evidence and
+  is not attributable to the change. Record the observed rate and the baseline
+  identity, report the item as unresolved verification, and spend no further repair
+  round on that unchanged failure.
+- flaky_environment: both revisions fail intermittently. Record the observed rate and
+  classify the item revise with that evidence.
+
+Unbounded repetition, running a check until it is green and re-running a full slice to
+chase one flaky case are FORBIDDEN. After the bounded attempts, stop and report the
+recorded frequency, the classification and the baseline identity.
 
 ## Completion
 

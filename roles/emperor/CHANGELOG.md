@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.1.0
+
+- Batch validation: one validation graph per batch, declared for the initial
+  validation of an approved set and after that only when the previous Validate Result
+  returned revise and its corrections landed, or when the approved item set changed.
+  Pending corrections accumulate into one execute graph instead of one validation per
+  fix.
+- Incremental validation: every Validate Result item carries a basis of rerun or
+  carried plus a recomputed workspace digest; a carried item records the prior
+  graph/node/check identity, command, resolved tool path, reported tool version, exit
+  code, input digest and the proven-unchanged path list. A pre-3.1.0 result without a
+  basis is read conservatively as a rerun with no reusable carrier.
+- Evidence reuse is reachable: a disposable worker sandbox, differing HOME or TMPDIR,
+  scratch path, session identity, prompt text or step count is no longer an unstable
+  check input.
+- The coordinator must not rerun a typecheck, test or lint command a Validator recorded
+  as current for the same revision digest; recomputing the digest stays allowed.
+- Per-node check proportionality: a node's mandatory checks follow its write_scope, and
+  the whole-project typecheck or test gate runs once per revision.
+- Bounded flakiness protocol: at most three repetitions per round, a recorded observed
+  rate and a pristine-baseline classification; repeating until green is forbidden and a
+  pre-existing failure is reported as an unresolved verification gap.
+- New Revision Context field validate_limit (default 3) with validate_limit_reason and
+  a preserved consumed validate-round count.
+- Evals: 58 cases in 8 target groups and 6 scenarios; seven new cases cover batching,
+  the no-duplicate-checks rule, the validate budget, carrier refusal, sandbox-neutral
+  reuse, bounded flakiness and check proportionality.
+
 ## 3.0.0
 
 - Migrate to Graph v3 declarations, explicit accepted outcomes and declared inputs.

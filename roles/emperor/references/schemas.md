@@ -28,7 +28,11 @@ Each subtask has:
 - authorized_scope: array of concrete operations already authorized by the user;
   empty means ordinary reversible work only, not permission for irreversible actions.
 - verification: array of {id, command, scope, required}; command can be null for a
-  read-only structural inspection, scope is a string, required is boolean.
+  read-only structural inspection, scope is a string, required is boolean. Keep the
+  set proportional to write_scope: the narrowest command that establishes the
+  condition for the changed paths and their direct callers. A whole-project typecheck
+  or full test suite is a revision-level check, not an item check, and MUST NOT be
+  added to every subtask.
 - research_required: boolean, default false.
 
 Every execution prompt carries the whole subtask, plan_revision, prerequisite
@@ -92,16 +96,47 @@ is still required. A result fence alone is not permission to advance consumers.
 ## Validate Result
 
 {schema_version: 1, plan_revision: string, verdict: "pass"|"revise",
-items: [{id: integer, status: "pass"|"revise", note: string}]}.
+workspace_digest: string,
+items: [{id: integer, status: "pass"|"revise", basis: "rerun"|"carried", note: string,
+check: {check_id: string, command: string, tool_path: string, tool_version: string,
+exit_code: integer, input_digest: string, current_digest: string},
+rerun_reason: string|null,
+carried_from: {graph_id: string, node_id: string, check_id: string, command: string,
+tool_path: string, tool_version: string, exit_code: integer, input_digest: string,
+current_digest: string, unchanged_paths: string[]}|null}]}.
 
-Include every approved subtask exactly once, including previously passing items.
+Include every approved subtask exactly once and give each one a current verdict.
 Aggregate pass requires every item pass and all required checks satisfied on the
 current workspace. Excluded tasks are identified by the coordinator, not silently
 omitted by Validator. Recheck affected integrations after revisions. Unavailable
 verification is revise with a precise note, not a fabricated pass.
-If relying on a prior independent check, cite its graph/node/check identity in note,
-with the basis for unchanged inputs; retain actual command/output records for the
-coordinator. If those records are missing, the check cannot be reused.
+
+basis is required. A rerun basis means the check ran in this round and requires a
+nonempty rerun_reason naming the changed input or the uncertainty that forced it, plus
+the executed check record in check. check is required on every item, carried or rerun,
+and is the record a later round can carry: for a rerun it is the check executed in this
+round; for a carried item it is the prior executed check the Validator re-verified,
+with current_digest recomputed. It holds check_id, the command as run, the resolved
+tool path and the tool's reported version, its exit code, input_digest of the inputs
+the command read and current_digest for the revision the digest was recomputed
+against. check records the check that establishes the item's verdict; when an item's
+verification array declares several required checks, every one of them must satisfy
+the carrier conditions, and the item's check input set is the union of their input
+sets. A carried basis reuses prior independent evidence and requires the complete
+carried_from record plus unchanged_paths, including the prior resolved tool path and
+reported tool version; the Validator recomputes workspace_digest and current_digest
+itself. Missing, incomplete or unverifiable carrier data is refused and becomes a
+rerun, and a prior check that recorded no check record can never be carried. The
+carrier eligibility rules, the digest construction and the coordinator
+no-duplicate-checks rule are in graph-protocol.md.
+
+Compatibility read: a Validate Result produced before this contract, whose items have
+no basis and no check, is read as a rerun with no reusable record. Such an item can
+still pass its round, but it establishes no carried evidence and grants no reuse; an
+absent field never upgrades evidence. An unknown basis value is refused. schema_version
+stays 1: this is a required field extension consumed only inside this role tree, and the
+legacy read is conservative in the safety direction.
+
 Submit pass or revise with this object as data. The parent reads the accepted
 attempt result, not a local artifact.
 
@@ -151,8 +186,10 @@ and data, then follows graph-protocol.md for containment and continuation.
 
 Include plan_revision, revision_round and continuation_index (nonnegative integers),
 repair_limit (finite nonnegative integer, default 2), limit_reason (required for a
-non-default limit), complete original subtask and prior Execution Report. These
-counters/limits are coordinator run context, not evidence that checks have passed.
+non-default limit), validate_limit (finite nonnegative integer, default 3),
+validate_limit_reason (required for a non-default limit), the consumed validate-round
+count, complete original subtask and prior Execution Report. These counters/limits are
+coordinator run context, not evidence that checks have passed.
 A repair includes the worker
 or validator finding and correction direction; a continuation includes resolution
 of the blocker, any required authorization, and completed/remaining work.

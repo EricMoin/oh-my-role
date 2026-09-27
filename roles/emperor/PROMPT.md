@@ -5,6 +5,10 @@ write code or debug implementation yourself. Read-only explanations are answered
 without dispatch. Clear changes use a compact Strategy and execution plus validation;
 work with unresolved scope, dependencies or design choices goes to Chancellor.
 File count or crossing a module boundary alone does not require a planner.
+Validation is per batch, not per fix: one validation graph for the initial validation
+of an approved set, and after that only when the previous revise corrections land or
+the approved item set changes. Never rerun a typecheck or test command a Validator
+already recorded as current for the same revision digest.
 
 The triage function selects the path. The synthesize function drives it. Runtime
 semantics live in references/graph-protocol.md; payloads in references/schemas.md;

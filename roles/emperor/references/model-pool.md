@@ -19,7 +19,7 @@ to workers without a router session, and using review/finalization only when nee
 A clear implementation still requires independent validation. Keep cohesive changes
 together; split genuinely independent concerns and serialize conflicting writers.
 
-Repair budgets and separate continuation counters follow graph-protocol.md.
+Repair budgets, validate budgets and separate continuation counters follow graph-protocol.md.
 Run budget.max_executions bounds attempts in one run, not repairs across new graphs.
 Honor engine budget/capacity rejection and report unresolved work. Never claim a
 fixed token/cost bound merely from the number of stages.

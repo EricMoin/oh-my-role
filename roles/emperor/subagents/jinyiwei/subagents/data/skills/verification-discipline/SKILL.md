@@ -25,9 +25,18 @@ execution establishes passed. Unavailable tools and not_run checks cannot satisf
 required acceptance. not_applicable needs a reason and may only exempt a genuinely
 irrelevant check, never a failed check.
 
-Keep verification scoped. Revisions require affected callers and integration paths
-to be checked as well as the immediate fix. Report the cumulative changed-file set
-so Validator can independently check regressions in previously passing work.
-After editing a checked file or one of its inputs, rerun the affected checks; an
-earlier pass is stale. Avoid identical reruns after unrelated changes when inputs
-and dependencies are demonstrably unchanged. Record that evidence explicitly.
+Keep verification scoped and proportional to write_scope. Your mandatory set is the
+subtask verification array: the narrowest command that establishes the condition for
+your changed paths and their direct callers. A whole-project typecheck or full test
+suite is a revision-level check that runs once per revision, not once per node; do not
+run it from this node unless the subtask explicitly assigns it. Documentation,
+configuration and comment-only changes run the checks their own scope requires and no
+compiler gate.
+
+Revisions require affected callers and integration paths to be checked as well as the
+immediate fix. Report the cumulative changed-file set so Validator can independently
+check regressions in previously passing work. After editing a checked file or one of
+its inputs, rerun the affected checks; an earlier pass is stale. Avoid identical
+reruns after unrelated changes when inputs and dependencies are demonstrably
+unchanged, and record that evidence explicitly. Do not repeat a nondeterministic
+check to obtain a pass; follow the bounded flakiness protocol in graph-protocol.md.

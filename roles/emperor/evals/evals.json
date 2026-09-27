@@ -153,7 +153,7 @@
               "weight": 2
             },
             {
-              "text": "Revalidates every approved item including previously passing items",
+              "text": "Gives every approved item a current verdict, rerunning changed inputs and recording basis carried for unchanged ones",
               "type": "boundary",
               "weight": 2
             }
@@ -200,7 +200,7 @@
               "weight": 2
             },
             {
-              "text": "Retains the real count, applies only the affected closure and independently revalidates all approved items",
+              "text": "Retains the real count, applies only the affected closure and revalidates the approved set once under the batching rule, carrying items whose inputs are unchanged",
               "type": "boundary",
               "weight": 2
             }
@@ -353,7 +353,7 @@
           "prompt": "Three legitimate approval continuations have completed with no execution or acceptance failures. The work is now ready for validation.",
           "expectations": [
             {
-              "text": "Keeps revision_round at zero and continuation_index distinct; validates instead of stopping at the repair limit",
+              "text": "Keeps revision_round at zero and continuation_index distinct; spends one validate round instead of stopping at the repair limit",
               "type": "boundary",
               "weight": 2
             },
@@ -469,7 +469,7 @@
               "weight": 2
             },
             {
-              "text": "Does not count a launch failure as an acceptance repair or self-certify the work",
+              "text": "Does not count a launch failure as an acceptance repair or a spent validate round, and does not self-certify the work",
               "type": "boundary",
               "weight": 2
             }
@@ -627,6 +627,69 @@
             "graph-v3",
             "contract"
           ]
+        },
+        {
+          "id": "one-validation-per-batch",
+          "description": "one validation per batch",
+          "prompt": "Validation returned revise for item 1. While the correction was running, two more small defects were found in items 2 and 3.",
+          "expectations": [
+            {
+              "text": "Accumulates every pending correction into one execute graph",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Declares exactly one validation graph after that batch lands, not one per fix",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "contract"
+          ]
+        },
+        {
+          "id": "no-duplicate-recorded-checks",
+          "description": "no duplicate recorded checks",
+          "prompt": "The accepted Validate Result records a passing whole-project typecheck for the current revision digest; nothing has changed since.",
+          "expectations": [
+            {
+              "text": "Does not rerun the recorded typecheck or test command for the same digest",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "May recompute the workspace digest to re-establish revision identity before dispatch",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "contract"
+          ]
+        },
+        {
+          "id": "validate-budget-bounds-rounds",
+          "description": "validate budget bounds rounds",
+          "prompt": "The Revision Context records validate_limit: 3 with validate_limit_reason; three Validator graphs have been dispatched and the latest returned revise.",
+          "expectations": [
+            {
+              "text": "Stops and reports the remaining unverified items instead of declaring a fourth validation graph",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Preserves the consumed validate-round count across plan revisions and continuations",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "contract"
+          ]
         }
       ]
     },
@@ -673,15 +736,15 @@
         {
           "id": "reuse-unaffected-independent-check",
           "description": "reuse unaffected independent check",
-          "prompt": "A previous Validator ran check A with recorded inputs and passed. Only independent documentation B changed; A source, callers, fixtures, configuration and environment are demonstrably unchanged.",
+          "prompt": "A previous Validator ran check A and passed; its graph/node/check identity, command, exit code and input digest are recorded. Only independent documentation B changed; A's source, callers, fixtures and configuration are provably outside the changed-path set.",
           "expectations": [
             {
-              "text": "May reuse A with a cited prior result and validates B independently; still returns a current verdict for every approved item",
+              "text": "Records basis carried with the complete carried_from record and a matching recomputed digest; validates B independently and still returns a current verdict for every approved item",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Does not describe a reused check as newly executed",
+              "text": "Does not describe a reused check as newly executed and does not rerun it merely because the worker sandbox differs",
               "type": "boundary",
               "weight": 2
             }
@@ -697,7 +760,7 @@
           "prompt": "A prior Validator passed API tests. A shared configuration file now changed and its effect on those tests is uncertain.",
           "expectations": [
             {
-              "text": "Reruns affected checks, including previously passing work; does not reuse evidence under uncertain impact",
+              "text": "Reruns the affected check with basis rerun and a one-line rerun_reason naming the uncertain input; does not carry evidence under uncertain impact",
               "type": "boundary",
               "weight": 2
             }
@@ -714,6 +777,69 @@
           "expectations": [
             {
               "text": "Submits revise with the exact finding; does not edit files, auto-fix or dispatch repair",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "carried-without-record-is-refused",
+          "description": "carried without record is refused",
+          "prompt": "The prior Validate Result for item 2 reports a passing check but omits the command exit code and the input digest.",
+          "expectations": [
+            {
+              "text": "Refuses a carried basis and reruns the check with a one-line rerun_reason",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not fabricate or infer the missing carrier record",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "contract"
+          ]
+        },
+        {
+          "id": "sandbox-difference-does-not-force-rerun",
+          "description": "sandbox difference does not force rerun",
+          "prompt": "A prior Validator passed check A on the same revision and recorded its identity, command, exit code and input digest. Only HOME, TMPDIR, scratch-copy path and session identity differ.",
+          "expectations": [
+            {
+              "text": "Uses basis carried with a recomputed matching digest instead of rerunning for sandbox differences",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not treat a disposable worker sandbox as a changed check input",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "flaky-check-bounded-repetition",
+          "description": "flaky check bounded repetition",
+          "prompt": "A cross-process test failed once, passed on the next run, and fails intermittently on the recorded pristine baseline too.",
+          "expectations": [
+            {
+              "text": "Repeats the check at most three times, records the observed failure rate and classifies it against the pristine baseline",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not repeat until green and does not report the flaky check as a clean pass",
               "type": "boundary",
               "weight": 2
             }
@@ -756,6 +882,27 @@
           "expectations": [
             {
               "text": "Uses structural/source inspection and applicable repository checks, without inventing LSP evidence or running unrelated code suites",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "node-checks-proportional-to-write-scope",
+          "description": "node checks proportional to write scope",
+          "prompt": "A docs-only subtask whose verification array declares one scoped link and structure check.",
+          "expectations": [
+            {
+              "text": "Runs the declared scoped check and does not add a whole-project typecheck or full test suite",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Reports the revision-level gate as owned by validation rather than by this node",
               "type": "boundary",
               "weight": 2
             }
@@ -1107,13 +1254,13 @@
         {
           "prompt": "Three scope-specific approvals have resumed remaining work; there have been no defects. All continuations are complete.",
           "expected_state": {
-            "output_hint": "revision_round remains 0; validates the actual workspace"
+            "output_hint": "revision_round remains 0; spends exactly one validate round on the actual workspace"
           }
         },
         {
           "prompt": "Validator now finds a real defect in item 1.",
           "expected_state": {
-            "output_hint": "starts repair round 1 with affected closure and prior reports; retains continuation identity"
+            "output_hint": "starts repair round 1 with affected closure and prior reports, batches every pending correction into that one closure before the next validation graph, and retains continuation identity"
           }
         }
       ]
@@ -1132,7 +1279,7 @@
         {
           "prompt": "The utility fix changed shared configuration used by item 2.",
           "expected_state": {
-            "output_hint": "rechecks item 2 on current inputs, does not reuse its stale passing result; reports every approved item"
+            "output_hint": "rechecks item 2 because its shared configuration input changed; records basis rerun with a rerun_reason and reports every approved item"
           }
         }
       ]

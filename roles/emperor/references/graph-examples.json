@@ -9,7 +9,7 @@
       {
         "id": "planning-v1",
         "agent": "emperor--chancellor",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Produce the Strategy; Emperor schedules any further review.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Produce the Strategy; Emperor schedules any further review.",
         "completion": {
           "mode": "explicit"
         },
@@ -35,7 +35,7 @@
       {
         "id": "review-v1",
         "agent": "emperor--chancellor--reviewer",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Review the supplied actual Strategy and return the Review Verdict.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Review the supplied actual Strategy and return the Review Verdict.",
         "completion": {
           "mode": "explicit"
         },
@@ -64,7 +64,7 @@
       {
         "id": "draft-v1",
         "agent": "emperor--chancellor--drafter",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Revise the actual Strategy using supplied review findings.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Revise the actual Strategy using supplied review findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -90,7 +90,7 @@
       {
         "id": "finalization-v1",
         "agent": "emperor--chancellor--finalizer",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Reconcile the supplied Strategy without expanding scope.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Reconcile the supplied Strategy without expanding scope.",
         "completion": {
           "mode": "explicit"
         },
@@ -116,7 +116,7 @@
       {
         "id": "approval-v1",
         "agent": "emperor--approval",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Prepare the exact Approval Request only. This records context, never approval; do not perform the operation.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Prepare the exact Approval Request only. This records context, never approval; do not perform the operation.",
         "completion": {
           "mode": "explicit"
         },
@@ -142,7 +142,7 @@
       {
         "id": "exec-1-r0-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. ",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Execute subtask 1. Check declared prerequisite reports before work. ",
         "completion": {
           "mode": "explicit"
         },
@@ -173,7 +173,7 @@
       {
         "id": "exec-2-r0-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. ",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3. Execute subtask 2. Check declared prerequisite reports before work. ",
         "completion": {
           "mode": "explicit"
         },
@@ -226,7 +226,7 @@
       {
         "id": "exec-1-r1-c0",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. ",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2; validate_limit: 3. Execute subtask 1. Check declared prerequisite reports before work. This graph is the single batched correction round; no validation graph is declared until every pending correction here lands.",
         "completion": {
           "mode": "explicit"
         },
@@ -257,7 +257,7 @@
       {
         "id": "exec-2-r1-c0",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. ",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 1; continuation_index: 0; repair_limit: 2; validate_limit: 3. Execute subtask 2. Check declared prerequisite reports before work. This graph is the single batched correction round; no validation graph is declared until every pending correction here lands.",
         "completion": {
           "mode": "explicit"
         },
@@ -310,7 +310,7 @@
       {
         "id": "exec-1-r0-c1",
         "agent": "emperor--jinyiwei--data",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2. Execute subtask 1. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2; validate_limit: 3. Execute subtask 1. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
         "completion": {
           "mode": "explicit"
         },
@@ -341,7 +341,7 @@
       {
         "id": "exec-2-r0-c1",
         "agent": "emperor--jinyiwei--backend",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2. Execute subtask 2. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 1; repair_limit: 2; validate_limit: 3. Execute subtask 2. Check declared prerequisite reports before work. Continue remaining work only; carry actual authorization and completed effects.",
         "completion": {
           "mode": "explicit"
         },
@@ -394,7 +394,7 @@
       {
         "id": "validate-r0-c0",
         "agent": "emperor--validator",
-        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization and actual prior reports. revision_round: 0; continuation_index: 0; repair_limit: 2. Validate the entire approved Strategy against the current workspace, actual reports and cumulative changed files.",
+        "prompt": "Embed the complete contract, Strategy plan_revision example-v1, authorization, actual prior reports, cumulative changed files, the prior Validate Result and every prior independent check record with its graph/node/check identity, command, resolved tool path, reported tool version, exit code and input digest. revision_round: 0; continuation_index: 0; repair_limit: 2; validate_limit: 3; validate_round: 0. Validate every approved item against the current workspace; record workspace_digest and a basis of rerun or carried per item; own the single whole-project gate for this revision.",
         "completion": {
           "mode": "explicit"
         },

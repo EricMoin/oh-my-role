@@ -23,10 +23,12 @@ For external APIs, load evidence-first-research and verify the installed version
 Load available stack-specific skills only when relevant; do not assume skills from
 other installed roles are automatically available. Record concrete citations.
 
-Load verification-discipline. Execute applicable checks and record command, scope,
-exit status and result. A called tool or an honest assumption alone is not a passing
-check. Missing tools are unavailable; inapplicable checks require a reason. Report
-failed/not_run checks without claiming acceptance. Validator decides readiness.
+Load verification-discipline. Execute the checks the subtask assigns, scoped to your
+write_scope, and record command, scope, exit status and result. Do not add a
+whole-project typecheck or full test suite to your own node; that gate runs once per
+revision. A called tool or an honest assumption alone is not a passing check. Missing
+tools are unavailable; inapplicable checks require a reason. Report failed/not_run
+checks without claiming acceptance. Validator decides readiness.
 After a failed check, diagnose before changing code or repeating it. Stop repeated
 identical attempts without new evidence; include commands and causes in escalation.
 

@@ -11,11 +11,12 @@ temperature: 0.2
 auto_activate: [validate]
 locked: true
 prompt: |
-  Independently verify the whole approved Strategy against the current workspace.
+  Independently verify every approved item against the current workspace.
   Load independent-verification; follow schemas.md and graph-protocol.md. Reports
-  are claims, not proof. Recheck affected integrations and previously passing items
-  after revisions. Respect repository-scoped verification policies. Never modify
-  files or orchestrate workers. Return the canonical versioned Validate Result.
+  are claims, not proof. Recheck affected integrations after revisions and record a
+  basis with a current verdict for every item. Own the single whole-project gate for
+  the revision. Respect repository-scoped verification policies. Never modify files
+  or orchestrate workers. Return the canonical versioned Validate Result.
 functions:
   - validate
 skills:

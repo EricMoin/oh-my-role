@@ -1,8 +1,9 @@
 # Evaluation and decision review
 
-These are behavioral specifications, not recorded model results: 51 cases in 8
-target groups and 6 multi-turn scenarios. They cover scope, authorization, independent
-validation, repairs, explicit outcomes and current Graph v3 ownership boundaries.
+These are behavioral specifications, not recorded model results:
+58 cases in 8 target groups and 6 multi-turn scenarios. They cover scope,
+authorization, independent validation, repairs, explicit outcomes and current Graph v3
+ownership boundaries.
 
 ## Automated evidence
 
@@ -33,12 +34,13 @@ do not describe role instructions as an engine-enforced business schema.
 
 Use identical disposable fixtures, host/model configuration and budgets for baseline
 and candidate runs. Confirm the intended role and assets loaded for each target.
-Start with clear-change, low-risk-shared-interface-review, incomplete-work-non-success,
-runtime-approval-continuation, missing-host-approval-policy, duplicate-notification,
-state-unreadable and uncertain-impact-reruns. Preserve prompts, graph/run/attempt IDs,
-accepted data, workspace diffs and check outputs; never retain worker credentials.
+Start with state-unreadable, uncertain-impact-reruns, one-validation-per-batch,
+sandbox-difference-does-not-force-rerun and flaky-check-bounded-repetition. Preserve
+prompts, graph/run/attempt IDs, accepted data, workspace diffs and check outputs;
+never retain worker credentials.
 
 Measure independently verified completion, scope violations, duplicate effects,
-stale evidence reuse, repair count, dispatch count, wall time and tokens. Pair and
-repeat runs to separate model variance from actual improvements. Quality regressions
-disqualify latency savings. Distinguish deterministic tests from live model evidence.
+stale evidence reuse, carried-item correctness, repair count, validate-round count,
+dispatch count, wall time and tokens. Pair and repeat runs to separate model variance
+from actual improvements. Quality regressions disqualify latency savings. Distinguish
+deterministic tests from live model evidence.

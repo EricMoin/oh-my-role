@@ -1,7 +1,7 @@
 # Emperor
 
 A read-only coordinator for scoped execution and independent verification.
-Version 3.0 targets the current rolebox Graph v3 implementation in Pi and dsh.
+Version 3.1 targets the current rolebox Graph v3 implementation in Pi and dsh.
 
 Emperor owns graph_declare, graph_control, graph_status and graph_audit. All
 dispatched agents submit their own explicit graph_submit_outcome. Chancellor
@@ -15,6 +15,12 @@ outcomes, and consumers declare the upstream inputs they need. Failed, blocked,
 clarification_required and approval_required never release done-only consumers.
 Reports remain subject to independent Validator checks of the current workspace.
 
+Validation runs once per batch: after the initial validation of an approved set, a
+validation graph follows a revise whose corrections have landed, or a change to the
+approved item set. Each Validate Result item carries a basis of rerun or carried, and
+the coordinator does not rerun a check the Validator already recorded for the same
+revision digest.
+
 Approval preparation persists the exact request, not permission. Emperor honors
 existing authorization and records the actual user's decision in the next stage.
 Host-enforced approval separately requires the installed principal-approval policy
@@ -22,8 +28,9 @@ and authorized approver session. A control decision neither submits an outcome n
 performs the operation. Missing host authority must not be bypassed.
 
 Every declaration has an execution ceiling and explicit completion. Defect repairs
-use fresh graphs and a preserved request repair count; approval/clarification
-continuations have their own counter. Runtime retries create new attempts/runs and
+use fresh graphs and a preserved request repair count; validate rounds have a finite
+validate_limit (default 3) with a preserved consumed count; approval/clarification
+continuations have their own counter and spend neither. Runtime retries create new attempts/runs and
 require safe side-effect recovery. Notifications are wakeups to read committed
 state; duplicate notifications are not new work. Unreadable state is a blocker.
 
