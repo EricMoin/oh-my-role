@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.1.1]
+
+### Fixed
+
+- **Worker capability claims no longer promise native file tools.** A department
+  prompt used to assert that it "has full Read, Write, Edit, and Bash execution
+  tools"; the tool flags a role requests are now a permission, not a promise about
+  what a platform presents, so every worker discovers its execution boundary before
+  relying on it. The input-declaration rule is explicit — a producer settles on
+  exactly one outcome, so a consumer declares one input per producer and `join`
+  counts arrived feeder sources rather than inputs — and a host boundary refusal
+  now has a name, `failed(category: boundary_denial)`, which the coordinator
+  recovers in a context that holds the capability instead of retrying inside the
+  same boundary.
+
 ## 3.1.0
 
 - Batch validation: one validation graph per batch, declared for the initial

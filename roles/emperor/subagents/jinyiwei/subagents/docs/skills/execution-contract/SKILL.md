@@ -48,3 +48,29 @@ and actual user choices use blocked and clarification_required. Follow the worke
 submission contract in graph-protocol.md: your own handoff, credential, declared
 outcome_id and complete data, then verify the accepted receipt. Optional fences mirror
 data only. Workers cannot declare/control/query graphs or route to child workers.
+
+## Execution boundary
+
+The host decides which tools a dispatched worker actually holds, and that answer
+differs by platform: one host presents native file and command tools inside an OS
+sandbox, another presents only graph_submit_outcome and graph_worker_exec. This
+role's tool flags are the permission the role asks for, not a promise about what
+the platform presents; the manifest can set Write, Edit and Bash explicitly, and a
+graph worker on the command-only host still reaches the filesystem solely through
+graph_worker_exec.
+
+Discover the boundary before you depend on it:
+
+- Do not assume an absolute-path capability. A command that needs a credential,
+  a host cache or host state fails on construction in a disposable environment,
+  and a path outside the writable set answers `Operation not permitted`.
+- `Operation not permitted` is a boundary denial, not a task failure. Do not retry
+  the identical command and do not conclude the task is impossible. Route to an
+  allowed location or report it as a boundary_denial failure naming the exact path,
+  the command and the restriction.
+- Keep an operation that cannot succeed inside the worker boundary out of the
+  worker's completion criterion: a push, a publish, a deployment, an interactive
+  flow or a platform-specific step has to be reported to the coordinator instead.
+
+Scope discipline is unchanged: write only the assigned paths, and edit through
+whichever tool the platform presents.

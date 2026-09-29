@@ -172,10 +172,21 @@ preserve actual changed paths in completed_work or a nested Execution Report.
 Routing suggestions use failed(category: scope_mismatch) with suggested_domain and
 context. Progress updates are prose only; they never settle an attempt.
 
-category is acceptance_failure, prerequisite_failure, scope_mismatch, tool_failure
-or protocol_failure. A partial report is required if any execution/checks occurred;
-null is permitted only before work started. Missing required checks are failures of
-acceptance even when the cause is unavailable tooling. Preserve both the gap and cause.
+category is acceptance_failure, prerequisite_failure, scope_mismatch, tool_failure,
+boundary_denial or protocol_failure. A partial report is required if any
+execution/checks occurred; null is permitted only before work started. Missing
+required checks are failures of acceptance even when the cause is unavailable
+tooling. Preserve both the gap and cause.
+
+A boundary_denial is a host execution-boundary refusal: the operation cannot
+succeed in a worker session at all — a credential, host state, a platform the
+worker boundary does not run on, or another restriction the coordinator did not
+account for. Name the exact path, command and restriction; the coordinator does
+not retry it inside the same boundary, and either recovers it in a context that
+holds the capability or reports it as unresolved work. It re-scopes the completion
+criterion of the task that was dispatched against an assumed capability rather than
+re-running it.
+
 Do not submit done after another outcome settles. Workers cannot dispatch a
 replacement or read sibling credentials. Only Emperor schedules remaining work.
 These are distinct business outcomes; none is automatically normalized to approval

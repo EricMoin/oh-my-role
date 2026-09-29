@@ -34,6 +34,16 @@ continuations have their own counter and spend neither. Runtime retries create n
 require safe side-effect recovery. Notifications are wakeups to read committed
 state; duplicate notifications are not new work. Unreadable state is a blocker.
 
+Execution requirements are part of the contract: a dispatched worker on a
+command-only host holds only graph_submit_outcome and graph_worker_exec, with writes
+confined to the workspace and a disposable environment that has no credentials and
+no host caches. A plan that needs a credential, a push, a publish, a deployment or
+any other host state states that as a requirement and is not dispatched as though the
+worker could perform it. Such a refusal is reported as failed(category:
+boundary_denial) naming the exact path, command and restriction; the coordinator
+recovers the work in a context that holds the capability instead of retrying it
+inside the same boundary.
+
 The graph.orchestration selector is omitted: the current loader recognizes only the
 old graph_v2 spelling and gives it no runtime effect. It does not select declaration
 version 3. Old incremental graph tools and signal-based completion are unsupported.

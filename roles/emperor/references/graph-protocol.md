@@ -44,6 +44,19 @@ Submit the entire object through graph_declare({declaration: {...}}):
 - An edge is {from, to, outcome}; only that accepted outcome activates it.
 - A consumer declares inputs: [{from, outcome}] for each report it reads. Edges
   schedule work; they do not automatically provide every upstream payload.
+- A producer settles on exactly ONE outcome. Declare exactly one input per
+  producer and pin it to that outcome; declaring the same producer under several
+  outcomes (done and failed together) is not a router — EVERY declared input is
+  resolved, and one whose pinned outcome is not the one that settled leaves the
+  consumer un-dispatchable with input-outcome-mismatch. A producer that settles
+  on another outcome produces nothing this consumer may consume; dispatch a fresh
+  graph that consumes the outcome that actually settled, and understand that an
+  existing input entry cannot be edited — a changed input definition is a new
+  graph name.
+- join: {strategy: "all"} counts ARRIVED FEEDER SOURCES, not inputs: one producer
+  is one feeder however many edges target the consumer. Use {strategy: "any"}
+  only when a single settled producer genuinely suffices, and remember that input
+  assembly still fails on an unmatched pinned outcome.
 - Use join: {strategy: "all"} when all prerequisites must complete. Route execution
   dependencies only on done. Never route them on blocked, approval_required,
   clarification_required or failed.
@@ -122,6 +135,28 @@ if the host display truncates it. Those pagination fields apply to non-JSON outp
 Never confuse historical attempts with the current result. A complete graph may
 contain a failed/blocked business outcome and may still have unsettled effects.
 Inspect every required report; neither graph phase nor worker exit proves success.
+
+## Worker execution boundary
+
+Where a task executes is part of the contract, not an implementation detail. On a
+command-only host a dispatched worker holds graph_submit_outcome and
+graph_worker_exec and nothing else: no native file tools, writes confined to the
+workspace and scratch locations, a disposable environment with no credentials and
+no host caches, and a macOS-only OS sandbox. A plan that requires a credential, a
+push, a publish, a deployment or any other host state cannot be completed inside
+that boundary, and must not be dispatched as though it could.
+
+State execution requirements as requirements, not as assumed tool names: name the
+runtime, the credentials or service access a step needs, the paths outside the
+workspace it must touch, and anything interactive. A worker reports a denied
+operation as failed(category: boundary_denial) rather than a generic acceptance
+failure, and never by silently substituting another approach. On that outcome the
+coordinator does not retry the same work: it recovers the task in a context that
+holds the capability or reports the boundary limit to the user as unresolved work.
+
+Do not quote absolute platform paths for another machine's sandbox: describe the
+restriction (writes confined, no credentials, disposable home) and let the worker
+discover the exact spelling at execution time.
 
 ## Authorization and approval
 
@@ -212,6 +247,12 @@ A cancellation request or timeout is not confirmed termination. Never duplicate 
 unknown live execution. Use graph_audit for storage/recovery blockers; never delete
 or recreate an unreadable store, decode old state yourself, or treat state loss as
 permission to rerun. Recover consistent host state or report the concrete blocker.
+
+A check that can only be executed outside the worker boundary — a boundary test
+that needs to apply its own OS sandbox, or any step the host reserves to the
+operator — cannot be delegated to a worker or to the Validator. Record it as a
+host-level check with the exact command and its result, and treat the worker-side
+result as evidence about the workspace, not as end-to-end proof of the boundary.
 
 ## Incremental validation and check reuse
 
