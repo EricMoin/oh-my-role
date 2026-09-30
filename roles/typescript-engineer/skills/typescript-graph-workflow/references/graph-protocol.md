@@ -24,6 +24,10 @@ sandbox. Tool availability does not enlarge the role's or the node's scope.
 {mode: "explicit"}` and `budget.timeout_ms`; every edge is `{from, to, outcome}` and binds an
 outcome its source node declares. A consumer declares `inputs: [{from, outcome}]` for each
 upstream result it reads and `join: {strategy: "all"}` when every prerequisite must complete.
+A repair target uses `{from: "review", outcome: "revise", when: "triggered"}` alongside any
+ordinary required inputs. This reference must have a matching direct incoming edge. It is
+inactive on entry or another route, and mandatory when that edge contributes to dispatch.
+Its payload and artifacts come from the contributing attempt, and retries retain that binding.
 A cycle exists only inside a `loop_groups` entry carrying `max_traversals`,
 `continuation_outcome` and `exit_outcome`, and every edge carrying the continuation outcome
 stays inside its group. At least one declared outcome stays unbound so the graph can

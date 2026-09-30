@@ -464,6 +464,41 @@ test("a join:all consumer waits for every declared input before it is armed", as
   expect(passed.phase).toBe("complete");
 });
 
+test.each(["standard", "expanded", "approval", "api-design"])(
+  "%s delivers the current revision report to each repair attempt",
+  async (name) => {
+    const graph = declarePattern(name);
+    await start(graph);
+    if (name === "api-design") {
+      for (const id of ["candidate-a", "candidate-b"]) {
+        expect((await settle(graph, id, "report")).decision).toBe("accepted");
+      }
+      expect((await settle(graph, "choose", "selected", { data: { contract: "selected design" } })).decision).toBe("accepted");
+    }
+    const initial = armed(graph.requests, "change");
+    expect(initial.inputs.some((input) => input.from === "review")).toBe(false);
+
+    for (let round = 1; round <= 2; round++) {
+      expect((await settle(graph, "change", "done")).decision).toBe("accepted");
+      if (name === "expanded") {
+        for (const id of ["types", "consumer"]) {
+          expect((await settle(graph, id, "report")).decision).toBe("accepted");
+        }
+      }
+      const review = armed(graph.requests, "review");
+      const report = { items: [{ id: `defect-${round}`, problem: `Repair round ${round}` }] };
+      expect((await settle(graph, "review", "revise", { data: report })).decision).toBe("accepted");
+      const repair = armed(graph.requests, "change");
+      expect(repair.attemptId).not.toBe(initial.attemptId);
+      expect(repair.inputs.filter((input) => input.from === "review")).toEqual([{
+        from: "review", outcome: "revise", attemptId: review.attemptId,
+        payload: { kind: "value", value: report }, artifacts: [],
+      }]);
+      expect(repair.inputs.filter((input) => input.from !== "review")).toEqual(initial.inputs);
+    }
+  },
+);
+
 test("exhausting a loop group's traversal cap stops the run instead of passing", async () => {
   const graph = declarePattern("standard");
   await start(graph);

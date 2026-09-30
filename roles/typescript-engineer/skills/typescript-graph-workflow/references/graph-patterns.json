@@ -44,7 +44,7 @@
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node. On a repair round, consume the delivered review/revise input and address its concrete items; preserve completed work and report each item resolved or still blocked.",
         "completion": {
           "mode": "explicit"
         },
@@ -63,6 +63,13 @@
           },
           {
             "id": "clarification_required"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
           }
         ]
       },
@@ -127,7 +134,7 @@
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node. On a repair round, consume the delivered review/revise input and address its concrete items; preserve completed work and report each item resolved or still blocked.",
         "completion": {
           "mode": "explicit"
         },
@@ -146,6 +153,13 @@
           },
           {
             "id": "clarification_required"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
           }
         ]
       },
@@ -278,7 +292,7 @@
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node. On a repair round, consume the delivered review/revise input and address its concrete items; preserve completed work and report each item resolved or still blocked.",
         "completion": {
           "mode": "explicit"
         },
@@ -297,6 +311,13 @@
           },
           {
             "id": "clarification_required"
+          }
+        ],
+        "inputs": [
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
           }
         ]
       },
@@ -482,7 +503,7 @@
       {
         "id": "change",
         "agent": "typescript-engineer--change-applier",
-        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node.",
+        "prompt": "Template placeholder - replace with the real brief: goal, compatibility constraints, authorization, workspace paths and write scope, baseline state, and the checks required for this task. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carries: done, failed, blocked or clarification_required. Only an accepted decision settles this node. On a repair round, consume the delivered review/revise input and address its concrete items; preserve completed work and report each item resolved or still blocked.",
         "completion": {
           "mode": "explicit"
         },
@@ -507,8 +528,16 @@
           {
             "from": "choose",
             "outcome": "selected"
+          },
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
           }
-        ]
+        ],
+        "join": {
+          "strategy": "any"
+        }
       },
       {
         "id": "review",

@@ -41,8 +41,14 @@ TypeScript concern skills.
 2. Bind every edge to an outcome its source node declares. Give each consumer
    `inputs: [{from, outcome}]` for the upstream results it reads — edges schedule work but do
    not deliver payloads — and `join: {strategy: "all"}` where every prerequisite must
-   complete. An input must be bindable when the node first runs, so an entry node never
-   consumes the loop back-edge.
+   complete. A repair target also declares
+   `inputs: [{from: "review", outcome: "revise", when: "triggered"}]`: absent on entry,
+   required when that review edge participates in dispatch, bound to its exact accepted
+   attempt. Keep ordinary required inputs for dependencies needed on every run. Older engines
+   that reject `when` need separate graphs for initial work and repair; never silently remove
+   the feedback binding.
+   If a node can start from an initial route or a repair route, use `join: {strategy: "any"}`
+   for those alternatives; ordinary required inputs still enforce its persistent prerequisites.
 3. Put a cycle only inside a declared loop group with `max_traversals`, `continuation_outcome`
    and `exit_outcome`; every edge carrying the continuation outcome stays inside the group. A
    cycle outside a declared loop group cannot compile.
@@ -86,6 +92,13 @@ Supply enough context to act without the parent conversation:
   refusal writes nothing. State that workspace commands use `graph_worker_exec`.
 - Mode, required report shape, and the upstream inputs it consumes.
 
+Keep the brief centered on the task delta, acceptance criteria, relevant evidence and scope.
+Distinguish user requirements from implementation suggestions. Reconcile counts, limits and
+other measurable constraints before dispatch; do not invent exact quotas or broad test matrices
+for a task that does not need them. State what a check proves and allow the worker to choose a
+cheaper equivalent check when the command itself is not a requirement. The engine supplies
+attempt identity, credentials and input contents; do not paste them or repeat tool manuals.
+
 Node sessions do not share conversation history. Declared inputs and the shared workspace
 carry upstream results and artifacts; do not claim files are inaccessible merely because
 sessions differ. Pass compact evidence and artifact paths where accessible, not the whole
@@ -110,6 +123,11 @@ repair, consume fresh evidence; do not reuse a prior pass against older files. T
 group's `max_traversals` is the repair budget. `graph_control` retry mints a NEW attempt and
 consumes budget; it is not a way around an exhausted loop. A new revision is a new graph, not
 an in-place topology edit.
+
+Do not retry the original task for a submission-format error. An unsettled worker should
+repair its submission in the same attempt. If the worker has ended, diagnose the remaining
+work and dispatch a focused recovery graph with the existing artifacts and exact failure.
+The parent owns follow-up graphs and their budgets; workers never create child graphs.
 
 ## Reconcile and finish
 

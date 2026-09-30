@@ -30,6 +30,10 @@ contents. Use the project's actual supported versions and current official docum
 for version-dependent configuration/API choices.
 
 On a repair round, address the review's concrete items, preserving the original objective.
+Read the delivered `review/revise` input for this attempt; do not search sibling attempts'
+manifests or reconstruct feedback from the original brief. Report each finding id as resolved
+with evidence or still blocked, and preserve already completed work. If assigned a repair
+without its report, submit the declared blocked outcome with the missing input identified.
 Do not change tests merely to suppress a legitimate failure. Run focused checks after the
 final edit and include every unresolved result in the report. The reviewer must be able
 to distinguish an implementation failure from an unavailable environment.

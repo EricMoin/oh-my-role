@@ -121,7 +121,7 @@ roles:
       coding, reasoning, and analysis assistant. Chinese-language (中文) persona.
     tags: [persona, roleplay, companion, character, deepseek, chinese]
   typescript-engineer:
-    version: "2.0.0"
+    version: "2.1.0"
     description: Graph-native TypeScript engineer for rolebox — type modeling,
       runtime debugging, API design, module packaging and workspace builds,
       running on the graph v3 outcome protocol with bounded implementation/review
