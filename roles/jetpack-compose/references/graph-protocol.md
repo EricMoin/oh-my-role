@@ -8,7 +8,7 @@ against rolebox `docs/graph-outcome-protocol.md` and `src/graph/` whenever the
 installed runtime version changes.
 
 The lead is the sole production-code writer and the declaring session: it owns the
-plan, the node briefs and every repair. The five specialists are read-only evidence
+plan, the node briefs and every repair. The six specialists are read-only evidence
 nodes. The graph schedules evidence gathering and review; it never schedules
 architectural decisions, and no specialist writes production code.
 
@@ -66,7 +66,9 @@ a duplicate graph because startup looks slow.
 The declaration below is this role's single source of truth. It is a complete
 `graph_declare` argument: replace `name` with the request identity and every prompt
 placeholder with the real brief for the current snapshot. Keep the pinned node ids,
-agents, declared outcomes, edges and join.
+agents, declared outcomes, edges and join. The sample stays a five-node review batch;
+a batch whose acceptance depends on runtime behavior a running app must show declares
+one additional `device-verification` node as described under Topology semantics.
 
 ```json
 {
@@ -236,6 +238,17 @@ agents, declared outcomes, edges and join.
   declare no inputs: each reviews the snapshot named in its own prompt and settles
   `pass`, `revise` or `escalate`. Do not add serial edges merely to impose a
   checklist order.
+- `device-verification` is the optional review root for a batch whose acceptance
+  depends on runtime behavior only a running app can show: navigation and
+  back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or
+  process recreation, notifications or deep links, crash/ANR, or user-visible
+  jank. Its agent is `jetpack-compose--device-verifier`; the dispatch gives it the
+  built artifact and the declared acceptance criteria, it drives the app on a real
+  device or an emulator through the `android` CLI, and it settles `pass`, `revise`
+  or `escalate` from the executed journey and its cited evidence. It declares no
+  inputs unless it really reads an accepted upstream report, and like every other
+  specialist it never edits production files. An unavailable device, SDK or
+  emulator is an `escalate` and a recorded limitation is never a pass.
 - `architecture` is the join node. Its declared inputs are the two accepted `report`
   results, and `join: {strategy: "all"}` releases it only after both producers
   settle `report`. Both edges carry `report` into that same consumer.

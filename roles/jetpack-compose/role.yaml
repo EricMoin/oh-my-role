@@ -7,8 +7,10 @@ description: >-
   Compose architecture, state, side effects, testing, performance, platform
   APIs, migration, and source-level verification. The lead declares bounded
   read-only specialist review graphs whose workers settle their own declared
-  outcomes.
-version: "4.0.0"
+  outcomes, and verifies a built app's runtime behavior on a real device or an
+  emulator through the `android` CLI when acceptance depends on what only a
+  running app can show.
+version: "4.1.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -60,6 +62,13 @@ references:
     description: >-
       Test pyramid, composeTestRule, Compose UI test matchers, screenshot
       tests, Robolectric, ViewModel testing, coverage
+  device-verification:
+    path: references/device-verification.md
+    description: >-
+      On-device and emulator verification of a built app through the `android`
+      CLI — preflight and device choice, build and deploy, interaction
+      primitives, the executed journey contract and evaluation rules, failure
+      classification, and the pass/revise/escalate evidence bar
   compose-performance-and-platform:
     path: references/compose-performance-and-platform.md
     description: >-
@@ -76,7 +85,8 @@ references:
       Citation tier system, research triggers, Context7 workflow, evidence
       quality gates, escalation rules
 
-
+opencode_skills:
+  - android-cli
 
 skills:
   - compose-runtime-state

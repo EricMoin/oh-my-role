@@ -1,10 +1,13 @@
 # Jetpack Compose role design
 
-The lead owns design and production edits. Five read-only specialists supply targeted
-evidence through the rolebox graph v3 outcome protocol. Ordinary bounded work stays
-inline. Significant work starts with invariants, ownership, lifetime and a minimal
-coherent boundary; reviews inspect an actual stable implementation snapshot. Early
-consultations resolve specific uncertainties and do not approve unwritten code.
+The lead owns design and production edits. Six read-only specialists supply targeted
+evidence through the rolebox graph v3 outcome protocol: the five review and evidence
+gates plus the `device-verifier`, which exercises a built app on a real device or an
+emulator through the `android` CLI when acceptance depends on runtime behavior only a
+running app can show. Ordinary bounded work stays inline. Significant work starts with
+invariants, ownership, lifetime and a minimal coherent boundary; reviews inspect an
+actual stable implementation snapshot. Early consultations resolve specific
+uncertainties and do not approve unwritten code.
 
 The previous workflow duplicated mandatory phases across the parent prompt, auto-injected
 engineer function and gate skills. Tests were judged by ratios, per-component coverage

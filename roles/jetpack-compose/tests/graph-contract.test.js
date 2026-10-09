@@ -101,6 +101,7 @@ const WORKER_ALLOW = [
 const SOURCE_TRACER = "source-tracer";
 const SUBAGENT_SLUGS = [
   "architecture-reviewer",
+  "device-verifier",
   "performance-reviewer",
   "source-tracer",
   "test-quality-reviewer",
@@ -169,7 +170,7 @@ const declaration = shipped.declaration;
 
 // ── (a) Role loading through the real loader ────────────────────────────────
 
-test("rolebox loads the lead, its five read-only specialist subagents and every declared skill", async () => {
+test("rolebox loads the lead, its six read-only specialist subagents and every declared skill", async () => {
   const directory = tempDir("compose-role-loader-");
   cpSync(roleDir, join(directory, "jetpack-compose"), { recursive: true });
   const role = (await discoverRoles(directory)).get("jetpack-compose");
@@ -204,7 +205,7 @@ test("rolebox loads the lead, its five read-only specialist subagents and every 
     }
   }
 
-  // Every declared skill of the primary and of all five children resolves to a real
+  // Every declared skill of the primary and of all six children resolves to a real
   // file, and every prompt is substantial.
   const subjects = [
     [role, join(directory, "jetpack-compose")],

@@ -48,7 +48,7 @@ id, so the accepted result is self-identifying.
 | --- | --- |
 | schema_version | 1 |
 | outcome_id | The outcome id this report settles: report, pass, revise or escalate |
-| gate | architecture, ui-layout, test-quality, performance, or source-tracing |
+| gate | architecture, ui-layout, test-quality, performance, device-verification, or source-tracing |
 | status | pass, fail, or needs-user-input |
 | reviewed_snapshot | The revision/diff actually inspected |
 | evidence | File:line, command output, or source citation; distinguish inspected from executed |
@@ -88,15 +88,27 @@ This role's mapping:
 - `source-behavior` and `source-versions` are source-tracing evidence nodes; each
   settles `report`. A failing check or a negative finding is still `report`: the
   assessment completed, and it is neither a product verdict nor an acceptance.
-- `architecture`, `ui-layout`, `test-quality` and `performance` are review gates;
-  each settles `pass` when no supported blocking issue exists in its assigned
-  scope, `revise` for concrete blocking issues with stable `required_revisions`,
-  and `escalate` when essential evidence or user intent is unavailable.
+- `architecture`, `ui-layout`, `test-quality`, `performance` and
+  `device-verification` are review gates; each settles `pass` when no supported
+  blocking issue exists in its assigned scope, `revise` for concrete blocking
+  issues with stable `required_revisions`, and `escalate` when essential evidence
+  or user intent is unavailable.
+- `device-verification` is the gate over a built artifact: `pass` means the
+  declared journey and its acceptance criteria hold on the device with cited
+  evidence, `revise` means a concrete app defect was reproduced on the device
+  (carrying the failing step and the observed state), and `escalate` means no
+  device/emulator/SDK, an unbuildable or uninstallable artifact, or missing user
+  intent. Its report keeps `gate: device-verification` and the same
+  pass/revise/escalate mapping as the other gates.
+- The shipped sample declaration in `references/graph-protocol.md` keeps its five
+  review nodes; the lead declares a `device-verification` node in a batch only
+  when acceptance depends on runtime behavior only a running app can show, and
+  then it is an independent root like the other review nodes.
 - This role declares no execution node, no validation node and no approval node,
   because the lead owns production writes, acceptance and any user approval.
   `done`, `failed`, `blocked`, `clarification_required` and `approval_required`
   are therefore documented for completeness of the engine vocabulary and are never
-  submitted by these five read-only specialists.
+  submitted by these six read-only specialists.
 - `revise` and `escalate` return findings to the lead. The lead owns the repair and
   any fresh review batch for a changed snapshot, and a settled graph is not
   acceptance of the reviewed design.
