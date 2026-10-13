@@ -1,22 +1,22 @@
 # Rust Risk Domains → Gate Mapping
 
-**Purpose**: Map each Rust-specific risk domain to a specialist gate, define the detection signals that trigger the gate, and specify the verification tools each gate uses. This document is the authoritative routing table for `risk_domains` declared in the Engineering State (see [schemas.md](./schemas.md)).
+**Purpose**: Map each Rust-specific risk domain to a specialist gate, define the detection signals that trigger the gate, and specify the verification tools each gate uses. This document is the authoritative routing table for `risk_domains` declared in the Engineering brief (see [schemas.md](./schemas.md)).
 
-**Rule**: A domain is included in the Engineering State's `risk_domains` field if ANY of its detection signals fire — even if the change is small. Over-inclusion is safe (the gate may quickly pass). Under-inclusion risks undetected defects.
+**Rule**: A domain is included in the Engineering brief's `risk_domains` field if ANY of its detection signals fire — even if the change is small. Over-inclusion is safe (the gate may quickly pass). Under-inclusion risks undetected defects.
 
 ---
 
 ## Domain–Gate Matrix
 
-| Risk Domain | Gate | Dispatch Priority | Typical Crate Ecosystem |
-|---|---|---|---|
-| `unsafe-ffi` | safety-reviewer | 1 (highest) | `libffi`, `winapi`, `nix`, `libc`, `bindgen`, `cc`, `memmap2`, `static_assertions` |
-| `async-concurrency` | async-auditor | 2 | `tokio`, `async-std`, `smol`, `futures`, `tokio-util`, `tower`, `tracing` |
-| `public-api` | api-reviewer | 3 | `semver`, `public-api`, `cargo-semver-checks`, `rustdoc` |
-| `performance-hotpath` | perf-profiler | 4 | `criterion`, `iai`, `divan`, `flamegraph`, `pprof`, `perf` (system), `tracy` |
-| `cross-platform` | cross-platform-checker | 5 | `cfg-if`, `target-lexicon`, `build-rs`, `cross`, `cargo-cross`, `qemu` |
+| Risk Domain | Gate | Node id | Agent | Selection Priority | Typical Crate Ecosystem |
+|---|---|---|---|---|---|
+| `unsafe-ffi` | safety-reviewer | `safety` | `rust-engineer--safety-reviewer` | 1 (highest) | `libffi`, `winapi`, `nix`, `libc`, `bindgen`, `cc`, `memmap2`, `static_assertions` |
+| `async-concurrency` | async-auditor | `async` | `rust-engineer--async-auditor` | 2 | `tokio`, `async-std`, `smol`, `futures`, `tokio-util`, `tower`, `tracing` |
+| `public-api` | api-reviewer | `api` | `rust-engineer--api-reviewer` | 3 | `semver`, `public-api`, `cargo-semver-checks`, `rustdoc` |
+| `performance-hotpath` | perf-profiler | `performance` | `rust-engineer--perf-profiler` | 4 | `criterion`, `iai`, `divan`, `flamegraph`, `pprof`, `perf` (system), `tracy` |
+| `cross-platform` | cross-platform-checker | `cross-platform` | `rust-engineer--cross-platform-checker` | 5 | `cfg-if`, `target-lexicon`, `build-rs`, `cross`, `cargo-cross`, `qemu` |
 
-**Dispatch ordering**: When multiple domains fire, dispatch gates in priority order (1 = highest). Independent gates (no data dependency) may run in parallel. The safety-reviewer always runs first when `unsafe-ffi` is present, as its findings may invalidate assumptions other gates depend on.
+**Selection**: When multiple domains fire, sort them by selection priority (1 = highest). Standard tier declares the single highest-priority fired domain as the only node of its one-node batch; Deep tier declares ONE batch of at most 3 nodes as independent roots (`edges: []`, no `inputs`, no `join`). The engine arms all declared roots in a single start: there is no serial safety lead and no gate-to-gate handoff, because every gate reviews the same frozen snapshot and the lead reconciles the accepted reports.
 
 ---
 
@@ -92,15 +92,21 @@ Fire this domain when ANY of the following appear in the diff or surrounding cod
 ### Gate Report Template
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: safety
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "<file>:<line> — <specific finding>"
 blocking_issues:
   - "<concrete violation>"
 required_revisions:
   - "<actionable fix>"
+advisory_notes:
+  - "<non-blocking observation>"
 verification: "cargo miri test -p <crate>"
+engineering_state_patch: {}
 ```
 
 ---
@@ -155,15 +161,21 @@ Fire this domain when ANY of the following appear:
 ### Gate Report Template
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: async-audit
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "<file>:<line> — <specific finding>"
 blocking_issues:
   - "<concrete violation>"
 required_revisions:
   - "<actionable fix>"
+advisory_notes:
+  - "<non-blocking observation>"
 verification: "cargo check -p <crate> && cargo clippy -p <crate> -- -D clippy::await_holding_lock"
+engineering_state_patch: {}
 ```
 
 ---
@@ -214,15 +226,21 @@ Fire this domain when ANY of the following appear:
 ### Gate Report Template
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: api
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "<file>:<line> — <specific finding>"
 blocking_issues:
   - "<concrete violation>"
 required_revisions:
   - "<actionable fix>"
+advisory_notes:
+  - "<non-blocking observation>"
 verification: "cargo semver-checks check-release -p <crate> && cargo doc -p <crate> --no-deps -D warnings"
+engineering_state_patch: {}
 ```
 
 ---
@@ -276,8 +294,11 @@ Fire this domain when ANY of the following appear:
 ### Gate Report Template
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: perf
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "<file>:<line> — <specific finding>"
   - "<benchmark output / comparison table>"
@@ -285,7 +306,10 @@ blocking_issues:
   - "<concrete regression or concern>"
 required_revisions:
   - "<actionable fix>"
+advisory_notes:
+  - "<non-blocking observation>"
 verification: "cargo criterion --baseline main -p <crate> 2>&1 | tail -20"
+engineering_state_patch: {}
 ```
 
 ---
@@ -339,52 +363,60 @@ Fire this domain when ANY of the following appear:
 ### Gate Report Template
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: cross-platform
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "<file>:<line> — <specific finding>"
 blocking_issues:
   - "<concrete portability violation>"
 required_revisions:
   - "<actionable fix>"
+advisory_notes:
+  - "<non-blocking observation>"
 verification: >
   cargo check --target x86_64-unknown-linux-gnu -p <crate> &&
   cargo check --target aarch64-apple-darwin -p <crate> &&
   cargo check --target x86_64-pc-windows-msvc -p <crate>
+engineering_state_patch: {}
 ```
 
 ---
 
-## Priority Dispatch Logic
+## Review Batch Selection
 
-When the Engineering State declares multiple `risk_domains`, the rust-engineer dispatches gates in the following pattern:
+When the Engineering brief declares multiple `risk_domains`, the rust-engineer selects nodes in the following pattern:
 
 ```
 risk_domains: [unsafe-ffi, async-concurrency, performance-hotpath]
                               │
                               ▼
-           Dispatch order: safety-reviewer → async-auditor → perf-profiler
-                           (seq: 1)          (seq: 2)         (seq: 3)
+      One batch of independent roots: safety, async, performance
+                            (edges: [], no inputs, no join)
 ```
 
-**Sequential dependency**: `async-auditor` waits for `safety-reviewer` only if the async runtime uses `unsafe` internals (tokio APIs are safe to call but a trivial safety audit is still worth doing first). `perf-profiler` and `cross-platform-checker` have no dependency on either and can run in parallel.
+**Standard tier**: select the single highest-priority fired domain and declare it as the only node of a one-node batch.
 
-**Parallel gates**: When independent domains fire (e.g., `public-api` and `cross-platform`), dispatch both in parallel with `run_in_background=true`.
+**Deep tier**: sort the fired domains by selection priority and declare ONE batch of at most 3 nodes. The nodes are independent roots, so the engine arms them together and the lead reconciles the accepted reports; there is no serial lead, no gate-to-gate handoff and no `engineering_state_patch` chained into a downstream prompt.
 
-**Maximum gates**: 3 concurrent dispatches max (see [complexity-model.md](./complexity-model.md) Deep tier budget).
+**Maximum nodes**: 3 per batch (see [complexity-model.md](./complexity-model.md) Deep tier budget), with the run `budget.max_executions` at least the node count.
+
+**Node timeout**: every node declares `budget.timeout_ms: 300000`. If a node has not settled when the run reports blocked, read committed state with `graph_status`, use `graph_control retry` only for a diagnosed transient failure, and otherwise record the gap and proceed with self-review.
 
 ---
 
 ## Gate Name Convention
 
-Each gate report MUST use the exact `gate` name from the matrix above:
+Each gate report MUST use the exact `gate` name from the matrix above, and each node its exact node id and agent:
 
-| Domain | `gate` field value | Subagent ID |
-|--------|-------------------|-------------|
-| `unsafe-ffi` | `safety` | safety-reviewer |
-| `async-concurrency` | `async-audit` | async-auditor |
-| `public-api` | `api` | api-reviewer |
-| `performance-hotpath` | `perf` | perf-profiler |
-| `cross-platform` | `cross-platform` | cross-platform-checker |
+| Domain | `gate` field value | Node id | Agent |
+|--------|-------------------|---------|-------|
+| `unsafe-ffi` | `safety` | `safety` | `rust-engineer--safety-reviewer` |
+| `async-concurrency` | `async-audit` | `async` | `rust-engineer--async-auditor` |
+| `public-api` | `api` | `api` | `rust-engineer--api-reviewer` |
+| `performance-hotpath` | `perf` | `performance` | `rust-engineer--perf-profiler` |
+| `cross-platform` | `cross-platform` | `cross-platform` | `rust-engineer--cross-platform-checker` |
 
-These values are consumed programmatically by the rust-engineer to route gate reports. Any deviation is a producer error.
+These values are consumed programmatically by the rust-engineer to read accepted gate reports. Any deviation is a producer error.

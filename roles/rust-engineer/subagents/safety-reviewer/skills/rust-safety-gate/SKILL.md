@@ -10,7 +10,7 @@ Confirm that every `unsafe` operation in the proposed change has documented safe
 
 ## Inputs
 
-- Engineering State block from the rust-engineer containing: project facts, `unsafe_surface` description (every unsafe block, unsafe fn, extern block, and repr(C) type in the change), `cargo_workspace` paths, and `edition`.
+- Engineering brief (prompt-embedded) from the rust-engineer containing: project facts, `unsafe_surface` description (every unsafe block, unsafe fn, extern block, and repr(C) type in the change), `cargo_workspace` paths, and `edition`.
 - Code diff for the change under review, with focus on `unsafe {}` blocks, `extern` blocks, `#[repr(C)]` types, `transmute*` calls, `*const T`/`*mut T` dereferences, and `static mut` declarations.
 - Reference documents: `references/rust-domains.md` for the unsafe-ffi domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
 - Optional: Miri output (`cargo miri test`), `static_assertions` assertions, or clippy audit results.
@@ -34,15 +34,18 @@ Confirm that every `unsafe` operation in the proposed change has documented safe
 
 - **Pass**: Every unsafe block has a documented safety invariant. Unsafe regions are minimal and justified. Miri passes on all unsafe-affected paths. All extern callbacks are unwind-safe. repr(C) layouts are verified. No `static mut` is introduced.
 - **Fail**: Missing or insufficient SAFETY comment on an unsafe block. Pointer provenance violation. transmute between types with mismatched sizes. Missing `catch_unwind` on an extern callback. Unsafe block wraps more than the unsafe operation.
-- **Conditional Pass**: SAFETY comments are present but terse (could be more specific about call chain guarantees). Miri was not run (justified — platform constraints, documented in advisory_notes). Layout assertions are present but not on every repr(C) type.
+- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: SAFETY comments are present but terse (could be more specific about call chain guarantees). Miri was not run (justified — platform constraints, documented in advisory_notes). Layout assertions are present but not on every repr(C) type.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: safety
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "src/ffi/bridge.rs:34 — SAFETY comment documents aliasing contract with C caller"
   - "src/ffi/bridge.rs:67 — catch_unwind wraps extern callback"
@@ -56,11 +59,12 @@ required_revisions:
 advisory_notes:
   - "static_assertions coverage is partial — consider adding for all repr(C) types"
 verification: "cargo miri test -p <crate> && cargo clippy -p <crate> -- -D unsafe_op_in_unsafe_fn"
+engineering_state_patch: {}
 ```
 
 ## Review Flow
 
-1. Load the Engineering State and identify the `unsafe_surface` — every unsafe block, unsafe fn, extern block, repr(C) type in scope.
+1. Load the Engineering brief (prompt-embedded) and identify the `unsafe_surface` — every unsafe block, unsafe fn, extern block, repr(C) type in scope.
 2. For each unsafe block in the diff: verify the adjacent SAFETY comment exists and covers preconditions, invariants, and aliasing guarantees.
 3. For each transmute/cast: verify size equivalence and validity of the target bit pattern.
 4. For extern blocks: verify catch_unwind on callbacks, verify repr(C) types have layout assertions.

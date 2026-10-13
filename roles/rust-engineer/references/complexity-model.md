@@ -30,7 +30,7 @@
 
 **Verification**: Ask the user to run the existing single-file check or `cargo check` on the package. Do not run full workspace tests or Clippy unless the file layout suggests risk.
 
-**Dispatch**: Zero. Never dispatch a Quick tier task. The rust-engineer handles it inline.
+**Review batch**: Zero. Never declare a review node for a Quick tier task. The rust-engineer handles it inline.
 
 **Examples:**
 
@@ -43,7 +43,7 @@
 | 5 | Replace `.collect::<Vec<_>>().iter()` with `.iter().collect::<Vec<_>>()` | Single-line, borrow-checker micro-tweak only |
 | 6 | Fix a Clippy warning about unused import | ≤1 file, mechanical, no behavioral change |
 
-**Effort proxy**: ≤5 tool-calls, ≤2 revise rounds, 120s dispatch timeout. **Delay budget**: <30s.
+**Effort proxy**: ≤5 tool-calls, ≤2 repair rounds, 300s node budget. **Delay budget**: <30s.
 
 ---
 
@@ -70,16 +70,17 @@
 **Process**:
 1. Read the relevant files (≤3 reads).
 2. Form a lightweight approach in 1–2 sentences (do not write a `draft` file).
-3. If the change has any gate-relevant dimension (e.g., touches async code, or a public type), dispatch the **highest priority** single gate only — never more than 1 gate.
-4. Do NOT create an EngineeringState document. Use the task description as implicit context.
-5. After implementation, run `cargo check` on the affected crate(s) and the relevant focused tests.
+3. Implement the change and run the focused checks that make the revision stable.
+4. If the change has any gate-relevant dimension (e.g., touches async code, or a public type), declare a **one-node** review batch carrying the **highest priority** single fired domain only — never more than 1 review node. Review runs on the implemented snapshot, so implementation comes before the declaration.
+5. Do NOT build a separate Engineering brief document. Embed the brief fields the domain needs directly in the node prompt; use the task description as the remaining context.
+6. Read the accepted gate report and apply `required_revisions` yourself within the bounded repair loop.
 
 **Verification**:
   - `cargo check` on the affected crate (exit 0).
   - Focused tests: `cargo test -p <crate> <test_filter>` (exit 0).
-  - If a gate was dispatched, integrate the gate report into the implementation.
+  - If a review node was declared, integrate its accepted gate report into the change.
 
-**Dispatch**: Max 1 gate. Only the highest-priority risk domain dispatches. Use `run_in_background=false` (synchronous) — the gate result is needed before the verify-fix micro-loop can proceed. Set a 120s timeout: if the gate times out, report residual risk and proceed with self-review.
+**Review batch**: Max 1 node. Only the highest-priority risk domain is declared. Submit one complete declaration through a single `graph_declare` call with `edges: []`, a run `budget.max_executions` of at least 1, and the node's own `budget.timeout_ms: 300000`. If the node has not settled when the run reports blocked, read the state with `graph_status`, record the gap, and proceed with self-review.
 
 **Examples:**
 
@@ -92,11 +93,11 @@
 | 5 | Add integration tests for an existing parser module | Test-only addition, no production code risk |
 | 6 | Bump a minor dependency version and fix the resulting API changes | ≤3 files, well-scoped |
 
-**Effort proxy**: ≤20 tool-calls, ≤2 revise rounds, 120s dispatch timeout. **Delay budget**: <3 min.
+**Effort proxy**: ≤20 tool-calls, ≤2 repair rounds, 300s node budget. **Delay budget**: <3 min.
 
 ---
 
-### Deep (thorough — full reads, EngineeringState, multi-gate, verification plan)
+### Deep (thorough — full reads, Engineering brief, one batch of ≤3 review nodes, verification plan)
 
 **Trigger signals**: The task involves one or more of:
 
@@ -112,10 +113,11 @@
 
 **Process**:
 1. **Full reads**: Read all files the change will touch, including related types, callers, manifests, tests, and existing cfg gates.
-2. **EngineeringState**: Create an EngineeringState document (see [schemas.md](./schemas.md)) to capture goal, scope, risk domains, workspace facts, and verification plan.
-3. **Gate dispatch**: Depending on the `risk_domains` in the EngineeringState, dispatch up to 3 gates from the domain–gate mapping (see [rust-domains.md](./rust-domains.md)). Gates may run in parallel where they are independent.
-4. **Implement**: Work through the change systematically. Verify each meaningful boundary (safety invariant, async cancellation, ABI compatibility).
-5. **Full verification**: Execute the full verification plan — workspace build, workspace tests, Clippy, rustdoc, target-specific checks, Miri/sanitizers where applicable.
+2. **Implement**: Work through the change systematically. Verify each meaningful boundary (safety invariant, async cancellation, ABI compatibility). Review is declared over the implemented snapshot, so the revision must be stable before the batch is declared.
+3. **Engineering brief**: Build the prompt-embedded Engineering brief (see [schemas.md](./schemas.md)) to capture goal, scope, risk domains, workspace facts, and verification plan. It is not a graph payload.
+4. **Review batch**: Depending on the `risk_domains` in the brief, declare ONE batch of up to 3 review nodes from the domain–gate mapping (see [rust-domains.md](./rust-domains.md)) in a single `graph_declare` call. The nodes are independent roots (`edges: []`), so the engine arms them together; there is no serial lead and no gate-to-gate handoff.
+5. **Integrate and repair**: Read each accepted gate report, apply `required_revisions` yourself, and declare a fresh batch for the updated snapshot when independent re-review is needed (max 2 repair rounds per gate).
+6. **Full verification**: Execute the full verification plan — workspace build, workspace tests, Clippy, rustdoc, target-specific checks, Miri/sanitizers where applicable.
 
 **Verification**:
   - `cargo check --workspace` (exit 0).
@@ -126,7 +128,7 @@
   - If cross-platform: `cargo check --target <t2/t3 target>`.
   - If FFI: verify ABI alignment with `repr(C)` asserts or `static_assertions` crate.
 
-**Dispatch**: Up to 3 gates. Use `run_in_background=true` (async) for gates with no data dependencies to dispatch in parallel. When `unsafe-ffi` is present, the safety-reviewer runs first (serial, `run_in_background=false`); other gates that depend on its output wait until it completes. All gate dispatches use a 120s timeout — if a gate times out, report residual risk and proceed.
+**Review batch**: Up to 3 nodes in one declaration. The nodes are independent roots (`edges: []`, no `inputs`, no `join`), so a single start arms them together; run `budget.max_executions` is at least the node count and every node declares `budget.timeout_ms: 300000`. There is no serial safety lead: the retired ordering chained the other gates behind a safety report, which cannot hold now that every gate reviews the finished snapshot, and the lead reconciles the accepted reports itself. If a node has not settled when the run reports blocked, read the state with `graph_status`, record the gap, and proceed with self-review.
 
 **Examples:**
 
@@ -139,7 +141,7 @@
 | 5 | Port a subsystem from tokio to monoio (or another io_uring runtime) | Concurrency, performance, cross-platform cfg |
 | 6 | Add `#[cfg(target_os = "linux")]` gating for an io_uring-based I/O backend | Cross-platform, build script, performance-critical |
 
-**Effort proxy**: ≤40 tool-calls, ≤2 revise rounds, 120s dispatch timeout. **Delay budget**: <15 min.
+**Effort proxy**: ≤40 tool-calls, ≤2 repair rounds, 300s node budget. **Delay budget**: <15 min.
 
 ---
 
@@ -151,7 +153,7 @@ The user may explicitly override tier classification by prefixing the task with:
 |--------|--------|
 | `|effort:quick|` | Force Quick tier — only valid if no unsafe/FFI/concurrency/public-API risk. Ignored if those risks are present (reverts to Standard minimum). |
 | `|effort:standard|` | Force Standard tier — overrides ambiguous low-end classification. |
-| `|effort:deep|` | Force Deep tier — forces EngineeringState, full reads, full verification. |
+| `|effort:deep|` | Force Deep tier — forces the full Engineering brief, full reads, full verification. |
 
 **Rule for `|effort:quick|`**: The override is **rejected** if the task touches `unsafe`, FFI, concurrency redesign, or public API changes. These domains have a minimum tier of Standard. If the user asks for Quick on such a task, respond: "This task involves {risk domain}, which requires at minimum Standard tier. Proceeding with Standard."
 
@@ -159,11 +161,11 @@ The user may explicitly override tier classification by prefixing the task with:
 
 ## 3. Effort Proxy Caps Summary
 
-| Tier | Max Files | Max Gates | Effort Proxy Caps | Delay Budget |
-|------|-----------|-----------|-------------------|--------------|
-| Quick | 1 | 0 | ≤5 tool-calls, ≤2 revise rounds, 120s dispatch timeout | <30s |
-| Standard | 3 | 1 | ≤20 tool-calls, ≤2 revise rounds, 120s dispatch timeout | <3 min |
-| Deep | unrestricted | ≤3 | ≤40 tool-calls, ≤2 revise rounds, 120s dispatch timeout | <15 min |
+| Tier | Max Files | Max Batch Nodes | Effort Proxy Caps | Delay Budget |
+|------|-----------|-----------------|-------------------|--------------|
+| Quick | 1 | 0 | ≤5 tool-calls, ≤2 repair rounds, 300s node budget | <30s |
+| Standard | 3 | 1 | ≤20 tool-calls, ≤2 repair rounds, 300s node budget | <3 min |
+| Deep | unrestricted | ≤3 | ≤40 tool-calls, ≤2 repair rounds, 300s node budget | <15 min |
 
 Tool-call count is a proxy for effort, not a hard budget. Exceeding caps triggers an explicit report rather than halting.
 
@@ -234,11 +236,11 @@ Quick), but the task was incorrectly classified as Standard (e.g., due to
 ambiguous description or user override):
 
 1. The mechanical scan returned zero matches.
-2. No gate has been dispatched yet.
+2. No review batch has been declared yet.
 3. The change is ≤3 files with no unsafe/FFI/concurrency/public-api/perf/cross-platform.
 
 **Action**: Downgrade to Quick verification. Run `cargo check` only. Do NOT
-dispatch any gate. Log the downgrade as an advisory note to the user.
+declare any review node. Log the downgrade as an advisory note to the user.
 
 ---
 
@@ -258,8 +260,8 @@ When any Quick-tier constraint is violated during or after implementation:
 
 **Action**: Cease Quick workflow immediately. The work done so far is not wasted
 — treat it as Step 1 (Read relevant files) of the Standard workflow. Form a
-lightweight approach, dispatch the highest-priority gate if any gate-relevant
-dimension is touched, implement, and verify per Standard verification rules.
+lightweight approach, implement the change, declare a one-node review batch if any
+gate-relevant dimension is touched, and verify per Standard verification rules.
 
 ---
 
@@ -273,8 +275,9 @@ discovered mid-implementation that was not visible in the initial diff:
 3. An FFI boundary must be added, OR
 4. A concurrency redesign emerges (new task hierarchy, channel topology).
 
-**Action**: Cease Standard workflow. Create an EngineeringState document.
-Re-read all affected files. Dispatch up to 3 gates following Deep tier process.
+**Action**: Cease Standard workflow. Build the Engineering brief.
+Re-read all affected files. Implement the change, then declare one batch of up to
+3 review nodes following the Deep tier process.
 
 ---
 
@@ -294,6 +297,6 @@ Re-classify by the **current scope**, not the hypothetical full scope.
 | Public API changes | ❌ | ✅ (additive only) | ✅ |
 | Cross-platform cfg | ❌ | ❌ | ✅ |
 | Performance hotpath | ❌ | ❌ | ✅ |
-| EngineeringState | never | never | required |
-| Gates dispatched | 0 | ≤1 | ≤3 |
+| Engineering brief | never | never | required in the node prompts |
+| Review nodes declared | 0 | ≤1 | ≤3 |
 | Verification | `cargo check` | `cargo check + focused test` | workspace full suite + domain tools |

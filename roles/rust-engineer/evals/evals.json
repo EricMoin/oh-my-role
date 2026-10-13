@@ -45,7 +45,7 @@
           "expectations": [
             { "text": "Inspects available repository code and manifests before asking for information already discoverable locally", "type": "capability", "weight": 2 },
             { "text": "When a consequential ambiguity remains, asks only the smallest question needed to avoid an unsafe compatibility guess", "type": "capability", "weight": 3 },
-            { "text": "Does not launch a broad questionnaire, fixed gate sequence, or ceremonial planning workflow", "type": "boundary", "weight": 2 },
+            { "text": "Does not launch a broad questionnaire, fixed review-node sequence, or ceremonial planning workflow", "type": "boundary", "weight": 2 },
             { "text": "Continues any useful non-blocked investigation rather than stopping all progress", "type": "capability", "weight": 1 }
           ],
           "tags": ["edge", "clarification", "api", "adaptive-effort"]
@@ -64,35 +64,35 @@
         },
         {
           "id": "quick-tier-borrow-fix",
-          "description": "A one-line borrow checker error \u2014 expects direct fix, zero dispatch, <500 token response",
+          "description": "A one-line borrow checker error \u2014 expects direct fix, zero review nodes, <500 token response",
           "prompt": "Fix this: `fn first(v: &Vec<i32>) -> &i32 { &v[0] }` \u2014 the caller gets an error about temporary values.",
           "expectations": [
             { "text": "Produces a direct fix with an idiomatic lifetime annotation without delegation, planning, or tool use", "type": "capability", "weight": 2 },
-            { "text": "Response is under 500 tokens and contains no ceremony or gate workflow", "type": "boundary", "weight": 2 },
-            { "text": "Does not dispatch to any subagent or create an EngineeringState", "type": "boundary", "weight": 2 }
+            { "text": "Response is under 500 tokens and contains no ceremony or review-batch workflow", "type": "boundary", "weight": 2 },
+            { "text": "Does not declare any review graph or delegate to a subagent", "type": "boundary", "weight": 2 }
           ],
           "tags": ["positive", "borrow-checker", "lifetime", "complexity-tier", "quick"]
         },
         {
           "id": "standard-tier-module-add",
-          "description": "Adding a module to an existing crate \u2014 expects Standard tiering, dispatch exactly 1 gate (api-reviewer), no EngineeringState",
+          "description": "Adding a module to an existing crate \u2014 expects Standard tiering, implement first, then one review batch containing only the api-reviewer node, no separate Engineering brief",
           "prompt": "Our crate has `src/main.rs` and `src/cli.rs`. Add a `src/config.rs` module that reads TOML configuration from a file path provided via CLI args. Expose a public `Config` struct with `host`, `port`, and `log_level` fields.",
           "expectations": [
             { "text": "Rates the task as Standard complexity tier (not Quick, not Deep)", "type": "capability", "weight": 2 },
-            { "text": "Dispatches exactly one gate (api-reviewer) before implementing the module", "type": "capability", "weight": 2 },
-            { "text": "Does not create an EngineeringState (reserved for Deep tier)", "type": "boundary", "weight": 2 },
+            { "text": "Implements the module first and then declares exactly one review batch whose only node is api-reviewer over the implemented snapshot", "type": "capability", "weight": 2 },
+            { "text": "Does not build a separate Engineering brief document (reserved for Deep tier) and does not declare extra review nodes", "type": "boundary", "weight": 2 },
             { "text": "Implements the config module with proper error handling and serde deserialization", "type": "capability", "weight": 1 }
           ],
           "tags": ["positive", "module", "api-design", "serde", "complexity-tier", "standard"]
         },
         {
           "id": "deep-tier-unsafe-refactor",
-          "description": "Refactoring an unsafe abstraction that involves FFI + concurrency \u2014 expects Deep tier, EngineeringState creation, dispatch safety-reviewer + async-auditor",
+          "description": "Refactoring an unsafe abstraction that involves FFI + concurrency \u2014 expects Deep tier, a prompt-embedded Engineering brief, and one review batch of independent safety and async nodes",
           "prompt": "Our `SharedRingBuffer` uses `UnsafeCell` and raw pointers for a lock-free SPSC channel. We need to refactor it to use a sound safe wrapper with a `Receiver::recv_timeout(&self, Duration)` method. The C-side producer calls into a `extern \"C\" fn write_bytes(ptr: *mut u8, len: usize)` callback. The consumer runs on an async Tokio task.",
           "expectations": [
             { "text": "Rates the task as Deep complexity tier", "type": "capability", "weight": 2 },
-            { "text": "Creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
-            { "text": "Dispatches both safety-reviewer and async-auditor gates during the workflow", "type": "capability", "weight": 2 },
+            { "text": "Implements the change first and then declares a single review batch of at most three independent root nodes over the frozen snapshot", "type": "capability", "weight": 2 },
+            { "text": "Declares both the safety and async review nodes in that one batch, with no serial edge between them", "type": "capability", "weight": 2 },
             { "text": "Does not shortcut safety analysis by skipping formal invariant documentation", "type": "boundary", "weight": 2 },
             { "text": "Verifies soundness with at least one concrete tool recommendation (Miri, loom, or sanitizer)", "type": "capability", "weight": 1 }
           ],
@@ -100,74 +100,74 @@
         },
         {
           "id": "quick-tier-doc-only",
-          "description": "Fixing a doc comment \u2014 expects direct edit, zero dispatch, no gate, no classification ceremony",
+          "description": "Fixing a doc comment \u2014 expects direct edit, zero review nodes, no classification ceremony",
           "prompt": "The doc comment on `fn parse_config(path: &str) -> Result<Config, ConfigError>` says 'Parses the configuration file' but the actual behavior panics on invalid paths instead of returning an Err. Fix the doc comment to match the real behavior.",
           "expectations": [
-            { "text": "Edits the doc comment directly without delegation, gate dispatch, or complexity classification", "type": "capability", "weight": 2 },
+            { "text": "Edits the doc comment directly without delegation, review batches, or complexity classification", "type": "capability", "weight": 2 },
             { "text": "Response is under 300 tokens and contains no workflow ceremony", "type": "boundary", "weight": 2 },
-            { "text": "Does not create a plan, EngineeringState, or dispatch any subagent", "type": "boundary", "weight": 2 }
+            { "text": "Does not create a plan, a separate Engineering brief, or declare any review node", "type": "boundary", "weight": 2 }
           ],
           "tags": ["positive", "documentation", "minimal", "complexity-tier", "quick"]
         },
         {
           "id": "effort-override-force-standard",
-          "description": "User prefix |effort:standard| overrides Quick-tier content \u2014 expects exactly 1 gate dispatch despite task simplicity",
+          "description": "User prefix |effort:standard| overrides Quick-tier content \u2014 expects exactly one review node despite task simplicity",
           "prompt": "|effort:standard| Add a doc comment to the public `connect()` function explaining the retry behaviour when the TCP handshake fails.",
           "expectations": [
             { "text": "Recognizes the |effort:standard| prefix as a user override and respects it despite the task being doc-only Quick-tier", "type": "capability", "weight": 2 },
-            { "text": "Dispatches exactly one gate (api-reviewer) before making the edit", "type": "capability", "weight": 2 },
-            { "text": "Does not escalate to Deep tier or create an EngineeringState", "type": "boundary", "weight": 2 },
+            { "text": "Implements the doc edit first and then declares exactly one review batch whose only node is api-reviewer", "type": "capability", "weight": 2 },
+            { "text": "Does not escalate to Deep tier or build a separate Engineering brief", "type": "boundary", "weight": 2 },
             { "text": "The final doc comment is accurate and includes a # Panics or # Errors section as appropriate", "type": "capability", "weight": 1 }
           ],
           "tags": ["edge", "effort-override", "directive", "complexity-tier", "standard"]
         },
         {
           "id": "standard-verify-fix-micro-loop",
-          "description": "Standard tier verify-fix micro-loop success \u2014 a gate finds an issue, engineer fixes it, second review passes within the 2-round cap",
+          "description": "Standard tier bounded repair loop success \u2014 an accepted gate report finds an issue, the engineer fixes it, and the fresh re-review passes within the 2-round cap",
           "prompt": "Our crate has an existing Config struct with host, port, and log_level fields. Add a `timeout_seconds` field with a default of 30, validate that it is positive, and update the serde deserialization to use `#[serde(default = \"default_timeout\")]`.",
           "expectations": [
-            { "text": "Rates the task as Standard complexity tier and dispatches exactly one gate (api-reviewer) before implementing", "type": "capability", "weight": 2 },
-            { "text": "When the gate identifies a missing validation edge case (e.g. zero is accepted), applies the fix and requests a re-review", "type": "capability", "weight": 2 },
-            { "text": "Completes the verify-fix micro-loop within 2 rounds (initial review + one revise cycle) without escalating to the user", "type": "capability", "weight": 2 },
-            { "text": "Does not create an EngineeringState or dispatch multiple gates for a single-module Standard-tier task", "type": "boundary", "weight": 1 }
+            { "text": "Rates the task as Standard complexity tier, implements the change, and then declares exactly one review batch whose only node is api-reviewer", "type": "capability", "weight": 2 },
+            { "text": "When the accepted gate report identifies a missing validation edge case (e.g. zero is accepted), applies the fix and declares a fresh one-node batch for the updated snapshot", "type": "capability", "weight": 2 },
+            { "text": "Completes the bounded repair loop within 2 rounds (initial review + one revise cycle) without escalating to the user", "type": "capability", "weight": 2 },
+            { "text": "Does not build a separate Engineering brief or declare more than one review node for a single-module Standard-tier task", "type": "boundary", "weight": 1 }
           ],
-          "tags": ["positive", "verify-fix-micro-loop", "gate-review", "complexity-tier", "standard"]
+          "tags": ["positive", "repair-loop", "gate-review", "complexity-tier", "standard"]
         },
         {
           "id": "standard-bounded-revise-exhaustion",
-          "description": "Standard tier bounded revise exhaustion \u2014 gate finds an issue twice; engineer reports residual risk instead of looping indefinitely",
+          "description": "Standard tier bounded repair exhaustion \u2014 the re-review rejects the same concern twice; the engineer reports residual risk instead of looping indefinitely",
           "prompt": "Implement a `retry_with_backoff` function that takes a closure, retries it up to 3 times with exponential backoff, and returns the first successful result or the last error. The function must be public and have a doc comment explaining the retry strategy.",
           "expectations": [
-            { "text": "Rates the task as Standard complexity tier and dispatches exactly one gate (api-reviewer) before writing the implementation", "type": "capability", "weight": 2 },
-            { "text": "When the gate rejects the same concern twice (e.g. a specific documentation requirement not being met across two revisions), does not attempt a third revision cycle", "type": "boundary", "weight": 2 },
-            { "text": "Reports the residual risk acceptably and documents the known gap rather than looping indefinitely or silently ignoring the gate", "type": "capability", "weight": 2 },
+            { "text": "Rates the task as Standard complexity tier, implements the function, and then declares exactly one review batch whose only node is api-reviewer", "type": "capability", "weight": 2 },
+            { "text": "When the re-review rejects the same concern twice (e.g. a specific documentation requirement not being met across two revisions), does not attempt a third repair cycle", "type": "boundary", "weight": 2 },
+            { "text": "Reports the residual risk acceptably and documents the known gap rather than looping indefinitely or silently ignoring the accepted gate report", "type": "capability", "weight": 2 },
             { "text": "Makes the best-effort implementation available despite the known gap; does not refuse to produce output", "type": "capability", "weight": 1 }
           ],
-          "tags": ["edge", "bounded-revise", "exhaustion", "gate-review", "complexity-tier", "standard"]
+          "tags": ["edge", "bounded-repair", "exhaustion", "gate-review", "complexity-tier", "standard"]
         },
         {
           "id": "deep-parallel-dispatch",
-          "description": "Deep tier parallel dispatch \u2014 two independent gates dispatched with run_in_background=true; engineer waits for both before implementation",
+          "description": "Deep tier independent-roots batch \u2014 two review nodes are declared as roots of one batch after implementation, and the engineer reconciles both accepted reports",
           "prompt": "We have a `CrossPlatformPath` type that normalizes path separators on all three major OS families. It uses conditional compilation with `#[cfg(target_os)]` and stores raw bytes via `unsafe` for zero-copy interop with a C library that manages its own allocation. Add a `fn relativize(&self, base: &CrossPlatformPath) -> Result<CrossPlatformPath, RelativizeError>` method.",
           "expectations": [
-            { "text": "Rates the task as Deep complexity tier and creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
-            { "text": "Dispatches both safety-reviewer and async-auditor (or platform-auditor) gates with run_in_background=true; does not dispatch them serially", "type": "capability", "weight": 2 },
-            { "text": "Waits for both background gates to complete before beginning implementation; does not start coding before all gate results are available", "type": "capability", "weight": 2 },
-            { "text": "Incorporates findings from both gates into the implementation and documents soundness and platform-behavior obligations", "type": "capability", "weight": 1 }
+            { "text": "Rates the task as Deep complexity tier, implements the change, and embeds the Engineering brief in the node prompts", "type": "capability", "weight": 2 },
+            { "text": "Declares both the safety and async (or cross-platform) review nodes as independent roots in ONE graph_declare call, with edges: [] and no serial edge", "type": "capability", "weight": 2 },
+            { "text": "Reviews the frozen snapshot, yields for GRAPH COMPLETE, and reads both accepted reports; reviewers never edit the code under review", "type": "capability", "weight": 2 },
+            { "text": "Incorporates the accepted findings from both reports into the final revision and documents soundness and platform-behavior obligations", "type": "capability", "weight": 1 }
           ],
-          "tags": ["positive", "parallel-dispatch", "background-gates", "unsafe", "conditional-compilation", "complexity-tier", "deep"]
+          "tags": ["positive", "independent-roots", "review-batch", "unsafe", "conditional-compilation", "complexity-tier", "deep"]
         },
         {
           "id": "deep-serial-dependency",
-          "description": "Deep tier serial dependency \u2014 safety-reviewer triggers on unsafe-FFI; its output feeds another gate serially after it completes",
+          "description": "Deep tier snapshot review \u2014 the safety-FFI domain and a second fired domain are declared as independent roots of one batch, never chained serially",
           "prompt": "A C library exposed via FFI provides a `compute_checksum(const uint8_t* data, size_t len, uint32_t* out)` function. Write a safe Rust wrapper `pub fn checksum(data: &[u8]) -> Result<u32, ChecksumError>` that handles null-pointer safety, zero-length input, and panicking across the FFI boundary. The C function is documented as thread-safe.",
           "expectations": [
-            { "text": "Rates the task as Deep complexity tier and creates an EngineeringState before any implementation work", "type": "capability", "weight": 2 },
-            { "text": "Dispatches safety-reviewer first (since unsafe-FFI triggers it); does not dispatch the second gate before the first completes", "type": "capability", "weight": 2 },
-            { "text": "After safety-reviewer reports, dispatches a second gate (api-reviewer or async-auditor) that consumes the first gate's findings as input", "type": "capability", "weight": 2 },
+            { "text": "Rates the task as Deep complexity tier, implements the wrapper first, and embeds the Engineering brief in the node prompts", "type": "capability", "weight": 2 },
+            { "text": "Declares the safety node and a second fired-domain node as independent roots of ONE batch, with no serial edge and no engineering_state_patch fed into a downstream prompt", "type": "capability", "weight": 2 },
+            { "text": "Reads both accepted reports and reconciles them itself, since the lead owns the repair and no reviewer consumes another reviewer's findings", "type": "capability", "weight": 2 },
             { "text": "Documents the FFI safety invariants (null, alignment, provenance, unwind safety) and produces Miri-compatible test validation", "type": "capability", "weight": 1 }
           ],
-          "tags": ["positive", "serial-dependency", "unsafe", "ffi", "chained-gates", "complexity-tier", "deep"]
+          "tags": ["positive", "independent-roots", "unsafe", "ffi", "review-batch", "complexity-tier", "deep"]
         },
         {
           "id": "mechanical-downgrade-quick",
@@ -176,8 +176,8 @@
           "expectations": [
             { "text": "Searches the codebase with grep for plausible struct definitions in a settings or config module", "type": "capability", "weight": 2 },
             { "text": "When grep returns zero matches (no settings module exists), classifies the task as effectively mechanical and downgrades to Quick tier", "type": "capability", "weight": 2 },
-            { "text": "Reports the absence of the expected module to the user and offers an alternative minimal action rather than dispatching a gate or creating a plan", "type": "capability", "weight": 2 },
-            { "text": "Response contains no EngineeringState, no gate dispatch, and no workflow ceremony", "type": "boundary", "weight": 1 }
+            { "text": "Reports the absence of the expected module to the user and offers an alternative minimal action rather than declaring a review graph or creating a plan", "type": "capability", "weight": 2 },
+            { "text": "Response contains no Engineering brief, no review graph, and no workflow ceremony", "type": "boundary", "weight": 1 }
           ],
           "tags": ["edge", "downgrade", "mechanical", "minimal", "negative-search", "complexity-tier", "quick"]
         },
@@ -186,10 +186,10 @@
           "description": "Mechanical upgrade mid-edit \u2014 a Quick-tier task unexpectedly touches unsafe; engineer upgrades tier",
           "prompt": "Remove a now-unused `#[inline(always)]` annotation from a function in our public API crate. The annotation was left over from an old hot-path optimisation.",
           "expectations": [
-            { "text": "Initially classifies the task as Quick tier and begins work without gates or EngineeringState", "type": "capability", "weight": 2 },
+            { "text": "Initially classifies the task as Quick tier and begins work without a review graph or a separate Engineering brief", "type": "capability", "weight": 2 },
             { "text": "Upon discovering during the edit that the function contains or interacts with unsafe code (e.g. the inline wrapper wraps an unsafe FFI call)", "type": "capability", "weight": 2 },
-            { "text": "Upgrades the classification from Quick to Standard (or Deep) and dispatches at least one gate (safety-reviewer) before completing the edit", "type": "capability", "weight": 2 },
-            { "text": "Does not ignore the unsafe context and continue under Quick-tier rules without gate review", "type": "boundary", "weight": 2 }
+            { "text": "Upgrades the classification from Quick to Standard (or Deep), completes the edit, and then declares a review batch whose only node is safety-reviewer over the implemented snapshot", "type": "capability", "weight": 2 },
+            { "text": "Does not ignore the unsafe context and continue under Quick-tier rules without review", "type": "boundary", "weight": 2 }
           ],
           "tags": ["edge", "upgrade", "unsafe", "reclassification", "complexity-tier", "standard"]
         }

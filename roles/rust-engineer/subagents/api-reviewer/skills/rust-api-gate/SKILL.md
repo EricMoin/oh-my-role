@@ -10,7 +10,7 @@ Confirm that the proposed public API surface is minimal, well-documented, semver
 
 ## Inputs
 
-- Engineering State block from the rust-engineer containing: `public_api_changes` (list of added/removed/changed pub items with semver impact), `cargo_workspace`, `edition`, `msrv`, and `dependencies_affected`.
+- Engineering brief (prompt-embedded) from the rust-engineer containing: `public_api_changes` (list of added/removed/changed pub items with semver impact), `cargo_workspace`, `edition`, `msrv`, and `dependencies_affected`.
 - Code diff for the change under review, with focus on `pub` items, trait `impl` blocks, `pub use` re-exports, `Cargo.toml` feature flags and dependencies, and `#[doc(hidden)]` annotations.
 - Reference documents: `references/rust-domains.md` for the public-api domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
 - Optional: `cargo semver-checks` output, `cargo doc --no-deps -D warnings` output, or `clippy::must_use_candidate` output.
@@ -35,15 +35,18 @@ Confirm that the proposed public API surface is minimal, well-documented, semver
 
 - **Pass**: Public API is minimal and intentional. All new pub items are documented. Error types use `#[non_exhaustive]` where appropriate. Semver impact is evaluated and acceptable. Feature flags are coherent. MSRV is declared and satisfies. `cargo doc` passes. No orphan rule violations.
 - **Fail**: New pub item without doc comment. Error type without `#[non_exhaustive]` that is likely to gain variants. Semver breaking change unacknowledged. Feature flag dependency inversion. Orphan rule violation.
-- **Conditional Pass**: Doc comments exist but could have more sections (e.g., missing `# Panics`). `cargo semver-checks` was not run but manual review suggests no breaking changes. MSRV is declared but not checked by CI.
+- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: Doc comments exist but could have more sections (e.g., missing `# Panics`). `cargo semver-checks` was not run but manual review suggests no breaking changes. MSRV is declared but not checked by CI.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: api
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "src/lib.rs:23 — pub struct Config added with complete doc comment and #[non_exhaustive]"
   - "Cargo.toml:5 — MSRV 1.75.0 declared; no newer-edition features used"
@@ -57,11 +60,12 @@ required_revisions:
 advisory_notes:
   - "Consider running cargo semver-checks against the last published version before release"
 verification: "cargo check -p <crate> && cargo doc --no-deps -D warnings && cargo clippy -p <crate>"
+engineering_state_patch: {}
 ```
 
 ## Review Flow
 
-1. Load the Engineering State and identify the `public_api_changes` list — every pub item added, removed, or changed.
+1. Load the Engineering brief (prompt-embedded) and identify the `public_api_changes` list — every pub item added, removed, or changed.
 2. Review each new pub item for doc completeness, naming conventions, and `#[must_use]` annotation.
 3. Check error types for `#[non_exhaustive]` — especially enums that will likely gain variants.
 4. Evaluate semver impact: review removed, renamed, or narrowed pub items for breaking changes.

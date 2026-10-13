@@ -10,7 +10,7 @@ Confirm that every `.await` point in the proposed change is cancellation-safe, t
 
 ## Inputs
 
-- Engineering State block from the rust-engineer containing: `concurrency_model` (task hierarchy, channel topology, shared-state ownership, lock ordering, cancellation strategy, backpressure design), `async_runtime`, `cargo_workspace`, and `edition`.
+- Engineering brief (prompt-embedded) from the rust-engineer containing: `concurrency_model` (task hierarchy, channel topology, shared-state ownership, lock ordering, cancellation strategy, backpressure design), `async_runtime`, `cargo_workspace`, and `edition`.
 - Code diff for the change under review, with focus on `.await` points, `tokio::spawn`, channel creation, `Mutex`/`RwLock` usage, `select!` macros, `JoinHandle`/`JoinSet` usage, and `loop` bodies in async functions.
 - Reference documents: `references/rust-domains.md` for the async-concurrency domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
 - Optional: loom test output, `tokio-console` captures, or clippy audit results.
@@ -34,15 +34,18 @@ Confirm that every `.await` point in the proposed change is cancellation-safe, t
 
 - **Pass**: All `.await` points are cancellation-safe. Channels are bounded. No blocking work on the executor. Lock ordering is consistent and verified. Task lifecycle is clear. `select!` fairness is reviewed. Send/Sync is satisfied.
 - **Fail**: `.await` during `std::sync::MutexGuard` (deadlock hazard). Unbounded channel added without justification. Blocking work in async context. Cancellation-unsafe code that leaves state partially updated. Lock ordering violation. Spawned task with no lifecycle management.
-- **Conditional Pass**: Cancellation safety is documented in comments but not verified by test. Loom models exist but do not cover all concurrency scenarios. Unbounded channels are justified but could be replaced with bounded ones.
+- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: Cancellation safety is documented in comments but not verified by test. Loom models exist but do not cover all concurrency scenarios. Unbounded channels are justified but could be replaced with bounded ones.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: async-audit
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "src/service/handler.rs:45 — .await in tokio::sync::Mutex scope, correct lock type"
   - "src/service/handler.rs:78 — CancellationToken wired for graceful shutdown"
@@ -56,11 +59,12 @@ required_revisions:
 advisory_notes:
   - "Consider adding loom models for the channel topology in handler module"
 verification: "cargo check -p <crate> && cargo clippy -p <crate> -- -D clippy::await_holding_lock"
+engineering_state_patch: {}
 ```
 
 ## Review Flow
 
-1. Load the Engineering State and identify the `concurrency_model` and `async_runtime`.
+1. Load the Engineering brief (prompt-embedded) and identify the `concurrency_model` and `async_runtime`.
 2. Review every `.await` point in the diff for: cancellation safety, lock scope, and blocking work violations.
 3. Trace channel topology: are all channels bounded? Is backpressure designed or accidental?
 4. Identify all `tokio::spawn`/`JoinHandle`/`JoinSet` usage — is the lifecycle (spawn → work → join/cancel) clear?

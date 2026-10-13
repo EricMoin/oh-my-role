@@ -6,11 +6,11 @@ description: Cross-platform gate for Rust Cross-Platform Checker. Reviews cfg-ga
 
 ## Mission
 
-Confirm that the proposed change compiles and functions correctly across all target platforms declared in the Engineering State's `cross_platform_context`. Conditional compilation is Rust's primary mechanism for platform abstraction, but it is also a source of latent breakage — disabled branches can rot, endian assumptions can silently corrupt data, and file path handling can fail on non-UNIX platforms. This gate ensures every `#[cfg(...)]` path is either actively verified or explicitly documented as untested.
+Confirm that the proposed change compiles and functions correctly across all target platforms declared in the Engineering brief's `cross_platform_context`. Conditional compilation is Rust's primary mechanism for platform abstraction, but it is also a source of latent breakage — disabled branches can rot, endian assumptions can silently corrupt data, and file path handling can fail on non-UNIX platforms. This gate ensures every `#[cfg(...)]` path is either actively verified or explicitly documented as untested.
 
 ## Inputs
 
-- Engineering State block from the rust-engineer containing: `cross_platform_context` (target platforms, `#[cfg(...)]` gates, `Cargo.toml` target-specific deps, build script behavior, CI target matrix), `cargo_workspace`, and `edition`.
+- Engineering brief (prompt-embedded) from the rust-engineer containing: `cross_platform_context` (target platforms, `#[cfg(...)]` gates, `Cargo.toml` target-specific deps, build script behavior, CI target matrix), `cargo_workspace`, and `edition`.
 - Code diff for the change under review, with focus on `#[cfg(...)]` attributes, `cfg!(...)` macro usage, `std::os::*` imports, platform-specific `Cargo.toml` entries, and `build.rs` target-triple inspection.
 - Reference documents: `references/rust-domains.md` for the cross-platform domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
 - Optional: `cargo check --target <triple>` output for each target, `cargo tree -e features` output on multiple targets, or clippy platform-specific lint output.
@@ -33,15 +33,18 @@ Confirm that the proposed change compiles and functions correctly across all tar
 
 - **Pass**: All cfg-gated code compiles on the declared target platforms. Endian-sensitive code uses correct byte-order conversions. Pointer width assumptions handle both 32-bit and 64-bit. Platform dependencies use cfg-gated tables. Build script logic is correct. Untested paths are explicitly documented.
 - **Fail**: Compilation error on a declared target platform. Endian-sensitive code missing `to_le()`/`to_be()` on manual bit manipulation. `usize as u64` without 32-bit fallback. Platform dependency in unconditional `[dependencies]`. Build script uses `HOST` instead of `TARGET`.
-- **Conditional Pass**: Not all target platforms were checked (version skew, CI constraints — documented). Untested paths are annotated. Feature set unification was reviewed but not verified with `cargo tree` on each target.
+- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: Not all target platforms were checked (version skew, CI constraints — documented). Untested paths are annotated. Feature set unification was reviewed but not verified with `cargo tree` on each target.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: cross-platform
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "src/platform/unix.rs:12 — #[cfg(unix)] with matching std::os::unix import"
   - "src/binary/parser.rs:45 — to_le() used for multi-byte field, big-endian safe"
@@ -59,11 +62,12 @@ verification: >
   cargo check --target x86_64-unknown-linux-gnu -p <crate> &&
   cargo check --target aarch64-apple-darwin -p <crate> &&
   cargo check --target x86_64-pc-windows-msvc -p <crate>
+engineering_state_patch: {}
 ```
 
 ## Review Flow
 
-1. Load the Engineering State and identify the `cross_platform_context` — target platform matrix, cfg gates, CI coverage.
+1. Load the Engineering brief (prompt-embedded) and identify the `cross_platform_context` — target platform matrix, cfg gates, CI coverage.
 2. Scan the diff for all `#[cfg(...)]` attributes and `cfg!(...)` macro calls — build a map of which targets each path covers.
 3. For endian-sensitive code (bit manipulation, protocol parsing, binary formats): verify `to_le()`/`to_be()`/`from_le()`/`from_be()` usage.
 4. Review `target_pointer_width` handling: every `usize as u64` cast must have an `as u32` branch for 32-bit targets.

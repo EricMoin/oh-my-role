@@ -10,7 +10,7 @@ Confirm that the proposed change does not introduce performance regressions — 
 
 ## Inputs
 
-- Engineering State block from the rust-engineer containing: `performance_context` (baseline measurements, hot path description, allocation/deallocation pattern, I/O boundaries, latency/throughput targets), `cargo_workspace`, and `edition`.
+- Engineering brief (prompt-embedded) from the rust-engineer containing: `performance_context` (baseline measurements, hot path description, allocation/deallocation pattern, I/O boundaries, latency/throughput targets), `cargo_workspace`, and `edition`.
 - Code diff for the change under review, with focus on `clone()`/`to_owned()` calls, `Box`/`Vec`/`String`/`HashMap`/`Arc` allocations, `#[inline]` annotations, loop bodies, and collection usage.
 - Reference documents: `references/rust-domains.md` for the performance-hotpath domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
 - Optional: `cargo criterion` output (against baseline), `dhat-rs` heap profile, `perf` + `flamegraph` output, `cargo bloat` output, or LLVM optimization remarks.
@@ -34,15 +34,18 @@ Confirm that the proposed change does not introduce performance regressions — 
 
 - **Pass**: Hot path allocations are justified and minimal. No defensive clones in hot paths. Collection types are appropriate. Inline annotations are backed by profiling. Binary size is reviewed. Benchmarks are reproducible and baseline-compared.
 - **Fail**: Allocation in a hot loop without justification. Defensive clone of large data. `#[inline(always)]` applied speculatively. Benchmark lacking statistical methodology. Binary bloat from excessive monomorphization.
-- **Conditional Pass**: Minor clone/alloc inefficiency exists in a non-hot path. Binary size not reviewed for a performance-sensitive crate. Benchmark exists but baseline comparison is not yet set up.
+- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: Minor clone/alloc inefficiency exists in a non-hot path. Binary size not reviewed for a performance-sensitive crate. Benchmark exists but baseline comparison is not yet set up.
 
 ## Output Format
 
-Return a `gate_report` inside a ```result fence with these fields:
+Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
 
 ```yaml
+schema_version: 1
+outcome_id: pass | revise | escalate
 gate: perf
 status: pass | fail | needs-user-input
+reviewed_snapshot: "<commit> + uncommitted working tree"
 evidence:
   - "src/parser/hotpath.rs:45 — Vec::reserve(1024) before loop: 0 allocations in loop body"
   - "cargo criterion --baseline main: hotpath latency unchanged (p50: 12.3µs vs 12.1µs baseline)"
@@ -56,11 +59,12 @@ required_revisions:
 advisory_notes:
   - "Consider adding dhat-rs heap profiling to CI for allocation regression detection"
 verification: "cargo criterion --baseline main -p <crate> 2>&1 | tail -20 && cargo bloat --crate <name>"
+engineering_state_patch: {}
 ```
 
 ## Review Flow
 
-1. Load the Engineering State and identify the `performance_context` — hot paths, baseline, targets.
+1. Load the Engineering brief (prompt-embedded) and identify the `performance_context` — hot paths, baseline, targets.
 2. Scan the diff for allocation sites (Box, Vec, String, HashMap, Arc) and clone() calls in loop bodies.
 3. Review collection type selection: is SmallVec or ArrayVec more appropriate for small fixed-capacity uses?
 4. Check `#[inline]` annotations — are they on hot paths? Are they backed by benchmark evidence?
