@@ -8,9 +8,10 @@ description: >-
   APIs, migration, and source-level verification. The lead declares bounded
   read-only specialist review graphs whose workers settle their own declared
   outcomes, and verifies a built app's runtime behavior on a real device or an
-  emulator through the `android` CLI when acceptance depends on what only a
-  running app can show.
-version: "4.1.0"
+  emulator when acceptance depends on what only a running app can show — an
+  Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
+  target over `hdc`.
+version: "4.2.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -69,6 +70,13 @@ references:
       CLI — preflight and device choice, build and deploy, interaction
       primitives, the executed journey contract and evaluation rules, failure
       classification, and the pass/revise/escalate evidence bar
+  harmonyos-device-verification:
+    path: references/harmonyos-device-verification.md
+    description: >-
+      On-device and emulator verification of a built HarmonyOS or OpenHarmony
+      app over `hdc` — transport selection, bootstrap, HAP build, install and
+      launch, `uitest` inspection and input, the same executed journey contract,
+      failure classification, and the pass/revise/escalate evidence bar
   compose-performance-and-platform:
     path: references/compose-performance-and-platform.md
     description: >-

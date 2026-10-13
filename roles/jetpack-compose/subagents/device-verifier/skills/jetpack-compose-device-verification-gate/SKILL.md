@@ -1,14 +1,16 @@
 ---
 name: jetpack-compose-device-verification-gate
-description: Decide when device or emulator verification is warranted and execute it through the `android` CLI with layout, screenshot and command evidence.
+description: Decide when device or emulator verification is warranted and execute it over the selected transport — the `android` CLI and `adb`, or `hdc` — with layout, screenshot and command evidence.
 ---
 # Device verification gate
 
-Verify a built Android app on a real device or emulator when acceptance depends on runtime
-behavior that a JVM or Robolectric test cannot show. Load `references/device-verification.md`
-for the full playbook and `references/schemas.md` for the gate report contract. Read, build,
-deploy and interact only through `graph_worker_exec`. Prefer the installed CLI's own
-`--help` output over remembered flags.
+Verify a built app on a real device or emulator when acceptance depends on runtime behavior
+that a JVM or Robolectric test cannot show. Select the transport from the target first, then
+load its playbook: `references/device-verification.md` for an Android target over `adb`,
+`references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target over
+`hdc`; `references/schemas.md` holds the gate report contract. Read, build, deploy and
+interact only through `graph_worker_exec`. Prefer the installed tool's own `--help` output
+over remembered flags.
 
 ## When device verification is warranted
 
@@ -31,7 +33,15 @@ running a device, and never treat a device run as a substitute for a missing uni
 
 ## Preflight and device choice
 
-Step 0: confirm the CLI exists. `command -v android` — equivalently a first `android --version` —
+Step 0: identify the transport before touching a device. An `.apk` on an Android device or
+emulator, reachable with `adb`, is the Android branch and follows
+`references/device-verification.md`. A `.hap`, `.hsp` or `.app` artifact, or a target that answers
+`hdc list targets` with a serial, is a HarmonyOS or OpenHarmony target: switch to
+`references/harmonyos-device-verification.md` for the full playbook and do not continue with `adb`.
+When the artifact and the device disagree, stop and escalate — a transport mismatch is an
+environment finding, not an app defect.
+
+On the Android branch, confirm the CLI exists. `command -v android` — equivalently a first `android --version` —
 must succeed before any step below; when it fails, the CLI is missing and the whole preflight below
 is inapplicable. Escalate, and do not attempt installation from the verifier role: installing the
 CLI or SDK packages, accepting licenses, creating AVDs and authenticating are host-changing actions
@@ -77,6 +87,28 @@ Rules:
    start screen, not from the exit code alone.
 5. An artifact that does not build or does not install is `escalate` with the failing
    command and its output; it is not an app defect and not a pass.
+
+## HarmonyOS/OpenHarmony command surface (`hdc`)
+
+A HarmonyOS or OpenHarmony target is a different transport with different tooling: follow
+`references/harmonyos-device-verification.md` for the full playbook, including transport
+selection, `hdc` bootstrap, the debug-signature requirement and the `aa` error codes. The
+shapes, not just the binary, differ:
+
+- install a package: `hdc install <src>` (a `.hap`, `.hsp` or `.app`);
+- launch: `hdc shell aa start -b <bundleName> -a <abilityName>`;
+- inspect: `hdc shell uitest dumpLayout -p /data/local/tmp/<name>.json` and
+  `hdc shell uitest screenCap -p /data/local/tmp/<name>.png`, then bring the artifact
+  host-side with `hdc file recv /data/local/tmp/<name>.json <hostTempDir>/<name>.json`;
+- interact: `hdc shell uitest uiInput click <x> <y>` — the reference lists the other
+  `uiInput` subcommands (`doubleClick`, `longClick`, `swipe`, `drag`, `fling`,
+  `dircFling`, `inputText`, `keyEvent`);
+- run automated tests: `hdc shell aa test -b <bundleName> -m <moduleName> -s unittest
+  <testRunner>`;
+- logs: `hdc hilog`.
+
+The reference is the authority for each form, and the target's own help output
+(`hdc shell uitest help`) wins when it disagrees with any of them.
 
 ## Interaction and evidence
 

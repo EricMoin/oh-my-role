@@ -7,6 +7,11 @@ result maps to the gate report and the settled outcome. It is portable and self-
 it names source roles instead of local paths, and section 2 bootstraps a machine that has no
 CLI yet.
 
+This playbook is the **Android transport**: the `android` CLI and `adb`, for an `.apk` on an
+Android device or an emulator. A HarmonyOS NEXT or OpenHarmony target is a different
+transport: verify it over `hdc` per `references/harmonyos-device-verification.md`, and never
+with `adb`.
+
 ---
 
 ## 1. Sources of authority
@@ -127,20 +132,25 @@ include non-interactive and hidden elements) and compare them yourself.
 
 ## 4. Preflight and device choice
 
-0. Confirm the CLI is present: `command -v android`, equivalently a first
+0. Identify the transport before anything else: this playbook covers an Android target — an
+   `.apk` reached with `adb` — while a serial that appears in `hdc list targets` is a
+   HarmonyOS or OpenHarmony target, verified over `hdc` per
+   `references/harmonyos-device-verification.md` and never with `adb`. A transport mismatch
+   is an environment finding, so stop here and settle `escalate` (section 12).
+1. Confirm the CLI is present: `command -v android`, equivalently a first
    `android --version`. When it is absent, stop here — section 2 is the bootstrap path
    and none of the steps below applies until it succeeds; settle `escalate` per
    section 2 step 7.
-1. Run `android info`; record the SDK path, tool version and connected devices.
-2. Run `android emulator list --long`; record available AVDs.
-3. Choose the target:
+2. Run `android info`; record the SDK path, tool version and connected devices.
+3. Run `android emulator list --long`; record available AVDs.
+4. Choose the target:
    - a device already connected, or the AVD named in the dispatch;
    - start it with `android emulator start <avd>` (add `--headless` when no window is
      needed) and wait for the command to return — it returns only when the emulator is
      ready;
    - for physical hardware use `android device remote` and authenticate with
      `android auth login` first.
-4. Never start a second device while one is connected, and never replace the agreed device
+5. Never start a second device while one is connected, and never replace the agreed device
    profile on your own initiative; a profile change is a lead/user decision.
 
 ---

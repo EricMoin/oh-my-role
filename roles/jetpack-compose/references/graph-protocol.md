@@ -244,8 +244,11 @@ one additional `device-verification` node as described under Topology semantics.
   process recreation, notifications or deep links, crash/ANR, or user-visible
   jank. Its agent is `jetpack-compose--device-verifier`; the dispatch gives it the
   built artifact and the declared acceptance criteria, it drives the app on a real
-  device or an emulator through the `android` CLI, and it settles `pass`, `revise`
-  or `escalate` from the executed journey and its cited evidence. It declares no
+  device or an emulator over the target's own transport, following
+  `references/device-verification.md` with the `android` CLI and `adb` for an
+  Android target, and `references/harmonyos-device-verification.md` with `hdc`
+  for a HarmonyOS or OpenHarmony target, and it settles `pass`, `revise` or
+  `escalate` from the executed journey and its cited evidence. It declares no
   inputs unless it really reads an accepted upstream report, and like every other
   specialist it never edits production files. An unavailable device, SDK or
   emulator is an `escalate` and a recorded limitation is never a pass.

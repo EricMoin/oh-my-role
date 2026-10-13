@@ -1,6 +1,6 @@
 ---
 name: jetpack-compose-engineering-gate
-description: Design and verify consequential Compose changes using invariants, ownership, encapsulation, and targeted specialist evidence. Use for shared behavior, lifecycle changes, significant architecture and platform risks, or on-device and emulator verification of a built app through the `android` CLI.
+description: Design and verify consequential Compose changes using invariants, ownership, encapsulation, and targeted specialist evidence. Use for shared behavior, lifecycle changes, significant architecture and platform risks, or on-device and emulator verification of a built app over the target's own transport — the `android` CLI and `adb` for Android, `hdc` for HarmonyOS/OpenHarmony.
 ---
 # Compose engineering judgment
 
@@ -31,9 +31,11 @@ pattern prescriptions.
 When acceptance depends on runtime behavior only a running app can show — navigation and
 back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or process
 recreation, notifications or deep links, crash/ANR, or user-visible jank — verify the
-built app on a real device or an emulator and declare a `jetpack-compose--device-verifier`
-node for independent on-device evidence. Read `references/device-verification.md` for the
-playbook — it is always available and covers bootstrap on a machine with no CLI — and load the
+built app on a real device or an emulator over the target's own transport and declare a
+`jetpack-compose--device-verifier` node for independent on-device evidence. Read
+`references/device-verification.md` for an Android target and
+`references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target — both
+are always available and cover bootstrap on a machine with no CLI or `hdc` — and load the
 `android-cli` skill when the harness provides it, as optional enrichment. That gate is read-only
 like the other review gates: it settles `pass` when the declared journey and its acceptance
 criteria hold with cited evidence, `revise` for a concrete app defect reproduced on the device,
