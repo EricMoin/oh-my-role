@@ -63,7 +63,7 @@ Step 6: Alternative sources
 Step 7: Custom scraping escalation
     → When Steps 1-6 are exhausted and the data is part of what the user needs
     → Load the `supersearch-custom-scraping` skill for constraints, decision gate, and safety rules
-    → Dispatch web-scout with the skill loaded; scripts are written to `.rolebox/scratch/` only
+    → Declare `supersearch--web-scout` in the search graph with the skill loaded in its brief; scripts are written to `.rolebox/scratch/` only
     → Scripts must respect robots.txt, rate limits, and must not bypass authentication
     → After scraping, integrate the output file into the evidence ledger per supersearch-evidence-synthesis
     → If the target site's robots.txt or ToS prohibits automated access, do NOT proceed; record the gate failure and continue to Step 8

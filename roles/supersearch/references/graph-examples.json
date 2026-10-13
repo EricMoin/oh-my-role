@@ -1,0 +1,214 @@
+{
+  "channel-fanout": {
+    "version": 3,
+    "name": "channel-fanout",
+    "budget": {
+      "max_executions": 8
+    },
+    "nodes": [
+      {
+        "id": "supersearch--local-scout",
+        "agent": "supersearch--local-scout",
+        "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the local channel scope, the read-only workspace rules, the .rolebox/scratch/ exception, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "evidence_ready"
+          },
+          {
+            "id": "no_evidence"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ]
+      },
+      {
+        "id": "supersearch--web-scout",
+        "agent": "supersearch--web-scout",
+        "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "evidence_ready"
+          },
+          {
+            "id": "no_evidence"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ]
+      },
+      {
+        "id": "supersearch--source-scout",
+        "agent": "supersearch--source-scout",
+        "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the source channel scope (GitHub, repositories, issues, releases, package metadata, official docs), the read-only workspace rules, the .rolebox/scratch/ exception for API pagination scripts, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "evidence_ready"
+          },
+          {
+            "id": "no_evidence"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ]
+      },
+      {
+        "id": "supersearch--evidence-auditor",
+        "agent": "supersearch--evidence-auditor",
+        "prompt": "Template placeholder - replace with the real node brief: the objective, the three accepted evidence_ready results to consume and their attempt bindings, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape, and the exact outcome ids this node may submit (audit_ready, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 420000
+        },
+        "outcomes": [
+          {
+            "id": "audit_ready"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ],
+        "join": {
+          "strategy": "all"
+        },
+        "inputs": [
+          {
+            "from": "supersearch--local-scout",
+            "outcome": "evidence_ready"
+          },
+          {
+            "from": "supersearch--web-scout",
+            "outcome": "evidence_ready"
+          },
+          {
+            "from": "supersearch--source-scout",
+            "outcome": "evidence_ready"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "supersearch--local-scout",
+        "to": "supersearch--evidence-auditor",
+        "outcome": "evidence_ready"
+      },
+      {
+        "from": "supersearch--web-scout",
+        "to": "supersearch--evidence-auditor",
+        "outcome": "evidence_ready"
+      },
+      {
+        "from": "supersearch--source-scout",
+        "to": "supersearch--evidence-auditor",
+        "outcome": "evidence_ready"
+      }
+    ]
+  },
+  "single-channel-plus-audit": {
+    "version": 3,
+    "name": "single-channel-plus-audit",
+    "budget": {
+      "max_executions": 5
+    },
+    "nodes": [
+      {
+        "id": "supersearch--web-scout",
+        "agent": "supersearch--web-scout",
+        "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 300000
+        },
+        "outcomes": [
+          {
+            "id": "evidence_ready"
+          },
+          {
+            "id": "no_evidence"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ]
+      },
+      {
+        "id": "supersearch--evidence-auditor",
+        "agent": "supersearch--evidence-auditor",
+        "prompt": "Template placeholder - replace with the real node brief: the objective, the accepted evidence_ready result to consume and its attempt binding, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape, and the exact outcome ids this node may submit (audit_ready, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+        "completion": {
+          "mode": "explicit"
+        },
+        "budget": {
+          "timeout_ms": 420000
+        },
+        "outcomes": [
+          {
+            "id": "audit_ready"
+          },
+          {
+            "id": "blocked"
+          },
+          {
+            "id": "failed"
+          }
+        ],
+        "join": {
+          "strategy": "all"
+        },
+        "inputs": [
+          {
+            "from": "supersearch--web-scout",
+            "outcome": "evidence_ready"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "supersearch--web-scout",
+        "to": "supersearch--evidence-auditor",
+        "outcome": "evidence_ready"
+      }
+    ]
+  }
+}

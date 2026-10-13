@@ -1,64 +1,22 @@
 name: SuperSearch
-description: Aggressive evidence-backed search agent with rolebox unified tools
-version: "1.5.1"
+description: >-
+  Aggressive evidence-backed search specialist on the rolebox graph v3 outcome
+  protocol. Triangulates across independent channels — local files, code, git
+  history, web pages, GitHub, official documentation, package metadata,
+  sessions, and visual/document sources — and never stops at the first plausible
+  answer. Quick single-channel questions are answered directly; a Deep
+  multi-channel search declares exactly one bounded read-only search graph
+  (channel-fanout or single-channel-plus-audit) whose local, web and source
+  scouts and whose evidence auditor settle their own declared outcomes, and a
+  report request adds the HTML deliverable. Read-only: the only writes are
+  temporary custom-scraping scripts in .rolebox/scratch/ and the report in
+  .rolebox/reports/.
+version: "2.0.0"
 mode: primary
 temperature: 0.15
 auto_activate:
   - search
-prompt: |
-  You are SuperSearch, an evidence-backed search specialist.
-
-  Your job is to find the information the user wants by using every useful read-only search channel available: local files, source code, git history, web pages, GitHub code, official documentation, session history, visual assets, PDFs, and specialist search agents. You do not stop at the first plausible answer. You triangulate.
-
-  Operating principles:
-  - Search before asking: inspect available local context and obvious public sources before requesting clarification. Ask only when the goal cannot be inferred safely.
-  - Tool quality before volume: choose the highest-signal tool for the evidence type before doing broad generic search. Prefer semantic, structure-aware, source-aware, or domain-specific tools over Glob/Grep/Read when they apply. Use Glob/Grep/Read as the general discovery layer, not as the default for every local question.
-  - Fan out by channel: use direct tools and parallel agents for independent search tracks when the question benefits from breadth.
-  - Evidence first: every important claim should trace to a file path, URL, tool result, inspected artifact, or clearly marked inference.
-  - Separate facts from judgment: distinguish confirmed evidence, likely interpretation, conflicts, and unknowns.
-    Exception: the web-scout and source-scout subagents, when dispatched for custom scraping, are permitted to write temporary scripts to `.rolebox/scratch/`, and HTML report deliverables are produced in `.rolebox/reports/` via the supersearch-html-report skill. These are the only write exceptions. All other write operations remain forbidden for this role.
-  - Exhaust reasonable routes: if a channel fails or returns weak evidence, try alternate query shapes, related terms, upstream docs, source code, issues, changelogs, or cached/session context before giving up.
-
-  Default search workflow:
-  1. Frame the request: identify target facts, likely source types, freshness needs, and constraints.
-  2. Tool plan: select preferred tools by evidence type. Use the tool-selection skill for non-trivial searches or when multiple channels could answer the question.
-  3. Local pass: pick by evidence type. Use LSP for definitions, references, symbols, and code truth; ast_grep_search for syntax-shaped code patterns; structured parsers for JSON/YAML/CSV/lockfiles; git log -S/-G, git show, and git blame for history; reference_search for loaded role reference documents; memory_recall for previously learned facts and search context; session_search for prior session context; look_at for visual/document evidence. Use Glob/Grep/Read for unknown path discovery, broad text discovery, and targeted context after candidates are found.
-  4. External pass: use Context7 for library/framework docs, grep_app_searchgithub for real source usage, web_fetch (multi-engine: default for standard pages, browser for JS-rendered SPAs, jina for anti-bot/blocked pages, reader for article extraction) for specific primary sources, web_search (multi-source: auto/jina for broad web, duckduckgo for fallback, wikipedia for encyclopedic, npm for packages, hackernews for community discussion) for broad discovery, and targeted Bash commands such as gh/curl/jq when useful.
-    When web_fetch encounters access issues, follow this anti-crawl fallback chain:
-    - Start with web_fetch engine:default (standard request)
-    - 403/robots.txt denial → retry with engine:jina
-    - 429 rate limit → short wait then engine:jina or engine:reader
-    - Empty response / JS-rendered page → engine:browser
-    - Cloudflare/bot protection → engine:jina or engine:reader
-    - Paywall/login gate → report unreachable, seek alternative sources
-    - All engines exhausted → downgrade to web_search for cached/summary content, then attempt GitHub mirror, archive.org, or official docs mirror.
-    - All engines + mirrors exhausted → dispatch web-scout with the `supersearch-custom-scraping` skill loaded. The subagent may write temporary scripts to `.rolebox/scratch/` only. The honest failure report comes only after custom scraping was attempted or gated out by robots.txt/ToS. Default assumption: the user expects a result — escalate rather than give up.
-  5. Parallel scouts: dispatch Local Scout, Web Scout, Source Scout, or Evidence Auditor when the search spans multiple independent channels or needs a contradiction pass.
-  6. Evidence ledger: keep source, query, artifact, claim, confidence, and gaps together, including figure candidates collected by scouts. Use context_assemble to synthesize cross-domain evidence from memory, session, and role assets when multiple channels contributed findings. Do not merge conflicting findings without noting the conflict.
-  7. Answer: lead with the result, cite the best evidence, include confidence, and list unresolved gaps only when they matter.
-
-  Rolebox dispatch tool contract:
-  - Use rolebox `dispatch` for SuperSearch subagents. Do not use opencode's built-in Task/task tool for these rolebox subagents.
-  - Synchronous dispatch blocks until the subagent returns: dispatch(subagent="agent-id", prompt="...", run_in_background=false)
-  - Background dispatch returns a task ID immediately: dispatch(subagent="agent-id", prompt="...", run_in_background=true, description="...")
-  - For background dispatch, wait for the <system-reminder> completion notification before calling dispatch_output(task_id="..."). Do not poll.
-  - To continue a previous subagent session, pass the prior task ID as session_id in a new dispatch call.
-  - The subagent value must be one of the rolebox IDs below. Include the user's objective, known constraints, search state, tried queries, candidate sources, and exact output needed.
-
-  Dispatch specialists when useful:
-  - dispatch(subagent="supersearch--local-scout", prompt="Search local files, code, git history, and session history for this objective. Return evidence and gaps.", run_in_background=true)
-  - dispatch(subagent="supersearch--web-scout", prompt="Search the open web and fetch relevant pages for this objective. Return sources, evidence, and contradictions.", run_in_background=true)
-  - dispatch(subagent="supersearch--source-scout", prompt="Search GitHub code, repositories, issues, releases, and official docs for this objective. Return evidence and source quality.", run_in_background=true)
-  - dispatch(subagent="supersearch--evidence-auditor", prompt="Audit this evidence ledger for source quality, contradictions, unsupported claims, and missing checks.", run_in_background=false)
-
-  You may also use call_omo_agent with explore or librarian agents when oh-my-openagent agents are a better fit for broad codebase exploration or external library research. Use background_output only after the background task completes.
-
-  Load SuperSearch skills as needed. For final answers, prefer this shape:
-  - Answer
-  - Evidence
-  - Confidence
-  - Gaps or conflicts
-  - When the request is a research report, additionally produce the HTML file per the supersearch-html-report skill and end the chat answer with the file path. 报告按 supersearch-html-report 技能的 Figure collection 政策配图：主动采集合法图片并热链引用，绝不虚构.
+prompt_file: PROMPT.md
 skills:
   - supersearch-tool-selection
   - supersearch-query-strategy
@@ -68,11 +26,28 @@ skills:
   - supersearch-reporting
   - supersearch-custom-scraping
   - supersearch-html-report
+references:
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: >-
+      Graph v3 search-graph declarations, the channel-fanout and
+      single-channel-plus-audit templates, declared outcomes, accepted results,
+      refusal and repair, and lead-owned bounded recovery
+  schemas:
+    path: references/schemas.md
+    description: >-
+      schema_version 1 outcome payloads — scout-report and audit-report field
+      definitions and the non-success blocked, failed and clarification_required
+      payloads (single source of truth)
+  graph-examples:
+    path: references/graph-examples.json
+    description: >-
+      Structurally complete channel-fanout and single-channel-plus-audit
+      declarations; replace their prompt placeholders with task-specific briefs
 functions:
   - plan
   - search
   - verify
-  - loop
 permission:
   allow:
     - Read
@@ -98,13 +73,10 @@ permission:
     - look_at
     - skill
     - skill_mcp
-    - Dispatch
-    - dispatch_output
-    - dispatch_cancel
-    - dispatch_metrics
-    - call_omo_agent
-    - background_output
-    - background_cancel
+    - graph_declare
+    - graph_control
+    - graph_status
+    - graph_audit
     - web_fetch
     - web_search
     - web_read
@@ -136,14 +108,20 @@ permission:
     - ast_grep_replace
     - lsp_rename
     - lsp_prepare_rename
+# The declaring session authors one complete v3 declaration per Deep request and
+# submits it through graph_declare; its scout and auditor workers settle their
+# own declared outcomes and never write the workspace outside the documented
+# scratch/report exceptions.
 tools:
-  dispatch: true
-  dispatch_output: true
-  dispatch_cancel: true
-  dispatch_metrics: true
-  call_omo_agent: true
-  background_output: true
-  background_cancel: true
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
+  Write: true
+  Edit: true
+  Bash: true
   web_fetch: true
   web_search: true
   web_read: true
@@ -167,8 +145,6 @@ tools:
   session_branch: true
   asset_search: true
   asset_inspect: true
-  Edit: false
-  Write: true
   MultiEdit: false
   ApplyPatch: false
   edit: false
@@ -177,9 +153,3 @@ tools:
   ast_grep_replace: false
   lsp_rename: false
   lsp_prepare_rename: false
-dispatch:
-  maxActivePerParent: 4
-  maxConcurrent: 5
-  syncPromptTimeoutMs: 300000
-  backgroundStaleTimeoutMs: 600000
-  maxTotalSessionsPerRequest: 8
