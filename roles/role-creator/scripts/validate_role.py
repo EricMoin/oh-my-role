@@ -3,7 +3,10 @@
 
 Tier 1 (Structural): YAML parse, required fields, -- rule, prompt exclusivity, frontmatter
 Tier 2 (Resolution Sim): skill/function/reference discovery, subagent discovery,
-                         validateGraph 6-checks, skill-name-collision, collab-target existence
+                         legacy v1 validateGraph 6-checks, skill-name-collision,
+                         collab-target existence, Graph v3 rules (retired `graph:` block,
+                         memory shape, termination shapes, retired live-contract tools,
+                         the `loop` function, the declarer/worker tool split)
 
 Usage: python3 validate_role.py <roleDir> [--json]
 """
@@ -59,8 +62,26 @@ def _add_error(collector, msg):
     collector['errors'].append(msg)
 
 
-# Legacy v1 background-dispatch tool family removed in Phase C (catalog Rule 4).
+# Retired live-contract tools denied by catalog Rule 4: the legacy v1 background-dispatch
+# family removed in Phase C, the retired v2 graph-authoring family and the retired signal
+# surface. The executable mirror names every literal it denies, `graph_add_loop` included.
 LEGACY_DISPATCH_TOOLS = {'dispatch', 'dispatch_output', 'dispatch_cancel'}
+RETIRED_V2_GRAPH_TOOLS = {
+    'graph_create', 'graph_add_node', 'graph_add_edge', 'graph_add_loop',
+    'graph_run', 'graph_approve', 'graph_cancel', 'signal',
+}
+DENIED_LIVE_CONTRACT_TOOLS = LEGACY_DISPATCH_TOOLS | RETIRED_V2_GRAPH_TOOLS
+
+# Catalog Rule 6: the Graph v3 declarer/worker tool split.
+GRAPH_DECLARER_SPLIT = {
+    'graph_declare': True,
+    'graph_control': True,
+    'graph_status': True,
+    'graph_audit': True,
+    'graph_submit_outcome': False,
+    'graph_worker_exec': False,
+}
+GRAPH_WORKER_SPLIT = {name: not held for name, held in GRAPH_DECLARER_SPLIT.items()}
 
 
 def _is_valid_termination_entry(entry) -> bool:
@@ -78,13 +99,48 @@ def _is_valid_termination_entry(entry) -> bool:
     return False
 
 
-def _collect_legacy_perm_tools(allow_list, where, issues):
-    """Append a violation string per legacy dispatch tool found in a permission.allow list (catalog Rule 4)."""
-    if not isinstance(allow_list, list):
+def _tool_map_names(manifest) -> list:
+    """Every tool name a manifest declares: `tools:` keys plus `permission.allow` entries (catalog Rule 4)."""
+    names = []
+    if isinstance(manifest, dict):
+        tools = manifest.get('tools')
+        if isinstance(tools, dict):
+            names.extend(str(k) for k in tools)
+        perm = manifest.get('permission')
+        if isinstance(perm, dict) and isinstance(perm.get('allow'), list):
+            names.extend(t for t in perm['allow'] if isinstance(t, str))
+    return names
+
+
+def _collect_denied_tools(manifest, where, issues):
+    """Append a violation string per retired live-contract tool declared in `permission.allow`
+    or `tools:` (catalog Rule 4)."""
+    if not isinstance(manifest, dict):
         return
-    for tool in allow_list:
-        if isinstance(tool, str) and tool.lower() in LEGACY_DISPATCH_TOOLS:
-            issues.append(f"{where}: permission.allow contains legacy removed tool '{tool}'")
+    for tool in _tool_map_names(manifest):
+        if tool.lower() in DENIED_LIVE_CONTRACT_TOOLS:
+            issues.append(f"{where}: retired live-contract tool '{tool}' in permission.allow/tools")
+
+
+def _check_graph_tool_split(manifest, where, declarer, issues):
+    """Enforce catalog Rule 6: a manifest that declares any `graph_*` tool must hold its side
+    of the Graph v3 declarer/worker split in its `tools:` map."""
+    if not isinstance(manifest, dict):
+        return
+    if not any(name.startswith('graph_') for name in _tool_map_names(manifest)):
+        return
+    side = 'declarer' if declarer else 'worker'
+    expected = GRAPH_DECLARER_SPLIT if declarer else GRAPH_WORKER_SPLIT
+    tools = manifest.get('tools')
+    if not isinstance(tools, dict):
+        issues.append(f"{where}: declares a graph_* tool but has no 'tools:' mapping for "
+                      f"the v3 {side} split")
+        return
+    for name, want in expected.items():
+        got = tools.get(name)
+        if got is not want:
+            issues.append(f"{where}: tools.{name} must be {str(want).lower()} for the "
+                          f"v3 {side} split (got {got!r})")
 
 
 def _run_tier1(role_yaml_path, role_id, is_subagent=False):
@@ -500,21 +556,19 @@ def _run_tier2(role_dir, role_id, data):
             if not exists_on_disk and not exists_inline:
                 warn(f"Collaboration target '{fan}' referenced in flow but no matching subagent found on disk or inline")
 
-    # ── Graph Engine v2 configuration validation ──
-    # Rule 1 (ERROR): graph block present -> graph.orchestration must equal 'graph_v2'
+    # ── Graph v3 rule validation ──
+    # Rule 1 (ERROR, catalog policy): a `graph:` block is retired by this catalog. rolebox
+    # never rejects it — parseGraphConfig warns and ignores a missing or unknown
+    # orchestration selector, and logs the valid case with no runtime effect — but roles
+    # validated against this catalog must not declare it.
     graph_block = data.get('graph')
     if graph_block is None:
-        result['checks'].append(_make_check('graph_orchestration', True, 'no graph block present'))
+        result['checks'].append(_make_check('graph_block_retired', True, 'no graph block present'))
     else:
-        orch = graph_block.get('orchestration') if isinstance(graph_block, dict) else None
-        if orch == 'graph_v2':
-            result['checks'].append(_make_check('graph_orchestration', True,
-                                                'graph.orchestration=graph_v2'))
-        else:
-            got = repr(orch) if orch is not None else 'missing'
-            err(f"graph block present but graph.orchestration must equal 'graph_v2' (got {got})")
-            result['checks'].append(_make_check('graph_orchestration', False,
-                                                f"graph.orchestration is {got}, expected 'graph_v2'"))
+        err("graph block is retired by this contract; rolebox only warns and ignores it, "
+            "and roles validated against this catalog must not declare it")
+        result['checks'].append(_make_check('graph_block_retired', False,
+                                            'graph: block present (retired by this catalog)'))
 
     # Rule 2 (WARN): memory config shape (inject/max_inject/min_relevance/scope)
     memory_issues = []
@@ -569,23 +623,16 @@ def _run_tier2(role_dir, role_id, data):
     else:
         result['checks'].append(_make_check('termination_any_of', True, 'no any_of entries or valid shapes'))
 
-    # Rule 4 (ERROR): legacy removed dispatch tools in permission.allow (role + subagents)
+    # Rule 4 (ERROR): retired live-contract tools in permission.allow or tools (role + subagents)
     perm_issues = []
-    top_perm = data.get('permission')
-    if isinstance(top_perm, dict):
-        _collect_legacy_perm_tools(top_perm.get('allow', []), f"role '{role_id}'", perm_issues)
+    _collect_denied_tools(data, f"role '{role_id}'", perm_issues)
     for sa_name, sa_data in file_subagent_data.items():
-        if isinstance(sa_data, dict):
-            sa_perm = sa_data.get('permission')
-            if isinstance(sa_perm, dict):
-                _collect_legacy_perm_tools(sa_perm.get('allow', []), f"subagent '{sa_name}'", perm_issues)
+        _collect_denied_tools(sa_data, f"subagent '{sa_name}'", perm_issues)
     for inline in inline_subagents:
         if not isinstance(inline, dict):
             continue
         inline_name = inline.get('name', '(inline)')
-        sa_perm = inline.get('permission')
-        if isinstance(sa_perm, dict):
-            _collect_legacy_perm_tools(sa_perm.get('allow', []), f"inline subagent '{inline_name}'", perm_issues)
+        _collect_denied_tools(inline, f"inline subagent '{inline_name}'", perm_issues)
     if perm_issues:
         for pi in perm_issues:
             err(pi)
@@ -597,10 +644,28 @@ def _run_tier2(role_dir, role_id, data):
     loop_declared = functions_explicit and isinstance(functions, list) and 'loop' in functions
     if loop_declared:
         warn("Declared function 'loop' is a legacy loop_* tool family member; "
-             "use graph_add_loop(max_traversals=...) for bounded revise/review cycles")
+             "declare bounded revise/review cycles as a loop_groups entry with max_traversals")
         result['checks'].append(_make_check('loop_function', False, "functions contains 'loop'"))
     else:
         result['checks'].append(_make_check('loop_function', True))
+
+    # Rule 6 (ERROR): Graph v3 declarer/worker tool split
+    split_issues = []
+    _check_graph_tool_split(data, f"role '{role_id}'", declarer=True, issues=split_issues)
+    for sa_name, sa_data in file_subagent_data.items():
+        _check_graph_tool_split(sa_data, f"subagent '{sa_name}'", declarer=False, issues=split_issues)
+    for inline in inline_subagents:
+        if not isinstance(inline, dict):
+            continue
+        inline_name = inline.get('name', '(inline)')
+        _check_graph_tool_split(inline, f"inline subagent '{inline_name}'", declarer=False,
+                                issues=split_issues)
+    if split_issues:
+        for si in split_issues:
+            err(si)
+        result['checks'].append(_make_check('graph_tool_split', False, '; '.join(split_issues)))
+    else:
+        result['checks'].append(_make_check('graph_tool_split', True))
 
     return result
 

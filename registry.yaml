@@ -75,13 +75,14 @@ roles:
       planner/executor subtrees, synthesizes results with closed-loop validation"
     tags: [orchestrator, triage, dispatch, planner, executor, subagents]
   role-creator:
-    version: "0.3.0"
-    description: Meta-role that interviews the user, generates a new rolebox 
-      role (3 templates), and verifies it with a 4-tier mechanism (structural → 
-      resolution-sim → deploy-health → behavioral eval). Graph-engine-v2 aware —
-      bounded revise/review cycles run via graph_add_loop — with 
+    version: "1.0.0"
+    description: Meta-role that interviews the user, generates a new rolebox
+      role (four templates), and verifies it with a 4-tier mechanism
+      (structural → resolution-sim → deploy-health → behavioral eval). Runs on the
+      rolebox graph v3 outcome protocol — bounded revise/review cycles are
+      declared as loop groups whose nodes settle their own outcomes — with
       deploy-to-harness capability.
-    tags: [meta, role-creation, verification, scaffolding]
+    tags: [meta, role-creation, verification, scaffolding, graph-v3]
   rolebox-tester:
     version: "6.0.0"
     description: Comprehensive functional tester for rolebox features. Executes 

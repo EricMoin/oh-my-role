@@ -1,0 +1,7 @@
+name: Broken Graph Block Role
+description: A role that still declares the retired graph block
+mode: primary
+prompt: |
+  This role still declares a graph block, which this catalog retires.
+graph:
+  orchestration: graph_v2

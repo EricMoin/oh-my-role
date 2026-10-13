@@ -34,26 +34,46 @@
           "tags": ["rejection", "guardrail"]
         },
         {
-          "id": "create-graph-code-review-role",
+          "id": "create-graph-orchestrated-code-review-role",
           "description": "Role Creator scaffolds a graph-orchestrated code-review pipeline role",
           "prompt": "Create a graph-orchestrated role for a code-review pipeline with reviewer and approver specialists",
           "expectations": [
-            { "text": "Uses graph_add_node to register each specialist subagent", "type": "capability", "weight": 2 },
-            { "text": "Uses graph_add_loop with max_traversals to bound the review cycle", "type": "capability", "weight": 2 },
-            { "text": "Sets needs_approval on destructive steps like merge or delete", "type": "capability", "weight": 1 }
+            { "text": "Declares ONE complete Graph v3 document through graph_declare with per-node outcomes and explicit completion", "type": "capability", "weight": 2 },
+            { "text": "Bounds the review cycle with a loop_groups entry carrying max_traversals, a continuation_outcome and an exit_outcome", "type": "capability", "weight": 2 },
+            { "text": "Declares an approval gate on destructive steps instead of running them unprompted", "type": "capability", "weight": 1 }
           ],
-          "tags": ["positive", "graph-engine"]
+          "tags": ["positive", "graph-v3"]
         },
         {
-          "id": "verify-graph-v2-role",
-          "description": "Role Creator verifies a graph-v2 role and reports the modernized checks",
-          "prompt": "Run verification on tests/fixtures/valid-graph-v2 and report the graph_v2, memory, and termination checks",
+          "id": "verify-graph-v3-role",
+          "description": "Role Creator verifies a Graph v3 declarer role and reports the migrated check names",
+          "prompt": "Run verification on tests/fixtures/valid-graph-v3 and report the Graph v3 configuration checks",
           "expectations": [
             { "text": "Runs validate_role.py and reports PASS", "type": "capability", "weight": 2 },
-            { "text": "Reports the graph.orchestration=graph_v2 check", "type": "capability", "weight": 1 },
-            { "text": "Reports the memory config and collaboration termination checks", "type": "capability", "weight": 1 }
+            { "text": "Reports the graph_tool_split check (Rule 6) for the declarer tool split", "type": "capability", "weight": 1 },
+            { "text": "Reports the graph_block_retired (Rule 1) and permission_legacy_tools (Rule 4) checks", "type": "capability", "weight": 1 }
           ],
-          "tags": ["positive", "verification", "graph-engine"]
+          "tags": ["positive", "verification", "graph-v3"]
+        },
+        {
+          "id": "detect-retired-graph-block",
+          "description": "Role Creator detects a role that still declares the retired graph block",
+          "prompt": "Run verification on tests/fixtures/broken-graph-block",
+          "expectations": [
+            { "text": "Reports FAIL with the graph_block_retired error (Rule 1)", "type": "capability", "weight": 2 },
+            { "text": "Explains that the graph block is retired by the catalog policy and rolebox only warns and ignores it", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["negative", "verification", "graph-v3"]
+        },
+        {
+          "id": "detect-retired-v2-contract",
+          "description": "Role Creator detects a role that still declares retired v2 graph tools and the retired signal surface",
+          "prompt": "Run verification on tests/fixtures/broken-retired-v2",
+          "expectations": [
+            { "text": "Reports FAIL with the permission_legacy_tools error (Rule 4)", "type": "capability", "weight": 2 },
+            { "text": "Identifies the retired live-contract entries in permission.allow and tools", "type": "capability", "weight": 1 }
+          ],
+          "tags": ["negative", "verification", "graph-v3"]
         },
         {
           "id": "deploy-to-harness",

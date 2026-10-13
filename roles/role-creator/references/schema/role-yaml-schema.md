@@ -1,13 +1,19 @@
 ---
-description: Complete field reference dictionary for role.yaml (RoleConfig) and SubAgentConfig types
-rolebox_version: 1.5.0
+description: Complete field reference dictionary for role.yaml (RoleConfig) and SubAgentConfig types, including the declarer/worker tool split that marks a Graph v3 role
+rolebox_version: 2.0.0-alpha.2
 ---
 
 # role.yaml Field Reference
 
-This document is the definitive field dictionary for `role.yaml` schema types. Every field from `RoleConfig`, `SubAgentConfig`, and related interfaces is listed with its type, required/optional status, default value, and inheritance behavior.
+This document is the definitive field dictionary for `role.yaml` schema types.
+Every field from `RoleConfig`, `SubAgentConfig` and related interfaces is listed
+with its type, required/optional status, default value and inheritance behaviour.
+It documents the installed rolebox loader (`src/loader/role-loader.ts`,
+`src/types.core.ts`, `src/types.graph.ts`), pinned here at `2.0.0-alpha.2`.
 
-This is a field DICTIONARY. Validation rules live in `validation-catalog.md`.
+This is a field DICTIONARY. Validation rules live in `validation-catalog.md`, and
+the Graph v3 declaration grammar that replaced role-level orchestration lives in
+`../graph-protocol.md`.
 
 ---
 
@@ -26,20 +32,23 @@ This is a field DICTIONARY. Validation rules live in `validation-catalog.md`.
 | `temperature` | `number` (0.0–2.0) | NO | — | YES | Sampling temperature for the model. |
 | `top_p` | `number` (0.0–1.0) | NO | — | YES | Top-p (nucleus) sampling parameter. |
 | `permission` | `PermissionConfig` | NO | — | YES | Tool permission controls (allow/deny lists). |
-| `tools` | `Record<string, boolean>` | NO | — | YES | Tool enable/disable map. Keys are tool names, values toggle them. |
-| `skills` | `string[]` | NO | — | NO | Rolebox-local skill names resolved from role's `skills/` directory. |
-| `opencode_skills` | `string[]` | NO | — | NO | Opencode-global skill names resolved from global skills directory. |
+| `tools` | `Record<string, boolean>` | NO | — | YES | Tool enable/disable map. The machine-checkable declarer/worker split marker of a Graph v3 role — see below. |
+| `skills` | `string[]` | NO | — | NO | Rolebox-local skill names resolved from the role's `skills/` directory. |
+| `opencode_skills` | `string[]` | NO | — | NO | Opencode-global skill names resolved from the global skills directory. |
 | `functions` | `string[]` | NO | `["plan", "execute"]` | NO | Function names to load for this role. |
-| `disable_functions` | `string[]` | NO | — | NO | Functions to explicitly disable (removed from resolved set). |
+| `disable_functions` | `string[]` | NO | — | NO | Functions to explicitly disable (removed from the resolved set). |
 | `subagents` | `SubAgentConfig[]` | NO | — | NO | Inline subagent definitions. |
 | `references` | `Record<string, string \| ReferenceEntry>` | NO | — | NO | Named reference declarations. Values are paths or `ReferenceEntry` objects. |
-| `collaboration` | `CollaborationConfig` | NO | — | NO | Legacy v1 declarative mirror of the runtime graph. NOT the execution mechanism. |
-| `graph` | `GraphConfig` | NO | — | NO | Graph orchestration declaration. `orchestration` must be `graph_v2`. |
 | `memory` | `MemoryConfig` | NO | — | NO | Session memory injection configuration. |
 | `dispatch` | `DispatchRoleConfig` | NO | — | NO | Dispatch subsystem overrides for concurrency and backpressure. |
 | `auto_activate` | `string[]` | NO | — | NO | Functions activated automatically on role load. |
 | `locked` | `boolean` | NO | `false` | NO | When true, locks auto-activated functions (prevents deactivation). |
 | `version` | `string` | NO | — | — | Semantic version string for the role. |
+
+Two role.yaml keys that older contracts documented here as live orchestration
+configuration — `graph:` and `collaboration:` — are **not** live config under the
+Graph v3 outcome protocol. They are documented under
+[Retired orchestration keys](#retired-orchestration-keys) below.
 
 ---
 
@@ -57,71 +66,136 @@ This is a field DICTIONARY. Validation rules live in `validation-catalog.md`.
 | `temperature` | `number` (0.0–2.0) | NO | inherits from parent | YES | Temperature override. Falls back to parent's value. |
 | `top_p` | `number` (0.0–1.0) | NO | inherits from parent | YES | Top-p override. Falls back to parent's value. |
 | `permission` | `PermissionConfig` | NO | inherits from parent | YES | Permission override. Falls back to parent's value. |
-| `tools` | `Record<string, boolean>` | NO | inherits from parent | YES | Tools override. Falls back to parent's value. |
+| `tools` | `Record<string, boolean>` | NO | inherits from parent | YES | Tools override. A worker subagent declares the inverse of its declaring role's split. |
 | `skills` | `string[]` | NO | — | NO | Rolebox-local skill names for this subagent. |
 | `opencode_skills` | `string[]` | NO | — | NO | Opencode-global skill names for this subagent. |
 | `functions` | `string[]` | NO | — | NO | Function names to load. |
-| `disable_functions` | `string[]` | NO | — | NO | Functions to disable. |
+| `disable_functions` | `string[]` | NO | — | NO | Function names to disable. |
 | `auto_activate` | `string[]` | NO | — | NO | Auto-activated functions on subagent load. |
 | `locked` | `boolean` | NO | `false` | NO | Locks auto-activated functions. |
 | `subagents` | `SubAgentConfig[]` | NO | — | NO | Nested subagent definitions (recursive). |
 
 ---
 
+## The `tools:` split — the machine-checkable marker
+
+A Graph v3 role is marked by its `tools:` block, not by an orchestration key.
+The loader surfaces `tools` as a `Record<string, boolean>` and a subagent's
+`tools` inherits from its parent unless the subagent declares its own (inheritance
+uses `child_value ?? parent_value`; see [Inheritance Rules](#inheritance-rules)).
+
+| Tool | Declaring role (`mode: primary`) | Worker subagent |
+|------|----------------------------------|-----------------|
+| `graph_declare` | `true` | `false` |
+| `graph_control` | `true` | `false` |
+| `graph_status` | `true` | `false` |
+| `graph_audit` | `true` | `false` |
+| `graph_submit_outcome` | `false` | `true` |
+| `graph_worker_exec` | `false` | `true` |
+| `Write` / `Edit` / `Bash` | per the role's own job | per the worker's job |
+
+```yaml
+# Declaring role: declares, controls, reads and audits graphs; never submits.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
+  Write: true
+  Edit: true
+  Bash: true
+```
+
+```yaml
+# Worker subagent: submits its own outcome and runs sandboxed commands.
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
+  Write: false
+  Edit: false
+  Bash: true
+```
+
+Inside a graph the binding boundary is the **node** grant recorded in the
+declaration, not this manifest map: a dispatched worker's graph face grants
+`graph_submit_outcome` (plus `graph_worker_exec` on the dsh platform), every
+other graph tool refuses the worker by name, and a node's declared `tools` list
+names extra **host** tools only. The five protocol tools and their request
+shapes are documented in `../graph-protocol.md`.
+
+---
+
+## Graph v3 declarations are not role.yaml fields
+
+Orchestration is declared as data and compiled into an immutable plan, so the
+following concepts are **not** role.yaml fields:
+
+- **Topology.** `graph_declare({declaration})` accepts one version-3 document:
+  `version: 3`, `name` (the graph id), an optional `budget.max_executions`, the
+  `nodes` array and the `edges` array.
+- **Nodes and outcomes.** Each node declares `id`, `agent`, `prompt`, at least
+  one `outcomes` entry and `completion: {mode: "explicit"}`. A node's `tools` is
+  the declaration grammar's **string array** of extra host tool names — a
+  different shape from this file's role-level `tools:` boolean map.
+- **Routes.** Every edge is `{from, to, outcome}` and binds one outcome its
+  source node declares. There is no implicit edge and no condition field.
+- **Inputs and joins.** A consumer declares `inputs: [{from, outcome}]`; a
+  convergence node declares `join: {strategy: "all" | "any" | "quorum"}`.
+- **Loop groups.** A bounded revise cycle is a `loop_groups` entry with `id`,
+  `nodes`, a positive `max_traversals`, a `continuation_outcome` that re-enters
+  the loop and an `exit_outcome` that leaves it. Both route outcomes must be
+  declared by a member node, and every edge carrying the continuation outcome
+  must stay inside the group.
+- **Accepted-outcome transport.** Only an accepted decision with `verdict`
+  `committed` or `replayed` and no refusals settles a node; a refusal writes
+  nothing. The declaring session reads `attempts[].accepted` and
+  `attempts[].result` with `graph_status` scope `all`, format `json`,
+  `include_output` and `include_history`. A result fence does not settle a node.
+
+The declaration grammar, the exact loop-group rules, the tool surface and the
+recovery commands are specified in `../graph-protocol.md`.
+
+---
+
+## Retired orchestration keys
+
+`graph:` and `collaboration:` are the retired role-level orchestration keys.
+Neither is live configuration under the outcome protocol:
+
+- **`graph:`** — the loader recognizes the key (`parseGraphConfig` in
+  `src/loader/role-loader.ts`). A missing or unknown `orchestration` selector is
+  warned about and the key is omitted; a valid `graph_v2` selector is surfaced on
+  `RoleConfig.graph` and logged verbatim as *"key recognized but not yet wired
+  into graph resolution (no runtime effect)"*. It never starts, routes or bounds
+  a graph.
+- **`collaboration:`** — rolebox has no reader for this key anywhere in
+  `src/`, so it is not part of `RoleConfig` and has no runtime effect.
+
+A role that orchestrates declares its topology through `graph_declare` instead.
+Whether a role validated against this repository's contract may still declare a
+retired key is a policy decision recorded in `validation-catalog.md`, not a
+rolebox rule.
+
+---
+
 ## PermissionConfig
 
-Controls which tools a role or subagent can access.
+Controls which tools a role or subagent may access.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `allow` | `string[]` | NO | Tool names explicitly allowed. |
 | `deny` | `string[]` | NO | Tool names explicitly denied. |
 
----
-
-## CollaborationConfig
-
-Legacy v1 declarative mirror of the runtime graph (see `graph-engine-v2.md`). The live execution path is the imperative `graph_*` tools; this block is kept for schema compatibility and to document authoring intent.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `topology` | `"pipeline" \| "review-loop" \| "star"` | NO | Named topology hint. |
-| `agents` | `string[]` | NO | List of agent IDs participating in collaboration. |
-| `flow` | `FlowEdge[]` | NO | Directed edges defining the collaboration graph. |
-| `max_iterations` | `number` | NO | Legacy v1 schema-compat only. Does NOT bound runtime loops — the graph engine enforces loop bounds via `graph_add_loop(max_traversals=…)`. Never used as a live bound. |
-| `termination` | `TerminationConfig` | NO | Declarative soft-exit conditions for the pipeline (mirror of `graph_add_loop`'s `termination` param). |
-
-### TerminationConfig
-
-Soft-exit conditions for the collaboration pipeline.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `any_of` | `TerminationCondition[]` | NO | Exit when ANY entry matches. |
-| `all_of` | `TerminationCondition[]` | NO | Exit when ALL entries match. |
-
-`TerminationCondition` entries are `{ max_iterations: int }` or `{ result_matches: { agent: string, contains: string } }`.
-
-### FlowEdge
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `from` | `string` | YES | Source agent ID (or `"parent"` for entry point). |
-| `to` | `string` | YES | Target agent ID (or `"parent"` for exit). |
-| `label` | `string` | NO | Human-readable label for this edge. |
-| `exit` | `boolean` | NO | When true, marks this edge as a terminal exit point. |
-
----
-
-## GraphConfig
-
-Declares the role as a graph-orchestrated role (Graph Engine v2).
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `orchestration` | `"graph_v2"` | YES | Engine mode. Must be `graph_v2`. |
-
-**Runtime graph concepts are not role.yaml fields.** `needs_approval` gates, loop groups (`graph_add_loop`), and `on_signal` edges are declared at runtime via the `graph_*` tools and in function frontmatter — never in `role.yaml`. See `graph-engine-v2.md`.
+`permission` is passed through to the role/subagent unchanged; the loader does
+not rewrite it. A Graph v3 role lists its declarer tools (or its worker tools) in
+`allow` as well as in `tools:` where the host requires an explicit grant.
 
 ---
 
@@ -140,7 +214,9 @@ Controls session memory injection for the role's sessions.
 
 ## DispatchRoleConfig
 
-Overrides dispatch subsystem defaults for concurrency, queuing, and timeout behavior.
+Overrides dispatch subsystem defaults for concurrency, queuing and timeout
+behaviour. It is unrelated to Graph v3 graph execution: a run's ceiling is the
+declaration's `budget.max_executions` and a node's is its `budget.timeout_ms`.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -176,7 +252,8 @@ YAML frontmatter fields parsed from skill files (`SKILL.md`).
 
 ## FunctionMetadata (Function Frontmatter)
 
-YAML frontmatter fields parsed from function files. Includes state-machine fields for orchestration.
+YAML frontmatter fields parsed from function files. Includes state-machine fields
+for orchestration.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -190,33 +267,39 @@ YAML frontmatter fields parsed from function files. Includes state-machine field
 | `consumes` | `string` | NO | Evidence key this function consumes (removes after use). |
 | `gate` | `Condition` | NO | Condition that must be true for activation. |
 | `continue_until` | `Condition` | NO | Function keeps running until this condition is met. |
-| `requires_evidence` | `string[]` | NO | Evidence keys required before function can proceed. |
-| `observe` | `ObserveSpec[]` | NO | Event observation rules for reactive behavior. |
+| `requires_evidence` | `string[]` | NO | Evidence keys required before the function can proceed. |
+| `observe` | `ObserveSpec[]` | NO | Event observation rules for reactive behaviour. |
 | `transitions` | `TransitionSpec[]` | NO | State transitions triggered by conditions. |
 | `state_schema_version` | `number` | NO | Version of the state schema this function targets. |
-| `continue_max` | `number` | NO | Maximum continuation iterations before forced stop. |
-| `handlers` | `string` | NO | Handler identifier for custom function behavior. |
+| `continue_max` | `number` | NO | Maximum continuation iterations before a forced stop. |
+| `handlers` | `string` | NO | Handler identifier for custom function behaviour. |
 
 ---
 
 ## Condition Type
 
-Conditions are used by `gate`, `continue_until`, and other state-machine fields. A condition is one of:
+Conditions are used by `gate`, `continue_until` and other state-machine fields. A
+condition is one of:
 
 | Form | Type | Meaning |
 |------|------|---------|
-| String predicate | `string` | Named condition (e.g. `"user_approval"`, `"artifact_exists(plan)"`). |
+| String predicate | `string` | Named condition (e.g. `"user_approval()"`, `"artifact_exists(plan)"`). |
 | All combinator | `{ all: Condition[] }` | True when ALL nested conditions are true (AND). |
 | Any combinator | `{ any: Condition[] }` | True when ANY nested condition is true (OR). |
 | Not combinator | `{ not: Condition }` | True when the nested condition is false (NOT). |
 
-Combinators nest recursively. A string predicate is the leaf node.
+Combinators nest recursively. A string predicate is the leaf node. The installed
+named-condition vocabulary is `user_approval()`, `artifact_exists(name)`,
+`plan_todos_complete()`, `evidence_met()`, `tool_observed(name)`,
+`turn_count(n)`, `plan_incomplete(name)` and `state_eq(key=value)`.
 
 ---
 
 ## ObserveSpec
 
-Defines reactive observation rules. Functions use these to react to tool calls, messages, or activation events.
+Defines reactive observation rules. Functions use these to react to tool calls,
+messages or activation events. The built-in events are `tool_after`, `message`
+and `activate`; a host extension may register additional event handlers.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -255,7 +338,9 @@ Structured form for reference declarations (alternative to bare path strings).
 
 ## Inheritance Rules
 
-Exactly 7 fields cascade from parent `RoleConfig` to child `SubAgentConfig` when the child does not define its own value. Inheritance uses nullish coalescing semantics: `child_value ?? parent_value`.
+Exactly 7 fields cascade from parent `RoleConfig` to child `SubAgentConfig` when
+the child does not define its own value. Inheritance uses nullish-coalescing
+semantics: `child_value ?? parent_value`.
 
 ### Inheritable Fields (7)
 

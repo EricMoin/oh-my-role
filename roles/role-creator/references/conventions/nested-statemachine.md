@@ -1,17 +1,28 @@
-# Nested + State-Machine-Functions Pattern
+# Nested + State-Machine-Functions Pattern (Graph v3)
 
-The most complex pattern. A top-level orchestrator uses stateful functions that observe lifecycle events, auto-activate on conditions, and transition between states. Subagents nest multiple levels deep, each with their own functions and skills. The orchestrator reacts to what's happening rather than following a fixed pipeline.
+The most complex pattern. A top-level declaring orchestrator activates stateful
+functions that observe lifecycle events, auto-activate on conditions and
+transition between states, while a nested subagent tree carries the specialist
+work. Graph execution itself stays on the rolebox Graph v3 outcome protocol: the
+orchestrator declares ONE version-3 graph per request and reads accepted outcomes
+back. The functions shape the orchestrator's own behaviour; they never build a
+graph incrementally and they never settle a node.
+
+The protocol contract is `roles/role-creator/references/graph-protocol.md`.
 
 ## When to Use
 
-- Complex multi-agent systems with stateful orchestration
-- The agent needs to observe and react, not just respond to commands
-- Auto-activation on lifecycle events (messages arrive, graph nodes complete, signals fire)
+- Complex multi-agent systems that need stateful orchestration
+- The orchestrator must observe and react, not just follow one fixed pipeline
+- Auto-activation on lifecycle events (a message arrives, a tool ran, a function
+  activated)
 - Deep hierarchies where sub-subagents handle specialized domains
 - Imperial/governing patterns where one agent manages many teams
-- You need fine-grained control over what tools the orchestrator can access
+- Fine-grained control over what tools each level may access
 
-**Don't use when:** a linear gate pipeline suffices (use director-gated), or the task is single-domain (use simple). This pattern carries significant complexity overhead.
+**Don't use when:** a linear gate pipeline suffices (use director-gated), or the
+task is single-domain (use simple). This pattern carries significant complexity
+overhead.
 
 ## Directory Layout
 
@@ -52,11 +63,16 @@ roles/{role-name}/
                 └── role.yaml
 ```
 
-Nesting goes up to 3 levels deep. Each level can have its own functions, skills, and subagents.
+Nesting goes up to 3 levels deep. Each level can have its own functions, skills
+and subagents.
 
 ## role.yaml Shape
 
-The orchestrator role.yaml is typically 35-50 lines. It's distinguished by `locked`, `auto_activate`, tool restrictions, and graph/signal-driven orchestration.
+The orchestrator role.yaml is typically 35-50 lines. It is distinguished by
+`locked`, `auto_activate`, the `tools:` declarer split and its function list.
+There is **no `graph:` block and no `collaboration:` block**: the loader
+recognizes `graph:` only to log that it is not wired into graph resolution (no
+runtime effect), and it reads no `collaboration:` key at all.
 
 ### Required Fields
 
@@ -66,22 +82,21 @@ The orchestrator role.yaml is typically 35-50 lines. It's distinguished by `lock
 | `description` | Identity and boundaries |
 | `prompt_file` | Points to PROMPT.md |
 | `functions` | List of state-machine function names |
-| `auto_activate` | Functions that activate automatically |
+| `auto_activate` | Functions active from the start of every session |
 
 ### Distinctive Fields
 
 | Field | Purpose |
 |-------|---------|
-| `locked` | `true` prevents function deactivation by the agent |
-| `tools` | Explicit tool restrictions (e.g., `Write: false`) |
-| `graph` | Declares `orchestration: graph_v2` — concurrency is engine-managed |
-| `auto_activate` | Functions active from the start of every conversation |
+| `locked` | `true` prevents auto-activated functions from being deactivated |
+| `tools` | The declarer split (below) plus the levels' `Write`/`Edit`/`Bash` posture |
+| `permission` | `allow` list of the tools the session may call |
 
 ### Example role.yaml
 
 ```yaml
 name: Emperor
-description: "Supreme orchestrator. Triages requests, routes to specialist teams via graph nodes, synthesizes results. Never writes code directly."
+description: "Supreme orchestrator. Triages requests, declares Graph v3 pipelines, synthesizes accepted outcomes. Never writes code directly."
 mode: primary
 prompt_file: PROMPT.md
 functions:
@@ -92,200 +107,203 @@ auto_activate:
   - triage
   - synthesize
 locked: true
+references:
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: The Graph v3 protocol contract this role declares against
 tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
-graph:
-  orchestration: graph_v2
-  # Concurrency is engine-managed: per-node timeout_ms / max_retries ride on
-  # graph_add_node; review cycles are bounded by graph_add_loop max_traversals.
 ```
 
-> **Legacy note:** the declarative `dispatch:` block (`maxActivePerParent`,
-> `maxConcurrent`, …) is replaced by the graph engine — resource ceilings are owned
-> and enforced by the engine, and concurrency is engine-managed. Likewise
-> `collaboration.max_iterations` is schema-compat only and does NOT bound runtime
-> cycles; `graph_add_loop`'s required, engine-enforced `max_traversals` is the real
-> bound. Do not re-introduce the legacy `dispatch:` config.
+The `tools:` block is the machine-checkable marker of the nested pattern: the
+orchestrator declares and controls graphs, its worker subagents submit outcomes,
+and neither side holds the other's tools. A worker subagent's `tools` inherits
+from its parent unless it declares its own.
 
 ## State-Machine Functions
 
-Functions are the core differentiator of this pattern. They aren't simple action handlers; they're reactive state machines that observe lifecycle events and trigger behavior.
+Functions are the core differentiator of this pattern. They are reactive state
+machines that observe lifecycle events and trigger behaviour, not simple action
+handlers.
 
 ### Function File Structure
 
-Each function lives in `functions/{name}.md` with YAML frontmatter defining its behavior.
+Each function lives in `functions/{name}.md` with YAML frontmatter. The parsed
+`FunctionMetadata` fields (rolebox `src/loader/types.ts`) are: `name`,
+`description`, `params`, `phase`, `priority`, `requires`, `produces`, `consumes`,
+`gate`, `continue_until`, `requires_evidence`, `observe`, `transitions`,
+`state_schema_version`, `continue_max` and `handlers`.
 
 ```markdown
 ---
 name: triage
-description: Classifies incoming requests and routes to appropriate subagent teams.
+description: Classifies incoming requests and routes them to the right team.
 phase: intake
 priority: 100
-auto_activate: true
-locked: true
 observe:
   - on: message
     inject: |
-      TRIAGE DIRECTIVE: Classify this message. Determine which team handles it.
-      Categories: architecture, implementation, review, research.
-      Route it to the appropriate team via a graph node. Do not attempt the work yourself.
-  - on: signal
-    filter: signal_observed(answer)
+      TRIAGE DIRECTIVE: Classify this message and decide which team handles it.
+      Declare one Graph v3 pipeline for the request; do not do the work yourself.
+  - on: tool_after
+    tool: graph_declare
     inject: |
-      A graph node answered. Check whether the workflow can advance.
+      A pipeline was declared. Record the graph id and the node ids in your
+      working state; collect accepted outcomes with graph_status.
 transitions:
-  - when: "signal_observed(answer) from all dispatched nodes"
+  - when: "artifact_exists(plan)"
     activate:
       - synthesize
-    deactivate:
-      - effort
-  - when: "signal_observed(revise_needed)"
-    activate:
-      - triage
-    deactivate:
-      - synthesize
-  - when: "signal_observed(need_approval)"
-    activate:
-      - triage
-    deactivate:
-      - effort
 continue_until:
   any:
-    - "signal_observed(answer) from the final node"
-    - "artifact_exists(<final-artifact>)"
+    - "artifact_exists(final-report)"
+    - "turn_count(12)"
 gate:
-  pass: "Request routed to at least one graph node"
-  fail: "Ask user for clarification"
+  pass: "The request is routed to at least one declared graph"
+  fail: "Ask the user for the missing intent"
 ---
 
 ## Triage Function
 
-You classify incoming work and route it to the right team.
+You classify incoming work and route it to the right team. Declare the pipeline
+before doing anything else, then end your turn and wait for the run to report.
 
 ### Routing Rules
 
-- Architecture questions -> chancellor team
-- Implementation tasks -> jinyiwei team
-- Code review -> jinyiwei/reviewer
-- Research -> graph node with research brief
+- Architecture questions -> the chancellor team
+- Implementation tasks -> the jinyiwei team (declare a generator and a validator
+  node, and put their revise cycle in one loop group)
+- Code review -> the review pipeline
+- Research -> a research node with a research brief
 
-### Node Prompt Format
+### Node Brief Format
 
-When authoring a node, provide:
-1. Clear task description
-2. Relevant context from the user's message
-3. Success criteria for the subagent
+When declaring a node, provide:
+1. A clear task statement
+2. The relevant context from the user's message
+3. Success criteria for the worker and the outcomes it may settle
 ```
 
 ### Key Frontmatter Fields
 
 | Field | Purpose |
 |-------|---------|
-| `observe` | Lifecycle hooks that inject directives |
-| `transitions` | State changes triggered by signal/condition observations |
-| `continue_until` | Loop termination conditions (dual-channel) |
+| `observe` | Lifecycle reactions that inject directives |
+| `transitions` | State changes triggered by conditions |
+| `continue_until` | Loop termination conditions |
 | `gate` | Pass/fail criteria for the function |
 | `phase` | Logical grouping (intake, execution, synthesis) |
-| `priority` | Ordering when multiple functions active (higher = first) |
-| `auto_activate` | Starts active without explicit activation |
-| `locked` | Cannot be deactivated by the agent |
+| `priority` | Ordering when several functions are active (higher first) |
+| `requires_evidence` / `evidence_met()` | Evidence-gated activation |
+
+`auto_activate` and `locked` are **role-level** fields, not function frontmatter
+fields: the role's `auto_activate` list names the functions that start active,
+and `locked: true` keeps them from being deactivated.
 
 ### Observe Pattern
 
-Functions inject directives on graph/signal lifecycle events. The agent sees these directives automatically.
+Functions inject directives when a lifecycle event fires. The built-in events are
+`tool_after`, `message` and `activate` (rolebox `BUILTIN_OBSERVE_EVENTS`); a host
+extension may register additional observe-event handlers.
 
 ```yaml
 observe:
   - on: message
     inject: |
-      SYNTHESIS CHECK: Have all graph nodes completed?
-      If yes, compile results into a unified response.
-  - on: signal
-    filter: signal_observed(answer)
+      SYNTHESIS CHECK: have all declared nodes settled?
+      If yes, compile their accepted results into one response.
+  - on: tool_after
+    tool: graph_status
     inject: |
-      A gate node answered. Check whether more nodes are needed.
-  - on: graph_complete
+      You read committed graph state. Continue only when the required nodes have
+      an accepted result.
+  - on: activate
     inject: |
-      [GRAPH COMPLETE] received. Collect outputs via
-      graph_status(graph_id, include_output=true) and synthesize.
+      The function is now active. Declare the next pipeline when the current run
+      has stopped and its effects are accounted for.
 ```
 
-Supported events: `message`, `signal` (filtered by `signal_observed(…)`), `graph_complete` (the `[GRAPH COMPLETE]` reminder), `activate`, `deactivate`.
+Graph progress is **not** observed as a function event. A run that completes,
+stops or needs attention notifies the declaring session; the session then reads
+accepted results with `graph_status`. Do not invent a lifecycle event for graph
+completion — no built-in event provides one, and a node settles only through its
+declared outcome.
 
 ### Transition Pattern
 
-Transitions change the active function set based on signal-driven conditions.
+Transitions change the active function set when a condition holds. Conditions use
+the runtime's named-condition vocabulary (`src/function/conditions.ts`):
+`user_approval()`, `artifact_exists(name)`, `plan_todos_complete()`,
+`evidence_met()`, `tool_observed(name)`, `turn_count(n)`,
+`plan_incomplete(name)` and `state_eq(key=value)`, composed with `all`, `any` and
+`not`.
 
 ```yaml
 transitions:
-  - when: "signal_observed(answer) from all dispatched nodes"
+  - when: "tool_observed(graph_declare)"
     activate:
       - synthesize
     deactivate:
       - effort
-  - when: "signal_observed(revise_needed)"
+  - when: "artifact_exists(revision-request)"
     activate:
       - triage
-    deactivate:
-      - synthesize
-  - when: "signal_observed(need_approval)"
-    activate:
-      - triage
-    deactivate:
-      - effort
 ```
 
 ### Continue-Until Pattern
 
-Defines when a function's loop terminates. The dual-channel form stops when the terminating `answer` signal is observed **OR** the final artifact exists — whichever arrives first.
+Defines when a function's loop terminates. The dual-channel form stops when any
+listed condition is met.
 
 ```yaml
 continue_until:
   any:
-    - "signal_observed(answer) from the final node"
-    - "artifact_exists(<final-artifact>)"
+    - "artifact_exists(final-report)"
+    - "turn_count(12)"
   all:
-    - "at least one node dispatched"
-    - "no pending clarifications"
+    - "evidence_met()"
+    - "plan_todos_complete()"
 ```
 
-`any` means stop when any single condition is met. `all` means every condition must be true.
+`any` means stop when any single condition is met; `all` means every condition
+must be true. `continue_max` caps the continuation count before a forced stop.
 
-## Graph Authoring
+## The Graph v3 Declaration
 
-Stateful orchestration still runs on the graph engine. The orchestrator authors ONE graph per request, with state transitions reacting to the signals it produces:
+Stateful orchestration still runs on the outcome protocol. The orchestrator
+declares ONE graph per request:
 
-```js
-graph_id = graph_create(name="<request>").graph_id
+1. Build the whole version-3 declaration object: `version: 3`, a `name` that
+   carries the request identity, a finite `budget.max_executions`, one node per
+   specialist with its `outcomes`, `completion: {mode: "explicit"}` and
+   `budget.timeout_ms`, and one `{from, to, outcome}` edge per route.
+2. Put every revise cycle in a `loop_groups` entry with a positive
+   `max_traversals`, a `continuation_outcome` declared by a member and an
+   `exit_outcome` declared by a member. Continuation edges stay inside the group.
+3. Submit it through `graph_declare`. That single call parses, compiles and
+   preflights the declaration and starts or resumes the run.
+4. End your turn. Read accepted outcomes once with `graph_status` scope `all`,
+   format `json`, `include_output` and `include_history`; read
+   `attempts[].accepted` and `attempts[].result`.
+5. Recover with `graph_control`: `retry` a diagnosed transient failure, `cancel`
+   obsolete work, `budget-stop` an exhausted run and raise approval requests
+   under the host-installed policy.
 
-graph_add_node({ graph_id, id: "plan", agent: "emperor--chancellor",
-                 prompt: "Produce a strategy for: {request}" })
-graph_add_node({ graph_id, id: "execute", agent: "emperor--jinyiwei",
-                 prompt: "Execute this strategy: {strategy}",
-                 needs_approval: true })  // destructive work: pause for human approval
-graph_add_node({ graph_id, id: "check", agent: "emperor--validator",
-                 prompt: "Validate this result: {result}" })
-
-// Forward flow: answer advances
-graph_add_edge({ graph_id, from: "plan", to: "execute", type: "on_signal", signal_filter: ["answer"] })
-graph_add_edge({ graph_id, from: "execute", to: "check", type: "on_signal", signal_filter: ["answer"] })
-
-// Revise back-edge: check emits revise_needed -> execute re-enters
-graph_add_edge({ graph_id, from: "check", to: "execute", type: "on_signal", signal_filter: ["revise_needed"] })
-
-// Bound the execute<->check cycle; max_traversals is required and engine-enforced
-graph_add_loop({ graph_id, id: "revise-cycle", nodes: ["execute", "check"], max_traversals: 3 })
-
-graph_run(graph_id)
-// END YOUR TURN — await [GRAPH COMPLETE] / [GRAPH BLOCKED], then
-// graph_status(graph_id, include_output=true) to collect node outputs ONCE
-```
-
-- `needs_approval: true` on destructive / high-risk nodes pauses them in `blocked` state when the agent emits `signal(need_approval)`; a human resolves via `graph_approve` — the destructive operation is never executed on rejection.
-- Results are collected ONCE via `graph_status(include_output=true)` after the `[GRAPH COMPLETE]` reminder — polling is fallback-only.
-- Review cycles are bounded by `graph_add_loop` `max_traversals` (required, engine-enforced) — not by prose, not by declarative config.
+- Only an accepted decision with `verdict` `committed` or `replayed` and no
+  refusals settles a node; a refusal writes nothing, and no result fence settles
+  a node.
+- Review cycles are bounded by the loop group's required `max_traversals`, not by
+  prose and not by declarative config.
+- Concurrency is engine-managed: a run's ceiling is `budget.max_executions`,
+  a node's ceiling is `budget.timeout_ms`, and `max_retries` is refused by name.
 
 ## Nested Subagent Structure
 
@@ -295,7 +313,7 @@ Direct children of the orchestrator. They handle domain-level coordination.
 
 ```yaml
 name: Chancellor
-description: "Coordinates architecture and design decisions. Manages drafter, reviewer, and finalizer."
+description: "Coordinates architecture and design decisions. Manages drafter, reviewer and finalizer workers."
 mode: subagent
 prompt_file: PROMPT.md
 functions:
@@ -309,16 +327,18 @@ subagents:
 
 ### Second-Level Subagents (Sub-Subagents)
 
-Children of first-level subagents. They do the actual specialized work.
+Children of first-level subagents. They do the specialized work and settle their
+node's declared outcomes through `graph_submit_outcome`.
 
 ```yaml
 name: Drafter
-description: "Writes initial drafts of architecture documents and design proposals."
+description: "Drafts architecture documents and design proposals."
 mode: subagent
 prompt: |
-  You draft architecture documents based on the brief
-  provided by the Chancellor. Focus on clarity and
-  completeness. Your output goes to the Reviewer.
+  You draft architecture documents from the brief the Chancellor supplies.
+  Focus on clarity and completeness. When the declared outcome is reached,
+  submit it with graph_submit_outcome using the credential this dispatch
+  carried, and never print that credential.
 skills:
   - architecture-drafting
 ```
@@ -333,42 +353,44 @@ IDs derive from the full directory path:
 | Second-level | `{role}--{subagent}--{sub-subagent}` | `emperor--chancellor--drafter` |
 | Third-level | `{role}--{sub}--{subsub}--{subsubsub}` | (rare, avoid if possible) |
 
-## Naming Conventions
-
-| Thing | Convention | Example |
-|-------|-----------|---------|
-| Role directory | lowercase, hyphens | `emperor` |
-| Function file | lowercase, hyphens | `functions/triage.md` |
-| Subagent directory | lowercase, hyphens | `subagents/chancellor/` |
-| Sub-subagent dir | lowercase, hyphens | `subagents/chancellor/subagents/drafter/` |
-| Agent ID | path-derived, double-dash separated | `emperor--chancellor--drafter` |
-| Skills | flexible naming, context-dependent | `architecture-drafting` |
+The node `agent` value is exactly this ID.
 
 ## Tool Restrictions
 
-The orchestrator typically restricts its own tools to prevent it from doing work directly:
+The orchestrator typically restricts its own tools so it cannot do the work
+directly, and holds only the declarer split:
 
 ```yaml
 tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
 ```
 
-This forces all actual work through subagents, keeping the orchestrator purely in a coordination role.
+A worker subagent holds the inverse (`graph_submit_outcome` and
+`graph_worker_exec` `true`, the four declarer tools `false`) plus `Bash: true`
+for its checks. Inside a graph the node grant is the binding boundary; a declared
+node `tools` list names extra **host** tools only, and a graph-face name in it
+admits nothing.
 
-## Graph Engine Concurrency
+## Graph v3 Concurrency
 
-Concurrency is **engine-managed** — there is no `dispatch:` config to tune. Resource limits ride on the node declaration:
+Concurrency is **engine-managed** — there is no dispatch-concurrency knob to
+tune under the outcome protocol. Resource ceilings ride on the declaration:
 
-```js
-graph_add_node({ graph_id, id: "plan", agent: "emperor--chancellor",
-                 prompt: "...", timeout_ms: 300000, max_retries: 1 })
-```
-
-- Per-node `timeout_ms` / `max_retries` on `graph_add_node` replace the legacy `dispatch:` block's concurrency knobs (`maxActivePerParent`, `maxConcurrent`).
-- Review cycles are bounded by `graph_add_loop` `max_traversals`.
-- Stale or abandoned nodes are cancelled with `graph_cancel` — never leave orphaned graph nodes running after the final result is emitted.
+- `budget.max_executions` at the root caps how many dispatches the run may start;
+  each entry dispatch, armed successor and minted retry spends one, and a
+  reserved execution is never refunded.
+- Per-node `budget.timeout_ms` caps one attempt's wall-clock time.
+- Each revise cycle is bounded by its loop group's `max_traversals`.
+- Obsolete work is contained with `graph_control` `cancel`; confirm the attempt
+  actually ended before starting overlapping work.
 
 ## Typical Size Ranges
 
@@ -385,22 +407,29 @@ graph_add_node({ graph_id, id: "plan", agent: "emperor--chancellor",
 
 ## Key Characteristics
 
-1. **Reactive, not sequential.** Functions observe graph/signal events and inject directives. The agent responds to what's happening.
-2. **Auto-activation.** Key functions start active and stay active (`locked: true`). No explicit invocation needed.
-3. **Tool-restricted orchestrator.** The top-level agent can't write code or files. It coordinates only.
-4. **Deep nesting.** Sub-subagents handle actual work. Each level adds specialization.
-5. **Signal-driven state transitions.** Functions activate/deactivate on `signal_observed(answer / revise_needed / need_approval)`, creating emergent workflow.
-6. **Lifecycle hooks.** `observe` patterns on `message`, `signal`, `graph_complete`, etc. give the agent awareness of its environment.
-7. **Engine-managed concurrency.** The graph engine schedules nodes; per-node `timeout_ms`/`max_retries` and loop `max_traversals` prevent resource exhaustion.
+1. **Reactive, not sequential.** Functions observe lifecycle events and inject
+   directives; the agent responds to what is happening.
+2. **Auto-activation.** Key functions start active and stay active
+   (`locked: true`); the role's `auto_activate` list names them.
+3. **Tool-split orchestrator.** The top level holds the declarer tools and cannot
+   write files; workers hold `graph_submit_outcome` and `graph_worker_exec`.
+4. **Deep nesting.** Sub-subagents handle the actual work; each level adds
+   specialization.
+5. **Declared topology.** The graph is one immutable version-3 declaration per
+   request, not an incrementally built structure.
+6. **Lifecycle hooks.** `observe` reactions on `message`, `tool_after` and
+   `activate` give the agent awareness of its own session.
+7. **Engine-managed resources.** The run's `budget.max_executions`, each node's
+   `budget.timeout_ms` and each loop's `max_traversals` bound consumption.
 
 ## Comparison with Director-Gated
 
 | Aspect | Director-Gated | Nested State-Machine |
 |--------|---------------|---------------------|
-| Flow control | Explicit graph edges (`on_signal`) | Reactive transitions |
-| Activation | Director authors graph nodes | Auto-activate on events |
+| Flow control | Declared edges binding gate outcomes | Declared edges plus reactive function transitions |
+| Activation | The declarer builds the node set per request | Auto-activated functions shape the declarer's behaviour |
 | Nesting depth | 1 level (director + subagents) | 2-3 levels |
-| Orchestrator tools | May have Read, Grep | Typically all restricted |
-| Gate mechanism | Skill-based gate checks | Function frontmatter gates |
+| Orchestrator tools | Declarer split, may read | Declarer split, typically all writing denied |
+| Gate mechanism | Skill-based gate checks plus declared outcomes | Function frontmatter gates plus declared outcomes |
 | Complexity | Medium | High |
 | Best for | Linear review pipelines | Complex adaptive systems |

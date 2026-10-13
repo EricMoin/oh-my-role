@@ -34,7 +34,7 @@ This checks whether your installed rolebox version matches the pinned version in
 Ask these four framing questions. They give the Generator enough context to produce something useful on the first pass:
 
 1. **Domain** — What should this role do? What problem does it solve? (The more specific, the better the output.)
-2. **Template** — Simple, director+gated, or nested+state-machine? If the user isn't sure, explain what each looks like and when you'd pick it.
+2. **Template** — Simple, director+gated, graph-orchestrated, or nested+state-machine? If the user isn't sure, explain what each looks like and when you'd pick it.
 3. **Skills/Functions** — Any specific capabilities the role needs? Existing skills to bundle, or new ones to create?
 4. **References** — Any existing roles worth learning from? Similar patterns in the registry?
 
@@ -46,17 +46,31 @@ If the user didn't pick a template in step 2, recommend one based on what you le
 
 ### Step 4: Generate
 
-Run the Generator as a graph node with everything you've gathered embedded in the prompt:
+Author one Graph v3 declaration and start it through `graph_declare` in the same call, with everything you've gathered embedded in the Generator node prompt:
 
-```
-graph_id = graph_create(name="scaffold-{role}").graph_id
-graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
-                 prompt: "Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}." })
-graph_run(graph_id)
-# END YOUR TURN — await [GRAPH COMPLETE]
+```json
+{
+  "version": 3,
+  "name": "scaffold-{role}",
+  "budget": { "max_executions": 2 },
+  "nodes": [
+    {
+      "id": "generator",
+      "agent": "role-creator--generator",
+      "prompt": "Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}.",
+      "outcomes": [{ "id": "generated" }, { "id": "blocked" }, { "id": "failed" }],
+      "completion": { "mode": "explicit" },
+      "budget": { "timeout_ms": 600000 },
+      "tools": ["Write", "Edit", "Bash"]
+    }
+  ],
+  "edges": []
+}
 ```
 
-The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. When the graph completes, read its output once via `graph_status(graph_id, include_output=true)` before moving on.
+Submit the whole object with `graph_declare({declaration: {...}})`. There is no incremental node/edge construction step and no separate run step. Inspect the returned start decision: `started` or `resumed` is real dispatch; `saved`, `blocked` and `refused` are not. After a confirmed start, end your turn and yield for the real completion notification.
+
+The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. It settles its own attempt by submitting its declared outcome through `graph_submit_outcome`. When the run reports completion, read its accepted result once via `graph_status(graph_id, scope: "all", format: "json", include_output: true, include_history: true)` before moving on.
 
 ### Step 5: Draft Eval Cases
 

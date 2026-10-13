@@ -1,33 +1,45 @@
-# Graph-Orchestrated Pattern
+# Graph-Orchestrated Pattern (Graph v3)
 
-A thin orchestrator role whose coordination runs entirely on the rolebox Graph Engine v2. The role authors **ONE graph per request** at runtime — `graph_create` → `graph_add_node` / `graph_add_edge` / `graph_add_loop` → `graph_run` — yields its turn, and collects results when the engine wakes it. It never writes code itself; it orchestrates specialists, approves their high-risk operations, and assembles their outputs.
+A thin declaring role whose coordination runs on the rolebox Graph v3 outcome
+protocol. The role declares **ONE graph per request** as a single v3 declaration
+through `graph_declare`, ends its turn, and reads the accepted results back
+through `graph_status`. It never writes the specialist artifacts itself; it
+declares the nodes, collects accepted outcomes and assembles the deliverable.
 
-The live contract for the graph engine is `roles/role-creator/references/graph-engine-v2.md`. Model roles: emperor 2.9.0 (`roles/emperor/role.yaml` + `PROMPT.md`) and ai-designer 3.1.0 (`roles/ai-designer/role.yaml` + `PROMPT.md`). graph-engine-v2.md §9 lists the legacy vocabulary that MUST NOT appear as a live contract in role assets.
+The live contract for the protocol is
+`roles/role-creator/references/graph-protocol.md`; every claim below is grounded
+in the installed rolebox source it cites.
 
 ## When to Use
 
 - Multi-stage workflows with specialist stages and review gates
-- Pipelines that need bounded revise/review cycles (drafter ↔ reviewer, design ↔ review)
-- Signal-driven control flow: forward `answer` edges, `revise_needed` back-edges, `needs_approval` gates
-- You want the graph topology declared imperatively at runtime, per request
-- The orchestrator must never do specialist work — it routes, approves, and assembles
+- Pipelines that need bounded revise cycles (generator ↔ validator, design ↔
+  review)
+- Work that must be routed by a declared outcome rather than by reading a
+  successor's output
+- You want the whole topology declared as data before any worker starts
+- The declarer must never do specialist work — it declares, collects and
+  assembles
 
-**Don't use when:** the task is single-domain with no coordination (use simple), you want a fixed pipeline DAG declared statically in `collaboration.flow` without runtime graph authoring (use director-gated), or you need reactive lifecycle hooks and stateful auto-activation (use nested-statemachine).
+**Don't use when:** the task is single-domain with no coordination (use simple),
+or you need reactive lifecycle functions and stateful auto-activation with no
+declared topology (use nested-statemachine).
 
 ## Directory Layout
 
 ```
 roles/{role-name}/
-├── role.yaml                    # Thin orchestrator definition (40-80 lines)
-├── PROMPT.md                    # Orchestrator prompt with the graph-authoring recipe
+├── role.yaml                    # Thin declaring role (40-80 lines)
+├── PROMPT.md                    # Declarer prompt with the declaration recipe
 ├── references/                  # Shared state templates and contracts
+│   ├── graph-protocol.md        # The v3 protocol contract this template teaches
 │   └── {topic}.md
-├── skills/                      # Orchestrator-level skills (delegation, recovery)
+├── skills/                      # Declarer-level skills (delegation, recovery)
 │   └── {role}-{domain}/
 │       └── SKILL.md
-└── subagents/                   # Specialist dispatch targets ({role}--{slug})
+└── subagents/                   # Worker agents ({role}--{slug})
     ├── {subagent-slug}/
-    │   ├── role.yaml            # Minimal subagent definition (8-15 lines)
+    │   ├── role.yaml            # Minimal worker definition (8-15 lines)
     │   └── skills/
     │       └── {role}--{subagent-slug}~{skill-name}/
     │           └── SKILL.md
@@ -35,11 +47,15 @@ roles/{role-name}/
         └── role.yaml
 ```
 
-No `functions/` directory is required (defaults apply). If present, it holds a small set of orchestrator-level functions (e.g. emperor's `triage` / `synthesize`); the coordination logic itself lives in PROMPT.md and runs on the graph engine — never as state-machine functions. The graph engine replaces the legacy `dispatch_*` / `loop_*` / `function_state` machinery entirely (see graph-engine-v2.md §9).
+No `functions/` directory is required (defaults apply). If present it holds a
+small set of declarer-level functions; the coordination logic itself lives in
+PROMPT.md and the declaration. Nothing builds a graph incrementally: the
+topology is fixed when the declaration compiles.
 
 ## role.yaml Shape
 
-Typically 40-80 lines. The distinguishing feature is the `graph:` block that declares graph-native orchestration.
+Typically 40-80 lines. The distinguishing feature is the `tools:` block that
+declares the **declarer split** — the machine-checkable marker of the pattern.
 
 ### Required Fields
 
@@ -48,7 +64,7 @@ Typically 40-80 lines. The distinguishing feature is the `graph:` block that dec
 | `name` | Human-readable role name |
 | `description` | One-line summary for discovery and dispatch |
 | `prompt_file` | Points to PROMPT.md |
-| `graph` | `orchestration: graph_v2` — declares graph-native orchestration |
+| `tools` | The declarer tool split (below) |
 
 ### Common Fields
 
@@ -56,187 +72,212 @@ Typically 40-80 lines. The distinguishing feature is the `graph:` block that dec
 |-------|---------|
 | `version` | SemVer string |
 | `mode` | `primary` |
-| `functions` | Optional — defaults apply; the graph-authoring recipe lives in PROMPT.md |
-| `skills` | Orchestrator-level skills (delegation heuristics, failure recovery) |
-| `references` | Shared state templates and contracts passed to nodes |
-| `tools` | Tool restrictions — orchestrators deny `Write`/`Edit`/`Bash` |
-| `collaboration` | Legacy schema-compat block (see below) |
+| `functions` | Optional — defaults apply |
+| `skills` | Declarer-level skills |
+| `references` | Static docs the declarer reads; register `graph-protocol` and this convention so every declared reference name resolves on disk |
+| `permission` | `allow` list of the tools the declaring session may call |
 
-### The `graph` block
+There is **no `graph:` block and no `collaboration:` block**. The loader
+recognizes `graph:` and logs that the key is recognized but not wired into graph
+resolution (no runtime effect), and it reads no `collaboration:` key at all.
+Orchestration lives in the v3 declaration, not in role.yaml.
 
-`graph.orchestration: graph_v2` declares the role is graph-orchestrated. There is no static graph the engine reads — the role authors the graph imperatively at runtime with the `graph_*` tools (see the PROMPT.md authoring recipe below).
+### The `tools:` declarer split
 
-### The `collaboration` block (schema-compat only)
+| Tool | Declaring role | Worker subagent |
+|------|----------------|-----------------|
+| `graph_declare` | `true` | `false` |
+| `graph_control` | `true` | `false` |
+| `graph_status` | `true` | `false` |
+| `graph_audit` | `true` | `false` |
+| `graph_submit_outcome` | `false` | `true` |
+| `graph_worker_exec` | `false` | `true` |
+| `Write` / `Edit` / `Bash` | per the role's own job (a thin declarer denies all three) | per the worker's job |
 
-The declarative `collaboration:` block (flow edges, `max_iterations`) is a legacy v1 declaration retained ONLY for schema compatibility. It feeds only the legacy `rolebox/src/graph/collaboration-bridge.ts` bridge and is NOT the execution mechanism. In particular, `collaboration.max_iterations` is NOT a live bound on imperative `graph_add_loop` cycles — the engine enforces loop bounds via the loop group's required `max_traversals` (graph-engine-v2.md §9).
+A node may also declare extra **host** tools in the declaration's `tools` string
+array; a `graph_`-prefixed name there admits nothing, because the graph namespace
+is refused before the entries are consulted. Inside a graph the node grant is the
+binding boundary, not the worker's own manifest.
 
 ### Example role.yaml
 
 ```yaml
 name: Design Director
-description: "Thin graph-native orchestrator. Routes requests through specialist gates, approves high-risk operations, assembles the final deliverable. Never writes code."
-version: "3.1.0"
+description: "Thin declaring role. Declares ONE Graph v3 pipeline per request, collects accepted outcomes and assembles the deliverable. Never writes code."
+version: "3.2.0"
 mode: primary
 prompt_file: PROMPT.md
-# Functions: optional — defaults apply. The graph-authoring recipe lives in
-# PROMPT.md; coordination runs on the graph engine, not in state-machine functions.
 functions:
   - orchestrate
 references:
-  templates/design-state:
-    path: references/templates/design-state.md
-    description: Shared Design State structure passed between graph nodes
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: The Graph v3 protocol contract this role declares against
+  conventions/graph-orchestrated:
+    path: references/conventions/graph-orchestrated.md
+    description: This template's topology and declaration recipe
 skills:
   - design-director-core
-# Legacy v1 declarative config: kept ONLY for schema compatibility. It does NOT
-# bound imperative graph_add_loop cycles — the engine enforces loop bounds via
-# the loop group's required max_traversals (see PROMPT.md).
-collaboration:
-  flow:
-    - "parent -> intake: classify tier"
-    - "intake -> design: framed state"
-    - "design -> review: design pass"
-  max_iterations: 2
-# Graph orchestration configuration. The gate pipeline runs on the graph engine
-# (graph_create / graph_add_node / graph_add_edge / graph_add_loop / graph_run /
-# graph_status / graph_cancel / graph_approve). signal stays available.
-graph:
-  orchestration: graph_v2
-# The orchestrator never writes code or edits files — implementation is
-# delegated to specialist nodes, so Write/Edit/Bash are denied.
+# The declarer split: this session declares, controls, reads and audits graphs.
+# It does not submit outcomes and does not run worker commands.
 tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
-permission: allow
 ```
 
-## Orchestrator Prompt (PROMPT.md)
+## Declarer Prompt (PROMPT.md)
 
-The PROMPT.md is the heart of the pattern. It typically runs 150-350 lines and holds the graph-authoring recipe. Structure:
+The PROMPT.md is the heart of the pattern, typically 150-350 lines. Structure:
 
-1. **Identity statement.** "You are the orchestrator. You author ONE graph per request; you never do the specialist work."
-2. **Subagent roster.** Each dispatch target (`{role}--{slug}`) with its purpose and gate criteria.
-3. **Graph-authoring recipe.** Step-by-step imperative graph construction (below).
-4. **Approval handling.** How `needs_approval` gates are presented and resolved via `graph_approve`.
-5. **Result collection and cleanup.** Read outputs ONCE via `graph_status(include_output=true)`; cancel stale nodes with `graph_cancel`.
+1. **Identity statement.** "You declare ONE graph per request; you never do the
+   specialist work."
+2. **Worker roster.** Each node agent (`{role}--{slug}`) with its purpose and
+   its declared outcomes.
+3. **Declaration recipe.** How to build the whole declaration object (below).
+4. **Collection and assembly.** Read accepted results once with `graph_status`;
+   reconcile accepted outcomes into the deliverable.
+5. **Recovery.** How to use `graph_control` for a diagnosed failure, an obsolete
+   run, an approval gate or a stopped run.
 
-The orchestrator contains no domain expertise. It knows *who* to ask, *when*, and *how to wire the graph*.
+The declarer contains no domain expertise. It knows *who* to ask, *when*, and
+*which outcome routes where*.
 
-## Graph-Authoring Recipe
+## Declaration Recipe
 
-Author ONE graph per request. The steps below are the canonical recipe (mirrored in graph-engine-v2.md §7):
+Author the whole topology as **one declaration object**, one per request:
 
-1. **Create the graph.** `graph_create(name="<request>")` → returns `graph_id`. Every subsequent call targets this id.
-2. **Add one node per specialist stage.** `graph_add_node({graph_id, id, agent: "<role>--<slug>", prompt: "..."})`. ALL cross-session input is embedded in the node prompt — a node cannot read another node's session artifacts. Declare `needs_approval: true` on destructive or high-risk nodes.
-3. **Wire the edges.** `graph_add_edge` with `type: "on_signal"`: forward edges carry `signal_filter: ["answer"]`; the revise back-edge carries `signal_filter: ["revise_needed"]`.
-4. **Bound the revise/review cycle.** `graph_add_loop({graph_id, id, nodes, max_traversals})`. `max_traversals` is REQUIRED and engine-enforced — no unbounded cycles, no round-count prose.
-5. **Run and yield.** `graph_run(graph_id)` is NON-BLOCKING: it launches the ready nodes and returns immediately. After `graph_run`, END YOUR TURN (the yield-and-wake protocol). The engine emits a `[GRAPH COMPLETE]` system-reminder when the whole graph finishes, or `[GRAPH BLOCKED]` when a `needs_approval` node pauses.
-6. **Collect outputs ONCE.** On the reminder, read each node's output via `graph_status(graph_id, include_output=true)`. Polling `graph_status` is fallback-only.
-7. **Resolve approval gates.** `graph_approve(graph_id, node_id, action="approve"|"reject", reason=…)` for blocked `needs_approval` nodes — no re-run needed on approval; the engine resumes the forward `answer` flow from the resolved gate.
-8. **Clean up.** `graph_cancel(graph_id, node_id?)` for stale or abandoned nodes — never leave orphaned graph nodes running after the final result.
+1. **Set the identity and the run ceiling.**
+   `version: 3`, `name: "<request identity>"` (the name is the graph id), and
+   `budget: {max_executions: N}` covering every selected node and every loop
+   continuation.
+2. **Declare one node per specialist stage.**
+   Each node has an `id`, an `agent` (`<role>--<slug>`) and a `prompt` carrying
+   every input the worker needs — node sessions share no conversation history.
+   Declare the node's `outcomes`, `completion: {mode: "explicit"}` and
+   `budget.timeout_ms`; declare `tools` only for an extra host capability the
+   node genuinely needs.
+3. **Declare the routes.**
+   Every edge is `{from, to, outcome}` and binds one outcome its source node
+   declares. There is no implicit edge and no predicate field. A consumer that
+   reads an upstream result additionally declares `inputs: [{from, outcome}]`
+   and, when it must wait for every prerequisite, `join: {strategy: "all"}`.
+4. **Bound every cycle.**
+   A cycle must sit inside a `loop_groups` entry with a positive
+   `max_traversals`, a `continuation_outcome` that re-enters the loop and an
+   `exit_outcome` that leaves it. Both route outcomes must be declared by a
+   member node, and every edge carrying the continuation outcome must stay
+   inside the group. A cycle no group covers cannot compile.
+5. **Declare the graph.**
+   Submit the entire object as `graph_declare({declaration: {...}})` — the only
+   start path. The call parses, compiles, preflights capabilities, persists the
+   plan and starts or resumes the run. There is no separate run tool and no
+   dry-run tool.
+6. **Inspect the start decision, then end the turn.**
+   The result reports `persisted` and `start.kind`. `started` and `resumed` are
+   real dispatch; `saved`, `blocked` and `refused` are not. A saved plan is not
+   proof of dispatch; diagnose a refusal before any recovery and never declare a
+   duplicate graph because startup looks slow.
 
-```js
-// Canonical authoring: create → nodes → edges → loop → run
-graph_id = graph_create(name="design-request").graph_id
+Only after the declaration is accepted and started does the ready node set run.
+Between turns the declaring session is notified when the run completes, stops or
+needs attention. A notification identifies the graph, the run and a stable
+notification id and carries no business payload; it never drives execution and
+its delivery is at least once, so duplicates do not authorize duplicate work.
 
-graph_add_node({ graph_id, id: "intake", agent: "design-director--intake",
-                 prompt: "Run the Intake gate. Current Design State: {state}" })
-graph_add_node({ graph_id, id: "design", agent: "design-director--design",
-                 prompt: "Run the Design gate. Current Design State: {state}" })
-graph_add_node({ graph_id, id: "review", agent: "design-director--review",
-                 prompt: "Run the Review gate. Current Design State: {state}" })
+## Collect Accepted Results
 
-// Forward flow: intake → design → review
-graph_add_edge({ graph_id, from: "intake", to: "design", type: "on_signal", signal_filter: ["answer"] })
-graph_add_edge({ graph_id, from: "design", to: "review", type: "on_signal", signal_filter: ["answer"] })
+Collect **once**, from committed state, with:
 
-// Review revise back-edge: review emits revise_needed → design re-enters
-graph_add_edge({ graph_id, from: "review", to: "design", type: "on_signal", signal_filter: ["revise_needed"] })
-
-// Bound the Design↔Review cycle. max_traversals is required and engine-enforced.
-graph_add_loop({ graph_id, id: "design-review", nodes: ["design", "review"], max_traversals: 2 })
-
-graph_run(graph_id)
-// END YOUR TURN — await [GRAPH COMPLETE] / [GRAPH BLOCKED]
+```text
+graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})
 ```
 
-## PROMPT.md Excerpt (Graph-Authoring Style)
+Read `attempts[].accepted` for the outcome identity and `attempts[].result` for
+the accepted data, together with the loops, controls, approvals, budget and
+unsettled effects. Select the intended producer with `run_id` and `node_id`; JSON
+output is not paginated by offset or max_chars, so narrow by identity when the
+host display truncates it.
 
-Model the PROMPT.md pipeline section on ai-designer 3.1.0's Graph-Driven Gate Pipeline:
+Only an **accepted** decision whose `verdict` is `committed` or `replayed` and
+whose `refusals` are empty settles a node. A rejection leaves the attempt open; a
+refusal writes nothing and returns structured repair diagnostics. A result fence
+or a signal never settles a v3 node. A complete graph can still hold a failed or
+blocked business outcome and unsettled effects, so graph phase is not business
+success and a settled node is not a passing result. Poll `graph_status` only as
+recovery for a missing notification, never as a busy loop.
 
-```markdown
-## Graph-Driven Pipeline
+## Bounded Revise Cycles with `loop_groups`
 
-Author **ONE graph per design request** and run the pipeline through the rolebox
-graph engine. Do NOT use the legacy dispatch tools — the pipeline is a graph, not
-a sequence of background dispatches.
+Revise/review cycles are declared as a loop group, and the engine enforces the
+bound:
 
-Available specialist node agents:
-
-- `design-director--intake`
-- `design-director--design`
-- `design-director--review`
-
-### 1. Author the graph
-
-Call `graph_create(name="<design request>")`, then add one `graph_add_node` per
-stage, wire the flow with `graph_add_edge`, add the Review `revise_needed`
-back-edge, and bound the review cycle with `graph_add_loop`. Each node's prompt
-carries the full current Design State and the specific stage objective. The
-Review revise back-edge is an `on_signal` edge filtered on `revise_needed`: when
-Review emits `revise_needed`, the engine re-enters the Design stage for another
-pass. Wrap the `design` and `review` nodes in `graph_add_loop(..., nodes:
-["design", "review"], max_traversals: 2)` — the parameter is required and
-engine-enforced.
-
-### 2. Run and yield
-
-`graph_run(graph_id)`. `graph_run` is NON-blocking: it dispatches the ready nodes
-and returns. After `graph_run`, END YOUR TURN. The engine emits a `[GRAPH
-COMPLETE]` system-reminder when the whole graph finishes, or `[GRAPH BLOCKED]`
-when a `needs_approval` node pauses it.
-
-### 3. Collect outputs
-
-On the `[GRAPH COMPLETE]` reminder, read each node's output ONCE via
-`graph_status(graph_id, include_output=true)`. Polling `graph_status` is
-fallback-only — the reminder is the primary completion trigger.
-
-### 4. Resolve approval gates
-
-If `[GRAPH BLOCKED]` arrives, a `needs_approval` node is awaiting a decision.
-Read the paused state and the `approval_payload` from
-`graph_status(graph_id, node_id=..., include_output=true)`, present the flagged
-operation to the user, then resolve with `graph_approve(graph_id, node_id,
-action="approve")` on approval or `graph_approve(graph_id, node_id,
-action="reject", reason=...)` on rejection.
-
-### 5. Clean up and assemble
-
-Cancel stale or abandoned nodes with `graph_cancel(graph_id, node_id?)` — never
-leave orphaned graph nodes running after the final result. Then integrate the
-node outputs, resolve conflicts, and assemble the final deliverable.
+```json
+"loop_groups": [
+  {
+    "id": "generate-validate",
+    "nodes": ["{role}--generator", "{role}--validator"],
+    "max_traversals": 3,
+    "continuation_outcome": "revise",
+    "exit_outcome": "pass"
+  }
+]
 ```
 
-## Subagent Roster Convention
+- `max_traversals` is a hard positive cap; the run stops with `loop-exhausted`
+  when it is reached.
+- The continuation outcome must be declared by a member and its edge must stay
+  inside the group; an edge carrying it out of the group is a structural defect.
+- The exit outcome must be declared by a member and carries the work onward.
+- Members are a set; declaration order carries no meaning.
+- A loop may also declare an optional `progress` policy
+  (`{evaluator, version, subject, max_unchanged}`) that stops a run when
+  consecutive rounds compare unchanged.
+- When the bound is reached with an unresolved failure, surface the limitation
+  honestly in the deliverable rather than re-declaring the same graph.
 
-Subagents are declared as `{role}--{slug}` dispatch targets referenced by the `agent:` field in `graph_add_node`. Each subagent role.yaml is minimal (8-15 lines): name, description, `mode: subagent`, an inline `prompt:` (or `prompt_file`), and optional skills/references.
+## Approval Gates in the v3 Vocabulary
 
-```yaml
-name: Review Gate
-description: "Runs the Review gate for the Design Director pipeline. Emits pass via signal(answer) or revise_needed via signal(revise_needed)."
-mode: subagent
-prompt: |
-  You run the Review gate. Inspect the Design State for
-  accessibility, clarity, and completeness. If it passes,
-  terminate via signal(type="answer"). If it needs revision,
-  emit signal(type="revise_needed", payload={items: [...]}).
-skills:
-  - design-director--review~review-gate
-```
+Approval is a declarative gate, not a message:
 
-**Signal-emitting subagents** are useful as leaf nodes: a subagent whose only job is to emit a specific terminating signal (`answer`, `revise_needed`, `need_approval`, `escalate`) so `on_signal` edges can route on it. Their prompt contract: read the input, then terminate via exactly one `signal` call of the assigned type and payload — no prose outside the signal, no further delegation (graph-engine-v2.md §8.4).
+- The declaration's node outcome declares the `principal-approval@1` acceptance
+  primitive, and the host must have installed an approval rule for that exact
+  graph and node — the capability preflight refuses the declaration otherwise.
+- The declaring session raises `graph_control(command: "approval-request", ...)`
+  for an in-flight attempt, naming the approver session and an epoch-millisecond
+  deadline. Only the policy-authorized session issues `approve` or `reject`.
+- A decision records a control decision; it does not submit a business outcome
+  and does not perform the remaining action. Reject the request and contain the
+  obsolete run with `graph_control` `cancel` where work remains.
+
+Never present an approval request as permission, and never fabricate user
+consent.
+
+## Recovery
+
+`graph_control` acts on the plan, not on business data:
+
+- `failure` and `timeout` record an attempt that failed or exceeded its declared
+  time out of band; they are distinct from the `failed` business outcome a worker
+  submits.
+- `retry` mints a NEW attempt for a diagnosed transient failure and spends
+  budget; a run-scoped `retry` re-executes a terminal run as a successor run with
+  the same immutable plan. Neither guarantees session reuse, and a node-scoped
+  retry on a stopped run is refused.
+- `cancel` contains obsolete or superseded work; a cancel request is not
+  confirmed termination, so never start overlapping work while a worker may
+  still be reading the delivered snapshot.
+- `budget-stop` records an exhausted run.
+- Use `graph_audit` to diagnose storage or recovery blockers; never delete or
+  recreate an unreadable store.
+
+No control command converts an incomplete report into an accepted outcome.
 
 ## Naming Conventions
 
@@ -244,8 +285,9 @@ skills:
 |-------|-----------|---------|
 | Role directory | lowercase, hyphens | `design-director` |
 | Subagent directory | lowercase, hyphens (slug) | `subagents/review/` |
-| Subagent ID (dispatch target) | `{role}--{slug}` | `design-director--review` |
-| Node `id` in graph | short stage name | `intake`, `design`, `review` |
+| Node agent | `{role}--{slug}` | `design-director--review` |
+| Node `id` | short stage name, stable | `intake`, `design`, `review` |
+| Loop group `id` | stage pair | `design-review` |
 | Subagent skill dir | `{role}--{slug}~{skill-name}` | `design-director--review~review-gate` |
 | PROMPT file | Always `PROMPT.md` at role root | `roles/design-director/PROMPT.md` |
 
@@ -253,8 +295,8 @@ skills:
 
 | Component | Lines |
 |-----------|-------|
-| role.yaml (orchestrator) | 40-80 |
-| PROMPT.md (orchestrator) | 150-350 |
+| role.yaml (declarer) | 40-80 |
+| PROMPT.md (declarer) | 150-350 |
 | Subagent role.yaml | 8-15 |
 | Subagent PROMPT.md / SKILL.md | 50-150 |
 | Reference templates | 50-150 |
@@ -262,26 +304,38 @@ skills:
 
 ## Key Characteristics
 
-1. **Thin orchestrator.** Never writes code, never does specialist work. It authors graphs, approves, and assembles.
-2. **One graph per request.** The whole workflow is authored at runtime: `graph_create` → `graph_add_node` / `graph_add_edge` / `graph_add_loop` → `graph_run`.
-3. **Imperative, not declared.** No static graph the engine reads — the topology is built per request with the `graph_*` tools.
-4. **Yield-and-wake rhythm.** `graph_run` is non-blocking; the orchestrator ends its turn and is re-awakened by `[GRAPH COMPLETE]` / `[GRAPH BLOCKED]`.
-5. **Engine-enforced loop bounds.** Every revise/review cycle is wrapped in `graph_add_loop` with required `max_traversals` — no unbounded cycles, no round-count prose.
-6. **Signal-driven control flow.** Forward `answer` edges, `revise_needed` back-edges, and `needs_approval` gates route the graph.
-7. **Graph-native approvals.** Destructive/high-risk nodes are declared `needs_approval: true` and resolved via `graph_approve` — never "flag in report, re-run a fresh session".
-8. **No orphaned nodes.** Stale or abandoned nodes are cancelled with `graph_cancel` before the final result is emitted.
-9. **Tool-restricted orchestrator.** `Write`/`Edit`/`Bash` denied — implementation is delegated to specialist nodes.
+1. **Thin declarer.** It declares the topology, collects accepted outcomes and
+   assembles; it never does the specialist work.
+2. **One declaration per request.** The whole topology is one version-3 document
+   submitted to `graph_declare`; there is no incremental construction tool.
+3. **Declared, not imperative.** The compiled plan is the only topology
+   authority, and a declaration is immutable — a changed topology needs a new
+   graph name.
+4. **Outcome-routed edges.** Every edge binds one outcome its source node
+   declares; there is no implicit "any outcome" edge.
+5. **Engine-enforced loop bounds.** Every cycle sits in a `loop_groups` entry
+   with a required `max_traversals` — no unbounded cycles and no round-count
+   prose.
+6. **Accepted-outcome transport.** Only an accepted submission with `committed`
+   or `replayed` and no refusals settles a node; the declaring session reads
+   `attempts[].accepted` and `attempts[].result`.
+7. **Declarative approval gates.** A node outcome declares
+   `principal-approval@1`; the declaring session raises and resolves the request
+   through `graph_control` under a host-installed policy.
+8. **Bounded recovery.** `graph_control` retries a diagnosed transient failure,
+   cancels obsolete work and stops an exhausted run; no control command settles
+   a business outcome.
+9. **Tool-split marker.** The `tools:` declarer split, plus the submitted
+   declaration, is the machine-checkable signature of this pattern.
 
 ## Comparison with Director-Gated
 
 | Aspect | Graph-Orchestrated | Director-Gated |
 |--------|--------------------|----------------|
-| Execution mechanism | Imperative graph engine at runtime (`graph_create` → `graph_add_node` / `graph_add_edge` / `graph_add_loop` → `graph_run`) | Declarative `collaboration.flow` DAG executed for the role |
-| Graph/collaboration declaration | `graph.orchestration: graph_v2` (live) + `collaboration:` block kept ONLY for schema compatibility | `collaboration:` block with `flow` / `max_iterations` as live config |
-| Loop bounding | `graph_add_loop` `max_traversals` — required, engine-enforced | Declarative `max_iterations` |
-| Result collection | `graph_status(include_output=true)` — materialized node outputs, read once after `[GRAPH COMPLETE]` | Report text from subagent sessions |
-| Approval path | `graph_approve` on `needs_approval` nodes — blocked → completed, engine resumes forward flow | Flag-in-report, re-dispatch a fresh session |
-| Node lifecycle cleanup | `graph_cancel(graph_id, node_id?)` for stale/orphaned nodes | N/A |
-| role.yaml size | 40-80 lines | 50-110 lines |
-| PROMPT.md size | 150-350 lines | 300-500 lines |
-| Best for | Runtime-shaped pipelines, bounded revise loops, graph-native approvals | Fixed review pipelines declared statically |
+| Topology | Declared as one v3 document per request | Declared as one v3 document per request |
+| Declarer role.yaml marker | `tools:` declarer split plus the submitted declaration | `tools:` declarer split plus the submitted declaration |
+| Loop bounding | `loop_groups` `max_traversals` — required, engine-enforced | `loop_groups` `max_traversals` — required, engine-enforced |
+| Routing | Edges bind declared outcomes on every node | Gate outcomes bind edges at each stage |
+| Result collection | `graph_status` accepted results, read once | `graph_status` accepted results, read once |
+| Approval path | `graph_control` under a host-installed policy | `graph_control` under a host-installed policy |
+| Best for | Runtime-shaped pipelines with dynamic stages | Fixed specialist review pipelines |

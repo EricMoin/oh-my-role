@@ -63,16 +63,21 @@ functions: ["plan", "execute"]
 
 Specifying `functions:` explicitly replaces this default entirely. Use `disable_functions:` to selectively remove from whatever set resolves.
 
-## Graph Orchestration Block
+## Graph v3 Tool Split
 
-Roles that orchestrate subagents declare the engine mode:
+Roles that orchestrate subagents declare no orchestration block in `role.yaml`. The machine-checkable marker is a top-level `tools:` block holding the declarer/worker split:
 
 ```yaml
-graph:
-  orchestration: graph_v2
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  graph_worker_exec: false
 ```
 
-`orchestration` must be `graph_v2`. Runtime graph concepts — `needs_approval` gates, loop groups (`graph_add_loop`), and `on_signal` edges — are declared via the `graph_*` tools and function frontmatter, not in `role.yaml`.
+A declaring role holds the four declarer tools `true` and `graph_submit_outcome` / `graph_worker_exec` `false`; a worker subagent holds the exact inverse. Every role that orchestrates also ships a Graph v3 declaration, authored per request through `graph_declare` with per-node outcomes, explicit completion, outcome-bound edges and a `loop_groups` entry for each cycle. The validation catalog retires a `graph:` block (Rule 1, ERROR); `collaboration:` is a legacy schema-compat mirror with no runtime effect.
 
 ## Collaboration & Memory Blocks
 
@@ -95,7 +100,7 @@ memory:
   scope: both                        # workspace | role | both
 ```
 
-`collaboration.max_iterations` is legacy v1 schema compatibility only — runtime loop bounds are enforced by `graph_add_loop(max_traversals=…)`, never by this field. `termination.any_of` / `termination.all_of` entries are `{ max_iterations: int }` or `{ result_matches: { agent, contains } }`.
+`collaboration.max_iterations` is legacy v1 schema compatibility only — runtime loop bounds are enforced by a `loop_groups` entry's required `max_traversals`, never by this field. `termination.any_of` / `termination.all_of` entries are `{ max_iterations: int }` or `{ result_matches: { agent, contains } }`.
 
 ## State-Machine Function Fields
 

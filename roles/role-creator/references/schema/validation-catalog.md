@@ -1,11 +1,17 @@
 ---
-description: Frozen validation contract for rolebox 1.5.0 — the definitive rule source for all Tier 1/2 validation code
-rolebox_version: 1.5.0
+description: Frozen validation contract for rolebox 2.0.0-alpha.2 — the definitive rule source for all Tier 1/2 validation code
+rolebox_version: 2.0.0-alpha.2
 ---
 
 # Validation Catalog
 
-This document defines every validation rule enforced by rolebox 1.5.0. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology + engine-v2 config) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
+This document defines every validation rule enforced by rolebox 2.0.0-alpha.2. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology + Graph v3 configuration) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
+
+## Frozen contract across engine generations
+
+This catalog is frozen for the rolebox version pinned in the frontmatter. "Frozen" means the rule set is fixed for that pin and is never generated from source code: the rules are authored here, so a validation result is reproducible against the pinned release however the engine's internals are refactored.
+
+A new engine generation never edits this document silently. It republishes the catalog at a new pin — a new `rolebox_version` and a matching description — and documents the deltas between the previous pin's rule set and the new one in the body. A rule that survives a re-pin is carried forward explicitly; a rule that is retired stays written down, is marked retired, and is attributed to this contract. The previous pin is referred to generically, without restating its literal version token, because the pin is matched exactly and a stale token in prose would defeat that match.
 
 ---
 
@@ -259,9 +265,9 @@ The `references:` block in `role.yaml` can provide stable names and descriptions
 
 ---
 
-## Legacy v1 Collaboration-Graph Validation (`validateGraph`) — 6 Checks (legacy-compat)
+## Legacy v1 Collaboration-Graph Validation (`validateGraph`) — 6 Checks (legacy-compat only)
 
-> **Legacy-compat.** These 6 checks validate the declarative v1 `collaboration:` flow-graph block (flow edges, `max_iterations`) kept for schema compatibility. The live execution path is Graph Engine v2 (imperative `graph_*` tools) — see [Graph Engine v2 Validation](#graph-engine-v2-validation-tier-2) below. The v1 checks remain enforced so legacy declarations stay well-formed, but they do NOT gate the runtime wiring of graph_v2 roles.
+> **Legacy-compat only.** These 6 checks validate the declarative v1 `collaboration:` flow-graph block (flow edges, `max_iterations`) kept for schema compatibility. The loader gives `collaboration:` zero runtime effect, so these checks never describe the v3 execution path; they keep legacy declarations well-formed, and the repo-level `scripts/validate.py` independently enforces the same shape. Live orchestration is authored as a Graph v3 declaration through `graph_declare` (see the Graph v3 rules below).
 
 The legacy v1 collaboration flow graph is validated with exactly 6 checks. Checks 1–3 are FATAL (validation fails immediately). Checks 4–6 are WARN (accumulated but do not block).
 
@@ -344,17 +350,23 @@ Algorithms:
 
 ---
 
-## Graph Engine v2 Validation (Tier 2)
+## Graph v3 Validation (Tier 2)
 
-Validates the Graph Engine v2 configuration surface (`graph:`, `memory:`, `collaboration.termination`, `permission.allow`, `functions:`) introduced in rolebox 1.5.0. Vocabulary follows `references/graph-engine-v2.md`.
+Validates the Graph v3 configuration surface (`graph:`, `memory:`, `collaboration.termination`, `permission.allow`, `tools:`, `functions:`) pinned by this catalog.
 
-### Rule 1: `graph.orchestration` must be `graph_v2` (FATAL)
+### Rule 1: `graph:` block retired by this contract (ERROR, catalog policy)
 
-**Rule:** When a `graph:` block is present in `role.yaml`, `graph.orchestration` MUST equal `graph_v2`.
+**Rule:** A `graph:` block is retired by this contract as a role-creator policy decision. Roles validated against this catalog MUST NOT declare it.
 
-**Violation:** A `graph:` block exists but `graph.orchestration` is missing, empty, or set to any value other than `graph_v2` (e.g. a v1 dispatch-mode value).
+**Loader behavior (verbatim):** rolebox never rejects a `graph:` block. `parseGraphConfig` warns and ignores a missing or unknown orchestration selector, and logs the valid case verbatim as:
 
-**Severity:** FATAL — validation fails immediately.
+```
+declares "graph.orchestration: graph_v2" - key recognized but not yet wired into graph resolution (no runtime effect)
+```
+
+**Violation:** A `graph:` block is present in `role.yaml`.
+
+**Severity:** ERROR — retired by this contract; rolebox only warns and ignores it, and roles validated against this catalog must not declare it. The rejection is this catalog's policy, never a rolebox rule.
 
 ---
 
@@ -388,19 +400,37 @@ Unknown fields are ignored; malformed values (wrong type or out-of-vocabulary en
 
 **Severity:** WARN — does not block validation; accumulated and reported on completion.
 
+**Scope:** Legacy-compat only. The loader gives `collaboration:` zero runtime effect, so this shape check never describes the v3 execution path; the repo-level `scripts/validate.py` independently enforces the same shape.
+
 ---
 
-### Rule 4: Legacy removed tools in `permission.allow` (ERROR)
+### Rule 4: Retired live-contract tools in `permission.allow` or `tools` (ERROR)
 
-**Rule:** The legacy v1 background-dispatch tools removed in Phase C MUST NOT appear in any `permission.allow` list (top-level role or subagent):
+**Rule:** The retired live-contract tools below MUST NOT appear in any `permission.allow` list or any `tools:` key (top-level role or subagent). Both surfaces are scanned.
+
+Legacy v1 background-dispatch family removed in Phase C:
 
 - `Dispatch` / `dispatch`
 - `dispatch_output`
 - `dispatch_cancel`
 
-These tools are removed and rejected by the engine (see `references/graph-engine-v2.md` §9 Legacy Vocabulary). Granting them is a hard configuration error.
+Retired v2 graph-authoring family (replaced by the Graph v3 declaration path):
 
-**Violation:** `permission.allow` contains `Dispatch`, `dispatch_output`, or `dispatch_cancel` (or their v1 case variants).
+- `graph_create`
+- `graph_add_node`
+- `graph_add_edge`
+- `graph_add_loop`
+- `graph_run`
+- `graph_approve`
+- `graph_cancel`
+
+Retired signal surface:
+
+- `signal`
+
+These names are removed and are not part of the live contract. Granting any of them is a hard configuration error. This enumeration is the executable mirror's denied list: `scripts/validate_role.py` names these literals — `graph_add_loop` included — because the mirror must name what it denies.
+
+**Violation:** `permission.allow` or a `tools:` key contains `Dispatch`, `dispatch_output`, `dispatch_cancel`, `graph_create`, `graph_add_node`, `graph_add_edge`, `graph_add_loop`, `graph_run`, `graph_approve`, `graph_cancel`, or `signal` (including the v1 case variants of the dispatch family).
 
 **Severity:** ERROR — the role is rejected at validation.
 
@@ -408,11 +438,26 @@ These tools are removed and rejected by the engine (see `references/graph-engine
 
 ### Rule 5: `functions` entry named `loop` (WARN)
 
-**Rule:** A `functions:` entry named `loop` (legacy `loop_*` tool family, deprecated in Phase C) MUST NOT be declared as a live function. Bounded revise/review cycles run via `graph_add_loop`, not a `loop` function.
+**Rule:** A `functions:` entry named `loop` (legacy `loop_*` tool family, deprecated in Phase C) MUST NOT be declared as a live function. Bounded revise/review cycles are declared as a `loop_groups` entry with `max_traversals`, never as a `loop` function.
 
 **Violation:** `functions:` contains `loop`, or a function file resolves to the name `loop`.
 
-**Severity:** WARN (loop warn) — does not block validation; the author is directed to `graph_add_loop` bounded cycles.
+**Severity:** WARN (loop warn) — does not block validation; the author is directed to a `loop_groups` entry with `max_traversals`.
+
+---
+
+### Rule 6: Graph v3 tool split (ERROR)
+
+**Rule:** A manifest that declares any `graph_*` tool MUST hold the correct half of the declarer/worker split in its `tools:` map:
+
+- A **declaring role** (primary) that declares any `graph_*` tool MUST hold `graph_declare`, `graph_control`, `graph_status` and `graph_audit` `true`, and `graph_submit_outcome` and `graph_worker_exec` `false`.
+- A **worker subagent** that declares any `graph_*` tool MUST hold the exact inverse: those four declarer tools `false`, and `graph_submit_outcome` and `graph_worker_exec` `true`.
+
+**Violation:** A manifest declares a `graph_*` tool while missing one of the six split keys or holding a value that contradicts its side of the split.
+
+**Severity:** ERROR — the role is rejected at validation.
+
+**Enforcement note:** `scripts/validate_role.py` never imports rolebox. It checks the split statically from the manifest alone. A shipped v3 declaration — the compiled plan, the node grants and the accepted-outcome transport — is checked by `tests/graph-contract.test.js`, not by the Python script.
 
 ---
 

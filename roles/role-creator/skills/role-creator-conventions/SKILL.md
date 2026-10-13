@@ -15,7 +15,7 @@ Four templates cover the spectrum from trivial to complex. Pick the simplest one
 |----------|----------|------------|
 | Simple | Single-domain agent, no orchestration | Minimal |
 | Director + Gated | Fixed pipeline of 3-8 specialist stages with validation gates | Medium |
-| Graph-Orchestrated | Runtime-authored multi-specialist pipeline with graph-native scheduling, review loops, approval gates | Medium |
+| Graph-Orchestrated | Runtime-declared multi-specialist pipeline: one Graph v3 document per request with declared outcomes, review loops and approval gates | Medium |
 | Nested + State-Machine | Reactive, stateful orchestration with deep nesting | High |
 
 ### Simple
@@ -46,13 +46,15 @@ A central director dispatches to specialist subagents through a DAG. Each subage
 
 ### Graph-Orchestrated
 
-A thin orchestrator authors **ONE graph per request** on the rolebox Graph Engine v2 — `graph_create` → `graph_add_node` / `graph_add_edge` / `graph_add_loop` → `graph_run` — yields its turn, and collects results when the engine wakes it. The orchestrator never does specialist work; it routes, approves, and assembles.
+A thin declarer authors **ONE complete Graph v3 document per request** through `graph_declare` and starts it in the same call, ends its turn, and collects the accepted results through `graph_status`. The declarer never does specialist work; it declares, collects, and assembles.
 
 **Pick when:**
-- Multi-specialist pipeline needing graph-native scheduling (per-node retry/validation, engine-managed concurrency)
-- Bounded review loops (drafter ↔ reviewer, design ↔ review) via `graph_add_loop` + `max_traversals`
-- Human-in-the-loop approval gates — `needs_approval: true` nodes resolved via `graph_approve`
-- Signal-driven flow: `answer` forward edges, `revise_needed` back-edges
+- Multi-specialist pipeline needing graph-native scheduling (per-node timeouts, engine-managed concurrency)
+- Bounded review loops (drafter ↔ reviewer, design ↔ review) declared as a `loop_groups` entry with `max_traversals`
+- Approval gates declared on a node outcome with the `principal-approval@1` acceptance primitive, when the host has installed the policy
+- Outcome-routed flow: every edge binds one outcome its source node declares
+
+**Marker:** the role declares no orchestration block in `role.yaml`; the machine-checkable signature is the `tools:` declarer/worker split plus the submitted declaration.
 
 **Model roles:** emperor, ai-designer.
 
@@ -70,38 +72,38 @@ Deep subagent nesting with reactive functions that observe lifecycle events, aut
 - Imperial/governing pattern where one agent manages multiple teams
 - Fine-grained tool restrictions on the orchestrator
 
-**Skip when:** a linear gate pipeline suffices (director-gated), a thin graph-native orchestrator suffices (graph-orchestrated), or the task is single-domain (simple). This pattern carries significant complexity overhead.
+**Skip when:** a linear gate pipeline suffices (director-gated), a thin graph-native declarer suffices (graph-orchestrated), or the task is single-domain (simple). This pattern carries significant complexity overhead.
 
 > Full detail: `references/conventions/nested-statemachine.md`
 
 ---
 
-## Graph Engine v2 Vocabulary
+## Graph v3 Vocabulary
 
-Graph-orchestrated and director-gated roles run coordination on the rolebox Graph Engine v2. Everything below is live; the legacy dispatch / loop / function-state machinery is not.
+Graph-orchestrated and director-gated roles run coordination on the rolebox Graph v3 outcome protocol. Everything below is live; the retired incremental graph-authoring family and the legacy dispatch / loop / function-state machinery are not.
 
 | Tool | Purpose |
 |------|---------|
-| `graph_create` | Start ONE graph per request; returns `graph_id` |
-| `graph_add_node` | One node per specialist stage — `agent: "{role}--{slug}"`, prompt embeds all cross-session input; per-node `timeout_ms` / `max_retries` ride here |
-| `graph_add_edge` | Wire flow — `type: "on_signal"` with `signal_filter` (forward: `["answer"]`; revise back-edge: `["revise_needed"]`) |
-| `graph_add_loop` | Bound a revise/review cycle — `max_traversals` is required and engine-enforced |
-| `graph_run` | Non-blocking dispatch — END YOUR TURN after calling; the engine emits `[GRAPH COMPLETE]` / `[GRAPH BLOCKED]` |
-| `graph_status` | Read materialized node outputs ONCE (`include_output=true`); polling is fallback-only |
-| `graph_approve` | Resolve `needs_approval` gates — `action="approve"` resumes the forward flow; `action="reject"` re-enters or escalates |
-| `graph_cancel` | Cancel stale or orphaned nodes — never leave them running |
+| `graph_declare({declaration})` | One declaration per request: strict parse, compile, capability preflight, persist and start or resume in a single call; the only start path |
+| `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data?})` | A worker settles its own attempt with one declared outcome; the host derives attempt, submission and compiled-revision identity |
+| `graph_control(command, ...)` | Run/attempt lifecycle: `failure`, `timeout`, `cancel`, `budget-stop`, `retry`, `approval-request`, `approve`, `reject` |
+| `graph_status({...})` | Read the shared read model once: phase, runs, nodes, attempts, accepted results, loops, approvals, controls, budget, unsettled effects |
+| `graph_audit({...})` | Read-only store inventory for storage/recovery blockers; mutates nothing |
+| `graph_worker_exec(command)` | A worker runs one shell command in its sandbox for reads, edits, checks and tests |
 
-**Signal types:** `answer` (pass / advance), `revise_needed` (re-enter the source stage with revision items), `need_approval` (pause for a human decision), `escalate` (retry-then-report), plus control-plane `blocked` / `handoff` / `progress`.
+**Declarer/worker split:** a declaring role holds `graph_declare`, `graph_control`, `graph_status` and `graph_audit` true and `graph_submit_outcome` / `graph_worker_exec` false; a worker subagent holds the exact inverse. The `tools:` block in `role.yaml` is the machine-checkable marker of the split.
 
-**needs_approval gates:** nodes declared `needs_approval: true` pause in `blocked` state (`[GRAPH BLOCKED]`) until a human resolves them via `graph_approve` — the flagged operation is never executed on rejection.
+**Declared outcomes:** every node declares its `outcomes` and `completion: {mode: "explicit"}`. Only an accepted submission settles a node: verdict `committed` or `replayed` with no refusals. A refusal writes nothing and leaves the attempt open; a result fence or a control signal never settles a v3 node.
 
-**Loop groups:** the node set wrapped by `graph_add_loop`, hard-capped by the required `max_traversals` — no unbounded cycles, no round-count prose.
+**Outcome-bound edges:** every edge is `{from, to, outcome}` and binds one outcome its source node declares. There is no implicit "any outcome" edge and no predicate field.
 
-**on_signal edges:** `graph_add_edge` with `type: "on_signal"` routes on a node's terminating signal — `signal_observed(answer)` advances the pipeline; `signal_observed(revise_needed)` re-enters the source stage.
+**Loop groups:** every cycle sits in a `loop_groups` entry with a required positive `max_traversals`, a `continuation_outcome` that re-enters the loop and an `exit_outcome` that leaves it — no unbounded cycles, no round-count prose.
 
-**Engine-managed concurrency:** the engine schedules ready nodes and enforces per-node budgets and loop bounds — resource ceilings are owned by the engine, not by declarative config.
+**Approval gates:** a node outcome declares the `principal-approval@1` acceptance primitive, and the declaring session raises `graph_control(command: "approval-request", ...)` under a host-installed policy. The capability preflight refuses a declaration whose graph and node have no installed approval rule. A control decision records a decision; it never submits a business outcome.
 
-Gate skills still apply: a gate SKILL.md defines what "pass" looks like, and the graph's `on_signal` edges define what happens on each verdict.
+**Engine-managed concurrency:** the engine schedules ready nodes and enforces run and per-node budgets — resource ceilings are owned by the engine, not by declarative config.
+
+Gate skills still apply: a gate SKILL.md defines what "pass" looks like, and the declarer binds each gate verdict's outcome to an edge.
 
 ---
 
@@ -152,7 +154,7 @@ description: [One sentence explaining what this gate validates]
 
 Keep gate skills at 80-120 lines. They should be prescriptive enough that the subagent knows exactly what "done" means.
 
-In graph-orchestrated and director-gated roles, the gate verdict routes through the graph: a passing node terminates via `signal(answer)` (firing the forward `on_signal` edge), and a failing review terminates via `signal(revise_needed)` (re-entering the source stage through the back-edge). The gate skill stays the source of what "pass" means; the edges carry the consequence.
+In graph-orchestrated and director-gated roles, the gate verdict routes through the graph: a passing node settles its `pass` outcome and fires the edge that binds it, and a failing review settles `revise`, which re-enters the source stage through the loop group's continuation outcome. The gate skill stays the source of what "pass" means; the edges and the loop group carry the consequence.
 
 ---
 
@@ -177,8 +179,8 @@ In graph-orchestrated and director-gated roles, the gate verdict routes through 
 ### Graph-Orchestrated
 | Component | Lines |
 |-----------|-------|
-| role.yaml (orchestrator) | 40-80 |
-| PROMPT.md (orchestrator) | 150-350 |
+| role.yaml (declarer) | 40-80 |
+| PROMPT.md (declarer) | 150-350 |
 | Subagent role.yaml | 8-15 |
 | Subagent PROMPT.md / SKILL.md | 50-150 |
 | Reference templates | 50-150 |
@@ -229,7 +231,7 @@ Use inline for lightweight helpers. Use file-based for anything that needs its o
 
 ### Collaboration Flow
 
-The `collaboration.flow` field declares directed edges between agents. **Legacy note:** this declarative block is a schema-compat mirror only — it is NOT the execution path. Live coordination runs on the graph engine (`graph_add_node` / `graph_add_edge` with `on_signal` edges / `graph_add_loop` / `graph_run`), authored per request.
+The `collaboration.flow` field declares directed edges between agents. **Legacy note:** this declarative block is a schema-compat mirror only — it is NOT the execution path. Live coordination runs on the Graph v3 declaration authored per request (`graph_declare` with declared outcomes, outcome-bound edges and a `loop_groups` entry).
 
 ```yaml
 collaboration:
@@ -248,8 +250,8 @@ Rules:
 - Each edge carries a label describing what context passes between agents
 - `exit: true` terminates the workflow and returns control to the user
 - `to: parent` routes back to the director (for cycles or exit)
-- `max_iterations` is schema-compat only — it does NOT bound runtime cycles; live loops are bounded by `graph_add_loop`'s required, engine-enforced `max_traversals`
+- `max_iterations` is schema-compat only — it does NOT bound runtime cycles; live loops are bounded by a `loop_groups` entry's required, engine-enforced `max_traversals`
 
 ### Concurrency (Engine-Managed)
 
-Concurrency and resource ceilings are owned and enforced by the graph engine — there is no concurrency config to tune. Per-node limits ride on `graph_add_node` (`timeout_ms`, `max_retries`), and review cycles are bounded by `graph_add_loop`'s required `max_traversals`. The engine schedules ready nodes and enforces budgets; the orchestrator authors the graph, yields its turn, and collects outputs on the `[GRAPH COMPLETE]` reminder.
+Concurrency and resource ceilings are owned and enforced by the graph engine — there is no concurrency config to tune. Per-node limits ride on a node's `budget` (`timeout_ms`, `max_input_tokens`, `max_output_tokens`, `max_cost_usd`); `max_retries` is refused by the grammar. Review cycles are bounded by a `loop_groups` entry's required `max_traversals`. The engine schedules ready nodes and enforces budgets; the declarer submits one declaration, ends its turn, and collects accepted outcomes once the run reports completion.

@@ -1,6 +1,6 @@
 ---
 name: iterate
-description: Read a verification report, propose targeted improvements (generalize, don't overfit), apply via a Generator graph node, and re-run verification on the same graph. Caps at 3 improvement cycles via graph_add_loop max_traversals.
+description: Read a verification report, propose targeted improvements (generalize, don't overfit), apply via a Generator node in a Graph v3 declaration, and re-run verification on the same graph. Caps at 3 improvement cycles via a loop_groups entry with max_traversals.
 ---
 
 # Iterate
@@ -19,45 +19,53 @@ Review the report from `|verify|`. Identify:
 For each issue, propose a targeted fix:
 - Structural errors → fix role.yaml fields
 - Resolution issues → create missing skill files or fix skill names
-- Graph warnings → add missing edges, set max_iterations
+- Graph warnings → add the missing edges, bound the cycle with a `loop_groups` entry
 - Eval gaps → improve prompts/tone (generalize, don't overfit to specific eval prompts)
 
 **Important**: Fix the role, not the evals. If the role fails an eval, improve the role's capability, not the eval's specificity.
 
 ### Step 3: Apply Improvements via Generator Node
 
-Add the Generator as a graph node with the fix request embedded in the prompt:
+Add the Generator as a node in the declaration with the fix request embedded in the prompt:
 
 ```
-graph_id = graph_create(name="iterate-{role}").graph_id
-graph_add_node({ graph_id, id: "generator", agent: "role-creator--generator",
-                 prompt: "Fix {specific issues} in {role}. The report shows: {summary}." })
+{ id: "generator", agent: "role-creator--generator",
+  prompt: "Fix {specific issues} in {role}. The report shows: {summary}.",
+  outcomes: [{ id: "generated" }, { id: "blocked" }, { id: "failed" }],
+  completion: { mode: "explicit" }, budget: { timeout_ms: 600000 },
+  tools: ["Write", "Edit", "Bash"] }
 ```
 
 ### Step 4: Re-run Verify on the Same Graph
 
-Add the Validator node downstream, wire the forward edge and the revise back-edge, and bound the cycle with `graph_add_loop`:
+Add the Validator node downstream, bind the edges to the declared outcomes, and put the cycle in a `loop_groups` entry:
 
 ```
-graph_add_node({ graph_id, id: "validator", agent: "role-creator--validator",
-                 prompt: "Re-run verification on {role} after fixes. Pass → signal(type='answer'); fail → signal(type='revise_needed', payload={items: [...]})." })
-graph_add_edge({ graph_id, from: "generator", to: "validator", type: "on_signal", signal_filter: ["answer"] })
-graph_add_edge({ graph_id, from: "validator", to: "generator", type: "on_signal", signal_filter: ["revise_needed"] })
-graph_add_loop({ graph_id, id: "iterate-cycle", nodes: ["generator", "validator"], max_traversals: 3 })
-graph_run(graph_id)
-# END YOUR TURN — await [GRAPH COMPLETE]
+{ id: "validator", agent: "role-creator--validator",
+  prompt: "Re-run verification on {role} after fixes. Submit pass when no supported blocking issue remains; otherwise submit revise with the required fixes.",
+  outcomes: [{ id: "pass" }, { id: "revise" }, { id: "blocked" }, { id: "failed" }],
+  completion: { mode: "explicit" }, budget: { timeout_ms: 600000 } }
+
+edges: [
+  { from: "generator", to: "validator", outcome: "generated" },
+  { from: "validator", to: "generator", outcome: "revise" }
+]
+loop_groups: [
+  { id: "iterate-cycle", nodes: ["generator", "validator"],
+    max_traversals: 3, continuation_outcome: "revise", exit_outcome: "pass" }
+]
 ```
 
-The cap is engine-enforced: after 3 traversals the loop exits no matter what.
+Submit the whole declaration through `graph_declare` and end your turn after a confirmed start. The cap is engine-enforced: after 3 traversals the loop exits no matter what.
 
 ### Step 5: Collect and Conclude
 
-On the `[GRAPH COMPLETE]` reminder, read the node outputs once via `graph_status(graph_id, include_output=true)`:
-- If verification passed → done. Emit `signal(type="answer")` with the final verdict.
+After the run reports completion, read the accepted results once via `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})` (`attempts[].accepted`, `attempts[].result`):
+- If verification passed → done. Report the final verdict from the accepted result.
 - If the loop hit the cap with failures remaining → present the remaining issues to the user with a recommendation: what was tried, what still fails, and what you suspect. They might have context you don't.
 
 ## Rules
 - **Generalize, don't overfit**: Fix the role, not the eval prompts. Changing a role to pass one specific eval case without improving the general capability is overfitting.
 - **Explain tradeoffs**: When recommending changes, explain why one approach is better than another.
-- **Engine-enforced cap**: Default `max_traversals: 3`. User can override. Never run unbounded loops — the loop bound comes from `graph_add_loop`, not from round-count prose.
+- **Engine-enforced cap**: Default `max_traversals: 3`. User can override. Never run unbounded loops — the loop bound comes from the `loop_groups` entry, not from round-count prose.
 - **No unbounded looping**: Always converge toward a decision (PASS or documented remaining issues).

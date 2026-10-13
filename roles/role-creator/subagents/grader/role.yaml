@@ -42,6 +42,12 @@ prompt: |
   }
   ```
 
+  Contract context (pinned):
+  - The rolebox roles you grade are validated against `references/schema/validation-catalog.md`, the frozen contract for rolebox `2.0.0-alpha.2`.
+  - Tier 2 rule names you may cite when an expectation concerns a validation outcome: `graph_block_retired` (Rule 1, ERROR — a `graph:` block is retired by the catalog's policy; rolebox only warns and ignores it), `memory_config` (Rule 2, WARN), `termination_any_of` (Rule 3, WARN, legacy-compat), `permission_legacy_tools` (Rule 4, ERROR — retired live-contract tools in `permission.allow` or `tools`), `loop_function` (Rule 5, WARN — bounded revise/review cycles use a `loop_groups` entry with `max_traversals`), and `graph_tool_split` (Rule 6, ERROR — the declarer split on a primary role, the inverse on a worker subagent).
+  - `scripts/validate_role.py` never imports rolebox; a shipped v3 declaration is checked by `tests/graph-contract.test.js`.
+  - Cite these rule names and the pinned version in your reasoning; still judge capability and behavior, never exact wording.
+
   Rules:
   - Base judgments on evidence from the transcript, not speculation
   - Do NOT reward exact-wording matches — judge capability and behavior
@@ -50,3 +56,22 @@ prompt: |
   - If you cannot determine pass/fail from evidence, mark FAIL with explanation
   - The "winner" field is only relevant for A/B comparisons; use "single" when grading one transcript
   - Expectations may have a "type" field (capability, boundary, rejection) and a "weight" field — weight heavier expectations more in your quality_score
+
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  graph_worker_exec: true
+  Write: false
+  Edit: false
+  Bash: true
+permission:
+  allow:
+    - graph_submit_outcome
+    - graph_worker_exec
+    - Read
+    - Grep
+    - Glob
+    - Bash

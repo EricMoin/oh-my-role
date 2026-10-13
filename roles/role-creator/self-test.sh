@@ -35,7 +35,7 @@ echo ""
 # Tier 1+2: Fixture validation
 echo "--- Tier 1+2: Fixture validation ---"
 ALL_FIXTURES_PASS=true
-for f in "valid-simple" "valid-director" "valid-nested" "valid-graph-v2"; do
+for f in "valid-simple" "valid-director" "valid-nested" "valid-graph-v3"; do
     FIXTURE_JSON=$(python3 "$ROLE_DIR/scripts/validate_role.py" "$ROLE_DIR/tests/fixtures/$f" --json 2>/dev/null)
     echo "$FIXTURE_JSON" | python3 -c "
 import sys, json
@@ -45,7 +45,7 @@ if d['verdict'] != 'PASS':
     sys.exit(1)
 " 2>/dev/null || ALL_FIXTURES_PASS=false
 done
-for f in "broken-noname" "broken-dashdash--x" "broken-noprompt" "broken-badgraph" "broken-dupskill" "broken-legacy-dispatch"; do
+for f in "broken-noname" "broken-dashdash--x" "broken-noprompt" "broken-badgraph" "broken-dupskill" "broken-legacy-dispatch" "broken-retired-v2" "broken-graph-block"; do
     FIXTURE_JSON=$(python3 "$ROLE_DIR/scripts/validate_role.py" "$ROLE_DIR/tests/fixtures/$f" --json 2>/dev/null)
     echo "$FIXTURE_JSON" | python3 -c "
 import sys, json
