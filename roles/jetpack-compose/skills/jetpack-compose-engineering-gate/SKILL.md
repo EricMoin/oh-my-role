@@ -32,7 +32,9 @@ When acceptance depends on runtime behavior only a running app can show — navi
 back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or process
 recreation, notifications or deep links, crash/ANR, or user-visible jank — verify the
 built app on a real device or an emulator over the target's own transport and declare a
-`jetpack-compose--device-verifier` node for independent on-device evidence. Read
+`jetpack-compose--device-verifier` node for independent on-device evidence. An `.apk` on a
+HarmonyOS NEXT or OpenHarmony target with no `adb` is transferred over `hdc` and installed on
+the device through 卓易通, never with `hdc install <apk>`. Read
 `references/device-verification.md` for an Android target and
 `references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target — both
 are always available and cover bootstrap on a machine with no CLI or `hdc` — and load the

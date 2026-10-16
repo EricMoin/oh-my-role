@@ -12,6 +12,10 @@ Android device or an emulator. A HarmonyOS NEXT or OpenHarmony target is a diffe
 transport: verify it over `hdc` per `references/harmonyos-device-verification.md`, and never
 with `adb`.
 
+An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is not this transport either:
+it is an `hdc` target, and the APK is installed on the device through 卓易通 — follow section 5
+of `references/harmonyos-device-verification.md`. `hdc install` never accepts an APK.
+
 ---
 
 ## 1. Sources of authority
@@ -136,7 +140,10 @@ include non-interactive and hidden elements) and compare them yourself.
    `.apk` reached with `adb` — while a serial that appears in `hdc list targets` is a
    HarmonyOS or OpenHarmony target, verified over `hdc` per
    `references/harmonyos-device-verification.md` and never with `adb`. A transport mismatch
-   is an environment finding, so stop here and settle `escalate` (section 12).
+   is an environment finding, so stop here and settle `escalate` (section 12). An `.apk` on a target
+   that has no `adb` but answers `hdc list targets` is neither this branch nor the legacy
+   adb-compatible build: it is an `hdc` target whose APK is installed on the device through 卓易通
+   (section 5 of `references/harmonyos-device-verification.md`).
 1. Confirm the CLI is present: `command -v android`, equivalently a first
    `android --version`. When it is absent, stop here — section 2 is the bootstrap path
    and none of the steps below applies until it succeeds; settle `escalate` per

@@ -58,7 +58,7 @@ roles:
       graphs whose five specialist workers settle their own declared outcomes
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "4.2.0"
+    version: "4.3.0"
     description: Jetpack Compose Engineering Lead with evidence-first research,
       invariant-driven design, risk-based reviews,
       encapsulation-preserving tests, AOSP/AndroidX source tracing, and idiomatic

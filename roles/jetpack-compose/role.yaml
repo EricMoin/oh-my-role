@@ -11,7 +11,7 @@ description: >-
   emulator when acceptance depends on what only a running app can show — an
   Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
   target over `hdc`.
-version: "4.2.0"
+version: "4.3.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -76,7 +76,9 @@ references:
       On-device and emulator verification of a built HarmonyOS or OpenHarmony
       app over `hdc` — transport selection, bootstrap, HAP build, install and
       launch, `uitest` inspection and input, the same executed journey contract,
-      failure classification, and the pass/revise/escalate evidence bar
+      failure classification, the pass/revise/escalate evidence bar, and the 卓易通
+      APK install route for an `.apk` on a target with no `adb` — `hdc file send`
+      plus on-device simulated taps, never `hdc install <apk>`
   compose-performance-and-platform:
     path: references/compose-performance-and-platform.md
     description: >-

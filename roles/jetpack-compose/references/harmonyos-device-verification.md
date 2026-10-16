@@ -1,7 +1,7 @@
 # Device Verification — HarmonyOS and OpenHarmony Targets through `hdc`
 
 This reference is the `hdc` playbook for the `device-verifier` specialist and for the lead who prepares a
-device-verification dispatch: transport selection, tool bootstrap, build and install of a HAP, driving the app with the
+device-verification dispatch: transport selection, tool bootstrap, build and install of a HAP, the 卓易通 route for an `.apk` on a target with no `adb`, driving the app with the
 on-device tooling, journey evaluation, failure classification and the mapping to the same `device-verification` gate the
 Android playbook settles. It names relative tool locations and values read at run time, never a local path, a device serial,
 a bundle name or a version; the Android side is `references/device-verification.md`.
@@ -16,11 +16,18 @@ A target is verified over exactly one transport; the device and the artifact dec
 |--------|-----------|----------|----------|
 | Android device or emulator | `adb` and the `android` CLI | `.apk` | `references/device-verification.md` |
 | HarmonyOS NEXT or OpenHarmony device or emulator | `hdc` | `.hap`, `.hsp`, `.app` | this file |
+| HarmonyOS NEXT or OpenHarmony device with no `adb`, installing an `.apk` | `hdc` for the build, the transfer and the screen commands; the device installs the APK through 卓易通 with simulated taps | `.apk` | this file, section 5 |
 | Legacy Android-compatible HarmonyOS build that accepts `adb` and installs an APK | `adb` | `.apk` | `references/device-verification.md` |
 
 Decide in this order: first, what the artifact is — an APK is an Android artifact, a HAP or an APP package is a HarmonyOS
 artifact; second, what the device answers — `hdc list targets` for an `hdc` target, `adb devices` for an Android target.
 When the two disagree, stop and escalate.
+
+An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is **neither** the adb transport of
+`references/device-verification.md` **nor** the legacy adb-compatible HarmonyOS build: the device answers `hdc list
+targets`, and the APK is installed on the device through 卓易通, whose procedure is section 5. `hdc install` accepts a
+HAP, an in-app HSP and an APP package and never an `.apk`; attempting `hdc install <apk>` is a harness or environment
+finding (`escalate`), never an app defect.
 
 The consequence of guessing wrong is that the wrong transport sees nothing, or sees a target it cannot install onto: `hdc
 list targets` returns an empty result (`[Empty]`) when no `hdc` target is attached, and an adb-only tool reports no device
@@ -81,7 +88,7 @@ app defect and not a pass.
 hdc install [-r|-s|-cwd <path>|-w <waitingTime>|-u <userId>|-p|-g|-h] <src>
 ```
 
-`src` is a `.hap`, `.hsp` or `.app` path. A plain re-install already replaces an existing application; `-r` replaces it,
+`src` is a `.hap`, `.hsp` or `.app` path — an `.apk` is not one of them, and an APK on a HarmonyOS NEXT or OpenHarmony target is installed on the device through 卓易通 (section 5), never with this command; handing it to `hdc install` is a harness or environment finding, never an app defect. A plain re-install already replaces an existing application; `-r` replaces it,
 `-s` is required for a shared package, `-cwd` resolves `src` against a working directory, `-w` sets the device-side wait
 time (documented range 180 to 600 seconds), `-u` selects the user, `-p` names a directory holding the packages, `-g`
 additionally grants a debug application its user-granted and manually set permissions, and `-h` prints the device-side
@@ -125,7 +132,119 @@ the bundle, the ability and the elapsed times, and it works only for an explicit
 Confirm the launch from the app's own output — a control-tree dump or a screenshot of the expected start screen — not from
 the absence of an error.
 
-## 5. Inspect and interact
+## 5. Installing an `.apk` on a HarmonyOS NEXT or OpenHarmony target: the 卓易通 route
+
+An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is not an Android-transport run and not the legacy
+adb-compatible HarmonyOS build: the target answers `hdc list targets`, and the device installs the APK through **卓易通** —
+the third-party application the vendor describes as providing a runtime environment for phone apps, which dependent apps
+need in order to run. `hdc` builds the APK, transfers the file and drives the screen; it never installs the APK.
+
+### 5.1 Why `hdc install` cannot install an APK
+
+`hdc install` has no acceptance rule of its own: the host command integrates the device-side `bm` install command, and both
+accept the same artifact types. The `hdc` tool guide lists `src` as a HAP, an in-app HSP and — on the releases that accept
+it — an APP package, and the `bm` tool guide's `-p` option carries the same list; its documented error `9568270`
+`install invalid hap name` names the cause as a package-name suffix other than `.hap`, `.hsp` or `.hqf`. An `.apk` fails
+that check by construction, so `hdc install <file>.apk` and `hdc shell bm install -p <file>.apk` can never succeed
+(sources: the `hdc` and `bm` tool guides in section 12).
+
+Consequence for the run: handing an APK to `hdc install` is a **harness or environment finding** — the transport rule was
+misapplied — and settles `escalate`; it is never an app defect and never a pass. Stop the step and use the route below.
+
+### 5.2 The end-to-end route
+
+Each step produces its own evidence before the next one runs.
+
+1. **Build the debug APK, host-side.** This is the project's Android build, not the `hvigorw` package build of section 3:
+   build with the project's own Gradle wrapper from the project root, using the module and task names the project actually
+   declares — read them from the wrapper's task list, never from a remembered module path. Record the exact command and
+   its exit code, and locate the produced file from the project's own configuration. An artifact that does not build is
+   `escalate` with the failing command and its output, not an app defect and not a pass.
+2. **Transfer it with `hdc file send`.** The documented host form is `hdc file send
+   [-a|-sync|-z|-m|-cwd <path>|-b <bundleName>] <SOURCE> <DEST>`, with `DEST` a device path. The documentation does not
+   state which `DEST` the on-device file browser or 卓易通 lists, so resolve the destination on the target with 5.3
+   instead of assuming one. Record the command, both paths and the file's size or hash on both sides.
+3. **Bring the file in front of 卓易通** — either in the device's file browser (文件管理) or through 卓易通's own file
+   entry. The vendor FAQ documents the second: open 卓易通 > 我的 > 文件互传, tap `+`, and select the files; it also
+   states that on some HarmonyOS releases applications obtained through 卓易通 cannot read system files directly and must
+   use 文件互传, while on later releases they can, so read the device's actual behaviour rather than assuming. Huawei's own
+   support page maps the two file views: a file kept in the system file manager at 我的手机 > <directory> is reached
+   inside 卓易通 at `MyHarmonyDevice` ("我的设备(鸿蒙)") > <directory>.
+4. **Tap the `.apk` and install through 卓易通.** Open the file's entry in the file browser or in 卓易通's file view, tap
+   the `.apk`, and follow the install prompt through to installation by 卓易通. The chooser wording, and the bundle or
+   ability that handles a tapped APK, are not documented; read them from the screen with 5.3 and tap the control that
+   leads to 卓易通. Huawei's support page ties APK installation on recent HarmonyOS releases to 卓易通 — for an APK
+   received through a chat application it instructs restoring the `.apk` extension and tapping the file to install — and
+   states that whether a downloaded package can be installed is subject to what 卓易通 actually supports. Do not state a
+   runtime technology for 卓易通 as fact in the report: the vendor describes only a runtime environment for phone apps,
+   and only third-party pages call it an Android container.
+5. **Confirm the install and the launch from the app's own output.** Read the installed bundles at run time to identify
+   the app's bundle name, launch it with `hdc shell aa start -b <bundleName> -a <abilityName>`, and confirm the expected
+   start screen from a `dumpLayout` element or a `screenCap` screenshot — never from the absence of an error.
+
+### 5.3 Run-time reads that replace assumptions
+
+The sources settle the commands but not the device's names, file views or chooser text. Read each of these on the target
+and record the output before relying on it.
+
+| What to resolve | Run-time check |
+|-----------------|----------------|
+| The bundle and ability names of 卓易通, of 文件管理 and of the app under test | `hdc shell "bm dump -a"` and `hdc shell "aa dump -a"` |
+| Which destination `hdc file send` produced a file the file browser lists, and whether 卓易通's file entry sees it | Send a probe file, open 文件管理, then `hdc shell uitest dumpLayout -p /data/local/tmp/<name>.json` and `hdc file recv /data/local/tmp/<name>.json <hostTempDir>/<name>.json`, and search the dump for the probe name; enumerate the storage roots with `hdc shell "ls -l /storage"` |
+| The control tree of one named window | `hdc shell uitest dumpLayout -b <bundleName> -p /data/local/tmp/<name>.json` |
+| The tap-to-install chooser text and the install result | `hdc shell uitest dumpLayout` and `hdc shell uitest screenCap` before and after the tap, plus `hdc hilog` for the device-side text |
+| Whether an implicit want resolves a `file://` URI to 卓易通 | `hdc shell "aa start -A ohos.want.action.viewData -U file://<path>"` and observe whether a handler starts; the documented examples use `https`, and a `file://` handler is not documented |
+
+Never assume a bundle name, an ability name or a chooser label, and never assume that a documented path such as the media
+library or `/data/local/tmp` is listed in a user-visible file view: probe it. A probe file is a throwaway copy kept
+outside the repository.
+
+### 5.4 Tap coordinates and per-step evidence
+
+Tap coordinates come from the device's own control tree, exactly as elsewhere in this reference: dump the current window
+with `hdc shell uitest dumpLayout` (add `-b <bundleName>` once the bundle name is read), take the target control's bounds
+from the dump, and click its centre with `hdc shell uitest uiInput click <x> <y>`. Re-dump after every action that
+changes the screen, and never reuse a coordinate from an earlier screen.
+
+Because the install runs on the device through simulated taps, each step is evidenced by its own artifacts:
+
+| Step | Evidence |
+|------|----------|
+| Build the APK | The wrapper command, its exit code, and the produced file located from the project's own configuration |
+| Transfer with `hdc file send` | The exact command; the source and destination paths; the size or hash read on both sides |
+| Reach the file in 文件管理 or 卓易通 | The `hdc shell uitest dumpLayout` element for the file, with its text and bounds; the `hdc shell uitest screenCap` screenshot of the screen |
+| Tap to install | The dump element the coordinates came from; the exact `hdc shell uitest uiInput click <x> <y>`; the post-tap dump or screenshot showing the prompt and the outcome |
+| Install result | The dump or screenshot of the confirmation; the bundle name read from `hdc shell "bm dump -a"` once identified |
+| Launch | The `aa start` command; the dump element or screenshot of the expected start screen |
+
+An unverified step is reported as unverified with the missing evidence named; it is never a pass.
+
+### 5.5 Failure classification on the 卓易通 route
+
+| Signal | Classification | Gate report status | Settled outcome |
+|--------|----------------|--------------------|-----------------|
+| An APK handed to `hdc install` or to `hdc shell bm install` | Harness or environment defect — the transport rule was misapplied | `needs-user-input` | `escalate` |
+| 卓易通 is absent, disabled or unusable, or reports that the app is not available to it | `environment_unavailable` — a device prerequisite, not an app defect | `needs-user-input` | `escalate` |
+| The install is blocked by a device policy, such as a protected mode that reports an unregistered application | Harness or environment defect — a device setting the user controls | `needs-user-input` | `escalate` |
+| 卓易通 rejects the file as unparsable or corrupt | Environment finding for the transfer: re-send and compare the hash, and read the on-screen text and `hdc hilog`; no 卓易通 error code is documented | `needs-user-input` | `escalate` |
+| The app installs and launches, but a declared journey step fails on the device | `app_defect` with the observed state and its evidence | `fail` | `revise` with stable `required_revisions` |
+
+The categories are those of section 10 — `app_defect`, harness or environment defect, `environment_unavailable` and
+flaky behaviour — and the mapping to `pass`, `revise` and `escalate` is unchanged.
+
+### 5.6 Read-only boundary
+
+The boundary of section 11 binds this route unchanged, with these additions:
+
+- The verifier edits nothing to make the route work: no added module, Gradle task, signing configuration, manifest entry
+  or test. It builds the artifact the project already declares.
+- Keep every pulled dump, screenshot, journey report and probe copy in a temporary directory outside the repository; the
+  host-side build writes only the project's normal build directories.
+- Installing 卓易通, changing a device setting or enabling a protected mode the user must decide about are host-changing
+  actions: the verifier never performs them silently and settles `escalate` naming the exact prerequisite.
+- State the disposition of the installed APK as section 11 requires for any installed artifact.
+
+## 6. Inspect and interact
 
 Interaction is driven by `uitest` on the device, reached through `hdc shell uitest ...`. Its command surface is
 version-dependent; `hdc shell uitest help` and `hdc shell uitest uiInput help` are the authority for the target in front of
@@ -174,7 +293,7 @@ Interaction rules:
 - Wait and dump again before declaring an element absent, and say which method produced the evidence when a web
   view, a video or an animation makes a surface dump incompletely.
 
-## 6. Journey evaluation
+## 7. Journey evaluation
 
 A journey is the declared list of actions device verification executes. The contract is the one
 `references/device-verification.md` defines, and it binds this transport identically: evaluate the actions in declared
@@ -210,7 +329,7 @@ Write the per-step report as markdown outside the repository, one section per ac
 
 Actions not evaluated because evaluation ended early carry no marker.
 
-## 7. Automated tests
+## 8. Automated tests
 
 Prefer a scripted UI test over a manually driven journey when the flow is repeatable, must regress on every change, must
 produce a machine-readable pass or fail, or will run in CI. Keep the manual journey for a one-off acceptance question and
@@ -241,9 +360,9 @@ for exploration whose steps are not yet stable.
    error or failure count is a failing run. Read the same lines from `hdc hilog` when the command output is truncated.
 6. **Prerequisites.** The application must be debug-signed (`10106002` otherwise). The device entry points that
    serve ArkTS UI tests are available only to a test package started through `aa test`; the CLI `uitest` commands in section
-   5 do not have that restriction. An unbuildable or uninstallable test package is `escalate`, not a test failure.
+   6 do not have that restriction. An unbuildable or uninstallable test package is `escalate`, not a test failure.
 
-## 8. Logs and diagnosis
+## 9. Logs and diagnosis
 
 ```shell
 hdc hilog                   # stream device logs; -x dumps the buffer and exits; -r clears it
@@ -270,7 +389,7 @@ pid from `hdc jpid` or `track-jpid -p`, and quote the lines naming the app proce
 step that could not be driven because this target's tool surface differs — a missing `uiInput` subcommand, an unsupported
 dump option — is a harness finding; record the help output that proves it.
 
-## 9. Evidence, failure classification and outcome mapping
+## 10. Evidence, failure classification and outcome mapping
 
 Every claim in the gate report carries the command that produced it and the artifact it produced: the executed `hdc` command
 line, the dump element with its text or type and bounds as printed, the pulled layout path, the pulled screenshot path, and
@@ -288,7 +407,7 @@ checkserver`, `hdc shell uitest --version`); a version read elsewhere is not evi
 Bounded repetition means at most three attempts per verification round with the failure rate and the command recorded. A
 compilation or install result is not runtime verification: never report a pass for a journey that did not run.
 
-## 10. Boundaries
+## 11. Boundaries
 
 - Read-only with respect to the repository: this role writes no project file, fixes no defect it finds and
   reviews nothing it was not dispatched to review.
@@ -307,7 +426,7 @@ compilation or install result is not runtime verification: never report a pass f
   packaging and signing configuration, and native or cross-platform HarmonyOS work are out of scope for this Android and
   Compose role. Escalate that work rather than performing it here.
 
-## 11. Sources
+## 12. Sources
 
 | Source | Authoritative for |
 |--------|-------------------|
@@ -316,8 +435,12 @@ compilation or install result is not runtime verification: never report a pass f
 | `aa` tool guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/aa-tool.md` | `aa start` and its options, `aa force-stop`, `aa test` and its parameters, and the `10103001`, `10104001`, `10104002`, `10106001`, `10106002`, `10106102` error codes |
 | Unit test framework guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/application-test/unittest-guidelines.md` | How tests are written with Hypium, the `aa test -s unittest` command form, the `class`, `notClass`, `itName`, `level`, `size`, `testType`, `timeout`, `breakOnError` and `stress` filters, and the `OHOS_REPORT_STATUS` and `OHOS_REPORT_RESULT` result lines |
 | `bm` tool guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/bm-tool.md` | `bm dump` and its flags, `bm dump -a` and `bm dump -n <bundleName>` for install verification, and `bm dump -g` for debug-signed bundles |
+| Huawei support pages on 卓易通: `https://consumer.huawei.com/cn/support/content/zh-cn16061787/` (installing an APK on recent HarmonyOS releases) and `https://consumer.huawei.com/cn/support/content/zh-cn16048495/` (the 我的手机 / `MyHarmonyDevice` file-view mapping) | APK installation being tied to 卓易通, the restore-the-`.apk`-extension and tap-to-install instruction, the "subject to what 卓易通 supports" limit, and the mapping between the system file manager's tree and 卓易通's file view |
+| 卓易通 vendor FAQ: `https://www.droitong.com/CommonQues.html` (data endpoint: `https://web-api.droiyou.com/questions/list?current=1&pageSize=1000`) | What 卓易通 is and that dependent apps need it, the 文件互传 file entry and the release-dependent ability of its applications to read system files, the 隐私空间 and protected-mode limitations, and the not-listed/not-supported install refusals |
 
 Local help output is the second authority, read on the machine and target under verification: `hdc -h`, `hdc help verbose`,
 `hdc shell uitest help`, `hdc shell uitest uiInput help`, `hdc shell aa help`, `hdc shell bm help` and `hdc hilog -h`. When
 the on-device help disagrees with the documentation, **the on-device output wins**, because the tool surface changes between
-releases. Read the version at run time; never state a version from this file.
+releases. Read the version at run time; never state a version from this file. The 卓易通 support pages and the vendor
+FAQ are the authority for the route's device-side facts; neither names a bundle or an ability, so those are read on the
+target per section 5.3.

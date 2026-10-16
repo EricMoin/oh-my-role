@@ -41,6 +41,17 @@ emulator, reachable with `adb`, is the Android branch and follows
 When the artifact and the device disagree, stop and escalate — a transport mismatch is an
 environment finding, not an app defect.
 
+An `.apk` on a HarmonyOS NEXT or OpenHarmony target that answers `hdc list targets` and has no `adb`
+is neither the Android branch nor the legacy adb-compatible build: it is an `hdc`-transport target
+whose APK is installed on the device through 卓易通. **Never run `hdc install <apk>`** — `hdc install`
+and the device `bm install` accept a HAP, an in-app HSP and an APP package only and reject any other
+package-name suffix with `9568270`, so attempting it is a harness or environment finding, never an app
+defect. Follow section 5 of `references/harmonyos-device-verification.md`: build the debug APK with the
+project's own Gradle wrapper, transfer it with `hdc file send`, reach it in 文件管理 or in 卓易通's
+own file entry (文件互传), install it in 卓易通 by simulated taps whose coordinates come from a fresh
+`hdc shell uitest dumpLayout`, and confirm the launch from the app's own output. A missing, disabled or
+blocked 卓易通 is `escalate`.
+
 On the Android branch, confirm the CLI exists. `command -v android` — equivalently a first `android --version` —
 must succeed before any step below; when it fails, the CLI is missing and the whole preflight below
 is inapplicable. Escalate, and do not attempt installation from the verifier role: installing the
@@ -106,6 +117,11 @@ shapes, not just the binary, differ:
 - run automated tests: `hdc shell aa test -b <bundleName> -m <moduleName> -s unittest
   <testRunner>`;
 - logs: `hdc hilog`.
+
+An `.apk` on this transport is not installed with `hdc install`: send it with `hdc file send` and
+install it on the device through 卓易通 with simulated taps. Section 5 of the reference is the
+procedure, and it also lists the run-time reads for the bundle names, the visible transfer destination
+and the chooser text — none of which is documented, so none may be assumed.
 
 The reference is the authority for each form, and the target's own help output
 (`hdc shell uitest help`) wins when it disagrees with any of them.

@@ -6,8 +6,10 @@ gates plus the `device-verifier`, which exercises a built app on a real device o
 emulator over the target's own transport — the `android` CLI and `adb` for an Android
 target, `hdc` for HarmonyOS/OpenHarmony — following
 `references/device-verification.md` or `references/harmonyos-device-verification.md`
-when acceptance depends on runtime behavior only a running app can show. Ordinary
-bounded work stays inline. Significant work starts with
+when acceptance depends on runtime behavior only a running app can show. An `.apk` on a
+HarmonyOS NEXT or OpenHarmony target with no `adb` is such an `hdc` target: the APK is
+installed on the device through 卓易通, never with `hdc install <apk>`. Ordinary bounded
+work stays inline. Significant work starts with
 invariants, ownership, lifetime and a minimal coherent boundary; reviews inspect an
 actual stable implementation snapshot. Early consultations resolve specific
 uncertainties and do not approve unwritten code.
