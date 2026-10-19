@@ -8,7 +8,8 @@ target, `hdc` for HarmonyOS/OpenHarmony — following
 `references/device-verification.md` or `references/harmonyos-device-verification.md`
 when acceptance depends on runtime behavior only a running app can show. An `.apk` on a
 HarmonyOS NEXT or OpenHarmony target with no `adb` is such an `hdc` target: the APK is
-installed on the device through 卓易通, never with `hdc install <apk>`. Ordinary bounded
+opened in 文件管理 and installed with 直接安装. 卓易通安装 opens the 卓易通 application store
+instead of installing that local file; never use `hdc install <apk>`. Ordinary bounded
 work stays inline. Significant work starts with
 invariants, ownership, lifetime and a minimal coherent boundary; reviews inspect an
 actual stable implementation snapshot. Early consultations resolve specific

@@ -77,8 +77,8 @@ references:
       app over `hdc` — transport selection, bootstrap, HAP build, install and
       launch, `uitest` inspection and input, the same executed journey contract,
       failure classification, the pass/revise/escalate evidence bar, and the 卓易通
-      APK install route for an `.apk` on a target with no `adb` — `hdc file send`
-      plus on-device simulated taps, never `hdc install <apk>`
+      local APK install route on a target with no `adb` — `hdc file send`, then
+      文件管理 and 直接安装; 卓易通安装 opens the store, never `hdc install <apk>`
   compose-performance-and-platform:
     path: references/compose-performance-and-platform.md
     description: >-

@@ -16,7 +16,7 @@ A target is verified over exactly one transport; the device and the artifact dec
 |--------|-----------|----------|----------|
 | Android device or emulator | `adb` and the `android` CLI | `.apk` | `references/device-verification.md` |
 | HarmonyOS NEXT or OpenHarmony device or emulator | `hdc` | `.hap`, `.hsp`, `.app` | this file |
-| HarmonyOS NEXT or OpenHarmony device with no `adb`, installing an `.apk` | `hdc` for the build, the transfer and the screen commands; the device installs the APK through 卓易通 with simulated taps | `.apk` | this file, section 5 |
+| HarmonyOS NEXT or OpenHarmony device with no `adb`, installing an `.apk` | Host-side Gradle build when needed; `hdc` for transfer and screen commands; open the local APK in 文件管理 and choose 直接安装 | `.apk` | this file, section 5 |
 | Legacy Android-compatible HarmonyOS build that accepts `adb` and installs an APK | `adb` | `.apk` | `references/device-verification.md` |
 
 Decide in this order: first, what the artifact is — an APK is an Android artifact, a HAP or an APP package is a HarmonyOS
@@ -25,7 +25,7 @@ When the two disagree, stop and escalate.
 
 An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is **neither** the adb transport of
 `references/device-verification.md` **nor** the legacy adb-compatible HarmonyOS build: the device answers `hdc list
-targets`, and the APK is installed on the device through 卓易通, whose procedure is section 5. `hdc install` accepts a
+targets`, and the local APK is opened in 文件管理 and installed with **直接安装**, as section 5 describes. `hdc install` accepts a
 HAP, an in-app HSP and an APP package and never an `.apk`; attempting `hdc install <apk>` is a harness or environment
 finding (`escalate`), never an app defect.
 
@@ -88,7 +88,7 @@ app defect and not a pass.
 hdc install [-r|-s|-cwd <path>|-w <waitingTime>|-u <userId>|-p|-g|-h] <src>
 ```
 
-`src` is a `.hap`, `.hsp` or `.app` path — an `.apk` is not one of them, and an APK on a HarmonyOS NEXT or OpenHarmony target is installed on the device through 卓易通 (section 5), never with this command; handing it to `hdc install` is a harness or environment finding, never an app defect. A plain re-install already replaces an existing application; `-r` replaces it,
+`src` is a `.hap`, `.hsp` or `.app` path — an `.apk` is not one of them. Open a local APK in 文件管理 and choose 直接安装 (section 5), never the 卓易通安装 store button or this command; handing it to `hdc install` is a harness or environment finding, never an app defect. A plain re-install already replaces an existing application; `-r` replaces it,
 `-s` is required for a shared package, `-cwd` resolves `src` against a working directory, `-w` sets the device-side wait
 time (documented range 180 to 600 seconds), `-u` selects the user, `-p` names a directory holding the packages, `-g`
 additionally grants a debug application its user-granted and manually set permissions, and `-h` prints the device-side
@@ -132,12 +132,15 @@ the bundle, the ability and the elapsed times, and it works only for an explicit
 Confirm the launch from the app's own output — a control-tree dump or a screenshot of the expected start screen — not from
 the absence of an error.
 
-## 5. Installing an `.apk` on a HarmonyOS NEXT or OpenHarmony target: the 卓易通 route
+## 5. Installing a local `.apk` on a HarmonyOS NEXT or OpenHarmony target with 卓易通
 
 An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is not an Android-transport run and not the legacy
-adb-compatible HarmonyOS build: the target answers `hdc list targets`, and the device installs the APK through **卓易通** —
-the third-party application the vendor describes as providing a runtime environment for phone apps, which dependent apps
-need in order to run. `hdc` builds the APK, transfers the file and drives the screen; it never installs the APK.
+adb-compatible HarmonyOS build: the target answers `hdc list targets`. 卓易通 provides the runtime environment for
+dependent phone apps. For a locally built APK or any existing APK file to be installed, use **文件管理 → open the target
+`.apk` → 直接安装**. The **卓易通安装** button opens the 卓易通 application store; it does not install the selected local
+file. This button distinction comes from user-provided device feedback (section 12), and takes precedence over generic
+instructions to "install through 卓易通". Build with the host-side Gradle wrapper when needed; `hdc` transfers the file
+and drives the screen, and never installs the APK itself.
 
 ### 5.1 Why `hdc install` cannot install an APK
 
@@ -155,48 +158,45 @@ misapplied — and settles `escalate`; it is never an app defect and never a pas
 
 Each step produces its own evidence before the next one runs.
 
-1. **Build the debug APK, host-side.** This is the project's Android build, not the `hvigorw` package build of section 3:
+1. **Build or select the local APK, host-side.** For a local build, this is the project's Android build, not the `hvigorw` package build of section 3:
    build with the project's own Gradle wrapper from the project root, using the module and task names the project actually
    declares — read them from the wrapper's task list, never from a remembered module path. Record the exact command and
    its exit code, and locate the produced file from the project's own configuration. An artifact that does not build is
-   `escalate` with the failing command and its output, not an app defect and not a pass.
+   `escalate` with the failing command and its output, not an app defect and not a pass. If the task supplies an existing
+   APK to install, use that file and record its path and size or hash; a new build is not required.
 2. **Transfer it with `hdc file send`.** The documented host form is `hdc file send
    [-a|-sync|-z|-m|-cwd <path>|-b <bundleName>] <SOURCE> <DEST>`, with `DEST` a device path. The documentation does not
-   state which `DEST` the on-device file browser or 卓易通 lists, so resolve the destination on the target with 5.3
+   state which `DEST` the on-device file manager lists, so resolve the destination on the target with 5.3
    instead of assuming one. Record the command, both paths and the file's size or hash on both sides.
-3. **Bring the file in front of 卓易通** — either in the device's file browser (文件管理) or through 卓易通's own file
-   entry. The vendor FAQ documents the second: open 卓易通 > 我的 > 文件互传, tap `+`, and select the files; it also
-   states that on some HarmonyOS releases applications obtained through 卓易通 cannot read system files directly and must
-   use 文件互传, while on later releases they can, so read the device's actual behaviour rather than assuming. Huawei's own
-   support page maps the two file views: a file kept in the system file manager at 我的手机 > <directory> is reached
-   inside 卓易通 at `MyHarmonyDevice` ("我的设备(鸿蒙)") > <directory>.
-4. **Tap the `.apk` and install through 卓易通.** Open the file's entry in the file browser or in 卓易通's file view, tap
-   the `.apk`, and follow the install prompt through to installation by 卓易通. The chooser wording, and the bundle or
-   ability that handles a tapped APK, are not documented; read them from the screen with 5.3 and tap the control that
-   leads to 卓易通. Huawei's support page ties APK installation on recent HarmonyOS releases to 卓易通 — for an APK
-   received through a chat application it instructs restoring the `.apk` extension and tapping the file to install — and
-   states that whether a downloaded package can be installed is subject to what 卓易通 actually supports. Do not state a
-   runtime technology for 卓易通 as fact in the report: the vendor describes only a runtime environment for phone apps,
-   and only third-party pages call it an Android container.
+3. **Open 文件管理 and locate the transferred APK.** Navigate to the directory actually containing the target file and
+   match its name to the transferred artifact. Use the system file manager as the installation entry point. 卓易通's
+   文件互传 is a file-transfer feature, not a substitute for this local-APK installation step.
+4. **Tap the `.apk`, then choose 直接安装.** Inspect the installation screen with 5.3, locate the **直接安装** control,
+   and follow that path through the installation prompts. Do **not** choose **卓易通安装**: that button opens the 卓易通
+   application store instead of installing the selected local APK. If a tap opens the store, return to 文件管理, reopen
+   the same APK and choose 直接安装. A store listing, an "unavailable" store result, or a store install of another build
+   is not evidence about installation of this local artifact. If the direct-install control is absent or blocked, capture
+   the actual screen and report the limitation; do not substitute the store button. Do not infer 卓易通's runtime
+   technology from this UI: the vendor describes a runtime environment for phone apps.
 5. **Confirm the install and the launch from the app's own output.** Read the installed bundles at run time to identify
    the app's bundle name, launch it with `hdc shell aa start -b <bundleName> -a <abilityName>`, and confirm the expected
    start screen from a `dumpLayout` element or a `screenCap` screenshot — never from the absence of an error.
 
 ### 5.3 Run-time reads that replace assumptions
 
-The sources settle the commands but not the device's names, file views or chooser text. Read each of these on the target
-and record the output before relying on it.
+The sources settle the commands, and user feedback establishes the local-APK button choice. Resolve the device's names,
+file views and the current installation controls on the target, and record the output before relying on it.
 
 | What to resolve | Run-time check |
 |-----------------|----------------|
 | The bundle and ability names of 卓易通, of 文件管理 and of the app under test | `hdc shell "bm dump -a"` and `hdc shell "aa dump -a"` |
-| Which destination `hdc file send` produced a file the file browser lists, and whether 卓易通's file entry sees it | Send a probe file, open 文件管理, then `hdc shell uitest dumpLayout -p /data/local/tmp/<name>.json` and `hdc file recv /data/local/tmp/<name>.json <hostTempDir>/<name>.json`, and search the dump for the probe name; enumerate the storage roots with `hdc shell "ls -l /storage"` |
+| Which destination `hdc file send` produced a file that 文件管理 lists | Send a probe file, open 文件管理, then `hdc shell uitest dumpLayout -p /data/local/tmp/<name>.json` and `hdc file recv /data/local/tmp/<name>.json <hostTempDir>/<name>.json`, and search the dump for the probe name; enumerate the storage roots with `hdc shell "ls -l /storage"` |
 | The control tree of one named window | `hdc shell uitest dumpLayout -b <bundleName> -p /data/local/tmp/<name>.json` |
-| The tap-to-install chooser text and the install result | `hdc shell uitest dumpLayout` and `hdc shell uitest screenCap` before and after the tap, plus `hdc hilog` for the device-side text |
-| Whether an implicit want resolves a `file://` URI to 卓易通 | `hdc shell "aa start -A ohos.want.action.viewData -U file://<path>"` and observe whether a handler starts; the documented examples use `https`, and a `file://` handler is not documented |
+| The 直接安装 control, the separate 卓易通安装 store button, and the install result | `hdc shell uitest dumpLayout` and `hdc shell uitest screenCap` before and after the tap; record the selected control's text and bounds, plus `hdc hilog` for the device-side text |
 
-Never assume a bundle name, an ability name or a chooser label, and never assume that a documented path such as the media
-library or `/data/local/tmp` is listed in a user-visible file view: probe it. A probe file is a throwaway copy kept
+Never assume a bundle name, an ability name or a button's coordinates. Locate 直接安装 on the current screen; do not treat
+卓易通安装 as an equivalent label. Never assume that a documented path such as the media library or `/data/local/tmp`
+is listed in a user-visible file view: probe it. A probe file is a throwaway copy kept
 outside the repository.
 
 ### 5.4 Tap coordinates and per-step evidence
@@ -210,10 +210,10 @@ Because the install runs on the device through simulated taps, each step is evid
 
 | Step | Evidence |
 |------|----------|
-| Build the APK | The wrapper command, its exit code, and the produced file located from the project's own configuration |
+| Build or select the APK | The wrapper command, its exit code and the produced file, or the supplied existing APK's path and size or hash |
 | Transfer with `hdc file send` | The exact command; the source and destination paths; the size or hash read on both sides |
-| Reach the file in 文件管理 or 卓易通 | The `hdc shell uitest dumpLayout` element for the file, with its text and bounds; the `hdc shell uitest screenCap` screenshot of the screen |
-| Tap to install | The dump element the coordinates came from; the exact `hdc shell uitest uiInput click <x> <y>`; the post-tap dump or screenshot showing the prompt and the outcome |
+| Reach the file in 文件管理 | The `hdc shell uitest dumpLayout` element for the target APK, with its text and bounds; the `hdc shell uitest screenCap` screenshot of the screen |
+| Choose 直接安装 | The dump element with the selected control's text and bounds; the exact `hdc shell uitest uiInput click <x> <y>`; the post-tap dump or screenshot showing the local installation prompt and the outcome |
 | Install result | The dump or screenshot of the confirmation; the bundle name read from `hdc shell "bm dump -a"` once identified |
 | Launch | The `aa start` command; the dump element or screenshot of the expected start screen |
 
@@ -224,13 +224,17 @@ An unverified step is reported as unverified with the missing evidence named; it
 | Signal | Classification | Gate report status | Settled outcome |
 |--------|----------------|--------------------|-----------------|
 | An APK handed to `hdc install` or to `hdc shell bm install` | Harness or environment defect — the transport rule was misapplied | `needs-user-input` | `escalate` |
-| 卓易通 is absent, disabled or unusable, or reports that the app is not available to it | `environment_unavailable` — a device prerequisite, not an app defect | `needs-user-input` | `escalate` |
+| 卓易通 is absent, disabled or unusable, or the local 直接安装 path is absent or blocked after inspecting the actual screen | `environment_unavailable` — a device prerequisite, not an app defect; include the screen evidence | `needs-user-input` | `escalate` |
 | The install is blocked by a device policy, such as a protected mode that reports an unregistered application | Harness or environment defect — a device setting the user controls | `needs-user-input` | `escalate` |
 | 卓易通 rejects the file as unparsable or corrupt | Environment finding for the transfer: re-send and compare the hash, and read the on-screen text and `hdc hilog`; no 卓易通 error code is documented | `needs-user-input` | `escalate` |
 | The app installs and launches, but a declared journey step fails on the device | `app_defect` with the observed state and its evidence | `fail` | `revise` with stable `required_revisions` |
 
 The categories are those of section 10 — `app_defect`, harness or environment defect, `environment_unavailable` and
 flaky behaviour — and the mapping to `pass`, `revise` and `escalate` is unchanged.
+
+Opening the 卓易通 store by choosing 卓易通安装 is a recoverable navigation mistake. Return to 文件管理 and choose
+直接安装 for the same local APK before classifying installation. The app's absence from the store does not establish
+that its local APK cannot be installed, and is neither an app defect nor a reason to escalate on its own.
 
 ### 5.6 Read-only boundary
 
@@ -435,12 +439,13 @@ compilation or install result is not runtime verification: never report a pass f
 | `aa` tool guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/aa-tool.md` | `aa start` and its options, `aa force-stop`, `aa test` and its parameters, and the `10103001`, `10104001`, `10104002`, `10106001`, `10106002`, `10106102` error codes |
 | Unit test framework guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/application-test/unittest-guidelines.md` | How tests are written with Hypium, the `aa test -s unittest` command form, the `class`, `notClass`, `itName`, `level`, `size`, `testType`, `timeout`, `breakOnError` and `stress` filters, and the `OHOS_REPORT_STATUS` and `OHOS_REPORT_RESULT` result lines |
 | `bm` tool guide: `https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/bm-tool.md` | `bm dump` and its flags, `bm dump -a` and `bm dump -n <bundleName>` for install verification, and `bm dump -g` for debug-signed bundles |
-| Huawei support pages on 卓易通: `https://consumer.huawei.com/cn/support/content/zh-cn16061787/` (installing an APK on recent HarmonyOS releases) and `https://consumer.huawei.com/cn/support/content/zh-cn16048495/` (the 我的手机 / `MyHarmonyDevice` file-view mapping) | APK installation being tied to 卓易通, the restore-the-`.apk`-extension and tap-to-install instruction, the "subject to what 卓易通 supports" limit, and the mapping between the system file manager's tree and 卓易通's file view |
-| 卓易通 vendor FAQ: `https://www.droitong.com/CommonQues.html` (data endpoint: `https://web-api.droiyou.com/questions/list?current=1&pageSize=1000`) | What 卓易通 is and that dependent apps need it, the 文件互传 file entry and the release-dependent ability of its applications to read system files, the 隐私空间 and protected-mode limitations, and the not-listed/not-supported install refusals |
+| User-provided device feedback, 2026-10-19 | For a locally built or supplied APK, open the file in 文件管理 and choose 直接安装; 卓易通安装 opens the 卓易通 application store. This is the source for the button distinction in section 5, not a claim established by the generic support pages below |
+| Huawei support pages on 卓易通: `https://consumer.huawei.com/cn/support/content/zh-cn16061787/` (installing an APK on recent HarmonyOS releases) and `https://consumer.huawei.com/cn/support/content/zh-cn16048495/` (the 我的手机 / `MyHarmonyDevice` file-view mapping) | General APK support, restoring the `.apk` extension and tapping the file, and the mapping between file views; these do not establish that the 卓易通安装 store button installs a local APK |
+| 卓易通 vendor FAQ: `https://www.droitong.com/CommonQues.html` (data endpoint: `https://web-api.droiyou.com/questions/list?current=1&pageSize=1000`) | What 卓易通 is and that dependent apps need it, file transfer and release-dependent file access, and device-policy limitations; store availability does not determine whether a local APK can be installed with 直接安装 |
 
 Local help output is the second authority, read on the machine and target under verification: `hdc -h`, `hdc help verbose`,
 `hdc shell uitest help`, `hdc shell uitest uiInput help`, `hdc shell aa help`, `hdc shell bm help` and `hdc hilog -h`. When
 the on-device help disagrees with the documentation, **the on-device output wins**, because the tool surface changes between
-releases. Read the version at run time; never state a version from this file. The 卓易通 support pages and the vendor
-FAQ are the authority for the route's device-side facts; neither names a bundle or an ability, so those are read on the
-target per section 5.3.
+releases. Read the version at run time; never state a version from this file. User feedback supplies the local-APK
+installation route and the button distinction; generic 卓易通 support pages and the vendor FAQ supply background, not
+an alternative store-based installation route. Bundle and ability names are read on the target per section 5.3.

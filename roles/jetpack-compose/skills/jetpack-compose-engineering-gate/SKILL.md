@@ -34,7 +34,8 @@ recreation, notifications or deep links, crash/ANR, or user-visible jank — ver
 built app on a real device or an emulator over the target's own transport and declare a
 `jetpack-compose--device-verifier` node for independent on-device evidence. An `.apk` on a
 HarmonyOS NEXT or OpenHarmony target with no `adb` is transferred over `hdc` and installed on
-the device through 卓易通, never with `hdc install <apk>`. Read
+the device by opening the local APK in 文件管理 and choosing 直接安装. 卓易通安装 opens the 卓易通
+application store instead of installing that file; never use it for this step or run `hdc install <apk>`. Read
 `references/device-verification.md` for an Android target and
 `references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target — both
 are always available and cover bootstrap on a machine with no CLI or `hdc` — and load the

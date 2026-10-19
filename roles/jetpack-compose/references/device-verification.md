@@ -13,8 +13,9 @@ transport: verify it over `hdc` per `references/harmonyos-device-verification.md
 with `adb`.
 
 An `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is not this transport either:
-it is an `hdc` target, and the APK is installed on the device through 卓易通 — follow section 5
-of `references/harmonyos-device-verification.md`. `hdc install` never accepts an APK.
+it is an `hdc` target. Open the local APK in 文件管理 and choose 直接安装; 卓易通安装 opens the
+卓易通 application store instead of installing that file. Follow section 5 of
+`references/harmonyos-device-verification.md`. `hdc install` never accepts an APK.
 
 ---
 
@@ -142,8 +143,8 @@ include non-interactive and hidden elements) and compare them yourself.
    `references/harmonyos-device-verification.md` and never with `adb`. A transport mismatch
    is an environment finding, so stop here and settle `escalate` (section 12). An `.apk` on a target
    that has no `adb` but answers `hdc list targets` is neither this branch nor the legacy
-   adb-compatible build: it is an `hdc` target whose APK is installed on the device through 卓易通
-   (section 5 of `references/harmonyos-device-verification.md`).
+   adb-compatible build: it is an `hdc` target whose local APK is opened in 文件管理 and installed
+   with 直接安装, never the 卓易通安装 store button (section 5 of `references/harmonyos-device-verification.md`).
 1. Confirm the CLI is present: `command -v android`, equivalently a first
    `android --version`. When it is absent, stop here — section 2 is the bootstrap path
    and none of the steps below applies until it succeeds; settle `escalate` per

@@ -100,11 +100,13 @@ This role's mapping:
   device/emulator/SDK, an unbuildable or uninstallable artifact, or missing user
   intent. The report names the transport and the toolchain actually used for the
   run — the `android` CLI and `adb`, or `hdc`, read at run time — and the install
-  route it used: `hdc install` for a HAP, HSP or APP package, or the 卓易通 manual
-  install for an `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` —
+  route it used: `hdc install` for a HAP, HSP or APP package, or 文件管理 → the local
+  `.apk` → 直接安装 on a HarmonyOS NEXT or OpenHarmony target with no `adb` —
   so this one gate serves both transports. Its report keeps
   `gate: device-verification` and the same pass/revise/escalate mapping as the
   other gates.
+  For a local APK, cite the target file and the selected 直接安装 control with its
+  screen evidence; 卓易通安装 opens the store and is not proof of local installation.
 - The shipped sample declaration in `references/graph-protocol.md` keeps its five
   review nodes; the lead declares a `device-verification` node in a batch only
   when acceptance depends on runtime behavior only a running app can show, and
