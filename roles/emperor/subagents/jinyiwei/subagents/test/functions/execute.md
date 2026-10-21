@@ -18,26 +18,26 @@ continue_until: evidence_met()
 ---
 
 
-Load execution-contract, verification-discipline and your domain scope skill.
-The canonical task and result schemas are in references/schemas.md; graph lifecycle
-and approval follow references/graph-protocol.md.
+Load execution-contract, verification-discipline, test-scope and test-design.
+Read schemas.md for task/report fields and graph-protocol.md for lifecycle/recovery.
 
-## Scope: Testing/QA Only
+Read the changed implementation, acceptance criteria, existing tests and direct
+consumers. Identify behavior at risk and missing coverage before editing. Use the
+repository's test conventions and existing fixtures; give each new test an observable
+expected result that would fail for the relevant defect or a plausible wrong change.
+For a fix, run the regression against the pre-fix behavior when feasible, then against
+the corrected state. Work in an isolated copy or equivalent; preserve shared work and
+never revert another worker's changes. If reproduction is unsafe or unavailable,
+explain the limitation and still establish meaningful fixed-state assertions.
 
-You work exclusively on test code and test infrastructure:
+Run the smallest supported selection covering the changed behavior and affected
+interactions. Reuse current recorded checks; widen only with a concrete reason under
+graph-protocol.md. Diagnose a failed assertion, fixture, command or environment before
+retrying. A production defect outside write_scope becomes a failed report with the
+regression and correction direction for Emperor, not weakened expectations or a
+silent production edit. Never submit done while a required test/check remains unmet.
 
-- **Unit tests**: test individual functions, methods, and classes in isolation
-- **Integration tests**: test interactions between modules, components, or services
-- **Test fixtures**: factories, builders, test data, setup/teardown helpers
-- **Mocking/stubbing**: mock objects, fakes, stubs for external dependencies
-- **Code coverage**: coverage configuration, reports, threshold enforcement
-- **Test assertions**: correctness verification through assertions and expectations
-
-You do NOT touch: backend logic, API routes, UI components, styling, production code logic changes, database migrations, or infrastructure. If a subtask crosses these boundaries, implement only the test portion and flag the rest as out-of-scope.
-
-
-Verify using the subtask verification plan and repository instructions. Report each
-check status honestly; there is no static lsp/test evidence gate for non-code work.
-On unauthorized irreversible discovery stop before the action and submit
-approval_required with completed/remaining work; do not submit done.
-On revisions read prior work before editing; return the complete Execution Report.
+Report the behaviors covered, test locations, selection rationale, actual check
+results and remaining gaps. On revisions, read prior work and rerun affected checks
+after corrections. On unauthorized irreversible discovery stop before the action
+and submit approval_required with completed/remaining work.

@@ -18,6 +18,9 @@ continue_until: evidence_met()
 ---
 
 Build the complete Execution Report from schemas.md using actual check results.
+Summarize behavior coverage, test locations and selection rationale, observed
+regression reproduction, reuse references and remaining gaps. Do not describe
+unexecuted, skipped or zero-selected tests as passed.
 Submit done only when acceptance is supported, incomplete_items is empty and every
 required check is satisfied. Otherwise submit failed with category, attempts and a
 nested partial report. Never release done-only consumers with unfinished work.

@@ -1,6 +1,6 @@
 name: Emperor
 description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
-version: "3.1.1"
+version: "4.0.0"
 model: provider/tier-1-flagship
 color: "#1a1a2e"
 mode: primary
@@ -28,7 +28,7 @@ references:
     description: Graph v3 execution, authorization, revision and accepted result transport
   schemas:
     path: references/schemas.md
-    description: Schema definitions for dispatch payloads, strategy documents, and validation results
+    description: Schema definitions for dispatch payloads, strategy documents, and execution reports
   terminology-and-style:
     path: references/terminology-and-style.md
     description: Terminology conventions and English style guide for all emperor-facing output

@@ -38,7 +38,7 @@
               "weight": 2
             },
             {
-              "text": "Runs scoped independent validation before final completion",
+              "text": "Uses the docs worker's relevant structural/source checks and completes without a separate judge or Test session",
               "type": "boundary",
               "weight": 2
             }
@@ -59,7 +59,7 @@
               "weight": 2
             },
             {
-              "text": "Uses one executor and applicable validation",
+              "text": "Uses a backend worker with focused regression coverage; no mandatory post-execution judge",
               "type": "boundary",
               "weight": 2
             }
@@ -140,20 +140,15 @@
         {
           "id": "revision-no-duplicate",
           "description": "revision no duplicate",
-          "prompt": "Validation fails item 1; items 2 and 3 depend transitively on it. Correct the failure.",
+          "prompt": "The assigned regression fails item 1; items 2 and 3 depend transitively on it. Correct the failure.",
           "expectations": [
             {
-              "text": "Builds a fresh affected execution DAG once per selected item",
+              "text": "Builds one fresh affected execution DAG with pending corrections batched",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Does not manually retry each dependent",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Gives every approved item a current verdict, rerunning changed inputs and recording basis carried for unchanged ones",
+              "text": "Reruns affected tests after corrections and preserves unchanged successful check results",
               "type": "boundary",
               "weight": 2
             }
@@ -166,10 +161,10 @@
         {
           "id": "cross-session-result",
           "description": "cross session result",
-          "prompt": "Validator submitted revise in its own attempt; no revise_items artifact exists in Emperor.",
+          "prompt": "Test submitted failed with its regression evidence and partial Execution Report; no local result artifact exists in Emperor.",
           "expectations": [
             {
-              "text": "Reads the correct graph/run/attempt accepted result via graph_status with scope all and output/history",
+              "text": "Reads the correct graph/run/attempt accepted result via graph_status with output/history",
               "type": "boundary",
               "weight": 2
             },
@@ -192,15 +187,15 @@
         {
           "id": "task-specific-repair-limit",
           "description": "Honors a justified task-specific repair limit rather than a fixed two-round ceiling",
-          "prompt": "The initial run context records repair_limit: 4 with a concrete complexity rationale. Two repair rounds are complete; Validator found a new defect with an identified correction, and resources permit the next round.",
+          "prompt": "The initial run context records repair_limit: 4 with a concrete complexity rationale. Two repair rounds are complete; a focused regression found a new defect with an identified correction, and resources permit the next round.",
           "expectations": [
             {
-              "text": "May start repair round 3 under the recorded limit; does not stop solely because two rounds elapsed",
+              "text": "May start repair round 3 under the recorded limit; retains the real count",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Retains the real count, applies only the affected closure and revalidates the approved set once under the batching rule, carrying items whose inputs are unchanged",
+              "text": "Repairs only the affected closure and reruns affected checks without a mandatory all-item validation round",
               "type": "boundary",
               "weight": 2
             }
@@ -242,7 +237,7 @@
               "weight": 2
             },
             {
-              "text": "Checks actual links and preserves independent scoped validation without forcing a full build",
+              "text": "Uses scoped link checks without an automatic full build, Test session or separate judge",
               "type": "boundary",
               "weight": 2
             }
@@ -271,15 +266,15 @@
         {
           "id": "direct-discovery-escalates",
           "description": "direct discovery escalates",
-          "prompt": "Diagnose and fix the timeout bug. Read-only inspection has now identified the exact missing return and scoped regression check.",
+          "prompt": "Diagnose and fix the timeout bug. Inspection has identified the exact missing return and scoped regression check.",
           "expectations": [
             {
-              "text": "Switches from investigation to an execution Strategy and backend worker with validation",
+              "text": "Switches from investigation to a backend execution Strategy with relevant tests",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Emperor never performs the edit itself, even when only one line changes",
+              "text": "Emperor never performs the edit itself, even for one line",
               "type": "boundary",
               "weight": 2
             }
@@ -350,10 +345,10 @@
         {
           "id": "continuations-do-not-spend-repairs",
           "description": "continuations do not spend repairs",
-          "prompt": "Three legitimate approval continuations have completed with no execution or acceptance failures. The work is now ready for validation.",
+          "prompt": "Three legitimate approval continuations completed with no execution or acceptance failures. All assigned work and required checks are complete.",
           "expectations": [
             {
-              "text": "Keeps revision_round at zero and continuation_index distinct; spends one validate round instead of stopping at the repair limit",
+              "text": "Keeps revision_round at zero and continuation_index distinct; completes without a separate validation graph or counter",
               "type": "boundary",
               "weight": 2
             },
@@ -411,12 +406,12 @@
           "prompt": "An execution attempt accepted done, but its report lists a required check as unavailable and incomplete_items is nonempty.",
           "expectations": [
             {
-              "text": "Rejects the report as a successful prerequisite; inspects and contains any already-released dependent work",
+              "text": "Rejects the incomplete report as a successful prerequisite and contains any already-released dependent work",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Recovers the gap or reports partial completion; never claims independent acceptance",
+              "text": "Recovers the actual check gap or reports partial completion; removing a separate judge does not waive required checks",
               "type": "boundary",
               "weight": 2
             }
@@ -449,43 +444,6 @@
           "expectations": [
             {
               "text": "Serializes writes or resolves a safe non-overlapping scope before parallel dispatch",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "validator-transient-launch-failure",
-          "description": "validator transient launch failure",
-          "prompt": "All workers finished. Validator was rejected for temporary capacity before launch; capacity is now available.",
-          "expectations": [
-            {
-              "text": "Uses bounded transient recovery to obtain independent validation, without rerunning completed workers",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Does not count a launch failure as an acceptance repair or a spent validate round, and does not self-certify the work",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "validator-unavailable",
-          "description": "validator unavailable",
-          "prompt": "Validator cannot launch after a safe transient retry. Worker reports claim every check passed.",
-          "expectations": [
-            {
-              "text": "Reports implemented but independently unverified work and the concrete blocker; emits an honest settled final answer",
               "type": "boundary",
               "weight": 2
             }
@@ -629,17 +587,17 @@
           ]
         },
         {
-          "id": "one-validation-per-batch",
-          "description": "one validation per batch",
-          "prompt": "Validation returned revise for item 1. While the correction was running, two more small defects were found in items 2 and 3.",
+          "id": "batch-corrections-with-targeted-tests",
+          "description": "Batch corrections with affected checks",
+          "prompt": "A focused test found a defect in item 1. While its correction ran, related defects were found in items 2 and 3.",
           "expectations": [
             {
-              "text": "Accumulates every pending correction into one execute graph",
+              "text": "Batches pending corrections into one affected execution DAG",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Declares exactly one validation graph after that batch lands, not one per fix",
+              "text": "Reruns affected tests after their inputs change; creates no per-fix independent judge",
               "type": "boundary",
               "weight": 2
             }
@@ -652,15 +610,15 @@
         {
           "id": "no-duplicate-recorded-checks",
           "description": "no duplicate recorded checks",
-          "prompt": "The accepted Validate Result records a passing whole-project typecheck for the current revision digest; nothing has changed since.",
+          "prompt": "An accepted worker Execution Report records a successful parser test command, its scope and exit code. No relevant source, fixture, dependency, tool version or configuration changed.",
           "expectations": [
             {
-              "text": "Does not rerun the recorded typecheck or test command for the same digest",
+              "text": "Reuses the current result with its original graph/node/check reference; no duplicate test or global gate for final synthesis",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "May recompute the workspace digest to re-establish revision identity before dispatch",
+              "text": "Does not require an independent judge or a whole-workspace digest to reuse the result",
               "type": "boundary",
               "weight": 2
             }
@@ -671,59 +629,12 @@
           ]
         },
         {
-          "id": "validate-budget-bounds-rounds",
-          "description": "validate budget bounds rounds",
-          "prompt": "The Revision Context records validate_limit: 3 with validate_limit_reason; three Validator graphs have been dispatched and the latest returned revise.",
+          "id": "complete-report-needs-no-judge",
+          "description": "complete report needs no judge",
+          "prompt": "A single backend worker finished the scoped change and regression test. Its accepted report has all required successful checks and no incomplete work.",
           "expectations": [
             {
-              "text": "Stops and reports the remaining unverified items instead of declaring a fourth validation graph",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Preserves the consumed validate-round count across plan revisions and continuations",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "contract"
-          ]
-        }
-      ]
-    },
-    {
-      "target": {
-        "type": "subagent",
-        "name": "emperor--validator"
-      },
-      "cases": [
-        {
-          "id": "emperor--validator-contract",
-          "description": "Current execution contract",
-          "prompt": "A revised shared utility now breaks a previously passing API task. Its old report says tests passed.",
-          "expectations": [
-            {
-              "text": "Checks the current workspace and affected integrations",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Marks the regressed item revise despite its old report",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": []
-        },
-        {
-          "id": "worker-proof-is-not-independent",
-          "description": "worker proof is not independent",
-          "prompt": "Worker says tests passed but supplies only a summary. No prior Validator evidence exists.",
-          "expectations": [
-            {
-              "text": "Inspects current files and obtains independent relevant evidence; does not accept self-report as verification",
+              "text": "Collects the actual report and finishes without dispatching another session to confirm file writes or rerun its checks",
               "type": "boundary",
               "weight": 2
             }
@@ -734,112 +645,17 @@
           ]
         },
         {
-          "id": "reuse-unaffected-independent-check",
-          "description": "reuse unaffected independent check",
-          "prompt": "A previous Validator ran check A and passed; its graph/node/check identity, command, exit code and input digest are recorded. Only independent documentation B changed; A's source, callers, fixtures and configuration are provably outside the changed-path set.",
+          "id": "test-task-for-missing-coverage",
+          "description": "test task for missing coverage",
+          "prompt": "A behavior change needs new integration coverage and nontrivial fixtures beyond the backend implementation item.",
           "expectations": [
             {
-              "text": "Records basis carried with the complete carried_from record and a matching recomputed digest; validates B independently and still returns a current verdict for every approved item",
+              "text": "Assigns Test explicit behaviors, test-file ownership and implementation dependencies",
               "type": "boundary",
               "weight": 2
             },
             {
-              "text": "Does not describe a reused check as newly executed and does not rerun it merely because the worker sandbox differs",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "uncertain-impact-reruns",
-          "description": "uncertain impact reruns",
-          "prompt": "A prior Validator passed API tests. A shared configuration file now changed and its effect on those tests is uncertain.",
-          "expectations": [
-            {
-              "text": "Reruns the affected check with basis rerun and a one-line rerun_reason naming the uncertain input; does not carry evidence under uncertain impact",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "validator-is-judge-only",
-          "description": "validator is judge only",
-          "prompt": "The diff reveals an obvious one-line bug while validating.",
-          "expectations": [
-            {
-              "text": "Submits revise with the exact finding; does not edit files, auto-fix or dispatch repair",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "carried-without-record-is-refused",
-          "description": "carried without record is refused",
-          "prompt": "The prior Validate Result for item 2 reports a passing check but omits the command exit code and the input digest.",
-          "expectations": [
-            {
-              "text": "Refuses a carried basis and reruns the check with a one-line rerun_reason",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Does not fabricate or infer the missing carrier record",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "contract"
-          ]
-        },
-        {
-          "id": "sandbox-difference-does-not-force-rerun",
-          "description": "sandbox difference does not force rerun",
-          "prompt": "A prior Validator passed check A on the same revision and recorded its identity, command, exit code and input digest. Only HOME, TMPDIR, scratch-copy path and session identity differ.",
-          "expectations": [
-            {
-              "text": "Uses basis carried with a recomputed matching digest instead of rerunning for sandbox differences",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Does not treat a disposable worker sandbox as a changed check input",
-              "type": "boundary",
-              "weight": 2
-            }
-          ],
-          "tags": [
-            "graph-v3",
-            "behavior-regression"
-          ]
-        },
-        {
-          "id": "flaky-check-bounded-repetition",
-          "description": "flaky check bounded repetition",
-          "prompt": "A cross-process test failed once, passed on the next run, and fails intermittently on the recorded pristine baseline too.",
-          "expectations": [
-            {
-              "text": "Repeats the check at most three times, records the observed failure rate and classifies it against the pristine baseline",
-              "type": "boundary",
-              "weight": 2
-            },
-            {
-              "text": "Does not repeat until green and does not report the flaky check as a clean pass",
+              "text": "Test uses normal execution outcomes and adds relevant tests rather than judging every approved worker",
               "type": "boundary",
               "weight": 2
             }
@@ -902,7 +718,7 @@
               "weight": 2
             },
             {
-              "text": "Reports the revision-level gate as owned by validation rather than by this node",
+              "text": "Does not invent a revision-wide gate; assigns an explicitly required shared gate to one owner only",
               "type": "boundary",
               "weight": 2
             }
@@ -1072,6 +888,27 @@
             "graph-v3",
             "behavior-regression"
           ]
+        },
+        {
+          "id": "test-ownership-and-check-selection",
+          "description": "test ownership and check selection",
+          "prompt": "Plan an API behavior change with new fixtures and parser regressions in a large monorepo.",
+          "expectations": [
+            {
+              "text": "Assigns affected behavior and supported case/file/package checks rather than the full repository suite",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Keeps cohesive implementation/tests together or assigns Test non-overlapping test ownership with acyclic dependencies; no mandatory judge",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
         }
       ]
     },
@@ -1141,6 +978,300 @@
             "graph-v3",
             "behavior-regression"
           ]
+        },
+        {
+          "id": "local-fix-selects-relevant-tests",
+          "description": "local fix selects relevant tests",
+          "prompt": "Only parser empty-input handling changed. Existing parser tests and a caller regression are available in a large monorepo. Write missing coverage.",
+          "expectations": [
+            {
+              "text": "Maps changed behavior and affected callers to cases; runs new and relevant existing parser/caller tests",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not append a full suite, global build or coverage run merely because the repository is large",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "regression-fails-for-the-right-reason",
+          "description": "regression fails for the right reason",
+          "prompt": "Fix input loses its trailing delimiter. You can safely run old and fixed parser code in an isolated copy. Add regression coverage.",
+          "expectations": [
+            {
+              "text": "Writes an explicit expected result that detects delimiter loss; observes the intended assertion fail before the fix and pass after",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not treat an import/setup failure as regression evidence or revert the shared workspace",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "behavior-change-updates-obsolete-expectation",
+          "description": "behavior change updates obsolete expectation",
+          "prompt": "An authorized change makes empty input return an empty array instead of null. Existing tests expect null.",
+          "expectations": [
+            {
+              "text": "Updates the obsolete expectation to the requested behavior and checks affected callers",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not preserve the old expectation or change production behavior solely to make stale tests pass",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "meaningful-assertions",
+          "description": "meaningful assertions",
+          "prompt": "A new parser test asserts only that parse(input) is truthy and mocks the parser itself.",
+          "expectations": [
+            {
+              "text": "Tests the real public behavior with explicit independent expected values and meaningful edge cases",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not repeat the implementation algorithm or mock away the behavior under test",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "integration-keeps-real-collaborators",
+          "description": "integration keeps real collaborators",
+          "prompt": "An API now passes cancellation to its storage adapter. Existing unit tests mock the whole API and always succeed.",
+          "expectations": [
+            {
+              "text": "Adds a focused integration test with the real in-process API and adapter path so broken propagation fails",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Controls external resources and asserts the relevant cancellation/error behavior",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "fixtures-isolate-resources",
+          "description": "fixtures isolate resources",
+          "prompt": "New concurrent tests use a fixed temporary filename and sleep 500ms to wait for completion.",
+          "expectations": [
+            {
+              "text": "Uses unique disposable resources, explicit completion and cleanup",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Avoids shared state, fixed sleeps and unrelated production test hooks",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "zero-selected-is-not-pass",
+          "description": "zero selected is not pass",
+          "prompt": "The selected test command exits 0 but reports zero tests; the new regression was skipped by the filter.",
+          "expectations": [
+            {
+              "text": "Corrects the supported selection or reports incomplete work; verifies the new regression actually executes",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not report a required check passed solely from exit code 0",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "broaden-for-shared-config",
+          "description": "broaden for shared config",
+          "prompt": "A shared runner configuration changes fixture loading in two packages. A selected test reveals the other package is affected too.",
+          "expectations": [
+            {
+              "text": "Investigates the failure and runs the affected packages/fixture integration slice with a reason",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not jump to every repository test without evidence that the broader scope is needed",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "full-suite-required-once",
+          "description": "full suite required once",
+          "prompt": "Repository policy explicitly requires a full suite for the changed shared runner. The Strategy assigns that gate only to this Test item.",
+          "expectations": [
+            {
+              "text": "Runs the required broad gate once for the current inputs and records why narrower checks are insufficient",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not copy the gate into every worker or rerun it after unrelated prose changes",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "reuse-unaffected-results",
+          "description": "reuse unaffected results",
+          "prompt": "A backend report records passing parser tests with command, scope and exit code; only independent documentation changed after it.",
+          "expectations": [
+            {
+              "text": "Reuses the passing result with its original graph/node/check reference and unchanged-input rationale",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not rerun it for a new session or demand a whole-workspace digest",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "uncertain-impact-reruns-affected",
+          "description": "uncertain impact reruns affected",
+          "prompt": "Prior API tests passed, but shared configuration they read has now changed and the impact is uncertain.",
+          "expectations": [
+            {
+              "text": "Investigates consumers and reruns the affected API/configuration tests",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not reuse stale evidence or treat uncertainty alone as a full-suite requirement",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "missing-result-cannot-be-reused",
+          "description": "missing result cannot be reused",
+          "prompt": "A report says all tests passed but records no command, scope or exit result. The required test is available.",
+          "expectations": [
+            {
+              "text": "Runs the required affected test or reports the missing evidence",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not invent a run or demand a separate judge",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "flaky-check-is-not-green",
+          "description": "flaky check is not green",
+          "prompt": "An asynchronous regression failed once, then passed without any edit.",
+          "expectations": [
+            {
+              "text": "Diagnoses it and follows bounded diagnostic repetition with actual attempts/failures and a baseline when available",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Does not erase the failure, rerun the full slice until green, skip the case or weaken assertions",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
+        },
+        {
+          "id": "regression-reproduction-unavailable",
+          "description": "regression reproduction unavailable",
+          "prompt": "A fixed-state regression can run, but pre-fix reproduction would overwrite another worker's active shared changes and no safe isolated baseline is available.",
+          "expectations": [
+            {
+              "text": "Preserves shared changes and runs meaningful fixed-state assertions",
+              "type": "boundary",
+              "weight": 2
+            },
+            {
+              "text": "Explains the reproduction limitation without fabricating red/green evidence",
+              "type": "boundary",
+              "weight": 2
+            }
+          ],
+          "tags": [
+            "graph-v3",
+            "behavior-regression"
+          ]
         }
       ]
     },
@@ -1184,7 +1315,7 @@
         {
           "prompt": "Approved, proceed with that plan.",
           "expected_state": {
-            "output_hint": "records actual decision in the execution prompt and honors required host approval policy; executes and validates authorized scope"
+            "output_hint": "records actual decision, honors required host approval policy and executes authorized scope with assigned checks"
           }
         }
       ]
@@ -1203,7 +1334,7 @@
         {
           "prompt": "Only approve the independent README typo.",
           "expected_state": {
-            "output_hint": "records exact approved_ids; excludes unapproved chain; executes and validates only typo"
+            "output_hint": "records exact approved_ids; excludes unapproved chain; executes only typo with docs checks"
           }
         }
       ]
@@ -1241,7 +1372,7 @@
         {
           "prompt": "Inspection found the missing return in parser.ts and its scoped regression test.",
           "expected_state": {
-            "output_hint": "dispatches backend execution and independent validation; no mandatory planner for now-clear work"
+            "output_hint": "dispatches backend execution with scoped regression checks; no mandatory planner or post-execution judge"
           }
         }
       ]
@@ -1254,13 +1385,13 @@
         {
           "prompt": "Three scope-specific approvals have resumed remaining work; there have been no defects. All continuations are complete.",
           "expected_state": {
-            "output_hint": "revision_round remains 0; spends exactly one validate round on the actual workspace"
+            "output_hint": "revision_round remains 0; collects current worker reports and any assigned testing work without a separate validation round"
           }
         },
         {
-          "prompt": "Validator now finds a real defect in item 1.",
+          "prompt": "A focused regression now finds a real defect in item 1.",
           "expected_state": {
-            "output_hint": "starts repair round 1 with affected closure and prior reports, batches every pending correction into that one closure before the next validation graph, and retains continuation identity"
+            "output_hint": "starts repair round 1 with affected closure and prior reports; batches pending corrections and reruns affected tests, retaining continuation identity"
           }
         }
       ]
@@ -1271,7 +1402,7 @@
       "description": "Revisions preserve regression coverage",
       "turns": [
         {
-          "prompt": "Validation passed item 2 but failed a utility in item 1.",
+          "prompt": "Focused tests passed item 2 but found a utility defect in item 1.",
           "expected_state": {
             "output_hint": "repairs item 1 and affected dependency/write/check closure"
           }
@@ -1279,7 +1410,7 @@
         {
           "prompt": "The utility fix changed shared configuration used by item 2.",
           "expected_state": {
-            "output_hint": "rechecks item 2 because its shared configuration input changed; records basis rerun with a rerun_reason and reports every approved item"
+            "output_hint": "rechecks item 2 because its shared configuration input changed; reuses only unaffected check results and reports remaining failures"
           }
         }
       ]

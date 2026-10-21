@@ -101,13 +101,14 @@ Every sentence about a role MUST describe what it does, not what it "is" as a ch
 ## 4. Behavioral authority
 
 PROMPT.md and functions/triage.md define routing. references/graph-protocol.md
-owns scheduling, authorization, validation batching and completion;
+owns scheduling, authorization, scoped testing, repair and completion;
 references/schemas.md owns payload contracts. Preserve those constraints when
 changing wording. This
 style reference does not define another workflow or override those authorities.
 
 In particular, DIRECT means read-only, not "no planner was called." Clear
-implementation can skip planning but still requires independent validation.
+implementation can skip planning; workers still own relevant checks and Test owns
+dedicated test-writing work when needed.
 Meaningful progress updates are compatible with silent internal routing.
 
 ## 5. Tone and Style

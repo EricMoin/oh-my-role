@@ -21,10 +21,11 @@ blockers. A missing report is a protocol failure, not inferred success.
 Follow graph-protocol.md. graph_control retry creates a new attempt or, for a
 terminal run with accounted effects, a new run of the same immutable plan. It does
 not reset all descendants, preserve a conversation or guarantee idempotence. Changed
-scope/prompts require a new graph name. Do not reset request repair counts or consumed validate rounds.
+scope/prompts require a new graph name. Do not reset request repair counts.
 
-If review or Validator remains unavailable after bounded transient recovery, report
-unverified work. Never replace independent validation with the executor's or Emperor's
-self-assessment. Stop repeated identical failures, cancel obsolete work through the
+If a required review or assigned test/check remains unavailable after bounded
+transient recovery, report the exact gap. Complete worker reports with current
+check results do not need another verification session. Never replace a missing
+required check with a claim of success. Stop repeated identical failures, cancel obsolete work through the
 trusted control path and confirm effects. Do not clear an unreadable store or repeat
 uncertain external operations to make a graph look complete.

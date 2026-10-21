@@ -87,6 +87,9 @@ const report = (id: number) => ({
 });
 
 test('real loader and resolver preserve role ownership, skills and active functions', async () => {
+  expect(agents.some(agent => agent.id === 'emperor--validator')).toBe(false);
+  const tester = agents.find(agent => agent.id === 'emperor--jinyiwei--test');
+  expect(tester.config.skills).toContain('test-design');
   const registry = JSON.parse(readFileSync(resolve(root, 'roles/emperor/references/departments.json'), 'utf8'));
   expect(agents.filter(agent => agent.id.startsWith('emperor--jinyiwei--')).map(agent => agent.id).sort())
     .toEqual(Object.values(registry).map((row: any) => row.agent).sort());
@@ -150,6 +153,39 @@ test('accepted done delivers pinned data once; replay and redeclaration do not d
   expect(JSON.stringify(status)).not.toContain(rigged.deliveries[0].credential);
   expect((await rigged.call('graph_declare', { declaration: examples.execution })).preserved).toBe(true);
   expect(rigged.deliveries).toHaveLength(2);
+});
+
+test('assigned testing consumes implementation reports and completes through execution outcomes', async () => {
+  const rigged = await rig(examples.execution_with_tests);
+  expect((await rigged.submit(0, 'done', report(1))).decision).toBe('accepted');
+  await rigged.call('graph_declare', { declaration: examples.execution_with_tests });
+  expect(rigged.deliveries.map(r => r.nodeId)).toEqual(['exec-1-r0-c0', 'exec-2-r0-c0']);
+  expect((await rigged.submit(1, 'done', report(2))).decision).toBe('accepted');
+  await rigged.call('graph_declare', { declaration: examples.execution_with_tests });
+  expect(rigged.deliveries.map(r => r.nodeId)).toEqual(['exec-1-r0-c0', 'exec-2-r0-c0', 'test-3-r0-c0']);
+  expect(rigged.deliveries[2].inputs.map((input: any) => input.payload.value.subtask_id)).toEqual([1, 2]);
+  expect((await rigged.submit(2, 'done', report(3))).decision).toBe('accepted');
+  expect((await rigged.status()).phase).toBe('complete');
+  expect(rigged.deliveries).toHaveLength(3);
+});
+
+test('a failing regression remains a failed execution report without a judge stage', async () => {
+  const rigged = await rig(examples.execution_with_tests);
+  expect((await rigged.submit(0, 'done', report(1))).decision).toBe('accepted');
+  await rigged.call('graph_declare', { declaration: examples.execution_with_tests });
+  expect((await rigged.submit(1, 'done', report(2))).decision).toBe('accepted');
+  await rigged.call('graph_declare', { declaration: examples.execution_with_tests });
+  const partial = { ...report(3), incomplete_items: ['Parser regression fails'],
+    verification: [{ id: 'parser', command: 'scoped-parser-check', scope: 'parser regression',
+      status: 'failed', exit_code: 1, summary: 'Missing delimiter' }] };
+  const failure = { schema_version: 1, plan_revision: 'example-v1', subtask_id: 3,
+    reason: 'Parser regression fails', completed_work: ['Regression test'], remaining_work: ['Production fix'],
+    category: 'acceptance_failure', attempts: ['scoped-parser-check'], report: partial };
+  expect((await rigged.submit(2, 'failed', failure)).decision).toBe('accepted');
+  const status = await rigged.status();
+  const attempt = status.attempts.find((item: any) => item.accepted?.outcomeId === 'failed');
+  expect(attempt.result.payload).toEqual({ kind: 'value', value: failure });
+  expect(rigged.deliveries).toHaveLength(3);
 });
 
 for (const outcome of ['failed', 'blocked', 'clarification_required', 'approval_required']) {

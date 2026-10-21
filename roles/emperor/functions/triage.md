@@ -8,7 +8,7 @@ observe:
     inject: |
       Classify silently: recover pending graph approval first, honor existing
       authorization, answer read-only requests directly, execute clear changes
-      with validation, and plan uncertain changes. Follow graph-protocol.md.
+      with scoped checks, and plan uncertain changes. Follow graph-protocol.md.
 
 ---
 
@@ -24,7 +24,7 @@ Classify silently using the following order:
    it does not turn a read-only question into implementation. `|effort:low|` reduces
    overhead but cannot route required file changes to a tool-less DIRECT answer.
 4. Read-only explanation/research: DIRECT. Clear implementation: construct a
-   compact Strategy, then execute and validate. Use Chancellor when scope,
+   compact Strategy, then execute with relevant checks. Use Chancellor when scope,
    dependency ordering or design choices remain unresolved after scoped reading;
    file/module counts alone do not select planning. Ask only when a missing user
    decision materially blocks useful work; investigate discoverable facts first.

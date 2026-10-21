@@ -38,7 +38,7 @@ A unit is delegatable when it satisfies all three:
 
 **Over-splitting** creates a swarm of trivial fragments — merge a cohesive deliverable even when it spans files or requires several checks.
 
-**Over-merging** is the graph-engine anti-pattern: collapsing distinct concerns into one monolithic subtask "to save dispatches" defeats the engine. The engine schedules, parallelizes, retries, and validates PER NODE — a monolithic subtask serializes parallelizable work, and one failed part forces the whole unit to re-run in the revise loop. Balance useful parallelism against context-transfer cost; do not split a cohesive change merely to increase node count.
+**Over-merging** is the graph-engine anti-pattern: collapsing distinct concerns into one monolithic subtask "to save dispatches" defeats the engine. The engine schedules, parallelizes, retries, and records outcomes per node — a monolithic subtask serializes parallelizable work, and one failed part forces the whole unit to re-run during a repair. Balance useful parallelism against context-transfer cost; do not split a cohesive change merely to increase node count.
 
 **Under-splitting** produces subtasks where the executor must make architectural decisions that belong to the planner. If a subtask requires "figure out the right approach," it is too broad. The planner should have already figured that out.
 

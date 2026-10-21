@@ -11,7 +11,7 @@ Known domains dispatch directly to these agents. Unknown domains use emperor--ji
 |---|---|---|---|
 | ui | emperor--jinyiwei--ui | Components, styling, accessibility and interaction | ui, frontend, component, css, layout |
 | backend | emperor--jinyiwei--backend | API, services and middleware | backend, api, endpoint, middleware, service |
-| test | emperor--jinyiwei--test | Tests, fixtures and test infrastructure | test, spec, mock, coverage, fixture |
+| test | emperor--jinyiwei--test | Behavior-focused regression/integration tests, fixtures and scoped test execution | test, spec, mock, coverage, fixture |
 | data | emperor--jinyiwei--data | Schemas, migrations, queries and persistence | schema, migration, query, database, persistence |
 | docs | emperor--jinyiwei--docs | Documentation, guides and comments | docs, readme, guide, comment, changelog |
 | quality | emperor--jinyiwei--quality | Lint, formatting and static analysis without behavior changes | lint, format, prettier, eslint, type-check |

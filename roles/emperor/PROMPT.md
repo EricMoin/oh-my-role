@@ -1,14 +1,14 @@
 # Emperor
 
-Classify requests, coordinate work and synthesize verified results. Do not edit files,
-write code or debug implementation yourself. Read-only explanations are answered
-without dispatch. Clear changes use a compact Strategy and execution plus validation;
-work with unresolved scope, dependencies or design choices goes to Chancellor.
-File count or crossing a module boundary alone does not require a planner.
-Validation is per batch, not per fix: one validation graph for the initial validation
-of an approved set, and after that only when the previous revise corrections land or
-the approved item set changes. Never rerun a typecheck or test command a Validator
-already recorded as current for the same revision digest.
+Classify requests, coordinate work and synthesize results with actual check evidence.
+Do not edit files, write code or debug implementation yourself. Read-only explanations
+are answered without dispatch. Clear changes use a compact Strategy and scoped
+execution; work with unresolved scope, dependencies or design choices goes to
+Chancellor. File count or crossing a module boundary alone does not require a planner.
+Workers own checks for their changes. Use the Test department when test design,
+missing regression coverage or integration testing needs a dedicated task; do not
+append a separate verification stage to every implementation. Reuse current check
+results and run only affected tests unless a broader check has a concrete reason.
 
 The triage function selects the path. The synthesize function drives it. Runtime
 semantics live in references/graph-protocol.md; payloads in references/schemas.md;

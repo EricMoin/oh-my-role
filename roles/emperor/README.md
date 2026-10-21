@@ -1,7 +1,7 @@
 # Emperor
 
-A read-only coordinator for scoped execution and independent verification.
-Version 3.1 targets the current rolebox Graph v3 implementation in Pi and dsh.
+A read-only coordinator for scoped implementation and behavior-focused testing.
+Version 4.0 targets the current rolebox Graph v3 implementation in Pi and dsh.
 
 Emperor owns graph_declare, graph_control, graph_status and graph_audit. All
 dispatched agents submit their own explicit graph_submit_outcome. Chancellor
@@ -9,17 +9,32 @@ produces a Strategy and review recommendation; Emperor schedules Reviewer, Draft
 and optional Finalizer directly. Known domains go directly to the eight departments;
 Jinyiwei executes unknown-domain work or returns a routing suggestion.
 
-Read-only questions stay direct. Clear changes use execution plus validation;
-uncertain scope gets planning first. Dependencies route only on accepted done
-outcomes, and consumers declare the upstream inputs they need. Failed, blocked,
-clarification_required and approval_required never release done-only consumers.
-Reports remain subject to independent Validator checks of the current workspace.
+Read-only questions stay direct. Clear changes use a compact Strategy and workers
+that own the relevant checks; uncertain scope gets planning first. Dependencies route
+only on accepted done outcomes, and consumers declare the upstream inputs they need.
+Failed, blocked, clarification_required and approval_required never release done-only
+consumers. Required checks and incomplete work are explicit in Execution Reports.
 
-Validation runs once per batch: after the initial validation of an approved set, a
-validation graph follows a revise whose corrections have landed, or a change to the
-approved item set. Each Validate Result item carries a basis of rerun or carried, and
-the coordinator does not rerun a check the Validator already recorded for the same
-revision digest.
+There is no mandatory post-execution Validator. Use the Test department when a change
+needs dedicated regression cases, fixtures or integration coverage. It writes and runs
+behavior-focused tests and returns a normal Execution Report. Small changes with
+adequate existing coverage can finish through their implementation worker. Keep
+cohesive implementation and tests together, or assign separate Test work explicit
+file ownership and acyclic dependencies.
+
+Test reads the diff and affected callers, designs assertions that detect relevant
+defects, and reproduces the original regression when feasible. It runs selected
+cases/files or affected packages by default, expanding only for concrete impact or
+explicit repository/user requirements. Full suites are exceptional; shared required
+gates have one owner and run once for the relevant inputs. Reuse recorded current
+checks without another session or workspace-wide digest bookkeeping. See
+[test-design](subagents/jinyiwei/subagents/test/skills/test-design/SKILL.md).
+
+Upgrade from 3.x: remove `emperor--validator` nodes and Validate Result consumers.
+Assign actual missing test work to `emperor--jinyiwei--test` with normal execution
+outcomes; do not rename a judge node into Test. Stop emitting validate_limit,
+validate_limit_reason and consumed validation-round counts. Defect repairs still
+preserve their request-wide budget.
 
 Approval preparation persists the exact request, not permission. Emperor honors
 existing authorization and records the actual user's decision in the next stage.
@@ -28,11 +43,11 @@ and authorized approver session. A control decision neither submits an outcome n
 performs the operation. Missing host authority must not be bypassed.
 
 Every declaration has an execution ceiling and explicit completion. Defect repairs
-use fresh graphs and a preserved request repair count; validate rounds have a finite
-validate_limit (default 3) with a preserved consumed count; approval/clarification
-continuations have their own counter and spend neither. Runtime retries create new attempts/runs and
-require safe side-effect recovery. Notifications are wakeups to read committed
-state; duplicate notifications are not new work. Unreadable state is a blocker.
+use fresh graphs with a preserved request repair count; approval/clarification
+continuations have a separate counter and do not spend repair rounds. Runtime retries
+create new attempts/runs and require safe side-effect recovery. Notifications are
+wakeups to read committed state; duplicate notifications are not new work. Unreadable
+state is a blocker.
 
 Execution requirements are part of the contract: a dispatched worker on a
 command-only host holds only graph_submit_outcome and graph_worker_exec, with writes
@@ -61,9 +76,9 @@ these role assets do not make self-reported verification engine-trusted.
 From the repository root (Python requires PyYAML):
 
 ```sh
-python scripts/sync_emperor.py --check
-python scripts/validate.py
-python -m unittest discover -s scripts/tests -p 'test_emperor_contract.py' -v
+python3 scripts/sync_emperor.py --check
+python3 scripts/validate.py
+python3 -m unittest discover -s scripts/tests -p 'test_emperor_contract.py' -v
 bun test --isolate scripts/tests/emperor-rolebox.test.ts
 ```
 
@@ -74,6 +89,6 @@ dispatch. They make no model calls and do not certify live model behavior.
 See [evals/README.md](evals/README.md) for behavioral coverage and its limits.
 
 After editing departments.json or canonical shared skills under Jinyiwei, run
-`python scripts/sync_emperor.py`. Validation rejects stale generated copies,
+`python3 scripts/sync_emperor.py`. Validation rejects stale generated copies,
 unreachable departments, worker orchestration permissions and obsolete completion
 conditions. No rolebox full test suite is required.

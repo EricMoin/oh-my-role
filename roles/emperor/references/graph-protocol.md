@@ -19,8 +19,8 @@ Emperor dispatches every planning, review, draft, reconciliation and execution
 stage directly. Jinyiwei executes unknown-domain work or returns a routing suggestion.
 
 Read-only answers need no graph. Clear changes use a compact Strategy followed by
-execution and independent validation. Unresolved scope, dependencies or design
-choices go to emperor--chancellor. After receiving its Strategy, Emperor decides
+execution with scoped checks and any needed test-writing tasks. Unresolved scope,
+dependencies or design choices go to emperor--chancellor. After its Strategy, Emperor decides
 whether independent review is needed for uncertain assumptions, shared invariants,
 regression exposure or irreversible effects. Dispatch emperor--chancellor--reviewer
 with the actual draft. On veto, dispatch emperor--chancellor--drafter with findings,
@@ -87,8 +87,8 @@ submission for all Emperor templates.
 Pi provides sandboxed native worker tools. dsh graph workers expose only
 graph_submit_outcome and graph_worker_exec; use the latter for reading, editing,
 checks and commands in the workspace sandbox. Planning/review/approval workers
-use read-only commands only; Validator runs authorized checks without edits. Tool
-availability does not enlarge role or task scope. If Context7 or other research
+use read-only commands only. Implementation and Test workers run their assigned
+checks within scope. Tool availability does not enlarge role or task scope. If Context7 or other research
 tools are unavailable inside this boundary, use available local source/official
 evidence or report the missing evidence; never bypass the host execution guard.
 
@@ -101,7 +101,6 @@ revision identities; workers do not supply those as tool arguments.
 Business data follows schemas.md. Outcome vocabulary:
 - Strategy stages: strategy; independent review: pass or veto.
 - Execution: done, failed, blocked, clarification_required, approval_required.
-- Independent validation: pass or revise.
 - Approval preparation: approval_required (a request, never permission).
 
 Only decision: accepted with verdict: committed or replayed and no refusals settles
@@ -115,9 +114,10 @@ transport authority. Local function evidence tracks the accepted tool response,
 not merely a call, signal or fence.
 
 These templates do not register business JSON schemas or trusted command validators.
-Their structural acceptance is not independent verification of an Execution Report.
-Consumers must check schemas.md and prerequisite completeness before working;
-Emperor still requires Validator. If installed host contracts/gates are required,
+Structural acceptance does not establish that the reported work or checks succeeded.
+Consumers must check schemas.md and prerequisite completeness before working.
+Workers supply actual check results; Emperor collects them without a separate
+independent verification stage. If installed host contracts/gates are required,
 reference their exact identities; never invent a schema or policy capability.
 
 ## Read and wait
@@ -201,39 +201,41 @@ with the remaining item and its unperformed dependents, carrying the original
 request and resolution. Inspect existing files and never repeat completed effects.
 No control approval can convert a partial worker report into done.
 
-## Validation and recovery
+## Testing and recovery
 
-After execution and continuations settle, dispatch one Validator with every approved
-item, latest reports, cumulative changed paths, prior independent check records and
-the prior Validate Result.
+Implementation workers own the applicable checks for their assigned changes. Add a
+Test department task when behavior needs new regression coverage, meaningful test
+cases or integration fixtures. A small change with adequate existing tests can be
+completed by its implementation worker. Documentation-only work needs its relevant
+structure/link checks; it does not automatically create a Test task.
 
-Declare a validation graph exactly when one of these holds: (a) no Validate Result
-exists yet for the current approved set, (b) the previous Validate Result returned
-revise and its corrections have landed, or (c) the approved item set changed. The
-initial validation of every implementation path is required and batching never removes
-it. Never declare a validation graph after each individual fix. Accumulate every
-pending correction into one execute graph, then validate that batch once. A validation
-dispatch that never launched is not a validate round.
+A Test task receives the affected behavior and acceptance criteria, changed paths,
+direct callers/shared configuration, existing test locations, repository test policy,
+prior check results and its authorized test write_scope. It owns test design and
+execution, not a per-item judgment of every worker's honesty or file writes. Use the
+normal Execution Report and done/failed outcomes. No mandatory post-execution judge,
+Validate Result, validation graph or validation-round budget remains.
 
-On revise, select failed IDs, their transitive dependents and overlapping write or
-verification scopes. Execute that closure in a fresh DAG, then validate the approved
-set again under the same batching rule. Every approved item receives a current
-verdict: an item whose check inputs are unchanged is carried under the rule below, and
-an item whose inputs changed is rerun. Partial reports are recovery inputs, never
-successful prerequisites.
+Keep production changes and cohesive regression tests together when one worker can
+own them. If Test owns separate test files, declare that ownership and dependencies
+up front. An upstream implementation item may finish its assigned work and checks
+before downstream Test runs; the overall request is complete only after every
+required implementation and test task finishes. Avoid overlapping test writers and
+cyclic requirements that make the upstream wait for its downstream test outcome.
+
+On a diagnosed defect, select affected implementation/test IDs, their transitive
+dependents and overlapping write/check scopes. Batch pending corrections into a fresh
+DAG, then run affected tests against the corrected workspace. Unaffected complete
+reports remain usable; partial reports are recovery inputs, not successful prerequisites.
+A failing regression outside Test's production write_scope is reported to Emperor
+for a production fix, never weakened or silently patched by Test.
 
 Choose a finite repair_limit before execution (default 2); persist overrides with a
 task-specific reason. Preserve the actual repair count across graphs and plan
 revisions. Waiting and pure approval/clarification continuation do not spend repair
-rounds; a continuation correcting a diagnosed defect does.
-
-Choose a finite validate_limit before execution (default 3) and persist any override
-with a validate_limit_reason. It bounds the number of Validator graphs dispatched for
-one request, counting the initial validation and every revalidation. Preserve the
-consumed validate-round count across graphs and plan revisions; a validation dispatch
-that never launched or was refused for capacity does not spend a validate round. When
-the limit is reached, stop and report the remaining unverified items instead of
-declaring another validation graph.
+rounds; a continuation correcting a diagnosed defect does. Test failures and missing
+required checks must be resolved or reported as incomplete; removing the judge does
+not remove acceptance criteria.
 
 Stop on unchanged failures without new evidence, exhausted budget or unresolved
 blockers; report remaining work.
@@ -250,61 +252,41 @@ permission to rerun. Recover consistent host state or report the concrete blocke
 
 A check that can only be executed outside the worker boundary — a boundary test
 that needs to apply its own OS sandbox, or any step the host reserves to the
-operator — cannot be delegated to a worker or to the Validator. Record it as a
+operator — cannot be delegated to a worker. Record it as a
 host-level check with the exact command and its result, and treat the worker-side
 result as evidence about the workspace, not as end-to-end proof of the boundary.
 
-## Incremental validation and check reuse
+## Test selection and check reuse
 
-Record the workspace digest of every validation round. The workspace digest is the
-SHA-256 of the sorted list of (repository-relative path, SHA-256 of file bytes) pairs
-over the union of every approved item's check input set; an item digest uses the same
-construction over that item's check input set alone. A check input set is the item's
-write_scope paths plus every caller, fixture, dependency manifest, lockfile and shared
-configuration file that the command reads; when an item's verification array declares
-several required checks, the item's check input set is the union of their input sets.
-The Validator retains the (path, hash) list behind every digest it reports, so a later
-round compares path sets and not only hashes. Sandbox-provided paths (HOME, TMPDIR,
-scratch copies, tool locations), session identity, prompt text and step count are not
-check inputs and MUST NOT enter a digest. The identity of the tool that executes a
-check is an input even though its path is not: the check record carries the resolved
-command path and the tool's reported version, and a changed tool version forces a
-rerun.
+Start from the changed behavior, the diff and repository test ownership. Map affected
+branches, direct consumers, fixtures and shared configuration to existing tests. Run
+the smallest supported case/file/package selection that covers those behaviors; add
+an integration check when a real interaction crosses that scope. A file list alone
+is insufficient if callers or shared configuration change behavior elsewhere.
 
-Every approved item receives a current verdict. Each Validate Result item declares a
-basis of rerun or carried. The Validator, never the coordinator, decides the basis.
-A carried basis is permitted only when all of these hold:
+Expand from selected cases/files to an affected package or integration slice only
+when evidence warrants it: shared behavior/configuration changes, a failure outside
+the initial selection, a runner that cannot select more narrowly, or an explicit
+repository gate/user request. State what the wider command covers and why the smaller
+selection cannot. A full suite is exceptional, not a default end-of-task ritual;
+uncertain impact calls for investigation and an affected slice before choosing it.
+Honor repository full-suite bans and record any required check that remains unavailable.
 
-1. Every path in the item's check input set is provably outside the changed-path set
-   between the revision whose workspace digest was recorded and the current revision,
-   taken from the cumulative changed-path list and the retained (path, hash) lists. If
-   the input set cannot be enumerated, or any input changed, or its impact is
-   uncertain, the item is rerun. When an item's verification array declares several
-   required checks, its check input set is the union of their input sets.
-2. The prior check's graph/node/check identity, command, resolved tool path, reported
-tool version, exit code and input digest are recorded and available to the Validator.
-3. The Validator recomputes the current digest itself and it equals the recorded one.
-4. The prior check passed: its recorded exit code is 0 and the prior Validate Result
-   marked that item pass. A carried failing check is never a pass.
+Give each check one owner. A required whole-project gate, when justified, runs once
+for the relevant workspace state and is not copied into every node's verification
+array. Do not automatically add a build, global typecheck, coverage run or full suite
+to a local fix. Select code, prose and configuration checks for their actual surfaces.
 
-Missing, incomplete or mismatching carrier data is refused and the item is rerun. A
-record without the resolved tool path or the reported tool version is incomplete
-carrier data and forces a rerun, and a version that differs from the one the Validator
-resolves forces a rerun. A rerun costs one line: it requires a nonempty rerun_reason
-naming the changed input or the uncertainty that forced it. Every rerun records the
-executed check identity, command, resolved tool path, reported tool version, exit code
-and input digest in the item's check field. A rerun that records none can never be
-carried.
-
-The coordinator MUST NOT rerun a typecheck, test or lint command that a Validator has
-recorded as current for the same revision digest. It may re-establish revision
-identity by recomputing the digest, and it may rerun a command when the digest changed
-since the recorded check or when no Validator record exists for that digest. A
-whole-project typecheck or test gate is a revision-level check: when the approved
-verification plan and repository policy provide one it runs once per revision, owned
-by the validation round, and MUST NOT appear in every node's verification array. Where
-repository policy bans a full suite, the validation round records the scoped substitute
-and the remaining gap; this rule does not override that ban.
+Reuse a successful recorded check when its command, scope and exit result are
+available and no relevant source, direct consumer, fixture, dependency, tool version
+or configuration has changed. Cite its original graph/node/check using reused_from
+in the Execution Report and explain freshness in summary; never present it as a new
+run. Reuse does not require an independent judge, a whole-workspace digest or a new
+session. Missing results or uncertain relevant inputs require the affected check,
+not an automatic full-suite run. A new worker session, disposable HOME/TMPDIR or
+scratch path alone does not invalidate results. After a later edit, rerun only the
+checks whose inputs changed; do not rerun passing checks merely for a commit or final
+answer. A reused failure cannot satisfy a required check.
 
 ## Repeated checks and flakiness
 
@@ -312,14 +294,13 @@ Repetition measures a check; it never obtains a passing result. A check that fai
 first attempt cannot be recorded passed because a later repetition passed.
 
 Bounded repetition: a nondeterministic check may run at most three times in one
-validation round and never more than five times for one item across a request. Record
+diagnostic round and never more than five times for one item across a request. Record
 the attempt count and the observed failure rate (failures over attempts) with every
 repetition.
 
 Classify the failure against a pristine baseline: run the same command against the
-recorded input digest of the previously validated revision, or a clean checkout at the
-recorded commit. If no pristine baseline can be established, the check is revise or
-failed with a precise note; it is never a fabricated pass.
+recorded prior workspace state or a clean checkout at the recorded commit. If no
+pristine baseline can be established, the check is failed/unresolved with a precise note; it is never a fabricated pass.
 
 - regression: the baseline passes and the current revision fails. The check fails.
 - pre_existing: the baseline fails the same way. The failure is unchanged evidence and
@@ -327,7 +308,7 @@ failed with a precise note; it is never a fabricated pass.
   identity, report the item as unresolved verification, and spend no further repair
   round on that unchanged failure.
 - flaky_environment: both revisions fail intermittently. Record the observed rate and
-  classify the item revise with that evidence.
+  report the check as failed/unresolved with that evidence.
 
 Unbounded repetition, running a check until it is green and re-running a full slice to
 chase one flaky case are FORBIDDEN. After the bounded attempts, stop and report the
@@ -335,7 +316,7 @@ recorded frequency, the classification and the baseline identity.
 
 ## Completion
 
-Collect accepted results and independent verification. Settle/cancel obsolete work,
-check unconfirmed external effects, then emit final_answer with completed, excluded
+Collect accepted Execution Reports and relevant check results. Settle/cancel obsolete
+work, check unconfirmed external effects, then emit final_answer with completed, excluded
 and unresolved items and actual checks. Do not claim success while required work or
 verification is missing. Approval and graph completion alone are not task completion.

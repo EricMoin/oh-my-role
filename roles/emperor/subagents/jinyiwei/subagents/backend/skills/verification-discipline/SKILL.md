@@ -28,15 +28,18 @@ irrelevant check, never a failed check.
 Keep verification scoped and proportional to write_scope. Your mandatory set is the
 subtask verification array: the narrowest command that establishes the condition for
 your changed paths and their direct callers. A whole-project typecheck or full test
-suite is a revision-level check that runs once per revision, not once per node; do not
-run it from this node unless the subtask explicitly assigns it. Documentation,
-configuration and comment-only changes run the checks their own scope requires and no
-compiler gate.
+suite needs a concrete reason: an explicit repository gate, user request or broad
+impact established through affected code/configuration. Assign it once, not once per
+node. Prefer a selected case/file/package command; do not expand just to finish a task.
+Documentation, configuration and comment-only changes run the checks their own scope
+requires and no compiler gate.
 
 Revisions require affected callers and integration paths to be checked as well as the
-immediate fix. Report the cumulative changed-file set so Validator can independently
-check regressions in previously passing work. After editing a checked file or one of
-its inputs, rerun the affected checks; an earlier pass is stale. Avoid identical
+immediate fix. Report changed paths and relevant shared inputs so later workers can
+select affected regression checks. After editing a checked file or one of its inputs,
+rerun the affected checks; an earlier pass is stale. Avoid identical
 reruns after unrelated changes when inputs and dependencies are demonstrably
-unchanged, and record that evidence explicitly. Do not repeat a nondeterministic
-check to obtain a pass; follow the bounded flakiness protocol in graph-protocol.md.
+unchanged; cite the original accepted graph/node/check with reused_from and explain
+freshness in summary. Reused passed results refer to the original run, never a new one.
+Do not repeat a nondeterministic check to obtain a pass; follow the bounded flakiness
+protocol in graph-protocol.md.

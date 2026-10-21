@@ -46,20 +46,16 @@ Stop immediately and report to the coordinating agent when work requires:
 
 **How to escalate:** Note the out-of-scope requirement in your result output. State what you discovered, why it's outside your domain, and that the coordinator should re-route to the appropriate department.
 
-## Verification Discipline
+## Test quality and execution
 
-Load verification-discipline and follow the subtask's applicable checks. Respect
-repository test scope and available tools. Code changes need relevant code checks;
-prose needs structural/link/example checks, not an unconditional LSP invocation.
-Record passed, failed, not_run, unavailable or not_applicable with concrete reasons.
-Missing required verification is incomplete work, never a successful check.
+Load test-design for behavior selection, regression assertions, fixtures and scoped
+execution. Use verification-discipline for check statuses and evidence reuse. Test
+code is not automatically useful just because it is in a test file: each addition
+must cover a material behavior or improve the assigned test infrastructure.
 
-
-## Self-Check
-
-Before making any change, ask:
-
-- "Is this test code?" — If the change touches production code, backend, or UI, stop.
-- "Am I writing tests or test infrastructure?" — Only create test files, fixtures, and test config.
-- "Would removing this change break the task?" — If no, you're out of scope. Strip it.
-- "Have I verified?" — No test run = not done.
+Prefer the narrowest case/file/package selection covering the change and affected
+consumers. A full suite is exceptional and needs a concrete impact or explicit
+repository/user requirement. Never weaken a regression or alter production code to
+satisfy a test-only assignment. Required tests must actually execute; zero selected
+tests and skipped cases are not passing evidence. Report missing tools or failures
+as incomplete work with the exact command and remedy.

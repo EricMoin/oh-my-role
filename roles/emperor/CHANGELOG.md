@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.0.0]
+
+- Remove the `emperor--validator` dispatch target, mandatory validation graphs,
+  Validate Result payload and validation-round counters. Execution Reports now
+  supply acceptance and check evidence directly. Callers must replace Validator
+  nodes with implementation-owned checks or an actual Test task where needed.
+- Test owns behavior-focused regression/integration cases, meaningful assertions,
+  isolated fixtures and regression reproduction when feasible. Test tasks use normal
+  execution outcomes; they do not judge every worker or edit production fixes.
+- Default to selected tests and affected packages/consumers. Widen only for concrete
+  impact or explicit repository/user requirements, assign shared gates once, and
+  reuse current recorded results without workspace-wide digest bookkeeping.
+- Update planning, recovery, graph examples and behavioral specifications for the
+  implementation/testing flow. Required checks and bounded defect repair remain.
+
 ## [3.1.1]
 
 ### Fixed

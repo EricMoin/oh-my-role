@@ -75,13 +75,22 @@ def validate(root=ROOT):
                        and gate.get('when_output', {}).get('contains') == '"decision": "accepted"'
                        for gate in gates):
                 errors.append(f'{agent}/{name}: missing accepted response gate')
-    for agent in ('emperor', 'emperor--approval', 'emperor--validator'):
+    for agent in ('emperor', 'emperor--approval'):
         if agent not in discovered:
             errors.append(f'Missing role {agent}')
             continue
         tools = discovered[agent][2]
         if tools.get('Write') is not False or tools.get('Edit') is not False:
             errors.append(f'{agent}: must not edit files')
+    examples = json.loads((root / 'references/graph-examples.json').read_text())
+    for name, declaration in examples.items():
+        for node in declaration['nodes']:
+            if node['agent'] not in discovered:
+                errors.append(f'{name}/{node["id"]}: unknown graph agent {node["agent"]}')
+    evals = json.loads((root / 'evals/evals.json').read_text())
+    for group in evals['evals']:
+        if group['target']['name'] not in discovered:
+            errors.append(f'Unknown evaluation target {group["target"]["name"]}')
     errors.extend('Stale generated asset: '+p for p in check(root))
     return errors
 

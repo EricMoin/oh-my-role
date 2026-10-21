@@ -40,7 +40,7 @@ are unresolved. File counts, elapsed thought time and low risk labels are not ga
 
 ### Execute
 
-Use the matching department directly, or Jinyiwei for unknown domains. Execute then validate.
+Use the matching department directly, or Jinyiwei for unknown domains. Execute with relevant checks and any needed test-writing task.
 
 **Signals:**
 - Single file change with clear intent: "add a timeout parameter to fetchData"

@@ -1,3 +1,4 @@
+import json
 import shutil
 import sys
 import tempfile
@@ -45,14 +46,28 @@ class EmperorContracts(unittest.TestCase):
         self.assertTrue(any('owned only by Emperor' in e for e in validate(self.root)))
 
     def test_signal_only_worker_completion_is_rejected(self):
-        p = self.root / 'subagents/validator/functions/validate.md'
+        p = self.root / 'subagents/jinyiwei/subagents/test/functions/execute.md'
         p.write_text(p.read_text().replace('evidence_met()', 'signal_observed(answer)'))
         self.assertTrue(any('requires an accepted outcome' in e for e in validate(self.root)))
 
     def test_ungated_submission_is_rejected(self):
-        p = self.root / 'subagents/validator/functions/validate.md'
+        p = self.root / 'subagents/jinyiwei/subagents/test/functions/report.md'
         p.write_text(p.read_text().replace('"decision": "accepted"', '"decision": "rejected"'))
         self.assertTrue(any('missing accepted response gate' in e for e in validate(self.root)))
+
+    def test_removed_agent_cannot_remain_in_graph_examples(self):
+        p = self.root / 'references/graph-examples.json'
+        examples = json.loads(p.read_text())
+        examples['execution_with_tests']['nodes'][-1]['agent'] = 'emperor--validator'
+        p.write_text(json.dumps(examples))
+        self.assertTrue(any('unknown graph agent emperor--validator' in e for e in validate(self.root)))
+
+    def test_removed_agent_cannot_remain_an_evaluation_target(self):
+        p = self.root / 'evals/evals.json'
+        evals = json.loads(p.read_text())
+        evals['evals'][0]['target']['name'] = 'emperor--validator'
+        p.write_text(json.dumps(evals))
+        self.assertTrue(any('Unknown evaluation target emperor--validator' in e for e in validate(self.root)))
 
 if __name__ == '__main__':
     unittest.main()

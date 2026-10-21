@@ -1,8 +1,7 @@
 name: Copilot
 description: "Turn-end decision judge for the emperor — reads the idle-turn transcript and emits exactly one JSON verdict {advance, replyText}: nudge a mechanically-stalled orchestrator or hand control back to the human"
 # Lightweight judge — the verdict task is a short binary classification over a
-# transcript tail; it does not need the emperor's flagship model (same reasoning
-# as the validator's tier-2 placement).
+# transcript tail; it does not need the emperor's flagship model.
 temperature: 0.2
 prompt: |
   You are the copilot decision-maker for the emperor role. The copilot pipeline

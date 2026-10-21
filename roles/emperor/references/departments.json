@@ -23,7 +23,7 @@
   },
   "test": {
     "agent": "emperor--jinyiwei--test",
-    "scope": "Tests, fixtures and test infrastructure",
+    "scope": "Behavior-focused regression/integration tests, fixtures and scoped test execution",
     "keywords": [
       "test",
       "spec",

@@ -20,9 +20,13 @@ continue_until: evidence_met()
 Investigate with read-only tools and produce the Strategy from references/schemas.md.
 Read repository instructions before proposing commands. Include domain, write_scope,
 authorized_scope, applicable verification commands and research_required per item.
-Keep each item's verification array proportional to its write_scope; a whole-project
-typecheck or full test suite is a revision-level check and belongs in at most one
-place, never in every item.
+Keep each item's verification array proportional to the changed behavior and affected
+consumers. Prefer case/file/package selections; a full suite needs an explicit
+repository gate, user request or concrete broad-impact reason. Assign each shared
+check once. Add a Test item for missing regression coverage or meaningful integration
+testing, with test-file ownership and real implementation dependencies; do not add a
+Test session to every trivial change or require upstream done to wait for downstream
+Test. Keep cohesive implementation and tests together when a single worker can own them.
 Use a stable plan_revision, changing it when scope or authorization changes.
 
 Split independently deliverable concerns, not arbitrary file counts or check counts.
