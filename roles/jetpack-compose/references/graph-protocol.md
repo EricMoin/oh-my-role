@@ -252,6 +252,10 @@ one additional `device-verification` node as described under Topology semantics.
   inputs unless it really reads an accepted upstream report, and like every other
   specialist it never edits production files. An unavailable device, SDK or
   emulator is an `escalate` and a recorded limitation is never a pass.
+  Its dispatch also carries the memory root, run ID, case IDs/revisions, complete
+  journeys and relevant device pitfalls per `references/device-test-memory.md`.
+  The worker returns temporary evidence and `device_test_record`; only the lead
+  archives it and updates project-local memory after accepting the result.
 - `architecture` is the join node. Its declared inputs are the two accepted `report`
   results, and `join: {strategy: "all"}` releases it only after both producers
   settle `report`. Both edges carry `report` into that same consumer.

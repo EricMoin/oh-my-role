@@ -18,6 +18,11 @@ Use the smallest tool that answers the question:
 | Are lists janky? | Macrobenchmark scroll, Lazy layout keys/content types, trace sections |
 | Are parameters unstable? | Compose compiler stability reports |
 | Is data work blocking UI? | Coroutine dispatchers, StrictMode, traces |
+| Which transient UI state or action precedes a visible glitch? | Bounded recording and source-timestamped frame inspection per `references/device-video-debugging.md`, correlated with actions/logs |
+
+Use video to locate visible symptoms, then corroborate with traces/profiling for performance
+claims. Capture overhead, dropped recording frames and preview GIF timing can distort the
+observation; recorded FPS is not display FPS. Preserve baseline and repaired runs separately.
 
 → stability root cause found? Hand off to the **Stability and Strong Skipping** section in the `compose-runtime-state` skill for the fix workflow.
 

@@ -47,3 +47,15 @@ built or installed. An unavailable prerequisite is a recorded limitation, never 
 
 Stop repeating a failed approach when evidence does not improve. Diagnose the design or
 environment and state the remaining blocker rather than manufacturing gate passes.
+
+For every attempted device run, follow `references/device-test-memory.md`: retrieve the
+project's `.rolebox/jetpack-compose/device-testing/` history before selecting cases, reuse
+case IDs and extend only missing coverage, and persist installation pitfalls and actual
+step results afterwards. The lead alone archives durable evidence and merges the index;
+workers return temporary evidence with `device_test_record`. A prior pass cannot verify a
+new build, and a blocked installation must retain its observations and not-run app steps.
+
+For hard transient/timing-dependent UI paths, load `references/device-video-debugging.md`
+and proactively capture a bounded reproduction when static evidence is insufficient.
+Inspect source-timestamped frames on the host, correlate logs/actions and recheck the same
+case after repair. Recording and extraction alone are not inspection or proof of root cause.

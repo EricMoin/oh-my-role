@@ -12,6 +12,23 @@ load its playbook: `references/device-verification.md` for an Android target ove
 interact only through `graph_worker_exec`. Prefer the installed tool's own `--help` output
 over remembered flags.
 
+Read `references/device-test-memory.md` and the dispatched project history before testing.
+Use the case IDs/revisions and complete journeys selected by the lead; reuse known setup
+only after checking current conditions. Keep actual install prompts, manual actions,
+failed recovery attempts and app-step outcomes in the run report, including blocked and
+not-run results. Return `device_test_record` with scoped pitfall observations and temporary
+evidence paths per `references/schemas.md`. Only the lead persists or merges records under
+`.rolebox/jetpack-compose/device-testing/`; do not write there through worker commands.
+
+When static evidence cannot explain a transient or timing-dependent journey, proactively
+use `references/device-video-debugging.md`: capture before the triggering action, stop and
+finalize the recording, inspect its source-timestamped frames on the host, and correlate
+actions/logs. Keep recorder/extraction commands inside graph_worker_exec and temporary
+evidence outside the repository. Report the inspected interval, decisive frames, clock
+uncertainty, capture gaps and observations versus hypotheses in the report. A GIF is a
+preview; captured-only media is not verification. Preserve failures and request lead-planned
+diagnostic attempts within the existing three-attempt budget, never retry until green.
+
 ## When device verification is warranted
 
 Verify on a device or emulator when the acceptance criterion is about behavior that only a
@@ -103,6 +120,12 @@ Rules:
 5. An artifact that does not build or does not install is `escalate` with the failing
    command and its output; it is not an app defect and not a pass.
 
+For a pending install, inspect the installer screen before another attempt. An on-device
+confirmation (for example “同意并安装”) is setup, not an app assertion. Record the exact
+prompt and who confirmed it; confirm command completion and the intended installed build
+before launch checks. Follow `references/device-test-memory.md` for bounded recovery and
+human-action blockers; never assume an older installed app proves the new install succeeded.
+
 ## HarmonyOS/OpenHarmony command surface (`hdc`)
 
 A HarmonyOS or OpenHarmony target is a different transport with different tooling: follow
@@ -178,10 +201,12 @@ Evaluate the declared actions in order, each one independently and exactly as wr
 
 ## Evidence and report
 
-Every step carries: the action text with a ✅ (evaluated) or ❌ (failed) marker, the commands
+Every step carries: the action text with a ✅ (passed) or ❌ (failed) marker, the commands
 actually executed, the screenshot link when a visual check was needed, and a comment with the
 observed state. Produce the journey report as markdown outside the repository, with one
-section per action:
+section per action. Label unexecuted steps `not-run` with reasons and installation blockers
+`blocked`; include the case IDs/revisions and preserve the exact executed journey snapshot.
+The lead archives the report and needed evidence following `references/device-test-memory.md`:
 
 ```markdown
 # Journey: <name>
@@ -222,7 +247,8 @@ Classify each failure before reporting it:
 - **environment_unavailable** — no CLI, no device, no bootable AVD, no SDK package, no system
   image, no network for a remote reservation. Settles `escalate`; record what was attempted, what
   is missing and the bootstrap command that would resolve it.
-- **flaky behavior** — repeat the step at most three times, then record the observed failure
+- **flaky behavior** — use at most three total attempts shared with diagnostic reproduction,
+  including the initial attempt, then record the observed failure
   rate (failures over attempts) and the exact command. Flakiness settles `revise` with that
   rate; never repeat until green and never convert a flaky step into a pass.
 
@@ -232,6 +258,7 @@ Classify each failure before reporting it:
   reservation you created; leave pre-existing devices untouched.
 - Keep screenshots, layout dumps, journey reports and copied APKs in a temporary directory
   outside the repository. Build output may only land in the project's normal build
-  directories; never edit sources, resources, manifests, Gradle files or test code.
+  directories; never edit sources, resources, manifests, Gradle files or test code. Keep
+  needed temporary evidence available for lead-owned archival; never update durable memory yourself.
 - Report only what the commands and captures show. An unverified step is `needs-user-input`
   or a failing step, never an assumed pass.

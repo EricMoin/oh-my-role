@@ -85,6 +85,6 @@ prompt: |
 skills:
   - jetpack-compose-architecture-gate
 references:
-  schemas: references/schemas.md
-  compose-architecture: references/compose-architecture.md
+  schemas: ../../references/schemas.md
+  compose-architecture: ../../references/compose-architecture.md
 model: provider/tier-3-fast

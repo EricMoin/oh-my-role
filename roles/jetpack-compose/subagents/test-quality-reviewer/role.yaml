@@ -85,6 +85,6 @@ prompt: |
 skills:
   - jetpack-compose-test-quality-gate
 references:
-  schemas: references/schemas.md
-  compose-testing-and-quality: references/compose-testing-and-quality.md
+  schemas: ../../references/schemas.md
+  compose-testing-and-quality: ../../references/compose-testing-and-quality.md
 model: provider/tier-3-fast

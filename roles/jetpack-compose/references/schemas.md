@@ -6,7 +6,9 @@ Submit it as the `data` argument of
 outcome id the node declares. Accepted attempt results are the transport authority:
 the lead reads them from `attempts[].result` with `graph_status`. A prose message, a
 chat update or an inferred completion is not transport and releases no consumer.
-Never put the attempt credential, the graph id or host state into business data.
+Never put the attempt credential, the graph id or unrelated/private host state into business data.
+Device reports may include verification-relevant model/OS/ROM/tool versions and sanitized
+artifact paths with profile aliases, per `references/device-test-memory.md`, never raw serials.
 Reject unknown schema versions, missing required fields and unknown ids.
 
 The Strategy `plan_revision` is the coordinator's business identifier; the engine's
@@ -38,6 +40,14 @@ A source-tracing or review request adds the concrete question, the reviewed obje
 consultation reports design uncertainty; it cannot certify compilation,
 implementation or tests that do not yet exist.
 
+A device-verification dispatch also includes the target project's absolute memory root,
+run ID, case IDs/revisions and complete frozen journeys, relevant profile/pitfall records,
+artifact identity, and a unique temporary evidence directory outside the repository. Follow
+`references/device-test-memory.md`; the verifier reads history but cannot update it.
+For a transient/timing-dependent path, include the diagnostic question and capture interval
+per `references/device-video-debugging.md`, plus the remaining reproduction budget. The
+worker may add observation but cannot rewrite the journey or independently expand its scope.
+
 ## Gate report (submitted as accepted outcome data)
 
 Each read-only gate writes this report and submits it as the `data` payload of the
@@ -57,6 +67,17 @@ id, so the accepted result is self-identifying.
 | advisory_notes | Optional preferences and non-blocking improvements |
 | verification | Checks actually performed and missing evidence; proposed checks labeled as proposed |
 | engineering_state_patch | Optional proposed corrections to brief facts, merged only by the lead |
+| device_test_record | Required for device-verification, omitted for other gates: run_id, case_refs (IDs/revisions), device_profile, report_path, journey_paths, evidence_paths, pitfall_observations; see references/device-test-memory.md |
+
+The device record links the actual execution and installation observations, including
+failed or blocked runs. Paths identify external temporary files; use null/empty paths
+when unavailable and carry the partial observations and missing evidence in `verification`.
+No new outcome or schema version is introduced. Only the lead archives accepted evidence
+into project-local memory; the worker's historical lookups never count as current execution.
+For video analysis, `evidence_paths` includes the original recording, frame metadata/index,
+decisive frames and analysis report. `verification` names the inspected source-PTS interval,
+case steps, action/log clock alignment and uncertainty, capture gaps and uninspected media.
+A captured file alone is not verification; no extra outcome or required video on every run.
 
 `status: pass` means no supported blocking issue exists in the assigned scope, not
 proof of the entire feature. Advice with no blocker is a pass with advisory notes;

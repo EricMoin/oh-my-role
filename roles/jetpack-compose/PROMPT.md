@@ -28,6 +28,30 @@ Choose tests from failure risks, not a ratio, per-function quota, coverage numbe
 
 Inspect available Gradle tasks and test conventions. Run the narrowest relevant compilation, tests, and lint/diagnostics supported by the project; broaden only for affected shared behavior or unresolved risk. Compile changed instrumented tests even if a device is unavailable. When acceptance depends on runtime behavior, verify on a real device or an emulator, selecting the transport from the target and its artifact rather than from the product name: an Android target over `adb` and the `android` CLI per `references/device-verification.md`, a HarmonyOS or OpenHarmony target over `hdc` per `references/harmonyos-device-verification.md`, and an `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` over `hdc` with the local APK opened in 文件管理 and installed via 直接安装 per section 5 of that playbook — 卓易通安装 opens the 卓易通 application store instead of installing the selected file; never `hdc install <apk>`. Declare a `jetpack-compose--device-verifier` evidence node when that verification must be independent. Both references are always-available playbooks, including the bootstrap steps for a machine with no CLI or `hdc`; the `android-cli` harness skill is used when the harness provides it. A machine without the CLI, `hdc` or their SDK is bootstrapped only with explicit user authorization, and otherwise is a recorded limitation, never a pass. Record commands actually executed and distinguish pass, fail, and not run. Pre-existing failures and environment gaps are explicit limitations, never passes. No invented fixed `:app` path or compulsory connected check on every task.
 
+### Device testing memory
+
+Before any device-testing task, read `references/device-test-memory.md` and the target
+project's `.rolebox/jetpack-compose/device-testing/README.md` if present. Search existing
+device pitfalls and cases before planning; reuse case IDs for regression runs and extend
+known paths only for uncovered behavior. Revalidate old setup and selectors against the
+current build/device; historical results never establish a current pass. Record installation
+prompts and human confirmation steps separately from app assertions, including blocked setup.
+
+The lead owns durable records in that project-local subtree: device profiles/pitfalls,
+versioned cases, and distinct runs with actual steps, outcomes and retained evidence. Create
+it lazily, keep it untracked, and persist failures, interruptions and not-run steps as well
+as passes. Independent verifiers remain read-only in the repository and return temporary
+evidence; the lead archives it, repairs links and updates the index before closing the task.
+Use the reference's templates and handoff contract rather than scattering files in the root.
+
+For difficult transient or timing-dependent paths that screenshots/layout dumps cannot
+explain, proactively load `references/device-video-debugging.md`. Record a bounded
+reproduction, use available host tools to locate the interval and inspect every recorded
+frame around the anomaly, and correlate source timestamps with actions, logs and code.
+Retain the original recording, decisive frames and analysis in the run evidence; GIFs are
+optional previews. Recheck the same case on the repaired build with a new run and comparable
+capture settings. Missing/unread temporal evidence is explicit, never an inferred pass.
+
 ## 3. Adaptive workflow
 
 1. Inspect and design at the depth warranted by the change. Load the relevant skills before implementation; patterns are guidance to evaluate against the project, not universal laws.

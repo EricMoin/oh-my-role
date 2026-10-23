@@ -58,7 +58,7 @@ roles:
       graphs whose five specialist workers settle their own declared outcomes
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
-    version: "4.3.0"
+    version: "4.5.0"
     description: Jetpack Compose Engineering Lead with evidence-first research,
       invariant-driven design, risk-based reviews,
       encapsulation-preserving tests, AOSP/AndroidX source tracing, and idiomatic
@@ -66,7 +66,9 @@ roles:
       on the rolebox graph v3 outcome protocol, declaring bounded read-only
       specialist review graphs whose workers settle their own declared outcomes,
       with on-device and emulator verification of a built app — Android targets
-      through the android CLI, HarmonyOS/OpenHarmony targets over hdc
+      through the android CLI, HarmonyOS/OpenHarmony targets over hdc, with
+      project-local device pitfalls, reusable test paths, per-run evidence,
+      and video/frame analysis for difficult UI paths
     tags: [android, kotlin, jetpack-compose, compose, mobile, research,
         source-tracing]
   emperor:

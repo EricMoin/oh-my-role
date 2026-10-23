@@ -7,6 +7,11 @@ result maps to the gate report and the settled outcome. It is portable and self-
 it names source roles instead of local paths, and section 2 bootstraps a machine that has no
 CLI yet.
 
+Before planning or executing a journey, read `references/device-test-memory.md` and the
+project's existing device profiles and cases. It defines reusable paths, installation
+pitfalls and per-run records under `.rolebox/jetpack-compose/device-testing/`. The verifier
+returns external temporary evidence; the lead archives it there after every attempted run.
+
 This playbook is the **Android transport**: the `android` CLI and `adb`, for an `.apk` on an
 Android device or an emulator. A HarmonyOS NEXT or OpenHarmony target is a different
 transport: verify it over `hdc` per `references/harmonyos-device-verification.md`, and never
@@ -178,6 +183,13 @@ include non-interactive and hidden elements) and compare them yourself.
    the absence of an error. A build or install failure is an environment finding
    (`escalate`), never an app defect and never a pass.
 
+An install may still require an on-device confirmation such as “同意并安装”. Inspect the
+current installer before retrying, record its actual text and the agent/user action, and
+confirm the original command result and intended installed build before app assertions.
+Follow the setup/blocker rules in `references/device-test-memory.md`; do not mistake a
+pending prompt or an older installed version for a successful deploy. Scope any learned
+workaround to the observed device/ROM/tool versions, not all devices of a brand.
+
 ---
 
 ## 6. Inspection and interaction
@@ -190,9 +202,11 @@ element may carry `text`, `resourceId`, `contentDesc`, `interactions` (`checkabl
 `focused`, `selected`), `bounds` (`[min X,min Y][max X,max Y]`), `center` (`[x,y]`) and
 `off-screen`. Use `center` or `bounds` for input coordinates.
 
-A layout dump may fail or omit content while a WebView or an animation is on screen. That is
-expected: navigate away, or fall back to an annotated screenshot and visual inspection, and
-say which method produced the evidence.
+A layout dump may fail or omit content while a WebView or an animation is on screen. Preserve
+the failing state and fall back to annotated screenshots and visual inspection. When the
+sequence or transient state matters, use `references/device-video-debugging.md` for bounded
+recording and host frame analysis. Do not navigate away merely to make the evidence easier
+to collect, and say which method produced it.
 
 ### 6.2 Screenshots
 
@@ -200,6 +214,12 @@ say which method produced the evidence.
 (`#1`, `#2`, ...) that `android screen resolve --screenshot <png> --string "tap #3"` turns
 into center coordinates, so the two can be combined in one shell command. Always examine the
 PNG visually before drawing a conclusion from it — both the plain and the annotated form.
+
+For flicker, navigation races, gestures or IME/animation transitions that static images do
+not explain, proactively record the reproduction and inspect frames on the host per
+`references/device-video-debugging.md`. Preserve source timestamps, correlate actions/logs,
+and retain the original recording and decisive frames through lead-owned archival. GIFs
+are optional previews; missing essential temporal evidence is never a pass.
 
 ### 6.3 Input primitives
 
@@ -284,15 +304,18 @@ Practical consequences:
 - A missing element, an unperformable interaction, or a false expectation fails that step and
   ends evaluation; a crash, freeze or app exit fails the journey.
 - Do not edit the journey, do not interpret a malformed action, and do not retry a failing
-  step hoping for a different result. Repeat only to measure flakiness, bounded and recorded.
+  step hoping for a different result. A lead-planned reproduction for diagnosis or flakiness
+  is a separately recorded attempt within the same bounded budget, never a rewrite of failure.
 - An action that names a sequence of steps is split and evaluated step by step.
 
 ---
 
 ## 8. Journey report format
 
-The report is a markdown file written outside the repository. Per action, record the verdict
-marker (✅ evaluated, ❌ not evaluated), the commands actually executed, the screenshot link
+The verifier's report is a markdown file written outside the repository. The lead retains
+it and the referenced evidence in the run directory per `references/device-test-memory.md`;
+an inline run by the lead may write there directly. Per action, record the verdict
+marker (✅ passed, ❌ failed), the commands actually executed, the screenshot link
 when a visual check was needed, and a comment with the observed state:
 
 ```markdown
@@ -316,13 +339,17 @@ when a visual check was needed, and a comment with the observed state:
 
 Actions not evaluated because evaluation ended early carry no marker. The report is evidence
 for the gate report; the gate report itself is the submitted `schema_version: 1` data.
+Explicitly label unexecuted actions `not-run` with a reason and setup blockers `blocked`;
+include case IDs/revisions and a `device_test_record` in the submitted data for archival.
 
 ---
 
 ## 9. From acceptance criteria to journey steps
 
-The lead writes the journey before dispatch; the verifier executes it and must not rewrite
-it. A criterion becomes one or more `<action>` elements in execution order:
+The lead first searches existing cases and recent runs per `references/device-test-memory.md`,
+reuses or extends the matching case, and freezes the complete journey before dispatch;
+the verifier executes it and must not rewrite it. A criterion becomes one or more
+`<action>` elements in execution order:
 
 | Criterion shape | Journey steps | Evidence the step must produce |
 |-----------------|---------------|--------------------------------|
@@ -393,8 +420,9 @@ converts a failure into a pass, and running until green is forbidden.
 
 - No production, test, manifest, resource or Gradle edits, and no fixes for defects it finds.
 - No fabricated passes: an unverified step is reported as unverified, never assumed.
-- No review artifacts inside the repository; screenshots, dumps, reports and copied APKs live
-  in a temporary directory outside it.
+- The verifier writes no review artifacts inside the repository; screenshots, dumps, reports
+  and copied APKs live in its temporary directory outside it until the lead archives relevant
+  evidence per `references/device-test-memory.md`. This does not permit worker memory writes.
 - No devices left running, and no reservations left open.
 - No journey rewrites, no interpretation of a malformed action, no retry-until-green.
 - No verdict outside the submitted `schema_version: 1` gate report, and no attempt credential

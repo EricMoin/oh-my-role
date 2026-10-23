@@ -6,6 +6,11 @@ on-device tooling, journey evaluation, failure classification and the mapping to
 Android playbook settles. It names relative tool locations and values read at run time, never a local path, a device serial,
 a bundle name or a version; the Android side is `references/device-verification.md`.
 
+Read `references/device-test-memory.md` before planning or executing a journey. Search the
+project's existing cases and scoped device pitfalls, reuse or extend the applicable path,
+and return actual steps and install observations for lead-owned archival under
+`.rolebox/jetpack-compose/device-testing/`, including setup failures and not-run steps.
+
 ---
 
 ## 1. Transport selection
@@ -297,6 +302,14 @@ Interaction rules:
 - Wait and dump again before declaring an element absent, and say which method produced the evidence when a web
   view, a video or an animation makes a surface dump incompletely.
 
+For a difficult transient/timing-dependent path, load `references/device-video-debugging.md`
+and proactively obtain a bounded recording through an actually supported device/system
+capability, then inspect timestamped frames on the host. `uitest uiRecord` records operation
+events, not screen video; do not invent a generic `hdc` recording command. If capture/export
+is unavailable within this verifier's boundaries, report the missing temporal coverage and
+have the lead arrange a supported route. Original recordings, decisive frames and action/log
+alignment follow the same temporary-evidence and lead-owned archival contract.
+
 ## 7. Journey evaluation
 
 A journey is the declared list of actions device verification executes. The contract is the one
@@ -304,8 +317,9 @@ A journey is the declared list of actions device verification executes. The cont
 order, each independently and exactly as written; a `check` or `verify` action inspects the current screen without
 interacting, so no scroll, tap or navigation may satisfy it, and it fails when the expected state is not currently visible;
 an app exit, crash or freeze stops evaluation and fails the journey; a step that cannot be performed as specified fails that
-step and is not reinterpreted; a malformed action stops the run and escalates; and a step is repeated only to measure
-flakiness, bounded to three attempts with the rate recorded, never until green.
+step and is not reinterpreted; a malformed action stops the run and escalates. A lead-planned
+reproduction for diagnosis or flakiness is separately recorded within the same three-attempt
+budget with the observed rate retained, never a retry-until-green or a rewrite of failure.
 
 | Step shape | Primitive | Evidence the step must produce |
 |------------|-----------|--------------------------------|
@@ -317,7 +331,11 @@ flakiness, bounded to three attempts with the rate recorded, never until green.
 | A dialog decision, or Back/Home | A dump to find the control where one is needed, then `uiInput click` on its centre or `uiInput keyEvent Back` | The dump element for the control when one was used; the click or key command; the post-action dump showing the dialog resolved or the previous screen restored |
 | Suspected app-level failure | `hdc hilog` filtered to the app, plus the on-screen symptom | The filtered log lines; the dump or screenshot showing the app gone or frozen |
 
-Write the per-step report as markdown outside the repository, one section per action, marked `[evaluated]` or `[failed]`:
+The verifier writes the per-step report as markdown outside the repository, one section per
+action, marked `[evaluated]` or `[failed]`; label remaining steps `not-run` with a reason.
+Include case IDs/revisions and `device_test_record` per `references/schemas.md`. The lead
+archives the report and needed evidence per `references/device-test-memory.md`; inline
+lead verification may write directly to that run directory.
 
 ```markdown
 # Journey: <name of the journey>
@@ -423,9 +441,10 @@ compilation or install result is not runtime verification: never report a pass f
 - State the disposition of the installed artifact: when the dispatch asks for a restored device, remove the
   artifact the run installed with `hdc uninstall` and say so, and never leave a device or emulator in a changed state
   without reporting it.
-- Keep every pulled artifact — screenshots, layout dumps, journey reports, logs — in a temporary directory
-  outside the repository, and never copy a device serial, a device model or unrelated installed-bundle names into a report
-  or into a role file; refer to the target by its role in the run, not by its identifier.
+- The verifier keeps every pulled artifact — screenshots, layout dumps, journey reports, logs — in its temporary
+  directory outside the repository for the lead to archive per `references/device-test-memory.md`. Use a profile alias
+  instead of a raw serial; retain technical model/OS/ROM/tool versions only when relevant to reproduction. Never retain
+  unrelated installed-bundle names, personal identifiers or credentials, or copy local device facts into shipped role files.
 - What this reference does not cover: ArkTS and ArkUI production engineering, HarmonyOS product architecture,
   packaging and signing configuration, and native or cross-platform HarmonyOS work are out of scope for this Android and
   Compose role. Escalate that work rather than performing it here.

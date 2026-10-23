@@ -11,7 +11,7 @@ description: >-
   emulator when acceptance depends on what only a running app can show — an
   Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
   target over `hdc`.
-version: "4.3.0"
+version: "4.5.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -70,6 +70,18 @@ references:
       CLI — preflight and device choice, build and deploy, interaction
       primitives, the executed journey contract and evaluation rules, failure
       classification, and the pass/revise/escalate evidence bar
+  device-test-memory:
+    path: references/device-test-memory.md
+    description: >-
+      Project-local device pitfalls, reusable journey cases and per-run evidence
+      under .rolebox/jetpack-compose/device-testing; retrieve before testing,
+      extend coverage without duplicate cases, and let the lead archive results
+  device-video-debugging:
+    path: references/device-video-debugging.md
+    description: >-
+      Proactive recording for difficult transient UI paths, host-side sparse
+      and full-frame inspection, source timestamps and log alignment, bounded
+      capture lifecycle, and before/after evidence retained with device runs
   harmonyos-device-verification:
     path: references/harmonyos-device-verification.md
     description: >-
@@ -110,3 +122,4 @@ skills:
   - compose-idiomatic-style
   - kotlin-idiomatic-style
   - jetpack-compose-engineering-gate
+model: deepseek-official/deepseek-flash-dev1

@@ -90,6 +90,6 @@ prompt: |
 skills:
   - jetpack-compose-ui-layout-gate
 references:
-  schemas: references/schemas.md
-  compose-ui-and-accessibility: references/compose-ui-and-accessibility.md
+  schemas: ../../references/schemas.md
+  compose-ui-and-accessibility: ../../references/compose-ui-and-accessibility.md
 model: provider/tier-3-fast

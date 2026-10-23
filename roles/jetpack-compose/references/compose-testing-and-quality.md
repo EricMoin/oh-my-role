@@ -16,6 +16,14 @@ visibility, add test hooks, or reflect into internals merely for tests. Extracti
 create a meaningful production responsibility; use the narrowest visibility its real
 consumers need. Previews and coverage numbers do not replace behavioral assertions.
 
+Device sessions also follow `references/device-test-memory.md`: consult prior cases and
+device pitfalls, reuse paths and add uncovered branches, then have the lead archive actual
+steps and evidence under the project's `.rolebox/jetpack-compose/device-testing/`. Keep case
+definitions separate from run results so repeated regression checks do not duplicate cases.
+When static captures cannot explain a transient or timing-dependent path, use
+`references/device-video-debugging.md` for bounded recording, host frame inspection and
+action/log correlation, with comparable evidence for the repaired build.
+
 ## 2. ComposeTestRule Selection
 
 | Rule | When to Use |

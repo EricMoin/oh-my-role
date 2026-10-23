@@ -29,6 +29,15 @@ screenshot tooling, or Flow assertion library. Respect actual project requiremen
 
 Follow the project's existing test stack before adding new frameworks.
 
+For physical-device or emulator sessions, read `references/device-test-memory.md` and the
+project's `.rolebox/jetpack-compose/device-testing/` index before defining a journey. Reuse
+or extend existing cases by goal, preconditions and assertions; a regression re-run is a new
+execution record, not a new case. The lead saves actual paths, device/install pitfalls,
+failures and evidence there after the run. Old results never replace current verification.
+For difficult transient paths, use `references/device-video-debugging.md` to record and
+inspect the failing interval frame by frame, correlate actions/logs, and compare the same
+case after repair. Preserve original recordings and inspected frames with the run evidence.
+
 ## Previews
 
 Preview stateless content composables, not route composables that require DI or live ViewModels.

@@ -34,7 +34,17 @@ Sources of truth:
 - `functions/engineer.md`: short per-message reminder, including continuation behavior.
 - `references/schemas.md`: concise brief and evidence report.
 - `references/graph-protocol.md`: engine semantics and recovery.
+- `references/device-test-memory.md`: project-local device pitfalls, reusable cases,
+  per-run evidence and lead-owned archival under `.rolebox/jetpack-compose/device-testing/`.
+- `references/device-video-debugging.md`: when transient paths need recording, how to
+  inspect source-timestamped frames and correlate actions/logs, and how to compare repairs.
 - Domain skills: contextual guidance loaded for the current decision.
+
+Device verification begins with a history lookup and ends with durable records, including
+setup failures and unexecuted steps. Case identity follows behavior and preconditions;
+regression re-runs keep that identity and add execution records. Independent workers keep
+their repository read-only boundary and return temporary evidence for the lead to archive.
+Historical evidence helps plan coverage but never certifies a changed build or environment.
 
 Validation should distinguish loader/protocol compatibility from model behavior. Real
 rolebox loader and graph-engine tests can establish the former; realistic task trials
