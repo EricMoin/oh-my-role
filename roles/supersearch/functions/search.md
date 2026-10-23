@@ -25,4 +25,10 @@ For every user request:
 Do not mutate files, repositories, dependencies, settings, or remote state. Bash is inspection-only. Do not install missing tools; use the best available fallback and lower confidence if the fallback weakens evidence.
 Write exceptions: the web-scout and source-scout graph nodes may write temporary custom-scraping scripts to `.rolebox/scratch/` (last resort only, per the `supersearch-custom-scraping` skill, which governs the safety constraints). When the user requests a report deliverable, the lead session may write HTML deliverables to `.rolebox/reports/` under the `supersearch-html-report` skill. These are the only write exceptions.
 
-Final answers should start with the answer, then provide evidence and confidence. If the answer cannot be found after reasonable search, say exactly what was searched and what remains unknown. When a report deliverable has been requested, the chat answer is a concise summary (Answer + Confidence + Gaps) and ends with the absolute path of the HTML report file.
+Load `supersearch-reporting` before drafting: start with the answer, link sources
+at the point of use, and develop material questions without repeating concepts.
+If the answer cannot be found after reasonable search, say what was searched and
+what remains unknown. For a report, use `supersearch-html-report` to compose and
+check the finished document, with one closing evidence-and-limits assessment.
+The chat response gives the key result and ends with an absolute file link;
+do not repeat the report's confidence and gaps section in chat.

@@ -1,85 +1,27 @@
 <!DOCTYPE html>
 <!--
-  ============================================================================
-  html-report TEMPLATE — supersearch-html-report
-  ----------------------------------------------------------------------------
-  这是一份「参数化 HTML 调研报告」模板。所有需在生成报告时替换的内容都用
-  双花括号占位符 {{...}} 标出。把本模板复制为实际报告文件后，逐一替换占位符
-  即可（见「填充工作流」）。请勿改动任何「外壳」代码（见「保持不动」）。
+  SuperSearch HTML component reference
 
-  —— 保持不动 (DO NOT EDIT) ——
-  以下任何部分都不要改，它们定义了整份报告的交互与排版：
-    * <head> 中的主题引导 <script>（localStorage 'theme' 读写 + 系统主题回退）
-    * 整个 <style> 块（含 html[data-theme="dark"] 深色主题与 @media print 打印样式）
-    * .topbar（搜索 / 主题切换胶囊） 与 .search-panel（全文搜索面板）
-    * .wrap > nav.toc-nav 的壳（@media 折叠逻辑、scroll-spy、toc 渐隐依赖它）
-    * <body> 末尾的全部 <script>（scroll-spy .is-active、toc 渐隐 .can-up/.can-down、
-      全文搜索 Ctrl/⌘K、Enter 跳转、Esc 关闭、mark 高亮、主题切换持久化）
-  这些脚本与样式用 class/id 选择器驱动，与具体标题、章节、图、表无关。
+  本页是可拆选、可修改的组件参考，不是报告模板，也不是报告目录。
+  先按问题和证据写出论述，再按表达需要选取排版与交互片段。
+  不要复制整页换字，不要把这些演示章节或组件组合逐节套进报告。
+  CSS、布局、目录、搜索、主题脚本都可以改写或删除；保留交互时，
+  同步维护对应的选择器、元素 ID 与事件绑定，不留下失效按钮。
 
-  —— 占位符清单 (ALL PLACEHOLDERS) ——
-  标题与元信息：
-    {{REPORT_TITLE}}          报告标题，写入 <title>，亦建议在摘要处重复。
-    {{REPORT_SUBTITLE}}       摘要区的一句话核心结论（摘要节 <b> 内）。
-    {{REPORT_DATE}}           报告日期（示例：2026-09-01）。
-  目录（.toc-list 内）：
-    {{TOC_GROUP_LABEL}}       目录分组标签（示例：概览 / 桌面与快捷 / 通知与系统）。
-    {{SECTION_ID}}            章节锚点 id。TOC 链接的 href 与正文 <section id=...>
-                              必须完全一致，scroll-spy 与全文搜索依赖它。
-    {{TOC_TITLE}}             目录项标题（正文 <h2> 的文字，可简化）。
-    {{TOC_ITEMS}}             目录填充点。生成报告时，为每个正文 <section>
-                              复制一个「示例 .toc-group」块，把其中的
-                              {{TOC_GROUP_LABEL}} / {{SECTION_ID}} / {{TOC_TITLE}}
-                              填成实际值，并把 <span class="no"> 序号改为连续编号。
-正文章节（.wrap 内）：
-    {{SECTION_TITLE}}         正文节标题，写入 <h2><span class="no">…</span>...
-    {{SECTION_LEAD}}          该节的引导小节标题，写入 <h3>。
-    {{CODE}}                  行内代码示例，写入 <code>。
-    {{TABLE_COL1_HEAD}} / {{TABLE_COL2_HEAD}} / {{TABLE_COL3_HEAD}}
-                              三列表格的表头（<th>）。
-    {{TABLE_ROW1_COL1}} … {{TABLE_ROW2_COL3}}
-                              三列表格的表体占位（示例给 2 行，行数可按需增删）。
-    {{BLOCKQUOTE_EXEMPLAR}}   <blockquote> 引用内容。
-    {{NOTE_EXEMPLAR}}         <div class="note"> 说明内容。
-    {{WARN_EXEMPLAR}}         <div class="warn"> 警示内容。
-    {{FIGURE_URL}}            配图 src，直接热链引用外部 http(s) 图片 URL（img 直链，不下载本地文件）；base64 禁止。
-    {{FIGURE_ALT}}            配图 alt 文字。
-    {{FIGURE_CAPTION}}        配图说明（<figcaption>）。
-    {{CONFIDENCE_NOTE}}       该节来源与置信度说明，写入 <p class="confidence">。
-    {{SECTIONS}}              正文章节填充点。生成报告时，为每个正文 <section>
-                              复制「示例正文节」块，填成实际内容；<span class="no">
-                              序号从 1 开始连续递增；每个 <section id="{{SECTION_ID}}">
-                              的 id 必须与对应目录 href 相同。
-来源清单与摘要：
-    {{SOURCE_LIST}}           文档来源清单 <ol class="src-list"> 的 <li> 列表项
-                              （每个 <li> 为一条来源，含链接与说明）。
-    {{CONFIDENCE_SUMMARY}}    整份报告的总体置信度说明（摘要节）。
-    {{GAPS}}                  已知证据缺口 / 尚未覆盖的盲点（摘要节 .warn 内）。
+  组件位置：
+    - style：阅读排版、导航、表格、引用、图注、窄屏与打印样式。
+    - body：彼此独立的使用示例；示例顺序和数量不约束最终报告。
+    - 页尾脚本：目录定位与渐隐、主题切换、全文搜索，均可选用。
 
-  —— 填充工作流 (FILL WORKFLOW) ——
-    1. 复制本模板为新报告文件（例如 report-overview.html）。
-    2. 替换 {{REPORT_TITLE}} / {{REPORT_SUBTITLE}} / {{REPORT_DATE}}。
-    3. 在 .toc-list 里，为每个正文节复制「示例 .toc-group」，填 label/数字/标题，
-       并用 {{TOC_ITEMS}} 作为继续追加的分组；TOC 的 href="#..." 必须等于正文节 id。
-    4. 在 {{SECTIONS}} 处，为每个正文节复制「示例正文节」块，填成实际内容，
-       序号从 1 起连续递增；id 与目录一一对应。
-    5. 正文节之后追加「文档来源清单」节，把 {{SOURCE_LIST}} 展开为真实的 <li> 列表。
-    6. 更新摘要节里的 {{CONFIDENCE_SUMMARY}} 与 {{GAPS}}。
-    7. 每个主要章节：把采集到的合法一手来源图片插入为 <figure>；仅在确实不存在合法图片的章节删除示例 <figure>。
-    8. 删除本注释块与所有说明性 HTML 注释（它们只是模板自述，不进入交付物）。
-
-  —— 规则 (RULES) ——
-    * 绝不编辑外壳（style / 脚本 / topbar / search-panel / toc-nav 壳）。
-    * 配图是报告质量的一部分：凡存在合法官方/一手来源图片的章节都应配图；img src 直接热链外部 http(s) URL，不下载图片文件；绝不 base64；每个 figure 必须有带来源归属的 figcaption；绝不虚构图片。
-    * TOC 的 href 必须等于对应正文 <section id>，否则 scroll-spy 与搜索失效。
-    * 所有 <span class="no"> 数字需与目录、正文、来源节保持连续编号。
-  ============================================================================
+  演示中的 example.org 链接和文字只说明链接位置，不是研究证据。
+  实际正文引用直达已检查的原始来源；目录链接才跳到报告内部。
+  总体证据与局限说明在报告末尾集中出现一次，不逐章重复。
 -->
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{REPORT_TITLE}}</title>
+    <title>SuperSearch · HTML 组件参考</title>
     <script>
       (function () {
         try {
@@ -309,11 +251,14 @@
         .note, .warn, .neg-box { margin: 28px 0; padding: 4px 0 4px 20px; border-left: 2px solid #c8ccd2; background: none; font-size: 15px; line-height: 1.9; color: var(--ink); }
         blockquote { margin: 26px 0; padding: 4px 0 4px 20px; border-left: 2px solid var(--accent); background: none; font-size: 15px; line-height: 1.9; color: var(--muted); }
 
+        h1 { color: var(--ink-strong); font-size: 30px; line-height: 1.4; margin: 0 0 20px; }
+        pre { overflow-x: auto; padding: 16px; background: var(--code-bg); font-size: 13px; line-height: 1.7; }
+        .citation { text-decoration: underline; }
         .src-list { font-size: 13.5px; color: var(--muted); }
         .src-list li { margin: 8px 0; line-height: 1.7; word-break: break-word; }
         .src-list a { color: var(--accent); }
         .src-list a:hover { text-decoration: underline; }
-        .confidence { font-size: 13px; color: var(--faint); line-height: 1.7; margin-top: 22px; }
+        .evidence-note { font-size: 13px; color: var(--faint); line-height: 1.7; margin-top: 22px; }
 
         /* 图片：统一边框与留白 */
         .figure { margin: 30px 0 10px; }
@@ -379,90 +324,95 @@
 </div>
 <div class="wrap">
 
-    <nav aria-label="目录" class="toc-nav">
+    <nav aria-label="组件目录" class="toc-nav">
         <div class="toc-scroll">
         <details class="toc" open>
-            <summary>目录</summary>
-            <div class="toc-head">目录</div>
+            <summary>组件目录</summary>
+            <div class="toc-head">组件参考</div>
             <div class="toc-list">
-                <!-- {{TOC_ITEMS}}
-                     为每个正文 <section> 复制一份「示例 .toc-group」块，填成实际值；
-                     <span class="no"> 序号从 0（摘要）开始连续递增；
-                     href="#{{SECTION_ID}}" 必须与对应正文 <section id="{{SECTION_ID}}"> 完全一致。 -->
                 <div class="toc-group">
-                    <div class="toc-label">{{TOC_GROUP_LABEL}}</div>
-                    <a href="#{{SECTION_ID}}"><span class="no">1</span><span class="txt">{{TOC_TITLE}}</span></a>
+                    <a href="#usage"><span class="txt">如何使用本页</span></a>
+                    <a href="#prose"><span class="txt">论述与直接引用</span></a>
+                    <a href="#quotation"><span class="txt">原文摘录</span></a>
+                    <a href="#comparison"><span class="txt">比较表格</span></a>
+                    <a href="#callout"><span class="txt">补充说明</span></a>
+                    <a href="#figures"><span class="txt">配图与图注</span></a>
+                    <a href="#closing"><span class="txt">来源索引与结尾说明</span></a>
                 </div>
             </div>
         </details>
         </div>
     </nav>
 
-    <!-- ============ 摘要结论（示例，编号 0） ============ -->
-    <section id="summary">
-        <h2><span class="no">0</span>摘要结论</h2>
-        <p><b>{{REPORT_SUBTITLE}}</b></p>
-        <p><b>报告日期：</b>{{REPORT_DATE}}</p>
-        <h3>总体置信度</h3>
-        <p>{{CONFIDENCE_SUMMARY}}</p>
-        <div class="warn">已知证据缺口：{{GAPS}}</div>
+    <section id="usage">
+        <h1>HTML 组件参考</h1>
+        <p>本页展示可独立选用的排版与交互。报告应先有自己的问题、证据和论述，再选择需要的组件；这里的章节不是报告目录，也没有需要逐项填写的内容。</p>
+        <p>可以修改布局、样式和脚本，也可以只取段落与引用样式。若保留搜索或目录定位，需同步维护其元素和选择器。页面右上角提供搜索与主题切换演示。</p>
     </section>
 
-    <!-- {{SECTIONS}}
-         为每个正文 <section> 复制一份「示例正文节」块，填成实际内容；
-         <span class="no"> 序号从 1 开始连续递增；
-         每个 <section id="{{SECTION_ID}}"> 的 id 必须与目录 href 一一对应。 -->
-    <!-- ============ 示例正文节（编号 1） ============ -->
-    <section id="{{SECTION_ID}}">
-        <h2><span class="no">1</span>{{SECTION_TITLE}}</h2>
-        <h3>{{SECTION_LEAD}}</h3>
-        <p>正文段落占位：替换为对该主题的<b>一句话结论</b>与支撑说明。行内样式可写 <code>{{CODE}}</code> 或高亮<b>要点</b>。</p>
+    <section id="prose">
+        <h2>论述与直接引用</h2>
+        <p>一个论述段落应把发现、理由和对读者的影响连接起来。需要核查的表述旁边放置能直达原文的链接，例如 <a class="citation" href="https://example.org/source#relevant-section">来源标题 · 对应小节（示例链接）</a>。同一来源支持的连续段落不必每句重复链接，但来源变化时要清楚标出。</p>
+        <p>技术名词用于保留关键区别，因果和取舍则用普通语言解释。<code>max_attempts</code> 这样的精确标识可以保留；段落需要继续说明它限制了什么、在什么条件下起作用，而非用更多术语代替解释。</p>
+        <p>上面的链接是演示地址，不支持本页的任何研究结论。实际报告只使用已检查的来源和已确认的定位信息。</p>
+    </section>
 
+    <section id="quotation">
+        <h2>原文摘录</h2>
+        <p>只有原文措辞本身重要时才选用引用块。短句也可以直接放进段落；不必每节安排一段引文。</p>
+        <blockquote cite="https://example.org/document#passage">
+            <p>这是引用排版示例，并非从真实来源摘录的文字。</p>
+            <footer>— <a class="citation" href="https://example.org/document#passage">作者或机构 · 文档标题（示例链接）</a></footer>
+        </blockquote>
+        <p>真实摘录应忠于原文，并在附近解释它证明了什么。可见来源链接方便直接核查；仅有 <code>cite</code> 属性不能替代链接。译文和省略应明确标识。</p>
+    </section>
+
+    <section id="comparison">
+        <h2>比较表格</h2>
+        <p>表格适合并列比较。列数和行数由需要比较的属性决定；复杂原因与例外仍在正文展开。以下比较的是表达方式，不是具体产品。</p>
         <table>
-            <thead>
-            <tr>
-                <th>{{TABLE_COL1_HEAD}}</th>
-                <th>{{TABLE_COL2_HEAD}}</th>
-                <th>{{TABLE_COL3_HEAD}}</th>
-            </tr>
-            </thead>
+            <thead><tr><th scope="col">表达方式</th><th scope="col">适合承载的内容</th></tr></thead>
             <tbody>
-            <tr>
-                <td>{{TABLE_ROW1_COL1}}</td>
-                <td>{{TABLE_ROW1_COL2}}</td>
-                <td>{{TABLE_ROW1_COL3}}</td>
-            </tr>
-            <tr>
-                <td>{{TABLE_ROW2_COL1}}</td>
-                <td>{{TABLE_ROW2_COL2}}</td>
-                <td>{{TABLE_ROW2_COL3}}</td>
-            </tr>
+                <tr><th scope="row">连续段落</th><td>机制、因果关系、推导过程与适用边界。</td></tr>
+                <tr><th scope="row">表格</th><td>多个对象在同一组属性上的差异；若单元格含外部数据，在数据旁附来源链接。</td></tr>
             </tbody>
         </table>
-
-        <blockquote>{{BLOCKQUOTE_EXEMPLAR}}</blockquote>
-
-        <div class="note">{{NOTE_EXEMPLAR}}</div>
-
-        <div class="warn">{{WARN_EXEMPLAR}}</div>
-
-        <!-- 配图是报告质量的一部分：img src 直接热链外部 http(s) 图片 URL（不下载图片文件）；绝不 base64；每个 figure 必须带来源归属 figcaption；绝不虚构图片。同一章节多张相关图片应使用现有 '.figure-grid' 容器（CSS 已存在）：<div class="figure-grid"> 包裹多个 <figure class="figure">。 -->
-        <figure class="figure">
-            <img src="{{FIGURE_URL}}" alt="{{FIGURE_ALT}}">
-            <figcaption>{{FIGURE_CAPTION}}</figcaption>
-        </figure>
-
-        <p class="confidence">来源（官方）：{{CONFIDENCE_NOTE}}</p>
     </section>
 
-    <!-- ============ 文档来源清单（示例，编号 N） ============ -->
-    <section id="sources">
-        <h2><span class="no">N</span>文档来源清单</h2>
-        <ol class="src-list">{{SOURCE_LIST}}</ol>
+    <section id="callout">
+        <h2>补充说明</h2>
+        <p>说明块适合承载读者确实需要单独注意的信息。正常论述不必拆成大量提示框，也不必把正文结论再重复一遍。</p>
+        <aside class="note">若一项结论只适用于特定版本，应在该结论附近写明版本；总体证据评估集中放在报告结尾。</aside>
     </section>
 
+    <section id="figures">
+        <h2>配图与图注</h2>
+        <p>图片应帮助解释机制、比较或观察结果。有候选图片并不意味着必须使用。这里仅展示标记写法，没有加载演示图片。</p>
+        <pre><code>&lt;figure class="figure"&gt;
+  &lt;img src="https://example.org/inspected-diagram.png"
+       alt="描述图中与论述有关的结构或差异"&gt;
+  &lt;figcaption&gt;解释此图与论点的关系。来源：
+    &lt;a href="https://example.org/source-page"&gt;机构 · 页面标题&lt;/a&gt;
+  &lt;/figcaption&gt;
+&lt;/figure&gt;</code></pre>
+        <p>实际配图需来自已检查的来源，使用外部 http(s) 图片直链，并在图注提供来源归属。同一论点确需并列图片时，可以选用 <code>.figure-grid</code>，无需为其他章节凑图。</p>
+    </section>
+
+    <section id="closing">
+        <h2>来源索引与结尾说明</h2>
+        <p>来源索引供读者集中浏览；正文里的引用仍直接打开来源。下面两项是索引样式演示，不是证据清单。</p>
+        <ol class="src-list">
+            <li><a href="https://example.org/source#relevant-section">来源标题（示例链接）</a> — 实际报告可附发布机构、日期或版本，帮助读者识别材料。</li>
+            <li><a href="https://example.org/document#passage">文档标题（示例链接）</a> — 同一来源在索引中合并，正文按需要链接不同段落。</li>
+        </ol>
+        <aside class="evidence-note" aria-label="结尾证据说明组件">
+            <h3>证据与局限</h3>
+            <p>在实际报告末尾，用一处说明概括证据覆盖、时效和未解决的问题，并指出哪些结论会受到影响。不要逐节复制这一组件，也不要将此演示文字带入报告。</p>
+        </aside>
+    </section>
 
 </div>
+
 <script>
   (function () {
     var links = Array.prototype.slice.call(document.querySelectorAll('.toc-list a[href^="#"]'));

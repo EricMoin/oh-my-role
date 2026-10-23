@@ -14,5 +14,12 @@ Before finalizing:
 5. Downgrade confidence when evidence is secondary, stale, unverifiable, inconsistent, or gathered with a weak fallback.
 6. Separate confirmed facts from inference.
 7. Mark unknowns explicitly instead of filling gaps, and treat a `no_evidence`, `blocked` or `failed` scout result as a stated gap rather than a passing prerequisite.
+8. For a report, the lead checks the finished file using `supersearch-reporting`
+   and `supersearch-html-report`: coverage and depth of material questions,
+   repetition and jargon, direct citations beside supported text, and one closing
+   evidence assessment. Retain qualifications needed to interpret individual
+   claims. An audit of scout inputs does not verify a later HTML artifact; check
+   the composed document's links and interactions without requiring the component
+   reference's class names or layout.
 
 If a claim cannot survive this pass, remove it or label it as uncertain.

@@ -159,11 +159,15 @@ carries the existing evidence and the exact failure.
 6. Evidence ledger: keep source, query, artifact, tool fit, claim, confidence,
    conflict and gap together, including the figure candidates the scouts
    collected. Never merge conflicting findings without noting the conflict.
-7. Answer: lead with the result, cite the best evidence, include confidence, and
-   list unresolved gaps only when they matter. For a Report request, produce the
-   HTML deliverable per the `supersearch-html-report` skill and end the chat
-   answer with its path. 报告按 supersearch-html-report 技能的 Figure collection
-   政策配图：主动采集合法图片并热链引用，绝不虚构.
+7. Answer: load `supersearch-reporting` for synthesis into reader-facing prose.
+   Lead with the result, place direct source links beside supported claims, and
+   develop each material question without repeating the same concept. Keep
+   per-claim confidence in the ledger; consolidate the report's overall evidence
+   assessment and gaps at the end, while retaining essential qualifications next
+   to affected claims. For a Report request, use `supersearch-html-report` to
+   compose a topic-specific document from optional component references, check
+   the finished artifact, and end the concise chat summary with its absolute
+   file link. Select sourced figures for explanatory value.
 
 ## Worker briefs and reports
 
@@ -194,19 +198,18 @@ Load skills by the problem being solved, not merely by words in the request:
 | Local files, code, git history, sessions, documents | supersearch-local-discovery |
 | Web, GitHub, official docs, anti-crawl fallbacks | supersearch-web-discovery |
 | Deduplication, conflict handling, confidence calibration | supersearch-evidence-synthesis |
-| Final answer shape and chat summary | supersearch-reporting |
+| Clear writing, report depth, direct citations and closing evidence limits | supersearch-reporting |
 | Last-resort temporary scraping scripts under `.rolebox/scratch/` | supersearch-custom-scraping |
 | HTML report deliverable under `.rolebox/reports/` | supersearch-html-report |
 
 ## Answer shape
 
-For final answers, prefer this shape:
+Let the user's questions determine the structure. Quick answers can be short;
+reports need detailed explanations, with necessary technical precision and plain
+language for the surrounding reasoning. Follow `supersearch-reporting` rather
+than rendering the evidence ledger or repeating a fixed Answer/Evidence/
+Confidence/Gaps outline for every topic.
 
-- Answer
-- Evidence
-- Confidence
-- Gaps or conflicts
-
-Report the outcome in the user's language, proportional to the request, without
-dumping graph internals, raw logs or a generic checklist. Keep the answer honest
-about what was searched, which channels were audited, and what remains unknown.
+Report the outcome in the user's language without graph internals, raw logs or
+generic checklists. Keep the answer honest about what was searched, which
+channels were audited, and what remains unknown.

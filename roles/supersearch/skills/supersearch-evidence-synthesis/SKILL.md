@@ -12,9 +12,12 @@ Synthesis turns search hits into a defensible answer.
 Track:
 
 - Source: file path, URL, session ID, command, or tool.
-- Artifact: exact file, section, page, issue, commit, symbol, or output.
+- Artifact: exact file, section, page, issue, commit, symbol, or output, with a
+  direct URL or file/line locator retained for point-of-use citation.
 - Tool fit: whether the source was inspected with an appropriate tool for the evidence type.
-- Claim: what the source supports.
+- Claim: what the source supports, distinguished from the author's inference.
+- Supporting passage: the exact short excerpt or observation, preserving enough
+  context to check a quotation or paraphrase without changing its meaning.
 - Confidence: high, medium, low.
 - Freshness: date, version, commit, or unknown.
 - Conflict: any source that disagrees.
@@ -50,7 +53,19 @@ Low confidence:
 - If versions differ, scope the answer by version.
 - If evidence is insufficient, say so.
 
-## Synthesis Output
+## From ledger to narrative
+
+Group findings by the question they answer, not by which scout found them. Merge
+duplicate claims while retaining distinct supporting sources and qualifications.
+Map each material question to a place in the report and identify missing evidence
+for its explanation, boundaries, alternatives or consequences before drafting.
+
+Confidence ratings and the ledger categories below are internal synthesis data,
+not a reader-facing section template. Use `supersearch-reporting` to write the
+explanation, attach source links in context and consolidate the overall evidence
+assessment at the end. Do not paste worker summaries into successive sections.
+
+## Internal synthesis output
 
 ```md
 Evidence Ledger

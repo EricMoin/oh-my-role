@@ -40,10 +40,10 @@ carries the non-success payload below instead.
 | Field | Content |
 | --- | --- |
 | source | The source identity: repository, site, document, tool or session |
-| url | The external URL when the evidence is on the web; exactly one of `url` or `path` is present |
-| path | The repository-relative or absolute file path when the evidence is local; exactly one of `url` or `path` is present |
-| quote | The exact supporting text, symbol, line or command output excerpt |
-| confidence | `high`, `medium` or `low`, following the evidence-synthesis confidence rules |
+| url | The inspected external source URL, with a verified section/page/commit anchor when available for direct body citation; exactly one of `url` or `path` is present |
+| path | The repository-relative or absolute file path when the evidence is local; retain line information in `quote` when available; exactly one of `url` or `path` is present |
+| quote | The exact short supporting text, symbol, line or command output excerpt with enough context to preserve its meaning; not an invented quotation or an inference |
+| confidence | `high`, `medium` or `low`, following the evidence-synthesis confidence rules; internal audit metadata, not a required label in every report section |
 
 ## audit-report (submitted by the evidence auditor)
 
@@ -62,7 +62,7 @@ accepted scout reports, not new broad research and not a product verdict.
 | missing_primary_checks | Primary sources, contradiction checks or verification passes still missing |
 | confidence_adjustments | Per-claim confidence changes with the reason for each change |
 | final_answer_risks | Residual risks the final answer must state or hedge |
-| html_report_findings | Defects in a produced HTML deliverable: unreplaced `{{ placeholders }}`, a missing `.confidence` source note, an empty `.src-list`, figures without a source attribution in the `figcaption`, `data:` URIs or non-http(s) image `src`, and sections with candidate figures but no figure; empty array when no report was produced |
+| html_report_findings | Defects in an existing HTML file actually inspected: unsupported or missing point-of-use source links (including citations that only jump to the bibliography), inaccurate quotes, repeated concepts or jargon obscuring the explanation, shallow coverage of material questions, repeated or missing closing evidence assessment, unfinished sample content, broken navigation/interactions, missing source list, or unattributed/invalid figures. Review meaning and behavior, not specific CSS classes or a mandatory layout. Empty array when no HTML was inspected; this does not certify a later report |
 
 ## Non-success payloads
 
