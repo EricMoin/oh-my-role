@@ -10,7 +10,8 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).parent
 ROLE_CREATOR_DIR = SCRIPT_DIR.parent
 CATALOG_PATH = ROLE_CREATOR_DIR / "references" / "schema" / "validation-catalog.md"
-KNOWN_NAMES = {"plan", "execute"}
+DEFAULT_FUNCTIONS = ("plan", "execute", "loop")
+KNOWN_NAMES = set(DEFAULT_FUNCTIONS)
 
 
 def parse_frontmatter(path: str) -> tuple[dict, str]:
@@ -20,7 +21,7 @@ def parse_frontmatter(path: str) -> tuple[dict, str]:
     If no frontmatter, returns ({}, full_content).
     """
     p = Path(path)
-    content = p.read_text()
+    content = p.read_text().replace('\r\n', '\n')
     trimmed = content.lstrip()
     if not trimmed.startswith('---'):
         return {}, content
@@ -41,7 +42,8 @@ def parse_frontmatter(path: str) -> tuple[dict, str]:
             if isinstance(meta, dict):
                 return dict(meta), body
         except Exception:
-            pass
+            # rolebox preserves the original body when frontmatter is malformed.
+            return {}, content
     return {}, body
 
 

@@ -28,7 +28,9 @@ roles/{role-name}/
     └── {topic}.md
 ```
 
-No `subagents/` directory. No `functions/` directory (defaults apply). No collaboration graph. No `graph:` block. No state machine.
+No `subagents/` directory. No `functions/` directory is required. Use
+`disable_functions: [plan, execute, loop]` for a persona without lifecycle functions.
+Explicit `functions: []` still retains the defaults. No collaboration graph. No `graph:` block. No state machine.
 
 ## role.yaml Shape
 
@@ -49,7 +51,7 @@ Typically 20-50 lines. Everything fits in one file.
 | `version` | SemVer string |
 | `mode` | Usually `primary` |
 | `skills` | List of skill slugs to attach |
-| `functions` | Defaults to `[plan, execute]` if omitted |
+| `functions` | Added to defaults `[plan, execute, loop]`; use `disable_functions` to remove them |
 | `references` | Named static docs the agent can access |
 
 ### Example role.yaml
@@ -59,6 +61,7 @@ name: React Frontend Developer
 description: Expert React/Next.js frontend developer. Covers component architecture, hooks, state management, Tailwind CSS, and modern React patterns.
 version: "1.0.0"
 mode: primary
+disable_functions: [plan, execute, loop]
 prompt: |
   You are an expert React frontend developer specializing in
   Next.js, TypeScript, and modern component patterns.
@@ -81,6 +84,7 @@ skills:
 ```yaml
 name: Accessibility Reviewer
 description: Reviews UI code for WCAG compliance and screen-reader compatibility.
+disable_functions: [plan, execute, loop]
 prompt: |
   You review frontend code for accessibility issues.
   Check ARIA attributes, focus management, color contrast,

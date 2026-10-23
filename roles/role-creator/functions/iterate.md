@@ -30,10 +30,10 @@ Add the Generator as a node in the declaration with the fix request embedded in 
 
 ```
 { id: "generator", agent: "role-creator--generator",
-  prompt: "Fix {specific issues} in {role}. The report shows: {summary}.",
+  prompt: "Fix {specific issues} in the authorized target {role}. The initial report shows: {summary}. On repair attempts, read the delivered revise input and apply its required_revisions. Use the host workspace tools and submit the authoring report from references/schemas.md.",
   outcomes: [{ id: "generated" }, { id: "blocked" }, { id: "failed" }],
   completion: { mode: "explicit" }, budget: { timeout_ms: 600000 },
-  tools: ["Write", "Edit", "Bash"] }
+  inputs: [{ from: "validator", outcome: "revise", when: "triggered" }] }
 ```
 
 ### Step 4: Re-run Verify on the Same Graph
@@ -42,9 +42,10 @@ Add the Validator node downstream, bind the edges to the declared outcomes, and 
 
 ```
 { id: "validator", agent: "role-creator--validator",
-  prompt: "Re-run verification on {role} after fixes. Submit pass when no supported blocking issue remains; otherwise submit revise with the required fixes.",
+  prompt: "Read the delivered authoring report and re-run verification on {role} after fixes. Submit the gate report from references/schemas.md: pass when no supported blocking issue remains, otherwise revise with concrete required_revisions.",
   outcomes: [{ id: "pass" }, { id: "revise" }, { id: "blocked" }, { id: "failed" }],
-  completion: { mode: "explicit" }, budget: { timeout_ms: 600000 } }
+  completion: { mode: "explicit" }, budget: { timeout_ms: 600000 },
+  inputs: [{ from: "generator", outcome: "generated" }] }
 
 edges: [
   { from: "generator", to: "validator", outcome: "generated" },
@@ -56,11 +57,20 @@ loop_groups: [
 ]
 ```
 
-Submit the whole declaration through `graph_declare` and end your turn after a confirmed start. The cap is engine-enforced: after 3 traversals the loop exits no matter what.
+Select a supported graph host first: OpenCode/Pi use native workspace tools;
+dsh uses `graph_worker_exec`; Codex cannot execute rolebox graphs. Omit node
+`tools` and `toolPresentation` for this workspace-only pipeline. Wrap these nodes,
+edges and loop groups in one declaration with `version: 3`, a request-specific
+`name` and `budget: {max_executions: 8}`. Submit through `graph_declare` and end
+your turn after a confirmed start. A continuation beyond the traversal cap stops the run with
+`loop-exhausted`; it does not synthesize a passing exit outcome.
+
+Edges route execution; they do not carry review data. The Generator's triggered
+input is absent on its entry attempt and required on each revise attempt.
 
 ### Step 5: Collect and Conclude
 
-After the run reports completion, read the accepted results once via `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})` (`attempts[].accepted`, `attempts[].result`):
+After the run reports completion or a stop, read the accepted results once via `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})` (`attempts[].accepted`, `attempts[].result`):
 - If verification passed → done. Report the final verdict from the accepted result.
 - If the loop hit the cap with failures remaining → present the remaining issues to the user with a recommendation: what was tried, what still fails, and what you suspect. They might have context you don't.
 

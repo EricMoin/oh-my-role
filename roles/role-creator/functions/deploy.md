@@ -1,117 +1,50 @@
 ---
 name: deploy
-description: Deploy a validated role into the live local harness (default ~/.config/opencode/rolebox/), hot-reload assets, and verify discovery. Params: role=<name or path> (required), target=<harness dir> (optional override). Refuses to deploy unvalidated roles and refuses to overwrite an existing role without explicit user confirmation.
+description: Validate and deploy a role working copy to an explicitly selected host, preserving existing entries as backups and reporting runtime verification separately. Params: role=<name or path>, host=<opencode|pi|dsh|codex>, target=<optional directory>.
 ---
 
 # Deploy
 
-You are Role Creator's deploy function. Your job is to take a freshly generated role that has passed verification and make it live in the local harness rolebox directory — the directory opencode's rolebox integration actually loads roles from (`~/.config/opencode/rolebox/` by default) — then trigger `asset_hot_reload()` and prove the role is discoverable.
+Resolve a role name under this repository's `roles/` directory, or accept an explicit
+role directory. Locate the repository by its `registry.yaml` and `roles/` layout;
+the parent of this function directory is the role directory, not the repository root.
+A role needs `role.yaml` and a readable configured prompt; an inline prompt is valid.
 
-## Parameters
+Determine the host from user intent/session context before choosing a destination.
+Use the configured home from the host or explicit `target=`; see
+`references/deploy-to-harness.md`. Never default a Codex/Pi/dsh session to OpenCode.
+If required host information is unavailable, ask for the target rather than guessing.
 
-- **`role=`** (required) — the generated role to deploy. Accepts either the role name (resolved to `roles/<name>/` under this repo's root) or a direct path to the role directory (e.g. the path the generator reported).
-- **`target=`** (optional) — harness directory override. Defaults to the live harness dir. Use only when the user explicitly wants a different target (e.g. a throwaway config for testing). Never guess an override.
-
-## Workflow
-
-### Step 1: Locate the Generated Role
-
-Resolve the role directory to an absolute path:
-
-- If `role=` is a name, look under this repo's `roles/<name>/`. The repo root is the parent of this file's `functions/` directory.
-- If `role=` is already a path, use it directly (the generator may report a temp or nested output path).
-- Confirm the target of the copy is a real role dir: it must contain `role.yaml` and a `PROMPT.md` (or inline `prompt`). If not, stop and report that the path is not a role directory.
-
-### Step 2: Validation Gate (Refuse Unvalidated Roles)
-
-Deploying an unvalidated role is forbidden. Run the Tier 1+2 validator before touching the harness:
+Resolve this role's `scripts/deploy_role.py` and run:
 
 ```bash
-python3 scripts/validate_role.py <resolvedRoleDir> --json
+python3 /path/to/role-creator/scripts/deploy_role.py /path/to/generated-role --target-dir /path/to/host/rolebox
 ```
 
-(From this role's `scripts/` dir — the script lives at `roles/role-creator/scripts/validate_role.py`.)
+The target directory must exist. The script copies into staging beside the target,
+validates the staged package, then renames it into place. It excludes test/eval/cache
+files. Existing real directories and symlinks, including broken symlinks, require
+replacement authorization. If the current user request already explicitly authorizes
+replacement, use `--replace`; otherwise present the exact destination and ask first.
+The script moves the old entry into `.role-creator-backups/` beside the host's rolebox
+directory. A symlink is moved as a link; its release-store target is never written.
+A failed final rename restores the prior entry. Report the backup path.
 
-Parse the JSON output:
+After installation, verify using the selected host's capabilities:
 
-- `verdict: "PASS"` → proceed.
-- `verdict: "FAIL"` → **refuse to deploy.** Report the `errors` list, cite the relevant rule from `references/schema/validation-catalog.md`, and hand off to `|iterate|` for fixes. Do not copy anything into the harness.
+- OpenCode: if `asset_hot_reload` is available, invoke it and inspect the resulting
+  role snapshot. It is not a portable cross-host API.
+- Pi/dsh: use the host's actual role reload/restart mechanism. Do not call a tool that
+  is absent from the installed tool surface. State when a restart remains necessary.
+- Codex: current rolebox MCP has no hot reload or graph execution. Refresh its running
+  integration using the host-supported restart flow. Do not call graph tools or claim
+  a graph role works on this adapter.
 
-Tier 1 (structural) and Tier 2 (resolution) must both pass. Tier 3 (health check in a throwaway config, via `scripts/sync_check.py`) and Tier 4 (behavioral eval) are **not** required for a local deploy — the live harness IS the health check, and it runs in the next steps.
+Inspect actual declared asset names with `asset_search(query=<asset>, role_id=<roleId>)`
+and `asset_inspect(name=<asset>, type=<skill|function|reference>)`; confirm the owner in
+the result. Those tools index assets, not roles. A prompt-only role requires actual
+role discovery/activation evidence. Copying a directory alone does not prove activation.
 
-### Step 3: Determine the Target Harness Dir
-
-Default target (do not override unless the user asked):
-
-```bash
-ls -la ~/.config/opencode/rolebox/
-```
-
-- Verify the directory exists. If it is missing, stop and report — the harness is the live install target and must not be created by guessing.
-- Note the convention visible in the listing: **released roles are symlinks** to `~/.local/share/rolebox/roles/oh-my-role/<name>@<version>`, while **in-development roles are real directories** (e.g. `emperor`, `react-frontend`). A freshly generated role is unreleased, so it deploys as a real directory, matching the in-development convention. Do not create symlinks for unreleased roles and do not write into `~/.local/share/rolebox/roles/`.
-
-If `target=` was supplied, use it instead and state clearly in the report that the deploy went to a non-default target.
-
-### Step 4: Overwrite Guard (Destructive-Overwrite Protection)
-
-Before copying, check whether `$target/<roleName>` already exists (real directory **or** symlink):
-
-```bash
-ls -ld "$target/$roleName"
-```
-
-- **Does not exist** → proceed to copy.
-- **Exists** → **stop and ask the user explicitly.** Show what exists (`ls -ld` output) and ask for confirmation to overwrite it. This is a destructive-overwrite guard: silently replacing an existing role destroys whatever is live in the harness. Only the user's explicit confirmation authorizes the overwrite.
-- If the existing entry is a **symlink** (a released role), warn that overwriting replaces a released install with an unreleased local copy. Confirm before proceeding.
-
-### Step 5: Copy Into the Harness
-
-First install (no existing entry, or after user confirmation):
-
-```bash
-rsync -a --exclude tests/ --exclude evals/ --exclude __pycache__/ --exclude '.DS_Store' --exclude '*.pyc' --exclude '*.bak' <resolvedRoleDir>/ "$target/$roleName/"
-```
-
-- `rsync -a` preserves structure, permissions, and symlinks inside the role. `cp -R` is an acceptable fallback if rsync is unavailable.
-- The exclude list matches `scripts/package_role.py` conventions: never ship `tests/`, `evals/`, `__pycache__/`, `.DS_Store`, `*.pyc`, `*.bak` into the live harness.
-- **Re-deploy** (after confirmation in Step 4): add `--delete` so the deployed copy is an exact mirror and stale files removed from the role are removed from the harness. Never use `--delete` on a first install.
-
-Do **not** touch `registry.yaml`, run `package_role.py`, or create a release — this function deploys a working copy, it does not publish.
-
-### Step 6: Hot-Reload Assets
-
-Trigger re-discovery and re-resolution of the harness:
-
-```
-asset_hot_reload()
-```
-
-The tool takes no arguments and performs a full re-discovery/re-resolution of all roles. Wait for it to return before verifying.
-
-### Step 7: Verify Discovery
-
-Prove the deployed role is live by querying its assets:
-
-- `asset_search(query="<roleName>")` — confirm the role and its assets appear.
-- `asset_inspect(name="<roleName>", type="skill"|"function"|"reference")` — confirm at least the role's core assets (e.g. its functions, skills, or references) resolve. Inspect the assets that matter for the role the user just generated (its declared functions/skills/references), not just the role name.
-
-If discovery fails, do not claim success: re-run `asset_hot_reload()`, re-check, and report the failure honestly with what was attempted.
-
-### Step 8: Report
-
-Report back with:
-
-- **Deployed path**: `$target/<roleName>/` (absolute)
-- **Copy method**: rsync (or cp -R), first install or overwrite-after-confirmation
-- **Validation gate**: Tier 1+2 verdict PASS (with `catalog_version` from the validator JSON)
-- **Hot-reload**: success/failure of `asset_hot_reload()`
-- **Discovery**: the `asset_search` / `asset_inspect` results confirming the role's assets resolve
-- **Target override**: note if a non-default `target=` was used
-
-## Rules
-
-- Never deploy a role that failed Tier 1+2 validation. The gate is mandatory.
-- Never overwrite an existing harness role without explicit user confirmation. This is a destructive-operation guard; a silent overwrite is a bug.
-- Never edit `role.yaml` during this function — the `deploy` function is already declared there by another workflow.
-- Never publish: no `registry.yaml` writes, no release tags, no `~/.local/share/rolebox/` writes.
-- Report unverified steps as unverified. If hot-reload or discovery verification fails, say so.
+Report deployed path, staging validation, replacement/backup, host, reload result,
+and VERIFIED or UNVERIFIED runtime discovery. Do not publish or update the registry
+as part of local deployment. See the deployment reference for target paths and limits.

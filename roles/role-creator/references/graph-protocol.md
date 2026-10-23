@@ -6,15 +6,15 @@ description: Canonical rolebox Graph v3 protocol reference for generated roles �
 # Graph v3 protocol (generated-role contract)
 
 This is the canonical protocol reference the Role Creator teaches and validates
-with. Every rule below is grounded in the installed rolebox checkout
-(version `2.0.0-alpha.2`):
+with. Verify these source contracts against the selected rolebox checkout; a
+matching package version alone does not prove compatibility:
 
 - `docs/graph-outcome-protocol.md` — the declaration grammar, acceptance,
   controls and storage semantics.
 - `docs/graph-v3-operations.md` — the run-level execution ceiling, per-node
   budgets and the host-installed approval/completion capabilities.
 - `src/graph/compiler/declaration-v3.ts` — the grammar's TypeScript types,
-  including `tools?: string[]` on a node.
+  including `tools?: string[]` and host-dependent `toolPresentation` on a node.
 - `src/graph/compiler/parse-declaration-v3.ts` — the closed key sets and the
   front-end refusals.
 - `src/graph/compiler/compile.ts` — loop-group compilation, edge/outcome
@@ -25,12 +25,12 @@ with. Every rule below is grounded in the installed rolebox checkout
   retirement key are read.
 
 The installed runtime's tool schemas are authoritative if they differ from this
-reference. Re-verify against those sources whenever the installed rolebox version
-changes.
+reference. Re-verify against those sources when changing the selected checkout
+or host, even if the package version stays the same.
 
 ## The tool surface
 
-The Graph v3 face is a closed vocabulary of six names
+The Graph v3 namespace currently contains eight names; availability depends on the host
 (`src/graph/host/tool-binding.ts`, `GRAPH_TOOL_NAMES`):
 
 | Tool | What it does | Who may call it |
@@ -40,14 +40,35 @@ The Graph v3 face is a closed vocabulary of six names
 | `graph_control(command, ...)` | Trusted lifecycle command on a run or an attempt: `failure`, `timeout`, `cancel`, `budget-stop`, `retry`, `approval-request`, `approve`, `reject` | The declaring session only |
 | `graph_status({...})` | Reads the shared read model: phase, runs, nodes, attempts, accepted results, loops, approvals, controls, budget and unsettled effects | The declaring session only |
 | `graph_audit({...})` | Read-only drain and migration inventory of the authoritative store; mutates nothing | The declaring session only |
-| `graph_worker_exec(command)` | Runs one shell command in the worker's sandbox for reads, edits, checks and tests | Every worker, inside its own scope |
+| `graph_worker_exec(command)` | Runs one command under the host's resolved session policy | dsh workers only |
+| `graph_worker_tools(...)` | Discovers the node's granted host tools | Workers with discovery/code presentation on a supporting host |
+| `graph_worker_code(...)` | Composes granted host tool calls in JavaScript | dsh workers with code presentation |
 
 There is **one start path**: `graph_declare`. No separate run tool and no
 dry-run tool exist. A dispatched worker's graph face grants exactly
 `graph_submit_outcome` (`WORKER_GRANTED_GRAPH_TOOLS`), plus `graph_worker_exec`
-on the dsh platform; every other graph tool refuses a bound worker by name
-(`worker-tool-forbidden`). A worker never declares, controls, queries or audits a
+on the dsh platform. Host-supported presentation can add discovery/code entries;
+the four declarer tools refuse a bound worker by name (`worker-tool-forbidden`). A worker never declares, controls, queries or audits a
 graph, never creates a child graph and never reads another attempt's credential.
+
+### Host capability selection
+
+Select the actual host before generating a role or declaration:
+
+| Host | Workspace operations | Optional presentation |
+| --- | --- | --- |
+| OpenCode 1.x | Native worker tools and `graph_submit_outcome` | Omit `toolPresentation`; explicit presentation is unsupported |
+| OpenCode 2 | Native worker tools and `graph_submit_outcome` | `native` / `discover`; code mode is unsupported |
+| Pi | Native worker tools and `graph_submit_outcome` | `native` / `discover`; code mode is unsupported |
+| dsh | `graph_worker_exec` and `graph_submit_outcome` | `native` / `discover` / `code` |
+| Codex | The rolebox MCP server does not own graph worker sessions | Do not declare rolebox graphs; use a non-graph role and the host's own collaboration tools |
+
+For ordinary workspace work, omit both `tools` and `toolPresentation` on the
+node to retain the host's native baseline. Extra integrations require the actual
+registered host tool names in `tools`, never assumed names such as `Write`,
+`Edit`, or `Bash`. A grant does not install a tool. With explicit presentation,
+OpenCode 2/Pi use `bash` and `graph_submit_outcome` as their baseline; declare any
+additional tools and verify the host supports that mode. See `docs/worker-tools.md`.
 
 ## Declarer and worker split
 
@@ -58,14 +79,16 @@ a subagent's `tools` inherits from its parent unless it declares its own
 among them).
 
 - **Declaring role** (primary): `graph_declare`, `graph_control`, `graph_status`
-  and `graph_audit` `true`; `graph_submit_outcome` and `graph_worker_exec`
-  `false`; `Write`/`Edit`/`Bash` per the role's own job.
-- **Worker subagent**: the exact inverse — the four declarer tools `false` and
-  `graph_submit_outcome`/`graph_worker_exec` `true`; `Write`/`Edit` per the
-  worker's job (`Bash` usually stays `true` so the worker can run checks).
+  and `graph_audit` `true`; `graph_submit_outcome` `false`.
+- **Worker subagent**: the four declarer tools `false` and
+  `graph_submit_outcome` `true`. Omit `graph_worker_exec` in portable manifests;
+  dsh installs it in its worker baseline. Only a dsh-specific manifest should
+  explicitly configure that tool. Native file and command permissions use the
+  target host's names and follow the worker's job. Denying file-edit tools while
+  allowing a shell does not enforce read-only execution.
 
-Inside a graph the binding boundary is the **node grant**, not the worker
-subagent's own manifest: a declared node `tools` list names extra **host** tools
+Inside a graph, extra capabilities use the **node grant** together with the
+host's baseline and permission enforcement: a declared node `tools` list names extra **host** tools
 only, and a `graph_`-prefixed name in that list admits nothing because the graph
 namespace is refused before the entries are consulted
 (`isGraphFaceToolName` / `declaredToolsAllow`). A node that genuinely needs a
@@ -103,6 +126,7 @@ declaration**; there is no incremental node/edge construction tool.
 | `inputs` | No | The accepted results this node consumes, each `{from, outcome, when?: "triggered"}`, resolved at compile time |
 | `join` | No | `{strategy: "all"}`, `{strategy: "any"}` or `{strategy: "quorum", quorum: N}` |
 | `tools` | No | A **string array** of extra host tool names (or trailing-`*` prefixes) beyond the worker baseline; absent means baseline only |
+| `toolPresentation` | No | `{mode: "native" | "discover" | "code", preload?: string[]}`; host support must be checked, and preloads must be covered by `tools` |
 | `contractRef` | No | The exact contract identity the node is bound to |
 
 ### Outcome, edge and input details
@@ -175,10 +199,17 @@ the grader scores eval transcripts. It is the single source of truth for this
 role's topology; a contract test reads this block out of this file, so the
 documented contract and the tested contract are the same object.
 
+The full three-stage example assumes authorized evaluation transcripts already
+exist. For initial role creation, omit the grader node and validator-to-grader
+edge; validator pass then terminates the generation/validation graph. That subset
+needs at most eight executions for the initial round plus three repair traversals.
+The full example needs nine, including final grading. A declaration does not
+authorize paid evaluation or manufacture missing transcripts.
+
 Replace `name` with the request identity and replace each prompt placeholder with
 the real brief for the current snapshot; keep the pinned node ids, agents,
-declared outcomes, explicit completion, the generator's declared host tools and
-the loop group. The block is intentionally unindented — the opening fence at
+declared outcomes, explicit completion, accepted-result inputs and the loop
+group. Select host-specific extra tool grants only when the task needs them. The block is intentionally unindented — the opening fence at
 column 0, the JSON object on the very next line and the closing fence at column 0
 — because the contract test's reader matches exactly that shape.
 
@@ -187,57 +218,122 @@ column 0, the JSON object on the very next line and the closing fence at column 
   "version": 3,
   "name": "role-creator-generated-role-pipeline",
   "budget": {
-    "max_executions": 8
+    "max_executions": 9
   },
   "nodes": [
     {
       "id": "role-creator--generator",
       "agent": "role-creator--generator",
-      "prompt": "Template placeholder - replace with the real authoring brief for this node: the user intent, the chosen template, the target role directory, the reference roles to mirror and the pinned contract text for the generated manifest. Write every artifact the new role needs and report the exact paths you wrote. Declare the generated role for Graph v3: a node's tools is the grammar's string array of host tool names, every node declares its outcomes and completion {mode: explicit}, and every edge binds one declared outcome of its source. Never write a retired imperative graph-authoring tool name, a retired role.yaml orchestration key, or an outcome-less edge into a generated role. The declared outcomes are generated, blocked and failed: submit generated when the files are written, blocked when the user intent or a required reference is missing, and failed when the work cannot be completed. Carry the authoring report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read, edit and command and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real authoring brief for this node: the user intent, the chosen template, the target role directory, the reference roles to mirror and the selected runtime contract for the generated manifest. Write every artifact the new role needs and report the exact paths you wrote. Declare the generated role for Graph v3: a node's tools is the grammar's string array of host tool names, every node declares its outcomes and completion {mode: explicit}, and every edge binds one declared outcome of its source. Never write a retired imperative graph-authoring tool name, a retired role.yaml orchestration key, or an outcome-less edge into a generated role. The declared outcomes are generated, blocked and failed: submit generated when the files are written, blocked when the user intent or a required reference is missing, and failed when the work cannot be completed. Carry the authoring report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use the host-provided workspace tools: graph_worker_exec on dsh, native tools on OpenCode or Pi and never create child graphs. On a repair attempt read the delivered validator revise input and apply its required_revisions within the authorized target role directory. Do not repeat the initial brief without incorporating this feedback.",
       "outcomes": [
-        { "id": "generated" },
-        { "id": "blocked" },
-        { "id": "failed" }
+        {
+          "id": "generated"
+        },
+        {
+          "id": "blocked"
+        },
+        {
+          "id": "failed"
+        }
       ],
-      "completion": { "mode": "explicit" },
-      "budget": { "timeout_ms": 600000 },
-      "tools": ["Write", "Edit", "Bash"]
+      "completion": {
+        "mode": "explicit"
+      },
+      "budget": {
+        "timeout_ms": 600000
+      },
+      "inputs": [
+        {
+          "from": "role-creator--validator",
+          "outcome": "revise",
+          "when": "triggered"
+        }
+      ]
     },
     {
       "id": "role-creator--validator",
       "agent": "role-creator--validator",
-      "prompt": "Template placeholder - replace with the real verification brief for this node: the generated role directory, the frozen validation catalog it is checked against and the concrete checks to run. Verify read-only: run the role validator and the scoped protocol checks without editing the generated role, its manifests or its fixtures. The declared outcomes are pass, revise, blocked and failed: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required fixes, blocked when a required input is missing, and failed when verification cannot proceed. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real verification brief for this node: the generated role directory, the validation catalog and selected runtime source it is checked against and the concrete checks to run. Verify read-only: run the role validator and the scoped protocol checks without editing the generated role, its manifests or its fixtures. The declared outcomes are pass, revise, blocked and failed: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required fixes, blocked when a required input is missing, and failed when verification cannot proceed. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use the host-provided workspace tools: graph_worker_exec on dsh, native tools on OpenCode or Pi and never create child graphs. Read the delivered authoring report to locate the target directory and changed files; verify the current files independently. Return concrete required_revisions on revise.",
       "outcomes": [
-        { "id": "pass" },
-        { "id": "revise" },
-        { "id": "blocked" },
-        { "id": "failed" }
+        {
+          "id": "pass"
+        },
+        {
+          "id": "revise"
+        },
+        {
+          "id": "blocked"
+        },
+        {
+          "id": "failed"
+        }
       ],
-      "completion": { "mode": "explicit" },
-      "budget": { "timeout_ms": 600000 }
+      "completion": {
+        "mode": "explicit"
+      },
+      "budget": {
+        "timeout_ms": 600000
+      },
+      "inputs": [
+        {
+          "from": "role-creator--generator",
+          "outcome": "generated"
+        }
+      ]
     },
     {
       "id": "role-creator--grader",
       "agent": "role-creator--grader",
-      "prompt": "Template placeholder - replace with the real grading brief for this node: the eval cases and the transcripts to score, the expectations of each case and the pass threshold. Grade read-only against transcript evidence and never rewrite the graded artifacts. The declared outcomes are graded, blocked and failed: submit graded when every supplied case has a verdict, blocked when the eval cases or transcripts are missing, and failed when grading cannot proceed. Carry the grading report as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real grading brief for this node: the eval cases and the transcripts to score, the expectations of each case and the pass threshold. Grade read-only against transcript evidence and never rewrite the graded artifacts. The declared outcomes are graded, blocked and failed: submit graded when every supplied case has a verdict, blocked when the eval cases or transcripts are missing, and failed when grading cannot proceed. Carry the grading report as the schema_version 1 data argument of graph_submit_outcome. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome: only an accepted decision, verdict committed or replayed with no refusals, settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use the host-provided workspace tools: graph_worker_exec on dsh, native tools on OpenCode or Pi and never create child graphs. Read the delivered passing gate report. Eval cases and transcripts must also be supplied explicitly in the brief or as readable paths; the gate report is not an eval transcript.",
       "outcomes": [
-        { "id": "graded" },
-        { "id": "blocked" },
-        { "id": "failed" }
+        {
+          "id": "graded"
+        },
+        {
+          "id": "blocked"
+        },
+        {
+          "id": "failed"
+        }
       ],
-      "completion": { "mode": "explicit" },
-      "budget": { "timeout_ms": 600000 }
+      "completion": {
+        "mode": "explicit"
+      },
+      "budget": {
+        "timeout_ms": 600000
+      },
+      "inputs": [
+        {
+          "from": "role-creator--validator",
+          "outcome": "pass"
+        }
+      ]
     }
   ],
   "edges": [
-    { "from": "role-creator--generator", "to": "role-creator--validator", "outcome": "generated" },
-    { "from": "role-creator--validator", "to": "role-creator--generator", "outcome": "revise" },
-    { "from": "role-creator--validator", "to": "role-creator--grader", "outcome": "pass" }
+    {
+      "from": "role-creator--generator",
+      "to": "role-creator--validator",
+      "outcome": "generated"
+    },
+    {
+      "from": "role-creator--validator",
+      "to": "role-creator--generator",
+      "outcome": "revise"
+    },
+    {
+      "from": "role-creator--validator",
+      "to": "role-creator--grader",
+      "outcome": "pass"
+    }
   ],
   "loop_groups": [
     {
       "id": "generate-validate",
-      "nodes": ["role-creator--generator", "role-creator--validator"],
+      "nodes": [
+        "role-creator--generator",
+        "role-creator--validator"
+      ],
       "max_traversals": 3,
       "continuation_outcome": "revise",
       "exit_outcome": "pass"
@@ -263,12 +359,15 @@ How the pinned declaration reads:
   `generate-validate` covers the generator and the validator, caps the
   revise cycle at `max_traversals: 3`, re-enters on `revise` and leaves on
   `pass`; the `revise` edge stays inside the group, as the compiler requires.
-- **Budgets and tools.** `budget.max_executions: 8` covers the selected nodes and
-  the loop's continuations; every node carries `budget.timeout_ms`. The
-  generator's `tools` is the grammar's **string array** of host tools
-  (`Write`, `Edit`, `Bash`); a boolean map would be refused by the front end.
-  The read-only workers declare no extra host tool, so they hold the worker
-  baseline of `graph_submit_outcome` and `graph_worker_exec` alone.
+- **Inputs.** The validator consumes the authoring report; the grader consumes
+  the passing gate report. The generator consumes `revise` with `when: "triggered"`,
+  so its entry attempt needs no prior review and repair attempts receive the exact
+  accepted review payload. Edges alone never deliver that payload.
+- **Budgets and tools.** `budget.max_executions: 9` covers the initial generator/validator
+  pair, three repair pairs and the final grader; every node carries `budget.timeout_ms`. These nodes
+  use the host workspace baseline and declare no extra `tools` or presentation.
+  Read-only verification is a job constraint plus the host sandbox, not a
+  guarantee supplied by this declaration.
 
 ## Accepted-result transport
 
@@ -318,8 +417,8 @@ context to act alone:
 - The full subtask, the plan revision and the request counters.
 - The readable inputs: the artifacts to read, the sandbox scope and the commands
   the node may run. A read-only posture is agent discipline plus whatever the
-  host sandbox enforces; `graph_worker_exec` runs with the session's resolved
-  sandbox mode, so the declaration cannot enforce it.
+  host sandbox enforces; workspace commands run with the host's session policy,
+  so the declaration cannot itself enforce a read-only sandbox.
 - The declared outcome ids the node may submit, the payload shape from
   `references/schemas.md`, the attempt credential the dispatch carried and the
   submission discipline.
@@ -372,8 +471,10 @@ context to act alone:
 - [ ] Every cycle sits inside one `loop_groups` entry with a positive
       `max_traversals`, a declared `continuation_outcome` and a declared
       `exit_outcome`; continuation edges stay inside the group.
-- [ ] A node's `tools` is a string array of **host** tool names; the generator
-      declares `Write`, `Edit`, `Bash`; no graph-face name appears in it.
+- [ ] Workspace-only nodes omit `tools` and `toolPresentation`; extra grants
+      use actual registered host names. No graph-face name appears in `tools`.
+- [ ] The selected host supports the workflow; only dsh uses `graph_worker_exec`.
+      A Codex role does not rely on rolebox graph execution.
 - [ ] The declaring session reads results with `graph_status` scope `all`,
       format `json`, `include_output` and `include_history`.
 - [ ] No generated role carries a retired imperative graph tool name, a retired
@@ -383,7 +484,7 @@ context to act alone:
 
 | Claim | Source |
 | --- | --- |
-| Six-name graph tool vocabulary and the worker allow-list | `src/graph/host/tool-binding.ts` (`GRAPH_TOOL_NAMES`, `WORKER_GRANTED_GRAPH_TOOLS`, `declaredToolsAllow`) |
+| Graph tool vocabulary and host-specific execution and the worker allow-list | `src/graph/host/tool-binding.ts` (`GRAPH_TOOL_NAMES`, `WORKER_GRANTED_GRAPH_TOOLS`, `declaredToolsAllow`) |
 | Root/node/outcome/edge/loop-group key sets and `tools?: string[]` | `src/graph/compiler/declaration-v3.ts`, `src/graph/compiler/parse-declaration-v3.ts` (`ROOT_KEYS`, `NODE_KEYS`, `LOOP_GROUP_KEYS`) |
 | Loop-group cap, routes and the continuation-stays-inside rule | `src/graph/compiler/compile.ts` (`compileLoopGroup`, `compileLoopGroups`) |
 | Non-empty string-array host-tool grant | `src/graph/compiler/compile.ts` (`readDeclaredTools`) |

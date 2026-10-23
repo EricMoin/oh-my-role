@@ -27,11 +27,11 @@ python3 scripts/check_version.py
 This checks whether your installed rolebox version matches the pinned version in the validation catalog. Why? Because role structure changes between versions, and generating against a stale schema wastes everyone's time.
 
 - If **ok**: proceed.
-- If **mismatch** or **unknown**: show the warning and ask whether to continue. Sometimes the user knows what they're doing; sometimes they don't. Either way, they should decide.
+- If **mismatch** or **unknown**: report the available evidence and inspect the selected runtime source and tool schemas. Continue within the authorized scope when compatibility can be established; do not treat a matching version string as proof of schema compatibility.
 
 ### Step 2: Capture Intent
 
-Ask these four framing questions. They give the Generator enough context to produce something useful on the first pass:
+Resolve these four framing points from the request and existing context. Ask only about missing information that changes the result:
 
 1. **Domain** — What should this role do? What problem does it solve? (The more specific, the better the output.)
 2. **Template** — Simple, director+gated, graph-orchestrated, or nested+state-machine? If the user isn't sure, explain what each looks like and when you'd pick it.
@@ -46,7 +46,16 @@ If the user didn't pick a template in step 2, recommend one based on what you le
 
 ### Step 4: Generate
 
-Author one Graph v3 declaration and start it through `graph_declare` in the same call, with everything you've gathered embedded in the Generator node prompt:
+Select the host before dispatch. OpenCode/Pi workers use native workspace
+tools; dsh workers use `graph_worker_exec`. Codex has no rolebox graph execution:
+there, author a non-graph role using the host's own tools. For a supported graph
+host, omit node `tools` and `toolPresentation` for ordinary workspace work; add
+only verified registered host capabilities when integrations are required.
+
+Author one Graph v3 declaration and start it through `graph_declare` in the same
+call. Include the authorized target directory, selected host, complete brief,
+readable resource paths and the authoring report contract from
+`references/schemas.md` in the Generator prompt:
 
 ```json
 {
@@ -60,8 +69,7 @@ Author one Graph v3 declaration and start it through `graph_declare` in the same
       "prompt": "Create a {template} role for {domain}. Skills/functions: {skills}. Reference roles: {references}.",
       "outcomes": [{ "id": "generated" }, { "id": "blocked" }, { "id": "failed" }],
       "completion": { "mode": "explicit" },
-      "budget": { "timeout_ms": 600000 },
-      "tools": ["Write", "Edit", "Bash"]
+      "budget": { "timeout_ms": 600000 }
     }
   ],
   "edges": []
@@ -74,17 +82,19 @@ The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, func
 
 ### Step 5: Draft Eval Cases
 
-Create `evals/evals.json` with basic eval cases for the new role. Aim for 3-5 cases — at minimum:
+Draft 3-5 realistic cases. For automated dsh evaluation create a native suite and cases outside the role snapshot using `references/templates/eval-set.md`; configure the actual provider/model/plugin explicitly. If only natural-language rubrics are available, label them manual and do not imply the runner can score them. Include:
 
 - 1 positive case (the role handles its core task correctly)
 - 1 boundary case (edge of scope, should still work)
 - 1 rejection case (out of scope, role should decline or redirect)
 
-These aren't exhaustive. They're smoke tests so `|verify|` has something to run.
+These are initial scenarios, not evidence of success. Static suite validation makes no model requests; actual execution requires user authorization.
 
 ### Step 6: Hand Off to Verify
 
-Tell the user the role has been generated and recommend running `|verify|` to validate structure, lint the YAML, and run the eval cases. Don't do the verification yourself.
+Invoke the verify workflow for Tier 1+2 on the generated role. Run any separately
+authorized optional tiers under their own gates. Creation is not complete merely
+because the Generator wrote files.
 
 ## Guardrails
 
@@ -93,4 +103,4 @@ These exist because past runs went sideways without them:
 - Don't generate beyond the chosen template complexity. If they asked for simple, don't sneak in a state machine.
 - Don't create artifacts the user didn't ask for. No bonus skills, no surprise subagents.
 - Don't touch other roles. Scope is the new role only.
-- Stop after step 5. Verification belongs to the verify function, not here.
+- After generation and eval authoring, hand off to verify rather than claiming an unverified role is ready.

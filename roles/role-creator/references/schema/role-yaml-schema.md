@@ -1,15 +1,13 @@
 ---
 description: Complete field reference dictionary for role.yaml (RoleConfig) and SubAgentConfig types, including the declarer/worker tool split that marks a Graph v3 role
-rolebox_version: 2.0.0-alpha.2
+rolebox_version: 2.0.0
 ---
 
 # role.yaml Field Reference
 
-This document is the definitive field dictionary for `role.yaml` schema types.
-Every field from `RoleConfig`, `SubAgentConfig` and related interfaces is listed
-with its type, required/optional status, default value and inheritance behaviour.
+This is an authoring reference for supported role fields, not a generated exhaustive schema. Runtime parsing is authoritative; offline contract tests pin the source revision in `tests/rolebox-revision.txt`.
 It documents the installed rolebox loader (`src/loader/role-loader.ts`,
-`src/types.core.ts`, `src/types.graph.ts`), pinned here at `2.0.0-alpha.2`.
+`src/types.core.ts`, `src/types.graph.ts`), pinned here at `2.0.0`.
 
 This is a field DICTIONARY. Validation rules live in `validation-catalog.md`, and
 the Graph v3 declaration grammar that replaced role-level orchestration lives in
@@ -35,7 +33,7 @@ the Graph v3 declaration grammar that replaced role-level orchestration lives in
 | `tools` | `Record<string, boolean>` | NO | — | YES | Tool enable/disable map. The machine-checkable declarer/worker split marker of a Graph v3 role — see below. |
 | `skills` | `string[]` | NO | — | NO | Rolebox-local skill names resolved from the role's `skills/` directory. |
 | `opencode_skills` | `string[]` | NO | — | NO | Opencode-global skill names resolved from the global skills directory. |
-| `functions` | `string[]` | NO | `["plan", "execute"]` | NO | Function names to load for this role. |
+| `functions` | `string[]` | NO | `["plan", "execute", "loop"]` | NO | Added to defaults; `disable_functions` removes names from the union. |
 | `disable_functions` | `string[]` | NO | — | NO | Functions to explicitly disable (removed from the resolved set). |
 | `subagents` | `SubAgentConfig[]` | NO | — | NO | Inline subagent definitions. |
 | `references` | `Record<string, string \| ReferenceEntry>` | NO | — | NO | Named reference declarations. Values are paths or `ReferenceEntry` objects. |
@@ -44,6 +42,20 @@ the Graph v3 declaration grammar that replaced role-level orchestration lives in
 | `auto_activate` | `string[]` | NO | — | NO | Functions activated automatically on role load. |
 | `locked` | `boolean` | NO | `false` | NO | When true, locks auto-activated functions (prevents deactivation). |
 | `version` | `string` | NO | — | — | Semantic version string for the role. |
+
+Additional fields read by the current loader:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `open` | boolean | Expose this role as a public producer |
+| `exports` | string[] | Explicit subagent names/slugs exported by an open role |
+| `open_roles` | string[] | Producer role IDs whose public agents this consumer can discover |
+| `hooks` | HooksBlock | Host-supported lifecycle hooks; verify against `docs/hooks.md` |
+| `copilot` | CopilotConfig | Host-supported turn-end policy; verify against `docs/copilot.md` |
+
+These optional capabilities require host support. Native benchmarks currently require
+self-contained roles, so external `open_roles` dependencies need a different evaluation
+setup. Other type-only fields must not be assumed loadable without checking the loader.
 
 Two role.yaml keys that older contracts documented here as live orchestration
 configuration — `graph:` and `collaboration:` — are **not** live config under the
@@ -91,7 +103,7 @@ uses `child_value ?? parent_value`; see [Inheritance Rules](#inheritance-rules))
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` | `false` | `true` |
+| `graph_worker_exec` (optional, dsh only) | `false` if present | `true` if present |
 | `Write` / `Edit` / `Bash` | per the role's own job | per the worker's job |
 
 ```yaml
@@ -102,7 +114,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: true
   Edit: true
   Bash: true
@@ -116,7 +127,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: true
@@ -124,8 +134,9 @@ tools:
 
 Inside a graph the binding boundary is the **node** grant recorded in the
 declaration, not this manifest map: a dispatched worker's graph face grants
-`graph_submit_outcome` (plus `graph_worker_exec` on the dsh platform), every
-other graph tool refuses the worker by name, and a node's declared `tools` list
+`graph_submit_outcome` (plus `graph_worker_exec` on the dsh platform). The four
+declarer tools refuse workers; additional worker discovery/code entries depend on
+the host presentation described in `../graph-protocol.md`. A node's `tools` list
 names extra **host** tools only. The five protocol tools and their request
 shapes are documented in `../graph-protocol.md`.
 
@@ -291,7 +302,7 @@ condition is one of:
 Combinators nest recursively. A string predicate is the leaf node. The installed
 named-condition vocabulary is `user_approval()`, `artifact_exists(name)`,
 `plan_todos_complete()`, `evidence_met()`, `tool_observed(name)`,
-`turn_count(n)`, `plan_incomplete(name)` and `state_eq(key=value)`.
+`signal_observed(type)`, `turn_count(n)` and `state_eq(key=value)`. Use one combinator per object; unknown predicates evaluate false unless registered by the host. A prose `{pass, fail}` object is not a condition.
 
 ---
 

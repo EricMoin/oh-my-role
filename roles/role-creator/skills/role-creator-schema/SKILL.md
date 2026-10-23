@@ -55,13 +55,13 @@ Auto-discovered from `references/**/*.md` within the role directory. If an expli
 
 ## Default Functions
 
-When no `functions:` field is present in `role.yaml`, the role receives:
+Every role and subagent starts with these default functions:
 
 ```yaml
-functions: ["plan", "execute"]
+functions: ["plan", "execute", "loop"]
 ```
 
-Specifying `functions:` explicitly replaces this default entirely. Use `disable_functions:` to selectively remove from whatever set resolves.
+The resolved set is `union(defaults, functions) - disable_functions`. Explicit `functions: []` keeps defaults. To expose only a custom function, disable all three defaults explicitly. The built-in `loop` function remains valid; graph revise cycles use `loop_groups`.
 
 ## Graph v3 Tool Split
 
@@ -74,10 +74,9 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
 ```
 
-A declaring role holds the four declarer tools `true` and `graph_submit_outcome` / `graph_worker_exec` `false`; a worker subagent holds the exact inverse. Every role that orchestrates also ships a Graph v3 declaration, authored per request through `graph_declare` with per-node outcomes, explicit completion, outcome-bound edges and a `loop_groups` entry for each cycle. The validation catalog retires a `graph:` block (Rule 1, ERROR); `collaboration:` is a legacy schema-compat mirror with no runtime effect.
+A declaring role holds the four declarer tools `true` and `graph_submit_outcome` `false`; a worker holds the inverse. `graph_worker_exec` is optional and dsh-only. OpenCode/Pi workers use their installed native tools; the current Codex adapter cannot execute graphs. Every role that orchestrates also ships a Graph v3 declaration, authored per request through `graph_declare` with per-node outcomes, explicit completion, outcome-bound edges and a `loop_groups` entry for each cycle. The validation catalog retires a `graph:` block (Rule 1, ERROR); `collaboration:` is a legacy schema-compat mirror with no runtime effect.
 
 ## Collaboration & Memory Blocks
 
@@ -135,21 +134,23 @@ gate: "user_approval"
 gate:
   all:
     - "artifact_exists(plan)"
-    - { not: "skipped" }
+    - { not: "state_eq(skipped=true)" }
 
 gate:
   any:
-    - "fast_path"
-    - "user_override"
+    - "state_eq(fast_path=true)"
+    - "user_approval()"
 ```
+
+Use exactly one combinator key per object. Unknown condition names evaluate false unless a host extension registers them. `gate: {pass: ..., fail: ...}` is not a Condition. `user_approval()` means a user message this turn, not scoped authorization for a sensitive action.
 
 ### ObserveSpec
 
 ```yaml
 observe:
   - on: tool_after        # tool_after | message | activate
-    tool: "dispatch"      # filter to specific tool (optional)
-    when: "in_review"     # additional condition (optional)
+    tool: "graph_declare"      # filter to specific tool (optional)
+    when: "state_eq(phase=review)"     # additional condition (optional)
     inject: "Check quality gates"
     set_evidence: "reviewed"
 ```
@@ -158,7 +159,7 @@ observe:
 
 ```yaml
 transitions:
-  - when: "plan_approved"
+  - when: "user_approval()"
     activate: ["execute"]
     deactivate: ["plan"]
 ```

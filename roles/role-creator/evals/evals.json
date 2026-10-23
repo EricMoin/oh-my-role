@@ -67,7 +67,7 @@
         },
         {
           "id": "detect-retired-v2-contract",
-          "description": "Role Creator detects a role that still declares retired v2 graph tools and the retired signal surface",
+          "description": "Role Creator detects a role that still declares retired v2 graph tools",
           "prompt": "Run verification on tests/fixtures/broken-retired-v2",
           "expectations": [
             { "text": "Reports FAIL with the permission_legacy_tools error (Rule 4)", "type": "capability", "weight": 2 },

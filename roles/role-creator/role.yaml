@@ -7,10 +7,13 @@ prompt_file: PROMPT.md
 references:
   schema/validation-catalog:
     path: references/schema/validation-catalog.md
-    description: Frozen rolebox validation contract — the rule source for all Tier 1/2 checks.
+    description: Local authoring policy and documented runtime rules; compatibility is checked against the pinned rolebox revision.
   schema/role-yaml-schema:
     path: references/schema/role-yaml-schema.md
     description: Field-by-field role.yaml and SubAgentConfig schema dictionary.
+  schemas:
+    path: references/schemas.md
+    description: Authoring, validation and grading payloads carried as accepted Graph v3 data.
   graph-protocol:
     path: references/graph-protocol.md
     description: Canonical rolebox Graph v3 protocol — tool surface, declaration grammar, accepted-outcome transport and bounded recovery.
@@ -34,9 +37,6 @@ functions:
   - scaffold
   - verify
   - iterate
-  # loop removed (Phase C): the loop_* function family is retired; bounded cycles
-  # are declared as a loop_groups entry in a Graph v3 declaration.
-  # deploy: deploy-to-harness capability — functions/deploy.md is authored in a later subtask
   - deploy
 
 skills:
@@ -46,7 +46,7 @@ skills:
 
 # The declarer split: this primary session declares, controls, reads and audits
 # graphs. It never submits a worker outcome and never runs a worker command; the
-# generated subagents hold the inverse split. Every generated role must declare
+# generated subagents hold the inverse split. Generated graph roles declare
 # the same machine-checkable marker in its own tools: block.
 tools:
   graph_declare: true
@@ -54,7 +54,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: true
   Edit: true
   Bash: true

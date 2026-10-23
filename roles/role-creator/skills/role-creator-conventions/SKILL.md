@@ -80,7 +80,7 @@ Deep subagent nesting with reactive functions that observe lifecycle events, aut
 
 ## Graph v3 Vocabulary
 
-Graph-orchestrated and director-gated roles run coordination on the rolebox Graph v3 outcome protocol. Everything below is live; the retired incremental graph-authoring family and the legacy dispatch / loop / function-state machinery are not.
+Graph-orchestrated and director-gated roles run coordination on the rolebox Graph v3 outcome protocol. The incremental graph-authoring API is retired. Function state and the built-in loop function remain separate capabilities; graph cycles use explicit loop groups. Select a host from the graph-protocol capability matrix before generating tool instructions.
 
 | Tool | Purpose |
 |------|---------|
@@ -89,9 +89,9 @@ Graph-orchestrated and director-gated roles run coordination on the rolebox Grap
 | `graph_control(command, ...)` | Run/attempt lifecycle: `failure`, `timeout`, `cancel`, `budget-stop`, `retry`, `approval-request`, `approve`, `reject` |
 | `graph_status({...})` | Read the shared read model once: phase, runs, nodes, attempts, accepted results, loops, approvals, controls, budget, unsettled effects |
 | `graph_audit({...})` | Read-only store inventory for storage/recovery blockers; mutates nothing |
-| `graph_worker_exec(command)` | A worker runs one shell command in its sandbox for reads, edits, checks and tests |
+| `graph_worker_exec(command)` | dsh-only worker execution; OpenCode/Pi workers use native tools |
 
-**Declarer/worker split:** a declaring role holds `graph_declare`, `graph_control`, `graph_status` and `graph_audit` true and `graph_submit_outcome` / `graph_worker_exec` false; a worker subagent holds the exact inverse. The `tools:` block in `role.yaml` is the machine-checkable marker of the split.
+**Declarer/worker split:** a declaring role holds `graph_declare`, `graph_control`, `graph_status` and `graph_audit` true and `graph_submit_outcome` false; a worker holds the inverse. Omit the dsh-only `graph_worker_exec` marker in portable manifests. The `tools:` block in `role.yaml` is the machine-checkable marker of the split.
 
 **Declared outcomes:** every node declares its `outcomes` and `completion: {mode: "explicit"}`. Only an accepted submission settles a node: verdict `committed` or `replayed` with no refusals. A refusal writes nothing and leaves the attempt open; a result fence or a control signal never settles a v3 node.
 
@@ -102,6 +102,8 @@ Graph-orchestrated and director-gated roles run coordination on the rolebox Grap
 **Approval gates:** a node outcome declares the `principal-approval@1` acceptance primitive, and the declaring session raises `graph_control(command: "approval-request", ...)` under a host-installed policy. The capability preflight refuses a declaration whose graph and node have no installed approval rule. A control decision records a decision; it never submits a business outcome.
 
 **Engine-managed concurrency:** the engine schedules ready nodes and enforces run and per-node budgets — resource ceilings are owned by the engine, not by declarative config.
+
+Every consumer declares accepted-result `inputs`; an edge alone carries no payload. Revision back-edges use `when: triggered` inputs.
 
 Gate skills still apply: a gate SKILL.md defines what "pass" looks like, and the declarer binds each gate verdict's outcome to an edge.
 

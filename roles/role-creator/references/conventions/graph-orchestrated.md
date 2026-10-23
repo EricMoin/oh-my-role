@@ -10,6 +10,13 @@ The live contract for the protocol is
 `roles/role-creator/references/graph-protocol.md`; every claim below is grounded
 in the installed rolebox source it cites.
 
+Select the target host first using `references/graph-protocol.md`. OpenCode and
+Pi workers use their native workspace tools; only dsh workers use
+`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
+extra tools must use names actually registered by the selected host. File-tool
+denials do not enforce read-only behavior when a shell remains available.
+
 ## When to Use
 
 - Multi-stage workflows with specialist stages and review gates
@@ -47,7 +54,8 @@ roles/{role-name}/
         └── role.yaml
 ```
 
-No `functions/` directory is required (defaults apply). If present it holds a
+No `functions/` directory is required. Set `disable_functions: [plan, execute, loop]` when none are wanted;
+`functions` is merged with these defaults, including when it is empty. If present it holds a
 small set of declarer-level functions; the coordination logic itself lives in
 PROMPT.md and the declaration. Nothing builds a graph incrementally: the
 topology is fixed when the declaration compiles.
@@ -72,7 +80,7 @@ declares the **declarer split** — the machine-checkable marker of the pattern.
 |-------|---------|
 | `version` | SemVer string |
 | `mode` | `primary` |
-| `functions` | Optional — defaults apply |
+| `functions` | Added to defaults; use `disable_functions` to remove defaults |
 | `skills` | Declarer-level skills |
 | `references` | Static docs the declarer reads; register `graph-protocol` and this convention so every declared reference name resolves on disk |
 | `permission` | `allow` list of the tools the declaring session may call |
@@ -91,13 +99,13 @@ Orchestration lives in the v3 declaration, not in role.yaml.
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` | `false` | `true` |
+| `graph_worker_exec` | Omit; dsh-only execution entry | Omit in portable manifests; supplied by dsh |
 | `Write` / `Edit` / `Bash` | per the role's own job (a thin declarer denies all three) | per the worker's job |
 
 A node may also declare extra **host** tools in the declaration's `tools` string
 array; a `graph_`-prefixed name there admits nothing, because the graph namespace
-is refused before the entries are consulted. Inside a graph the node grant is the
-binding boundary, not the worker's own manifest.
+is refused before the entries are consulted. Inside a graph the node grant supplements the host baseline and permissions;
+its exact enforcement depends on the host.
 
 ### Example role.yaml
 
@@ -126,7 +134,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
@@ -231,7 +238,7 @@ bound:
 ```
 
 - `max_traversals` is a hard positive cap; the run stops with `loop-exhausted`
-  when it is reached.
+  when another continuation would exceed it.
 - The continuation outcome must be declared by a member and its edge must stay
   inside the group; an edge carrying it out of the group is a structural defect.
 - The exit outcome must be declared by a member and carries the work onward.

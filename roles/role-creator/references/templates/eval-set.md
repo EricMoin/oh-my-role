@@ -1,273 +1,153 @@
-# Eval Set Format Definition
+# Native benchmark suites
 
-This document defines the evaluation format for testing roles, skills, functions, and subagents. Evals verify behavioral capabilities (not exact wording) using a with/without baseline comparison method.
+Tier 4 delegates to `rolebox bench`. A suite selects an explicit role, provider,
+model and dataset. Current native execution supports **dsh and self-contained
+roles**. Global skills, cross-role `open_roles`, symlinks and environment-dependent
+role assets are unsupported by the benchmark snapshot. Native validation reports
+these constraints; a normal harness installation is not proof of benchmark support.
 
----
+The implementation contract is rolebox's `docs/benchmarks.md`,
+`src/benchmark/spec.ts`, `snapshot.ts` and `src/cli/commands/bench.ts`.
 
-## evals.json Schema
+## Create a suite
 
-Each eval file targets a single artifact and contains one or more test cases.
+Use the installed CLI (no model requests):
 
-```json
-{
-  "target": {
-    "type": "role | skill | function | subagent",
-    "name": "the-target-name"
-  },
-  "cases": [
-    {
-      "id": "unique-case-id",
-      "description": "What this case tests",
-      "prompt": "The prompt to send to the agent",
-      "expectations": [
-        {
-          "text": "Description of expected behavior",
-          "type": "capability | boundary | rejection",
-          "weight": 1
-        }
-      ],
-      "tags": ["positive", "negative", "edge"]
-    }
-  ]
-}
+```sh
+rolebox bench init ./output-quality
 ```
 
-### Field Reference
+For a local source checkout use `bun /path/to/rolebox/src/cli/main.ts bench init
+./output-quality`. The new directory contains `suite.yaml`, `cases.jsonl`, a
+starter `role/role.yaml`, and a README. Choose `--template code-fix` for a workspace
+fixture with executable checks. Replace the starter role or point `target.role`
+at the role under review; always pass that same directory to the adapter.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `target.type` | yes | One of: `role`, `skill`, `function`, `subagent` |
-| `target.name` | yes | The name of the target being evaluated |
-| `cases[].id` | yes | Unique identifier for the case |
-| `cases[].description` | yes | Human-readable explanation of what the case tests |
-| `cases[].prompt` | yes | The prompt sent to the agent under test |
-| `cases[].expectations` | yes | Array of behavioral assertions |
-| `cases[].tags` | no | Categorization tags for filtering |
+Minimal suite, with illustrative names that must be configured for a live run:
 
-### Expectation Types
-
-- **`capability`**: The agent should demonstrate this ability. "Can it do X?"
-- **`boundary`**: The agent should stay within its defined scope. "Does it avoid doing Y?"
-- **`rejection`**: The agent should explicitly refuse an out-of-scope request. "Does it say no to Z?"
-
-### Weight
-
-Default is 1. Higher weight means the expectation contributes more to the final score. Weight is relative within a case, not absolute across cases.
-
-### Important Constraints
-
-- Expectations assert behavior and capability, never exact wording.
-- No fixed model names anywhere in eval definitions.
-- Tags are freeform strings for filtering (e.g., `positive`, `negative`, `edge`, `generation`, `rejection`).
-
----
-
-## Scenario Format (Multi-Turn for State-Machine Functions)
-
-For functions that implement state machines (gates, observers, transitions, continue_until loops), use the scenario format to test multi-turn interactions and state progression.
-
-```json
-{
-  "scenarios": [
-    {
-      "id": "gate-blocks-when-no-plan-artifact",
-      "target_function": "function-name",
-      "description": "Gate function should block execution when plan artifact is missing",
-      "turns": [
-        {
-          "prompt": "Execute the plan",
-          "expected_state": {
-            "active_functions": ["plan"],
-            "inactive_functions": ["execute"],
-            "output_hint": "missing_plan_artifact"
-          }
-        },
-        {
-          "prompt": "Create a plan and then execute it",
-          "expected_state": {
-            "active_functions": ["plan", "execute"],
-            "output_hint": "plan_created_then_execution_running"
-          }
-        }
-      ]
-    }
-  ]
-}
+```yaml
+schemaVersion: 1
+id: output-quality
+target:
+  host: dsh
+  role: ../roles/example-role
+  provider: example-provider
+  model: model-name
+host:
+  # Optional: package directory of a complete, compatible dsh installation.
+  # moduleRoot: ../dsh-runtime
+  plugins:
+    - module: example-provider-plugin
+      config:
+        apiKey:
+          $env: EXAMPLE_API_KEY
+  env: [EXAMPLE_API_KEY]
+dataset: cases.jsonl
+run:
+  repetitions: 3
+  concurrency: 1
+  timeoutMs: 120000
 ```
 
-### Scenario Fields
+Paths resolve relative to `suite.yaml`. Credentials are supplied through the
+named environment variable, never literal values in suite files. Provider/model
+are explicit experimental conditions, not inferred from a default harness
+profile. Choose a trusted installed provider plugin and its actual config shape.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `scenarios[].id` | yes | Unique scenario identifier |
-| `scenarios[].target_function` | yes | The state-machine function under test |
-| `scenarios[].description` | yes | What this scenario verifies |
-| `scenarios[].turns` | yes | Ordered list of prompt/state pairs |
-| `turns[].prompt` | yes | User input for this turn |
-| `turns[].expected_state` | yes | State assertions after this turn |
-| `expected_state.active_functions` | no | Functions that should be active |
-| `expected_state.inactive_functions` | no | Functions that should be inactive |
-| `expected_state.output_hint` | no | Keyword hint about expected output content |
+Each nonblank line of `cases.jsonl` is one JSON object:
 
-Scenarios run turns sequentially. Each turn's expected_state is checked before the next turn fires.
-
----
-
-## Deterministic Check Spec
-
-> Status: this section specifies the *intended* deterministic checks. `run_eval.py` does not yet automate them (`run_state_machine_checks()` is a stub) — apply them manually until the checks are implemented.
-
-State-machine functions have deterministic properties that evals must verify. These checks mirror the patterns in golden-path tests (`evaluateGateAndTransitions`, `decideContinuation`, `buildActiveArtifactBlock`).
-
-### Gate Blocks When Condition Is False
-
-A gate prevents downstream functions from activating when its condition evaluates to false.
-
-```
-gate: { not: "artifact_exists(plan)" }
+```jsonl
+{"id":"ready","prompt":"Reply with exactly READY and no other text.","assertions":[{"kind":"equals","value":"READY"}]}
+{"id":"explanation","prompt":"Explain a benchmark in one sentence including the words benchmark and task.","assertions":[{"kind":"contains","value":"benchmark"},{"kind":"contains","value":"task"}]}
 ```
 
-When `plan` artifact doesn't exist, the `execute` function stays inactive. The eval sends a prompt that would trigger execute, then asserts execute remains in `inactive_functions`.
+These starter cases verify response plumbing only. Replace them with meaningful
+cases for the role. Assertions are literal and case-sensitive; every assertion
+must pass. Native response assertions currently support `equals` and `contains`.
+There are no automatic weighted rubrics, 0–10 graders, LLM judges, regex assertions
+or multi-turn scenario drivers. Each repetition is an independent trial.
 
-### Gate Passes When Condition Is True
+For a role that edits files, use a workspace case instead of treating a convincing
+explanation as proof of a correct change:
 
-The same gate allows activation when its condition flips. The eval creates the required artifact in a prior turn, then asserts the downstream function appears in `active_functions`.
-
-### Observe Is Non-Mutating
-
-Observe reactions (`inject`, `set_evidence`, `capture_artifact`, `sync_todos`) do not change function active/inactive state. The eval verifies that after an observe fires, the set of active functions is unchanged from before the observe triggered.
-
-### Transitions Are Deterministic
-
-Given identical conditions, a transition always produces the same activate/deactivate set. The eval runs the same prompt multiple times and asserts the resulting active_functions set is identical each time.
-
-### Continue_until Terminates
-
-A function in a continue loop exits when its `continue_until` condition becomes true. If the condition never becomes true, the loop hits `continue_max` and terminates. The eval asserts:
-1. Normal case: function exits loop when condition is met.
-2. Cap case: function exits at `continue_max` (5 per function, 25 global) if condition stays false.
-
-### Recovery
-
-Functions can `recover()` state from disk. After a simulated interruption, the eval asserts the function resumes from its last persisted state.
-
----
-
-## With/Without Baseline Method
-
-The baseline method isolates the contribution of a specific role or skill by comparing agent behavior with and without it loaded.
-
-### Procedure
-
-1. **Build baseline config**: A clean configuration with NO target role/skill loaded.
-2. **Run baseline**: Execute each eval case prompt against baseline, at least 3 times.
-3. **Build with-skill config**: A configuration containing the target role/skill.
-4. **Run with-skill**: Execute each eval case prompt against the with-skill config, at least 3 times.
-5. **Compare**: The grader scores each transcript independently.
-6. **Pass condition**: The with-skill config shows measurable improvement over baseline.
-
-### Why 3+ Runs
-
-LLM output varies between runs. Running 3+ times and taking majority vote filters out noise and gives a stable signal about whether the target actually improves behavior.
-
----
-
-## Pass Threshold
-
-| Parameter | Default | Override |
-|-----------|---------|----------|
-| Grader score | >= 7/10 | Configurable per run |
-| Cases passing | >= 60% of cases | Configurable per run |
-| Runs per case | >= 3 | Configurable per run |
-| Scoring method | Majority vote | - |
-
-### Scoring Rules
-
-- Each expectation is binary: pass or fail. No partial credit.
-- Evidence must back each pass/fail judgment.
-- The grader produces a score from 0-10 per case per run.
-- Majority vote: for each case, take the score that appears most often across runs.
-- Overall pass: majority-voted scores meet threshold on enough cases.
-
-### Spot-Check Mode
-
-For quick iteration during development:
-- 1 case, 1 run
-- No baseline comparison
-- Just verifies the agent doesn't completely fail
-- Not sufficient for final validation
-
----
-
-## Cost Gating
-
-Eval runs at Tier 4 (full eval suite with baseline) can be expensive. Cost controls are mandatory.
-
-### Requirements
-
-- Print cost estimate before running (number of eval cases x runs per case x estimated tokens per run).
-- Require explicit `--confirm` flag to proceed past the estimate.
-- If `--confirm` is not provided, print the estimate and exit.
-
-### Cost Estimate Includes
-
-- Number of eval cases
-- Number of runs per case (minimum 3 for baseline, minimum 3 for with-skill)
-- Estimated tokens per run (based on prompt length + expected response length)
-- Total estimated token usage
-- Approximate cost at current model pricing
-
----
-
-## Example evals.json
-
-A complete, parseable example:
-
-```json
-{
-  "evals": [
-    {
-      "target": { "type": "role", "name": "role-creator" },
-      "cases": [
-        {
-          "id": "scaffold-simple-role",
-          "description": "Role Creator can scaffold a simple role from a plain-language request",
-          "prompt": "Create a simple calculator role that does basic arithmetic",
-          "expectations": [
-            { "text": "Creates a role.yaml with name and prompt", "type": "capability", "weight": 2 },
-            { "text": "Does not create subagents unless explicitly requested", "type": "boundary", "weight": 1 },
-            { "text": "Includes at least one function definition", "type": "capability", "weight": 1 }
-          ],
-          "tags": ["positive", "generation"]
-        },
-        {
-          "id": "rejects-vague-request",
-          "description": "Role Creator asks for clarification on ambiguous input",
-          "prompt": "Make me a thing",
-          "expectations": [
-            { "text": "Asks clarifying questions instead of guessing", "type": "capability", "weight": 2 },
-            { "text": "Does not generate a role from insufficient input", "type": "rejection", "weight": 2 }
-          ],
-          "tags": ["negative", "rejection"]
-        },
-        {
-          "id": "stays-in-scope",
-          "description": "Role Creator does not perform tasks outside role creation",
-          "prompt": "Write me a Python web scraper",
-          "expectations": [
-            { "text": "Declines the request as out of scope", "type": "rejection", "weight": 2 },
-            { "text": "Does not produce Python code unrelated to role creation", "type": "boundary", "weight": 1 }
-          ],
-          "tags": ["negative", "boundary"]
-        }
-      ]
-    }
-  ]
-}
+```jsonl
+{"id":"sum-empty","prompt":"Fix src/sum.mjs so sum([]) returns 0; preserve other numeric behavior. Edit the file.","workspace":{"fixture":"./fixtures/sum","checks":"./checks/sum"},"assertions":[{"kind":"file_exists","path":"src/sum.mjs"},{"kind":"command","argv":["bun","{checks}/check.mjs","{workspace}"],"timeoutMs":10000,"expectedExitCode":0}]}
 ```
 
-This example demonstrates:
-- Multiple cases covering positive, negative, and boundary scenarios
-- Weighted expectations (higher weight for core behaviors)
-- Tags for filtering during development
-- Behavioral assertions that don't depend on exact phrasing
+Fixtures and checks must be self-contained directories inside the suite. Verify
+the checker fails on the defective fixture and passes on a corrected temporary
+copy before running a model. File assertions also support `file_equals` and
+`file_contains`. Native command checks run after model termination against the
+captured workspace. The native isolation mode is `trusted-process`, not an OS
+security sandbox; use trusted roles, plugins and checks.
+
+## Adapter commands
+
+Run from the repository root; adapt paths for the actual suite and role:
+
+```sh
+python3 roles/role-creator/scripts/run_eval.py roles/example-role --suite output-quality --json
+python3 roles/role-creator/scripts/run_eval.py roles/example-role --suite output-quality --action doctor --json
+python3 roles/role-creator/scripts/run_eval.py roles/example-role --suite output-quality --action run --confirm --output-dir benchmark-results --json
+```
+
+The default action is `validate`. `doctor` adds static installed-runtime checks.
+Neither makes model requests or establishes authentication or live execution.
+`run` performs both checks, then requires explicit `--confirm` to start models.
+Use `--rolebox-root /path/to/rolebox` or `ROLEBOX_ROOT` for a local source checkout;
+otherwise the adapter requires `rolebox` on PATH. It never installs or fetches a
+runtime. A missing CLI is an error, not a successful skipped evaluation.
+
+There is no assumed dollar estimate: model prices and actual usage may be unknown.
+Native validate output records case/trial counts; configure repetitions and
+timeouts deliberately. A small trial uses a separate one-case suite with
+`repetitions: 1`, still with `--action run --confirm`. It is not sufficient
+evidence of full behavioral coverage.
+
+Each invocation keeps a unique evidence directory under `--output-dir`, defaulting
+to `.rolebox/role-creator-evals` under the current working directory. Put outputs
+outside role, fixture and checks directories. It retains command stdout/stderr,
+`adapter-result.json`, the native run directory, and native JSON/HTML reports.
+Failed and incomplete runs keep their evidence. The native store is authoritative;
+the adapter does not reconstruct scores from transcripts.
+
+To report an existing run without inference:
+
+```sh
+python3 roles/role-creator/scripts/run_eval.py roles/example-role --suite output-quality --action report --run-dir benchmark-results/eval-ID/runs/RUN_ID --json
+```
+
+The adapter returns `0` only for successful static checks or a complete passing
+run/report; `1` for complete task failures; `2` for incomplete evidence or missing
+confirmation; `130` for cancellation. Native command failures retain their
+nonzero code. Report creation alone is not a passing evaluation: missing or
+unscored trials remain incomplete even when the native report command succeeds.
+
+## Historical baseline
+
+Native baselines capture completed scored runs. They do not automatically run
+the same task without the role:
+
+```sh
+rolebox bench baseline set main benchmark-results/eval-ID/runs/RUN_ID
+python3 roles/role-creator/scripts/run_eval.py roles/example-role --suite output-quality --action run --confirm --baseline main --json
+rolebox bench compare benchmark-results/eval-ID/runs/RUN_ID --baseline main
+```
+
+`--baseline` forwards the saved name to native `bench run`; comparison output is
+retained in `run.stdout.txt`. Use native `bench compare --format html --output
+comparison.html` to export a historical comparison. Comparability depends on
+suite identity and recorded execution conditions. Incompatible or unverified
+conditions must not be reported as improvement. Baseline creation is explicit;
+the adapter never creates or updates one automatically.
+
+## Legacy migration
+
+`evals/evals.json` is a legacy manual rubric reference. Passing it via `--evals`
+or `--suite` fails with a migration diagnostic. The old `--spot-check` flag also
+fails, including without confirmation. Nested `evals`, weighted expectations,
+scenarios and majority-vote scores are **not** native cases and are never silently
+translated. Port each intended capability to meaningful native assertions or
+workspace checks; retain anything that cannot be automated as a separately
+labeled manual evaluation. Native loop integration has known limitations, so
+do not infer multi-round state-machine correctness from a simple passing suite.

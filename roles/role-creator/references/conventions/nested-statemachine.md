@@ -10,6 +10,13 @@ graph incrementally and they never settle a node.
 
 The protocol contract is `roles/role-creator/references/graph-protocol.md`.
 
+Select the target host first using `references/graph-protocol.md`. OpenCode and
+Pi workers use their native workspace tools; only dsh workers use
+`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
+extra tools must use names actually registered by the selected host. File-tool
+denials do not enforce read-only behavior when a shell remains available.
+
 ## When to Use
 
 - Complex multi-agent systems that need stateful orchestration
@@ -117,7 +124,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
@@ -166,9 +172,7 @@ continue_until:
   any:
     - "artifact_exists(final-report)"
     - "turn_count(12)"
-gate:
-  pass: "The request is routed to at least one declared graph"
-  fail: "Ask the user for the missing intent"
+gate: "tool_observed(graph_declare)"
 ---
 
 ## Triage Function
@@ -199,7 +203,7 @@ When declaring a node, provide:
 | `observe` | Lifecycle reactions that inject directives |
 | `transitions` | State changes triggered by conditions |
 | `continue_until` | Loop termination conditions |
-| `gate` | Pass/fail criteria for the function |
+| `gate` | Runtime condition controlling active/gated state, not prose pass/fail criteria |
 | `phase` | Logical grouping (intake, execution, synthesis) |
 | `priority` | Ordering when several functions are active (higher first) |
 | `requires_evidence` / `evidence_met()` | Evidence-gated activation |
@@ -242,9 +246,11 @@ declared outcome.
 Transitions change the active function set when a condition holds. Conditions use
 the runtime's named-condition vocabulary (`src/function/conditions.ts`):
 `user_approval()`, `artifact_exists(name)`, `plan_todos_complete()`,
-`evidence_met()`, `tool_observed(name)`, `turn_count(n)`,
-`plan_incomplete(name)` and `state_eq(key=value)`, composed with `all`, `any` and
-`not`.
+`evidence_met()`, `tool_observed(name)`, `signal_observed(type)`, `turn_count(n)`
+and `state_eq(key=value)`, composed with `all`, `any` and
+`not`. `user_approval()` only observes a user message this turn; it does not
+prove authorization for a specific operation. Use explicit user authorization
+or a host-installed graph approval policy for consequential operations.
 
 ```yaml
 transitions:
@@ -260,17 +266,18 @@ transitions:
 
 ### Continue-Until Pattern
 
-Defines when a function's loop terminates. The dual-channel form stops when any
-listed condition is met.
+Defines when a function's loop terminates. Each object has exactly one of
+`all`, `any`, or `not`; nest them to compose conditions. This example stops on a
+final report, the turn cap, or the conjunction of evidence and completed todos.
 
 ```yaml
 continue_until:
   any:
     - "artifact_exists(final-report)"
     - "turn_count(12)"
-  all:
-    - "evidence_met()"
-    - "plan_todos_complete()"
+    - all:
+        - "evidence_met()"
+        - "plan_todos_complete()"
 ```
 
 `any` means stop when any single condition is met; `all` means every condition
@@ -309,7 +316,10 @@ declares ONE graph per request:
 
 ### First-Level Subagents
 
-Direct children of the orchestrator. They handle domain-level coordination.
+Direct children of the orchestrator. The declaring parent owns the complete
+topology and can address descendants by their full IDs. A child running as a
+graph worker cannot declare another graph; its nested directory is catalog
+organization, not permission to dispatch its descendants.
 
 ```yaml
 name: Chancellor
@@ -319,15 +329,18 @@ prompt_file: PROMPT.md
 functions:
   - coordinate
   - quality-check
-subagents:
-  - drafter
-  - reviewer
-  - finalizer
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
 ```
 
 ### Second-Level Subagents (Sub-Subagents)
 
-Children of first-level subagents. They do the specialized work and settle their
+Discovered from nested `subagents/<slug>/role.yaml` directories; the parent
+declarer selects their full IDs. They do the specialized work and settle their
 node's declared outcomes through `graph_submit_outcome`.
 
 ```yaml
@@ -341,6 +354,12 @@ prompt: |
   carried, and never print that credential.
 skills:
   - architecture-drafting
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
 ```
 
 ### ID Convention for Nested Agents
@@ -367,17 +386,15 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: false
 ```
 
-A worker subagent holds the inverse (`graph_submit_outcome` and
-`graph_worker_exec` `true`, the four declarer tools `false`) plus `Bash: true`
-for its checks. Inside a graph the node grant is the binding boundary; a declared
-node `tools` list names extra **host** tools only, and a graph-face name in it
-admits nothing.
+A worker subagent enables `graph_submit_outcome` and disables the four declarer
+tools. Use the selected host's native command/file permissions for checks; dsh
+provides `graph_worker_exec` in its baseline. A declared node `tools` list names
+extra **host** tools only, and a graph-face name in it admits nothing.
 
 ## Graph v3 Concurrency
 
@@ -412,7 +429,7 @@ tune under the outcome protocol. Resource ceilings ride on the declaration:
 2. **Auto-activation.** Key functions start active and stay active
    (`locked: true`); the role's `auto_activate` list names them.
 3. **Tool-split orchestrator.** The top level holds the declarer tools and cannot
-   write files; workers hold `graph_submit_outcome` and `graph_worker_exec`.
+   write files; workers hold `graph_submit_outcome` and the host's workspace tools.
 4. **Deep nesting.** Sub-subagents handle the actual work; each level adds
    specialization.
 5. **Declared topology.** The graph is one immutable version-3 declaration per

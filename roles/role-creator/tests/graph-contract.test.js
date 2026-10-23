@@ -8,7 +8,7 @@
 // where each declared graph's persisted plan lives, so no declared graph outlives its
 // test.
 import { test, expect, afterEach } from "bun:test";
-import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -41,6 +41,7 @@ const { parseGraphDeclarationV3 } = await engine(
 const { compileGraph } = await engine("src/graph/compiler/compile.ts");
 const { discoverRoles } = await engine("src/loader/role-loader.ts");
 const { resolveSkills } = await engine("src/resolver/skill-resolver.ts");
+const { resolveAllRoles } = await engine("src/resolver/orchestrator.ts");
 const { OutcomeHost } = await engine("src/graph/host/outcome-host.ts");
 const { HostCredentialVault } = await engine(
   "src/graph/host/credential-vault.ts",
@@ -49,6 +50,35 @@ const { engineStateDir } = await engine("src/graph/persistence/paths.ts");
 const { SqliteAcceptanceLedger } = await engine(
   "src/graph/ledger/sqlite-ledger.ts",
 );
+
+const { evaluateCondition, KNOWN_CONDITIONS } = await engine("src/function/conditions.ts");
+const { evaluateGateAndTransitions } = await engine("src/function/phase-machine.ts");
+const { FunctionRuntimeManager } = await engine("src/function/runtime-state.ts");
+const { ArtifactStore } = await engine("src/function/artifact-store.ts");
+const { resolveFunctions } = await engine("src/function/file-resolver.ts");
+const { parseFrontmatter } = await engine("src/resolver/frontmatter.ts");
+const { piWorkerToolConfig, piWorkerToolAllowed, validatePiWorkerTools } = await engine("src/platform/adapters/pi/worker-tools.ts");
+const { OpencodeWorkerTools } = await engine("src/platform/adapters/opencode/worker-tools.ts");
+const { DSH_GRAPH_WORKER_GRANT } = await engine("src/platform/adapters/dsh/graph-worker.ts");
+
+test("the documented simple role disables defaults while explicit functions extend them", async () => {
+  const directory = tempDir("role-creator-defaults-");
+  const text = readFileSync(join(roleDir, "references/conventions/simple.md"), "utf8");
+  const examples = [...text.matchAll(/```yaml\s*\n([\s\S]*?)\n```/g)];
+  const simple = examples.find((match) => match[1].includes("name: Accessibility Reviewer"));
+  expect(simple).toBeDefined();
+  mkdirSync(join(directory, "simple"));
+  writeFileSync(join(directory, "simple/role.yaml"), simple[1]);
+  mkdirSync(join(directory, "custom/functions"), { recursive: true });
+  writeFileSync(join(directory, "custom/role.yaml"), "name: Custom\nprompt: Work.\nfunctions: [verify]\n");
+  writeFileSync(join(directory, "custom/functions/verify.md"), "Verify the work.");
+  const resolved = await resolveAllRoles(await discoverRoles(directory), {
+    roleboxDir: directory, globalSkillsDir: join(directory, "skills"),
+    configDir: directory, builtinDir: join(root, "functions"), roleFunctionsMap: new Map(),
+  });
+  expect(resolved.find((role) => role.id === "simple").functions).toEqual([]);
+  expect(resolved.find((role) => role.id === "custom").functions.map((fn) => fn.name)).toEqual(["plan", "execute", "loop", "verify"]);
+});
 
 // The v3 surface this meta-role is written against: one declaring session that owns
 // graph_declare/control/status/audit, and read-only workers that only submit their
@@ -87,7 +117,6 @@ const V3_DECLARER_TOOLS = {
   graph_status: true,
   graph_audit: true,
   graph_submit_outcome: false,
-  graph_worker_exec: false,
   Write: true,
   Edit: true,
   Bash: true,
@@ -100,7 +129,6 @@ const V3_WRITER_TOOLS = {
   graph_status: false,
   graph_audit: false,
   graph_submit_outcome: true,
-  graph_worker_exec: true,
   Write: true,
   Edit: true,
   Bash: true,
@@ -111,7 +139,6 @@ const V3_READONLY_WORKER_TOOLS = {
   graph_status: false,
   graph_audit: false,
   graph_submit_outcome: true,
-  graph_worker_exec: true,
   Write: false,
   Edit: false,
   Bash: true,
@@ -132,9 +159,6 @@ const NODE_OUTCOMES = {
   [VALIDATOR]: ["blocked", "failed", "pass", "revise"],
   [GRADER]: ["blocked", "failed", "graded"],
 };
-const GENERATOR_HOST_TOOLS = ["Write", "Edit", "Bash"];
-// The compiler normalizes a declared node's tools (trimmed, unique, sorted).
-const GENERATOR_COMPILED_TOOLS = ["Bash", "Edit", "Write"];
 const LOOP_GROUP = {
   id: "generate-validate",
   nodes: [GENERATOR, VALIDATOR],
@@ -231,9 +255,8 @@ test("rolebox loads role-creator, its three worker subagents and every declared 
     }
   }
 
-  // (a2) The read-only worker guarantee the declaration cannot enforce and the host
-  // sandbox supplies: the validator and grader deny Write and Edit, the generator
-  // keeps both. Their permission.allow lists agree with the tools block.
+  // Role-level edit posture is not a sandbox guarantee: an allowed shell can write.
+  // Check that the manifests at least agree with each worker's stated job.
   const generator = role.subagents.find((child) => childSlug(child) === "generator");
   expect(generator.tools.Write).toBe(true);
   expect(generator.tools.Edit).toBe(true);
@@ -246,7 +269,7 @@ test("rolebox loads role-creator, its three worker subagents and every declared 
     expect(child.tools.Edit).toBe(false);
     const allow = [...(child.permission?.allow ?? [])];
     expect(allow).toContain("graph_submit_outcome");
-    expect(allow).toContain("graph_worker_exec");
+    expect(allow).not.toContain("graph_worker_exec");
     expect(allow).not.toContain("Write");
     expect(allow).not.toContain("Edit");
   }
@@ -359,23 +382,14 @@ test("the declaration shipped in references/graph-protocol.md compiles into an e
     );
   }
 
-  // The generator declares the extra HOST tools it needs in the declaration grammar's
-  // string array (a membership test — the boolean-map role.tools shape belongs only to
-  // the loader-level assertions above). The read-only workers declare none, so the
-  // compiled plan records the baseline for them.
-  const generatorDeclaration = declaration.nodes.find(
-    (node) => node.id === GENERATOR,
-  );
-  expect(Array.isArray(generatorDeclaration.tools)).toBe(true);
-  for (const tool of GENERATOR_HOST_TOOLS) {
-    expect(generatorDeclaration.tools).toContain(tool);
+  for (const node of declaration.nodes) {
+    expect(node.tools).toBeUndefined();
+    expect(node.toolPresentation).toBeUndefined();
+    expect(plan.nodes.find((entry) => entry.id === node.id).tools).toBeUndefined();
   }
-  const generatorPlan = plan.nodes.find((node) => node.id === GENERATOR);
-  expect(generatorPlan.tools).toEqual(GENERATOR_COMPILED_TOOLS);
-  for (const id of [VALIDATOR, GRADER]) {
-    expect(declaration.nodes.find((node) => node.id === id).tools).toBeUndefined();
-    expect(plan.nodes.find((node) => node.id === id).tools).toBeUndefined();
-  }
+  expect(plan.nodes.find((node) => node.id === GENERATOR).inputs).toEqual([
+    { from: VALIDATOR, outcome: "revise", when: "triggered" },
+  ]);
 
   // Every edge binds an outcome its source node really declares.
   const edgeKey = (edge) => `${edge.from}->${edge.to}:${edge.outcome}`;
@@ -518,29 +532,15 @@ const acceptedAttempts = (ledger, graphId) =>
     .map((event) => event.attemptId)
     .sort();
 
-/** The schema_version 1 payloads the node briefs name, as accepted result data. */
-const authoringReport = () => ({
-  schema_version: 1,
-  report: "authoring-report",
-  role_directory: "roles/example-role",
-  files_written: ["roles/example-role/role.yaml", "roles/example-role/PROMPT.md"],
-});
+const reportExamples = [...readFileSync(join(roleDir, "references", "schemas.md"), "utf8")
+  .matchAll(/^```json\n([\s\S]*?)\n```/gm)].map((match) => JSON.parse(match[1]));
+const reportExample = (name) => structuredClone(reportExamples.find((example) => example.report === name));
+const authoringReport = () => reportExample("authoring-report");
 const gateReport = (outcomeId) => ({
-  schema_version: 1,
-  report: "gate-report",
-  outcome_id: outcomeId,
-  tier1: "PASS",
-  tier2: "PASS",
-  blocking_issues: [],
-  required_revisions: outcomeId === "revise" ? ["add the missing reference"] : [],
+  ...reportExample("gate-report"), outcome_id: outcomeId,
+  ...(outcomeId === "pass" ? { tier2: "PASS", blocking_issues: [], required_revisions: [] } : {}),
 });
-const gradingReport = () => ({
-  schema_version: 1,
-  report: "grading-report",
-  outcome_id: "graded",
-  cases: [{ case_id: "case-1", passed: true, score: 8 }],
-  pass_threshold: 0.6,
-});
+const gradingReport = () => reportExample("grading-report");
 
 /** graph_status with the documented json shape the declarer reads results from. */
 function statusJson(tools, graphId) {
@@ -656,6 +656,7 @@ test("one loop continuation round re-enters the generator and the exit settles t
   const ledger = await openLedger(graph.dir);
   try {
     const firstGenerator = armed(graph.requests, GENERATOR);
+    expect(firstGenerator.inputs).toEqual([]);
     const generated = await settle(graph, GENERATOR, "generated", {
       data: authoringReport(),
     });
@@ -664,6 +665,10 @@ test("one loop continuation round re-enters the generator and the exit settles t
 
     const firstValidator = armed(graph.requests, VALIDATOR);
     expect(firstValidator.attemptId).not.toBe(firstGenerator.attemptId);
+    expect(firstValidator.inputs).toEqual([{
+      from: GENERATOR, outcome: "generated", attemptId: firstGenerator.attemptId,
+      payload: { kind: "value", value: authoringReport() }, artifacts: [],
+    }]);
     const revise = await settle(graph, VALIDATOR, "revise", {
       data: gateReport("revise"),
     });
@@ -674,6 +679,11 @@ test("one loop continuation round re-enters the generator and the exit settles t
     expect(graph.requests.filter((request) => request.nodeId === GENERATOR)).toHaveLength(2);
     const secondGenerator = armed(graph.requests, GENERATOR);
     expect(secondGenerator.attemptId).not.toBe(firstGenerator.attemptId);
+    expect(secondGenerator.inputs).toEqual([{
+      from: VALIDATOR, outcome: "revise", attemptId: firstValidator.attemptId,
+      payload: { kind: "value", value: gateReport("revise") }, artifacts: [],
+    }]);
+    expect(secondGenerator.inputs[0].payload.value.required_revisions).toEqual(["add the missing reference"]);
 
     const regenerated = await settle(graph, GENERATOR, "generated", {
       data: authoringReport(),
@@ -683,6 +693,7 @@ test("one loop continuation round re-enters the generator and the exit settles t
 
     const secondValidator = armed(graph.requests, VALIDATOR);
     expect(secondValidator.attemptId).not.toBe(firstValidator.attemptId);
+    expect(secondValidator.inputs[0].attemptId).toBe(secondGenerator.attemptId);
     const pass = await settle(graph, VALIDATOR, "pass", {
       data: gateReport("pass"),
     });
@@ -693,6 +704,10 @@ test("one loop continuation round re-enters the generator and the exit settles t
     // outbound edge, so its acceptance completes the run.
     const grader = armed(graph.requests, GRADER);
     expect(grader).toBeDefined();
+    expect(grader.inputs).toEqual([{
+      from: VALIDATOR, outcome: "pass", attemptId: secondValidator.attemptId,
+      payload: { kind: "value", value: gateReport("pass") }, artifacts: [],
+    }]);
     const graded = await settle(graph, GRADER, "graded", {
       data: gradingReport(),
     });
@@ -714,4 +729,103 @@ test("one loop continuation round re-enters the generator and the exit settles t
   } finally {
     ledger.close();
   }
+});
+
+function assertKnownCondition(condition) {
+  if (typeof condition === "string") {
+    expect(KNOWN_CONDITIONS.has(condition.split("(")[0])).toBe(true);
+    return;
+  }
+  const keys = Object.keys(condition);
+  expect(keys).toHaveLength(1);
+  expect(["all", "any", "not"]).toContain(keys[0]);
+  for (const child of keys[0] === "not" ? [condition.not] : condition[keys[0]]) {
+    assertKnownCondition(child);
+  }
+}
+
+test("documented state-machine gates and composed termination execute with the real function runtime", async () => {
+  const text = readFileSync(join(roleDir, "references/conventions/nested-statemachine.md"), "utf8");
+  const example = text.match(/```markdown\n(---\n[\s\S]*?)\n```/)[1];
+  const directory = tempDir("role-creator-function-");
+  mkdirSync(join(directory, "functions"));
+  writeFileSync(join(directory, "functions/triage.md"), example);
+  const [fn] = await resolveFunctions(["triage"], directory, join(directory, "missing"), join(directory, "missing"));
+  expect(fn).toBeDefined();
+  assertKnownCondition(fn.gate);
+  assertKnownCondition(fn.continue_until);
+  for (const transition of fn.transitions ?? []) assertKnownCondition(transition.when);
+  const state = new FunctionRuntimeManager().init("example", "triage", 1);
+  const env = { sessionID: "example", fnName: "triage", state,
+    artifacts: new ArtifactStore(directory), requiredEvidence: ["verified"],
+    userMessagedThisTurn: false, workspaceDir: directory };
+  evaluateGateAndTransitions(fn, env);
+  expect(state.phase).toBe("gated");
+  state.toolsObserved.push("graph_declare");
+  evaluateGateAndTransitions(fn, env);
+  expect(state.phase).toBe("active");
+  expect(evaluateCondition(fn.continue_until, env)).toBe(false);
+  state.currentTurn = 12;
+  expect(evaluateCondition(fn.continue_until, env)).toBe(true);
+
+  const combined = text.match(/```yaml\n(continue_until:\n[\s\S]*?)\n```/)[1];
+  const stop = parseFrontmatter(`---\n${combined}\n---\n`).metadata.continue_until;
+  assertKnownCondition(stop);
+  state.currentTurn = 0;
+  state.kv.__todos = "- [ ] pending";
+  expect(evaluateCondition(stop, env)).toBe(false);
+  state.currentTurn = 12;
+  expect(evaluateCondition(stop, env)).toBe(true);
+  state.currentTurn = 0;
+  state.evidenceObserved.verified = true;
+  expect(evaluateCondition(stop, env)).toBe(false);
+  state.kv.__todos = "- [x] done";
+  expect(evaluateCondition(stop, env)).toBe(true);
+});
+
+test("portable workspace nodes retain native host tools and never require dsh execution on Pi or OpenCode", async () => {
+  const native = ["bash", "read", "edit", "write", "graph_submit_outcome"];
+  const catalog = native.map((name) => ({ name, description: name, inputSchema: {} }));
+  for (const node of declaration.nodes) {
+    const config = piWorkerToolConfig(native, node.tools, node.toolPresentation, {});
+    expect(() => validatePiWorkerTools(config, catalog)).not.toThrow();
+    expect(piWorkerToolAllowed("bash", config)).toBe(true);
+    expect(piWorkerToolAllowed("read", config)).toBe(true);
+    expect(piWorkerToolAllowed("graph_submit_outcome", config)).toBe(true);
+    expect(piWorkerToolAllowed("graph_worker_exec", config)).toBe(false);
+    const opencode = new OpencodeWorkerTools({ host: () => undefined,
+      catalog: async () => catalog, nativeActivation: true });
+    const request = { declaredTools: node.tools, toolPresentation: node.toolPresentation };
+    await opencode.prepare(request);
+    opencode.bind("worker", request);
+    expect(() => opencode.assertAllowed("worker", "bash")).not.toThrow();
+    expect(() => opencode.assertAllowed("worker", "read")).not.toThrow();
+    expect(() => opencode.assertAllowed("worker", "graph_worker_exec")).toThrow();
+  }
+  expect(DSH_GRAPH_WORKER_GRANT).toContain("graph_worker_exec");
+  expect(DSH_GRAPH_WORKER_GRANT).toContain("graph_submit_outcome");
+  expect(() => piWorkerToolConfig(native, [], { mode: "code" }, {})).toThrow("unsupported");
+  const opencodeV1 = new OpencodeWorkerTools({ host: () => undefined,
+    catalog: async () => catalog, nativeActivation: false, supportsPresentation: false });
+  await expect(opencodeV1.prepare({ toolPresentation: { mode: "discover" } })).rejects.toThrow("unsupported");
+});
+
+test("the execution budget allows all three repair traversals and final grading", async () => {
+  const graph = declareGraph();
+  await start(graph);
+  for (let round = 0; round <= LOOP_GROUP.max_traversals; round++) {
+    const generated = await settle(graph, GENERATOR, "generated", { data: authoringReport() });
+    expect(generated.refusals).toEqual([]);
+    const outcome = round < LOOP_GROUP.max_traversals ? "revise" : "pass";
+    const review = { ...gateReport(outcome), round };
+    const accepted = await settle(graph, VALIDATOR, outcome, { data: review });
+    expect(accepted.refusals).toEqual([]);
+    if (outcome === "revise") {
+      expect(armed(graph.requests, GENERATOR).inputs[0].payload.value).toEqual(review);
+    }
+  }
+  const graded = await settle(graph, GRADER, "graded", { data: gradingReport() });
+  expect(graded.refusals).toEqual([]);
+  expect(graded.phase).toBe("complete");
+  expect(graph.requests).toHaveLength(9);
 });

@@ -1,19 +1,18 @@
 ---
-description: Frozen validation contract for rolebox 2.0.0-alpha.2 — the definitive rule source for all Tier 1/2 validation code
-rolebox_version: 2.0.0-alpha.2
+description: Local authoring checks and selected rolebox 2.0.0 rules, backed by separate real-runtime contract tests
+rolebox_version: 2.0.0
 ---
 
 # Validation Catalog
 
-This document defines every validation rule enforced by rolebox 2.0.0-alpha.2. It is a frozen contract — never generated from source code. All Tier 1 (structural/loading) and Tier 2 (graph topology + Graph v3 configuration) validators MUST enforce these rules exactly as written. References to rolebox source paths in this document are informative only and do NOT constitute runtime dependencies.
+This catalog records role-creator authoring policy and selected rolebox runtime rules.
+Tier 1+2 are local authoring lint, not a reimplementation of host resolution. They may
+reject an authored file that rolebox would skip, and unresolved external/global assets
+remain warnings. PASS does not establish runtime or behavioral compatibility.
 
-## Frozen contract across engine generations
-
-This catalog is frozen for the rolebox version pinned in the frontmatter. "Frozen" means the rule set is fixed for that pin and is never generated from source code: the rules are authored here, so a validation result is reproducible against the pinned release however the engine's internals are refactored.
-
-A new engine generation never edits this document silently. It republishes the catalog at a new pin — a new `rolebox_version` and a matching description — and documents the deltas between the previous pin's rule set and the new one in the body. A rule that survives a re-pin is carried forward explicitly; a rule that is retired stays written down, is marked retired, and is attributed to this contract. The previous pin is referred to generically, without restating its literal version token, because the pin is matched exactly and a stale token in prose would defeat that match.
-
----
+The tested source revision is `tests/rolebox-revision.txt`. Real loader/resolver and
+graph contract tests run separately in CI. Update this reference and that pin together
+after testing a new runtime; changing a version label alone cannot establish compatibility.
 
 ## Required Fields
 
@@ -178,13 +177,13 @@ If the child defines the field, the child's value is used. Otherwise, the parent
 
 ## Default Functions
 
-When a role or subagent does not explicitly define a `functions:` field, the default is:
+Every role and subagent receives the default set, combined with explicit functions:
 
 ```yaml
-functions: ["plan", "execute"]
+functions: ["plan", "execute", "loop"]
 ```
 
-If `functions:` is explicitly set (even to an empty list), the default is not applied.
+Resolution is `union(defaults, functions) - disable_functions`; an empty explicit list keeps defaults.
 
 ---
 
@@ -344,7 +343,7 @@ Algorithms:
 
 **Violation:** A cycle is detected and `max_iterations` is unset or ≤ 0.
 
-**Resolution:** When violated, rolebox issues a WARN and defaults `max_iterations` to 3.
+**Resolution:** This is a historical collaboration authoring diagnostic only. The current loader ignores `collaboration`; no runtime iteration bound or default is established. Graph v3 cycles require explicit `loop_groups.max_traversals`.
 
 **Severity:** WARN — does not block validation.
 
@@ -424,25 +423,20 @@ Retired v2 graph-authoring family (replaced by the Graph v3 declaration path):
 - `graph_approve`
 - `graph_cancel`
 
-Retired signal surface:
-
-- `signal`
+`signal` remains a live session-evidence tool. It does not settle Graph v3 attempts; only accepted outcomes do.
 
 These names are removed and are not part of the live contract. Granting any of them is a hard configuration error. This enumeration is the executable mirror's denied list: `scripts/validate_role.py` names these literals — `graph_add_loop` included — because the mirror must name what it denies.
 
-**Violation:** `permission.allow` or a `tools:` key contains `Dispatch`, `dispatch_output`, `dispatch_cancel`, `graph_create`, `graph_add_node`, `graph_add_edge`, `graph_add_loop`, `graph_run`, `graph_approve`, `graph_cancel`, or `signal` (including the v1 case variants of the dispatch family).
+**Violation:** `permission.allow` or a `tools:` key contains `Dispatch`, `dispatch_output`, `dispatch_cancel`, `graph_create`, `graph_add_node`, `graph_add_edge`, `graph_add_loop`, `graph_run`, `graph_approve`, or `graph_cancel` (including the v1 case variants of the dispatch family).
 
 **Severity:** ERROR — the role is rejected at validation.
 
 ---
 
-### Rule 5: `functions` entry named `loop` (WARN)
+### Rule 5: Built-in `loop` function (informational)
 
-**Rule:** A `functions:` entry named `loop` (legacy `loop_*` tool family, deprecated in Phase C) MUST NOT be declared as a live function. Bounded revise/review cycles are declared as a `loop_groups` entry with `max_traversals`, never as a `loop` function.
-
-**Violation:** `functions:` contains `loop`, or a function file resolves to the name `loop`.
-
-**Severity:** WARN (loop warn) — does not block validation; the author is directed to a `loop_groups` entry with `max_traversals`.
+`loop` is a valid default function. Graph revise cycles use explicit `loop_groups`
+with `max_traversals`; do not confuse those cycle bounds with a function name.
 
 ---
 
@@ -450,10 +444,12 @@ These names are removed and are not part of the live contract. Granting any of t
 
 **Rule:** A manifest that declares any `graph_*` tool MUST hold the correct half of the declarer/worker split in its `tools:` map:
 
-- A **declaring role** (primary) that declares any `graph_*` tool MUST hold `graph_declare`, `graph_control`, `graph_status` and `graph_audit` `true`, and `graph_submit_outcome` and `graph_worker_exec` `false`.
-- A **worker subagent** that declares any `graph_*` tool MUST hold the exact inverse: those four declarer tools `false`, and `graph_submit_outcome` and `graph_worker_exec` `true`.
+- A **declaring role** (primary) that declares any `graph_*` tool MUST hold `graph_declare`, `graph_control`, `graph_status` and `graph_audit` `true`, and `graph_submit_outcome` `false`.
+- A **worker subagent** that declares any `graph_*` tool MUST hold the exact inverse: those four declarer tools `false`, and `graph_submit_outcome` `true`.
 
-**Violation:** A manifest declares a `graph_*` tool while missing one of the six split keys or holding a value that contradicts its side of the split.
+`graph_worker_exec` is optional and dsh-specific; if present it is false for a declarer and true for a worker. OpenCode/Pi use native worker tools; Codex has no graph backend.
+
+**Violation:** A manifest declares a `graph_*` tool while missing one of the five universal split keys or holding a value that contradicts its side of the split.
 
 **Severity:** ERROR — the role is rejected at validation.
 
@@ -463,12 +459,11 @@ These names are removed and are not part of the live contract. Granting any of t
 
 ## Deploy-to-Harness Validation (Tier 2/Tier 3 note)
 
-A later role-creator subtask adds a **deploy feature** that installs a generated role into the local rolebox harness directory `~/.config/opencode/rolebox/`, followed by `asset_hot_reload`. Validation coverage for that capability:
-
-- **Tier 2 (static):** a deployed role directory MUST contain both `role.yaml` and `PROMPT.md`. Missing either file is an ERROR.
-- **Tier 3 (dynamic):** after `asset_hot_reload`, the deployed role MUST appear in hot-reload discovery (asset discovery finds the role under the harness dir). A role that is deployed but absent from discovery indicates the hot-reload step failed or the directory layout is wrong.
-
-This note is forward-looking: the checks land with the deploy subtask; the catalog entry documents the contract now so validation code can target it.
+`deploy_role.py` validates the staged copy, then replaces the destination entry with
+backup/rollback and no symlink traversal. Inline prompts are valid; `PROMPT.md` is not
+universally required. Target paths and reload capabilities depend on the selected host.
+`sync_check.py` verifies disposable CLI installation metadata, not runtime activation
+or skill loading. See `../deploy-to-harness.md` for the supported claims.
 
 ---
 
@@ -510,19 +505,20 @@ roles:
 
 ### Built-in function names
 
-rolebox has exactly two built-in function names:
+The default built-in function names are:
 
 - `plan`
 - `execute`
+- `loop`
 
-These are reserved and always available.
+They are included unless disabled; local files may override their implementations.
 
 ### Known-names set
 
 The known-names set is used for collision detection. It consists of:
 
 - All skill names present in the opencode global skills directory
-- All rolebox built-in function names (`plan`, `execute`)
+- All rolebox built-in function names (`plan`, `execute`, `loop`)
 
 ### Collision behavior
 

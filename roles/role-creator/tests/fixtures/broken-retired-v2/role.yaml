@@ -1,5 +1,5 @@
 name: Broken Retired V2 Role
-description: A role that still declares retired v2 graph tools and the retired signal surface
+description: A role that still declares retired v2 graph tools
 mode: primary
 prompt: |
   This role still carries retired v2 graph tools in its live contract.

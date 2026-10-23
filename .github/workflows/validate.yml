@@ -21,3 +21,44 @@ jobs:
       - run: python scripts/validate.py
 
       - run: python -m unittest discover -s scripts/tests -v
+
+  role-creator-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: oven-sh/setup-bun@v2
+      - run: pip install -r roles/role-creator/scripts/requirements.txt
+      - run: bash roles/role-creator/self-test.sh
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+      - id: contract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          revision=$(cat roles/role-creator/tests/rolebox-revision.txt)
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+          if gh api "repos/EricMoin/rolebox/commits/$revision" > /dev/null; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Real rolebox contracts NOT RUN: the pinned runtime commit is not accessible. Offline checks do not establish runtime compatibility."
+            echo "Runtime contracts: **NOT RUN**. Publish or grant access to the pinned rolebox commit, then rerun this workflow." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.contract.outputs.available == 'true'
+        with:
+          repository: EricMoin/rolebox
+          ref: ${{ steps.contract.outputs.revision }}
+          path: .rolebox-contract
+      - run: bun install --frozen-lockfile
+        if: steps.contract.outputs.available == 'true'
+        working-directory: .rolebox-contract
+      - run: bash roles/role-creator/self-test.sh
+        if: steps.contract.outputs.available == 'true'
+        env:
+          ROLEBOX_ROOT: ${{ github.workspace }}/.rolebox-contract
+          PYTHONDONTWRITEBYTECODE: "1"

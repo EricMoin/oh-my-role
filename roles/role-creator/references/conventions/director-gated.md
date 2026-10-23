@@ -8,6 +8,13 @@ reports, and routes the work by the outcomes each node declares.
 
 The protocol contract is `roles/role-creator/references/graph-protocol.md`.
 
+Select the target host first using `references/graph-protocol.md`. OpenCode and
+Pi workers use their native workspace tools; only dsh workers use
+`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
+extra tools must use names actually registered by the selected host. File-tool
+denials do not enforce read-only behavior when a shell remains available.
+
 ## When to Use
 
 - Multi-step workflows where each step needs specialist validation
@@ -86,7 +93,7 @@ not wired into graph resolution (no runtime effect), and it reads no
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` | `false` | `true` |
+| `graph_worker_exec` | Omit; dsh-only execution entry | Omit in portable manifests; supplied by dsh |
 | `Write` / `Edit` / `Bash` | per the director's job (a pure director denies `Write`/`Edit`) | per the gate's job (a read-only gate denies `Write`/`Edit`, keeps `Bash` for its checks) |
 
 ### Example role.yaml
@@ -118,7 +125,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: false
   Edit: false
   Bash: true
@@ -173,7 +179,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: true

@@ -1,203 +1,45 @@
 ---
 name: role-creator-verification
-description: The 4-tier verification methodology for rolebox roles. Covers what each tier checks, which script runs it, pass thresholds, when to require user confirmation, and how to map results to "skill/role/sub-function works." Load when verifying a generated role.
+description: Verify rolebox role authoring, runtime contracts, isolated installation metadata and opt-in native dsh benchmarks without overstating evidence.
 ---
 
-# 4-Tier Verification Methodology
+# Verification
 
-Verification answers one question: does this role actually work? Four tiers answer it at increasing depth and cost.
+| Check | Execution | Supported claim |
+|---|---|---|
+| Tier 1+2 | `validate_role.py <roleDir> --json` | Local authoring validity; unresolved external assets remain warnings |
+| Runtime contract | `ROLEBOX_ROOT=<checkout> bash self-test.sh` | Actual loader/resolver and graph semantics covered by offline regression tests |
+| Tier 3 | `sync_check.py <roleDir> --target <host> --json` | Disposable CLI installation and exact role symlink metadata |
+| Tier 4 | `run_eval.py <roleDir> --suite <suite> --action run --confirm` | Native dsh benchmark results for the measured cases |
 
-| Tier | What | Self-Contained? | Needs Confirmation? |
-|------|------|:---:|:---:|
-| 1 | Structural validity | Yes | No |
-| 2 | Resolution simulation | Yes | No |
-| 3 | Deploy/health check | No (rolebox CLI) | Yes |
-| 4 | Behavioral eval | No (separate opencode) | Yes (opt-in, costs money) |
+Run authoring checks after creating or changing a role. They recurse through inline
+and file children, validate local prompts/assets and apply creator authoring policy.
+A PASS with unresolved external assets is not proof the host can load those assets.
+It never establishes behavioral correctness.
 
-Tiers 1 and 2 run automatically after generation. Tiers 3 and 4 require explicit user consent.
+For runtime contracts set `ROLEBOX_ROOT` to a local rolebox source checkout with its
+Bun dependencies installed. CI uses `tests/rolebox-revision.txt`. Update the pin only
+after tests pass against the new source. Version equality alone is insufficient.
 
----
+Tier 3 creates disposable home/config/data directories, installs a local lock record,
+runs CLI sync, and checks the requested role and host. It does not start the host,
+verify skill symlinks, authenticate a provider or prove role activation. Registration
+may be unknown on hosts that cannot expose it. CLI absence is SKIP with exit 2.
+Use existing authorization to test installation; otherwise ask before this optional check.
 
-## Tier 1: Structural Validation
+Tier 4 uses rolebox's native benchmark runner. First use `--action validate` and
+`--action doctor`, neither of which calls a model. Model execution requires explicit
+user authorization and `--action run --confirm`. Explain cases, repetitions, route
+and timeout; report cost as unknown when no reliable estimate exists. A spot check is
+a suite containing one case and one repetition. Evidence is retained in the output
+parent; failed or incomplete execution stays failed/unscored. The current backend is
+dsh and requires a self-contained role. Do not silently replace an unsupported host.
 
-**Script:** `validate_role.py <roleDir> --json`
+`--baseline <name>` is a historical comparison, not paired with/without-role evaluation.
+The old `evals.json` format is a manual rubric; migrate explicit assertions or trusted
+workspace checks into `suite.yaml`/`cases.jsonl`. Never turn natural-language rubric
+sentences into automatic passing scores. See `references/templates/eval-set.md`.
 
-**Self-contained:** Pure Python. No subprocess calls, no rolebox imports, no network access.
-
-**Checks performed:**
-
-- YAML parse succeeds on `role.yaml`
-- Required fields present: `name` (non-empty string), `prompt` or `prompt_file` (at least one)
-- `prompt`/`prompt_file` exclusivity: if `prompt_file` is set and resolves to a readable file, `prompt` is ignored; if `prompt_file` is set but unresolvable, that's fatal
-- Role ID does not contain the reserved `--` separator
-- Subagent names do not contain `--`
-- Skill files have valid YAML frontmatter (`name` and `description` fields)
-- Function files have non-empty body content after frontmatter stripping
-- Reference `.md` files are parseable
-
-**Output:**
-
-```json
-{ "tier1": { "checks": [...], "passed": 12, "failed": 0 }, "verdict": "PASS" }
-```
-
-Verdict is PASS only when zero fatal errors exist. Any single fatal check fails the entire tier.
-
----
-
-## Tier 2: Resolution Simulation
-
-**Script:** `validate_role.py <roleDir> --json` (same script, results accumulate across both tiers)
-
-**Self-contained:** Pure Python. All resolution logic reimplements the rules from the validation catalog without importing rolebox.
-
-**Checks performed:**
-
-- **Skill 4-candidate resolution:** For each declared skill name, verify at least one candidate path exists on disk following the priority order (role-local directory, role-local single-file, global directory, global single-file)
-- **Function 3-candidate resolution:** For each declared function name, verify at least one candidate exists (role-local, global, built-in)
-- **Reference auto-discovery:** All `.md` files under `references/` are discoverable and parseable
-- **Subagent discovery:** File-based subagents at `subagents/*/role.yaml` resolve correctly; inline subagents parse successfully
-- **Legacy v1 graph validation (6 checks, legacy-compat):** validates the declarative `collaboration:` flow-graph block only — retained for schema compatibility; it does not gate the Graph v3 declaration
-  1. Unknown agent reference (FATAL)
-  2. No exit edge (FATAL)
-  3. No entry point from parent (FATAL)
-  4. Orphan agent never referenced in edges (WARN)
-  5. Disconnected node unreachable from parent (WARN)
-  6. Cycle without `max_iterations` (WARN, defaults to 3)
-- **Graph v3 configuration checks (Rules 1-6, see the catalog):**
-  - `graph_block_retired` (Rule 1, ERROR): a `graph:` block is retired by the catalog's policy — rolebox only warns and ignores it, so a role validated against this catalog must not declare it
-  - `memory_config` (Rule 2, WARN): `inject` boolean, `max_inject` integer, `min_relevance` in low/medium/high, `scope` in workspace/role/both
-  - `termination_any_of` (Rule 3, WARN, legacy-compat): `collaboration.termination.any_of` entries must be `{max_iterations: int}` or `{result_matches: {agent, contains}}`
-  - `permission_legacy_tools` (Rule 4, ERROR): a retired live-contract tool in any `permission.allow` list or `tools:` key
-  - `loop_function` (Rule 5, WARN): a `functions` entry named `loop` — bounded revise/review cycles use a `loop_groups` entry with `max_traversals`
-  - `graph_tool_split` (Rule 6, ERROR): the declarer split on a primary role, the exact inverse on a worker subagent
-  - `scripts/validate_role.py` never imports rolebox; a shipped v3 declaration is checked by `tests/graph-contract.test.js`, not by the Python script
-- **Skill-name-collision detection:** Warns if a role-local skill name collides with a known-names set (global skills + built-in functions `plan`, `execute`)
-- **Collaboration-target existence:** If the role references collaboration targets, warns when those targets can't be found on disk
-
-**Output:**
-
-```json
-{
-  "tier2": { "checks": [...], "passed": 13, "failed": 0 },
-  "errors": [],
-  "warnings": ["skill 'foo' collides with global skill", "functions entry named 'loop' is deprecated; use a loop_groups entry with max_traversals"],
-  "verdict": "PASS"
-}
-```
-
-Verdict is PASS when zero errors exist. Warnings do not block but are surfaced to the user.
-
----
-
-## Tier 3: Deploy/Health Check
-
-**Script:** `sync_check.py <roleDir>`
-
-**Requires confirmation before running.** This tier invokes the rolebox CLI as a black box.
-
-**What it does:**
-
-1. Creates a throwaway `XDG_CONFIG_HOME` directory
-2. Places the role into that config location
-3. Runs `rolebox status --json`
-4. Inspects the output for health signals
-
-**Checks performed:**
-
-- Plugin registered: rolebox recognizes the role as installed
-- Role synced: the role appears in the active configuration
-- Skill symlinks valid: all skill paths resolve correctly after sync
-
-**Graceful skip:** If `rolebox` is not installed or not on PATH, Tier 3 reports "skipped (rolebox not available)" rather than failing. This is not a verification failure.
-
-**Failure reporting:** If rolebox IS installed but sync fails, the script captures the precise error message from `rolebox status --json` and reports it verbatim.
-
-**Deploy-to-harness check (Tier 2/Tier 3 note):** a later subtask adds a deploy feature that installs a generated role into the local rolebox harness directory `~/.config/opencode/rolebox/`, then runs `asset_hot_reload`. Verification for that capability:
-
-- Tier 2 (static): the deployed role directory MUST contain both `role.yaml` and `PROMPT.md`. Missing either file is an ERROR.
-- Tier 3 (dynamic): after `asset_hot_reload`, the deployed role MUST appear in hot-reload discovery (asset discovery finds the role under the harness dir). A deployed-but-undiscovered role means the hot-reload step failed or the directory layout is wrong.
-
----
-
-## Tier 4: Behavioral Eval
-
-**Script:** `run_eval.py <roleDir> --confirm`
-
-**Opt-in only.** Prints a cost estimate and exits unless `--confirm` is passed. This tier spawns a separate opencode instance (NOT an in-session dispatch).
-
-**What it does:**
-
-1. Reads `evals.json` from the role directory
-2. Builds a throwaway opencode config without the target role/skill (baseline)
-3. Runs each eval case against baseline (minimum 3 runs per case)
-4. Builds a config WITH the target role/skill
-5. Runs each eval case against the with-target config (minimum 3 runs per case)
-6. A grader subagent scores each transcript independently
-
-**Pass threshold (defaults, all configurable):**
-
-| Parameter | Default |
-|-----------|---------|
-| Grader score per case | >= 7/10 |
-| Cases that must pass | >= 60% of cases |
-| Runs per case | >= 3 |
-| Scoring method | Majority vote across runs |
-
-**Spot-check mode:** For quick iteration during development: 1 case, 1 run, no baseline. Verifies the agent doesn't completely break. Not sufficient for final validation.
-
-**Deterministic checks** (for state-machine functions) — *specified below but not yet automated by `run_eval.py` (`run_state_machine_checks()` is a stub); verify these manually until implemented*:
-
-- Gate blocks when condition is false, passes when true
-- Observe reactions are non-mutating (active function set unchanged)
-- Transitions are deterministic (same conditions produce same result across runs)
-- `continue_until` terminates (normal exit on condition met, cap exit at `continue_max`)
-
----
-
-## The "Works" Mapping
-
-Verification results map to three claims about what "works."
-
-### Skill Works
-
-A skill is verified working when:
-
-1. **Tier 2** resolves it via the 4-candidate priority search (file exists on disk)
-2. **Tier 3** shows it registered and symlinked after sync
-3. **Tier 4** with/without baseline comparison shows measurable improvement when the skill is loaded
-
-### Role Works
-
-A role is verified working when:
-
-1. **Tier 2** produces a full-resolution PASS verdict (all fields, all subagents, legacy v1 6-check graph block valid, the Graph v3 rules 1-6 valid, no retired live-contract tools in `permission.allow` or `tools:`)
-2. **Tier 3** reports sync:true with no warnings
-3. **Tier 4** persona and boundary eval cases pass on diverse prompts, including out-of-scope rejection cases
-
-### Each Sub-Function Works
-
-A function is verified working when:
-
-1. It's callable via its declared name (`|function-name|` syntax)
-2. Its name is not a removed/deprecated legacy token: `Dispatch`/`dispatch_output`/`dispatch_cancel` (ERROR at Tier 2), `loop` (WARN at Tier 2 — bounded cycles use a `loop_groups` entry with `max_traversals`)
-3. It produces the behavior declared in its definition (verified at Tier 4)
-4. State-machine functions pass deterministic checks: gate blocks/passes correctly, observe doesn't mutate state, transitions repeat identically, continue_until terminates
-
----
-
-## Guidance for the Agent
-
-- Always run Tiers 1 and 2 after generating or modifying a role. They're free and fast.
-- Never run Tier 3 or 4 without asking the user first.
-- If Tier 1 fails, fix structural issues before attempting Tier 2.
-- If Tier 2 warns about skill collisions, missing collaboration targets, malformed memory/termination shapes, or a `loop` function entry, inform the user but don't treat these as blockers. Treat a declared `graph:` block (Rule 1), a retired live-contract tool in `permission.allow` or `tools:` (Rule 4), or a wrong v3 tool split (Rule 6) as a hard error — fix before proceeding.
-- For Tier 4, present the cost estimate and let the user decide. One spot-check run is a reasonable middle ground when full eval feels excessive.
-- When eval cases fail, fix the role, not the eval prompts. Generalize, don't overfit.
-
----
-
-## References
-
-- Complete rule definitions: `references/schema/validation-catalog.md`
-- Eval format and thresholds: `references/templates/eval-set.md`
+Always distinguish file resolution, installation metadata, host activation, and measured
+behavior. Report unperformed checks as NOT RUN or UNVERIFIED. Only specific exercised
+gates, transitions, loops and scenarios justify claims that those behaviors work.

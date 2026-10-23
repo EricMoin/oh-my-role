@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-"""Validate a rolebox role directory (Tier 1 + Tier 2).
+"""Lint role authoring locally (Tier 1 + Tier 2).
 
-Tier 1 (Structural): YAML parse, required fields, -- rule, prompt exclusivity, frontmatter
-Tier 2 (Resolution Sim): skill/function/reference discovery, subagent discovery,
-                         legacy v1 validateGraph 6-checks, skill-name-collision,
-                         collab-target existence, Graph v3 rules (retired `graph:` block,
-                         memory shape, termination shapes, retired live-contract tools,
-                         the `loop` function, the declarer/worker tool split)
+Checks manifest structure, local assets, nested subagents and authoring policy.
+This does not load a host, resolve external dependencies, or validate runtime graphs.
 
 Usage: python3 validate_role.py <roleDir> [--json]
 """
@@ -20,7 +16,8 @@ import ruamel.yaml
 
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from utils import parse_frontmatter, load_catalog_version, CATALOG_PATH, KNOWN_NAMES
+from utils import (parse_frontmatter, load_catalog_version, CATALOG_PATH,
+                   DEFAULT_FUNCTIONS, KNOWN_NAMES)
 
 yaml = ruamel.yaml.YAML(typ='safe')
 
@@ -63,12 +60,11 @@ def _add_error(collector, msg):
 
 
 # Retired live-contract tools denied by catalog Rule 4: the legacy v1 background-dispatch
-# family removed in Phase C, the retired v2 graph-authoring family and the retired signal
-# surface. The executable mirror names every literal it denies, `graph_add_loop` included.
+# family removed in Phase C and the retired v2 graph-authoring family.
 LEGACY_DISPATCH_TOOLS = {'dispatch', 'dispatch_output', 'dispatch_cancel'}
 RETIRED_V2_GRAPH_TOOLS = {
     'graph_create', 'graph_add_node', 'graph_add_edge', 'graph_add_loop',
-    'graph_run', 'graph_approve', 'graph_cancel', 'signal',
+    'graph_run', 'graph_approve', 'graph_cancel',
 }
 DENIED_LIVE_CONTRACT_TOOLS = LEGACY_DISPATCH_TOOLS | RETIRED_V2_GRAPH_TOOLS
 
@@ -137,6 +133,8 @@ def _check_graph_tool_split(manifest, where, declarer, issues):
                       f"the v3 {side} split")
         return
     for name, want in expected.items():
+        if name == 'graph_worker_exec' and name not in tools:
+            continue
         got = tools.get(name)
         if got is not want:
             issues.append(f"{where}: tools.{name} must be {str(want).lower()} for the "
@@ -155,10 +153,8 @@ def _run_tier1(role_yaml_path, role_id, is_subagent=False):
         result['passed'] = False
         return result, None
 
-    raw = role_yaml_path.read_text()
-
     try:
-        data = yaml.load(raw)
+        data = yaml.load(role_yaml_path.read_text())
     except Exception as exc:
         E(f"YAML parse error: {exc}")
         result['checks'].append(_make_check('yaml_parse', False, str(exc)))
@@ -174,6 +170,16 @@ def _run_tier1(role_yaml_path, role_id, is_subagent=False):
 
     result['checks'].append(_make_check('yaml_parse', True))
 
+    structural = _validate_manifest(data, role_yaml_path.parent, role_id, is_subagent)
+    result['checks'].extend(structural['checks'])
+    result['errors'].extend(structural['errors'])
+    result['passed'] = structural['passed']
+    return result, data
+
+
+def _validate_manifest(data, context_dir, role_id, is_subagent=False):
+    result = {'checks': [], 'errors': [], 'passed': True}
+    E = lambda msg: _add_error(result, msg)
     name = data.get('name')
     if not _is_string_nonempty(name):
         E("Field 'name' is required and must be a non-empty string")
@@ -193,9 +199,11 @@ def _run_tier1(role_yaml_path, role_id, is_subagent=False):
                                             "Neither 'prompt' nor 'prompt_file' is present and non-empty"))
         result['passed'] = False
     elif has_prompt_file:
-        resolved = (role_yaml_path.parent / prompt_file).resolve()
-        if not resolved.exists() or not resolved.is_file():
-            E(f"prompt_file '{prompt_file}' resolves to non-existent file: {resolved}")
+        resolved = (context_dir / prompt_file).resolve()
+        try:
+            resolved.read_text()
+        except (OSError, UnicodeError) as exc:
+            E(f"prompt_file '{prompt_file}' is missing or unreadable: {exc}")
             result['checks'].append(_make_check('prompt_required', False,
                                                 f"prompt_file does not exist: {resolved}"))
             result['passed'] = False
@@ -207,30 +215,20 @@ def _run_tier1(role_yaml_path, role_id, is_subagent=False):
     else:
         result['checks'].append(_make_check('prompt_required', True, 'source=prompt (inline)'))
 
-    if '--' in role_id:
-        E(f"Role ID '{role_id}' contains reserved separator '--'")
+    identifier = name if is_subagent and isinstance(name, str) else role_id
+    if '--' in identifier:
+        E(f"{'Subagent name' if is_subagent else 'Role ID'} '{identifier}' contains reserved separator '--'")
         result['checks'].append(_make_check('id_no_dashdash', False,
-                                            f"Role ID '{role_id}' contains '--'"))
+                                            f"Identifier '{identifier}' contains '--'"))
         result['passed'] = False
     else:
         result['checks'].append(_make_check('id_no_dashdash', True))
 
-    return result, data
+    return result
 
 
 def _discover_file_subagents(role_dir):
-    found = []
-    subagents_dir = role_dir / 'subagents'
-    if not subagents_dir.is_dir():
-        return found
-
-    for yaml_path in sorted(subagents_dir.rglob('role.yaml')):
-        rel = yaml_path.relative_to(subagents_dir)
-        depth = len(rel.parts)
-        if depth > 4:
-            continue
-        found.append(yaml_path)
-    return found
+    return sorted(role_dir.glob('subagents/*/role.yaml'))
 
 
 def _discover_references(role_dir):
@@ -244,8 +242,173 @@ def _discover_references(role_dir):
     return refs
 
 
-def _run_tier2(role_dir, role_id, data):
+def _string_list(data, field, err):
+    value = data.get(field, [])
+    if not isinstance(value, list) or any(not _is_string_nonempty(v) for v in value):
+        err(f"'{field}' must be a list of non-empty strings")
+        return []
+    return value
+
+
+def _validate_assets(role_dir, data):
     result = {'checks': [], 'errors': [], 'warnings': [], 'passed': True}
+
+    def err(message):
+        result['errors'].append(message)
+        result['passed'] = False
+
+    skills = _string_list(data, 'skills', err)
+    external_skills = _string_list(data, 'opencode_skills', err)
+    for field, names in [('skills', skills), ('opencode_skills', external_skills)]:
+        if len(set(names)) != len(names):
+            err(f"Duplicate skill names in '{field}' list")
+    skill_results = []
+    for name in dict.fromkeys(skills + external_skills):
+        candidates = [role_dir / 'skills' / name / 'SKILL.md',
+                      role_dir / 'skills' / f'{name}.md']
+        found = next((p for p in candidates if p.is_file()), None)
+        if found is None:
+            result['warnings'].append(
+                f"Skill '{name}' is unresolved locally; host/global skill resolution was not checked")
+        else:
+            try:
+                found.read_text()
+            except (OSError, UnicodeError) as exc:
+                err(f"Skill '{name}' is unreadable: {exc}")
+        skill_results.append({'name': name, 'found': found is not None,
+                              'path': str(found) if found else None,
+                              'resolution': 'local' if found else 'external_unchecked'})
+    result['checks'].append({'check': 'skill_resolution', 'passed': not result['errors'],
+                             'scope': 'local_assets', 'skills': skill_results})
+
+    prior_errors = len(result['errors'])
+    declared = _string_list(data, 'functions', err)
+    disabled = _string_list(data, 'disable_functions', err)
+    enabled = [name for name in dict.fromkeys([*DEFAULT_FUNCTIONS, *declared])
+               if name not in disabled]
+    func_results = []
+    for name in enabled:
+        candidate = role_dir / 'functions' / f'{name}.md'
+        found = None
+        if candidate.exists():
+            try:
+                _, body = parse_frontmatter(str(candidate))
+                if body.strip():
+                    found = candidate
+                else:
+                    err(f"Function '{name}' has an empty body after frontmatter: {candidate}")
+            except (OSError, UnicodeError) as exc:
+                err(f"Function '{name}' is unreadable: {exc}")
+        elif name not in KNOWN_NAMES:
+            result['warnings'].append(
+                f"Function '{name}' is unresolved locally; host/global function resolution was not checked")
+        func_results.append({'name': name, 'found': found is not None,
+                             'path': str(found) if found else None,
+                             'resolution': ('local' if found else
+                                            'host_builtin_unchecked' if name in KNOWN_NAMES
+                                            else 'external_unchecked')})
+    result['checks'].append({'check': 'function_resolution',
+                             'passed': len(result['errors']) == prior_errors,
+                             'scope': 'local_assets', 'functions': func_results,
+                             'enabled': enabled, 'disabled': disabled})
+
+    prior_errors = len(result['errors'])
+    declared_refs = data.get('references', {})
+    ref_entries = {str(p.relative_to(role_dir / 'references').with_suffix('')):
+                   {'name': str(p.relative_to(role_dir / 'references').with_suffix('')),
+                    'path': str(p)} for p in _discover_references(role_dir)}
+    if not isinstance(declared_refs, dict):
+        err("'references' must be a mapping")
+        declared_refs = {}
+    for name, value in declared_refs.items():
+        target = value if isinstance(value, str) else value.get('path') if isinstance(value, dict) else None
+        if not _is_string_nonempty(target):
+            err(f"Reference '{name}' must declare a non-empty path")
+            continue
+        path = (role_dir / target).resolve()
+        try:
+            path.read_text()
+        except (OSError, UnicodeError) as exc:
+            err(f"Reference '{name}' is missing or unreadable: {exc}")
+        ref_entries[name] = {'name': name, 'path': str(path), 'declared': True}
+    result['checks'].append({'check': 'reference_discovery',
+                             'passed': len(result['errors']) == prior_errors,
+                             'references': list(ref_entries.values()),
+                             'declared_count': len(declared_refs)})
+    return result
+
+
+def _subagent_asset_dir(parent_dir, name):
+    slug = re.sub(r'\s+', '-', name.lower())
+    for child_name in (slug, name):
+        candidate = parent_dir / 'subagents' / child_name
+        if candidate.exists():
+            return candidate
+    return parent_dir
+
+
+def _discover_subagents(role_dir, data):
+    entries = []
+
+    def add(manifest, context_dir, asset_parent, source, location, ancestry, tier1=None):
+        name = manifest.get('name', location) if isinstance(manifest, dict) else location
+        if not isinstance(name, str):
+            name = location
+        if not isinstance(manifest, dict):
+            manifest = {}
+        if tier1 is None:
+            tier1 = _validate_manifest(manifest, context_dir, name, is_subagent=True)
+        slug = re.sub(r'\s+', '-', name.lower())
+        identity = '/'.join([*ancestry, slug])
+        asset_dir = _subagent_asset_dir(asset_parent, name)
+        entry = {'source': source, 'name': slug, 'id': identity,
+                 'display_name': name, 'path': location, 'valid': tier1['passed'],
+                 'tier1': tier1, '_data': manifest, '_asset_dir': asset_dir}
+        entries.append(entry)
+        return entry, asset_dir, [*ancestry, slug]
+
+    def inline_children(raw, context_dir, asset_parent, ancestry, nested=False, ancestors=()):
+        if raw is None:
+            return
+        if not isinstance(raw, list):
+            add({}, context_dir, asset_parent, 'inline', 'invalid subagents list', ancestry)
+            return
+        for index, manifest in enumerate(raw):
+            location = f"inline[{index}]"
+            entry, asset_dir, child_ancestry = add(
+                manifest, context_dir, asset_parent, 'inline', location, ancestry)
+            if not entry['valid']:
+                continue
+            if id(manifest) in ancestors:
+                entry['valid'] = entry['tier1']['passed'] = False
+                entry['tier1']['errors'].append('Cyclic YAML subagent alias is unsupported')
+                continue
+            child_context = context_dir
+            if nested and _is_string_nonempty(manifest.get('prompt_file')):
+                child_context = (context_dir / manifest['prompt_file']).resolve().parent
+            inline_children(manifest.get('subagents'), child_context, asset_dir,
+                            child_ancestry, nested=True, ancestors=(*ancestors, id(manifest)))
+
+    def file_children(parent_dir, asset_parent, ancestry, depth=0):
+        if depth >= 3:
+            return
+        for path in _discover_file_subagents(parent_dir):
+            tier1, manifest = _run_tier1(path, path.parent.name, is_subagent=True)
+            entry, asset_dir, child_ancestry = add(
+                manifest, path.parent, asset_parent, 'file', str(path), ancestry, tier1)
+            if not entry['valid']:
+                continue
+            inline_children(manifest.get('subagents'), path.parent, asset_dir,
+                            child_ancestry, nested=True)
+            file_children(path.parent, asset_dir, child_ancestry, depth + 1)
+
+    inline_children(data.get('subagents'), role_dir, role_dir, [])
+    file_children(role_dir, role_dir, [])
+    return entries
+
+
+def _run_tier2(role_dir, role_id, data):
+    result = _validate_assets(role_dir, data)
 
     def warn(msg):
         result['warnings'].append(msg)
@@ -254,149 +417,26 @@ def _run_tier2(role_dir, role_id, data):
         result['errors'].append(msg)
         result['passed'] = False
 
-    # ── skill resolution ──
     skills = data.get('skills', [])
-    if isinstance(skills, list):
-        seen = set()
-        dups = set()
-        for s in skills:
-            if s in seen:
-                dups.add(s)
-            seen.add(s)
-        if dups:
-            err(f"Duplicate skill names in 'skills:' list: {sorted(dups)}")
-
-        skill_results = []
-        for name in skills:
-            candidates = [
-                role_dir / 'skills' / name / 'SKILL.md',
-                role_dir / 'skills' / f'{name}.md',
-            ]
-            found_path = None
-            for c in candidates:
-                if c.exists() and c.is_file():
-                    found_path = str(c)
-                    break
-            skill_results.append({
-                'name': name,
-                'found': found_path is not None,
-                'path': found_path
-            })
-        result['checks'].append({
-            'check': 'skill_resolution',
-            'passed': True,
-            'skills': skill_results
-        })
-    else:
-        result['checks'].append({
-            'check': 'skill_resolution',
-            'passed': True,
-            'skills': [],
-            'details': 'skills field is not a list; no skill resolution performed'
-        })
-
-    # ── function resolution ──
-    functions = data.get('functions')
-    functions_explicit = functions is not None
-    if functions is None:
-        functions = ['plan', 'execute']
-    func_results = []
-    if isinstance(functions, list):
-        for name in functions:
-            candidates = [
-                role_dir / 'functions' / f'{name}.md',
-            ]
-            found_path = None
-            for c in candidates:
-                if c.exists() and c.is_file():
-                    try:
-                        body = c.read_text()
-                        if body.strip():
-                            found_path = str(c)
-                    except Exception:
-                        pass
-                    break
-            if found_path is None and functions_explicit and name not in KNOWN_NAMES:
-                warn(f"Declared function '{name}' has no found file "
-                     f"(functions/{name}.md missing, empty, or unreadable)")
-            func_results.append({
-                'name': name,
-                'found': found_path is not None,
-                'path': found_path
-            })
-    result['checks'].append({
-        'check': 'function_resolution',
-        'passed': True,
-        'functions': func_results
-    })
-
-    # ── reference discovery ──
-    ref_files = _discover_references(role_dir)
-    declared_refs = data.get('references', {})
-    ref_entries = []
-    for rf in ref_files:
-        rel = rf.relative_to(role_dir / 'references')
-        ref_name = str(rel.with_suffix(''))
-        entry: dict[str, object] = {'name': ref_name, 'path': str(rf)}
-        if isinstance(declared_refs, dict) and ref_name in declared_refs:
-            entry['declared'] = True
-        ref_entries.append(entry)
-    result['checks'].append({
-        'check': 'reference_discovery',
-        'passed': True,
-        'references': ref_entries,
-        'declared_count': len(declared_refs) if isinstance(declared_refs, dict) else 0
-    })
-
-    # ── subagent discovery / validation ──
-    subagent_yamls = _discover_file_subagents(role_dir)
-    inline_subagents = data.get('subagents', [])
-    if not isinstance(inline_subagents, list):
-        inline_subagents = []
-
-    discovered_subagents = []
-    file_subagent_data = {}
-    for sa_path in subagent_yamls:
-        sa_dir = sa_path.parent
-        sa_rel = sa_dir.relative_to(role_dir / 'subagents')
-        sa_name = str(sa_rel)
-        t1_result, sa_data = _run_tier1(sa_path, sa_name, is_subagent=True)
-        file_subagent_data[sa_name] = sa_data
-        entry = {
-            'source': 'file',
-            'name': sa_name,
-            'path': str(sa_path),
-            'valid': t1_result['passed'],
-            'tier1': t1_result
-        }
-        if sa_data:
-            entry['display_name'] = sa_data.get('name', '')
-        discovered_subagents.append(entry)
-
-    for idx, inline in enumerate(inline_subagents):
-        if not isinstance(inline, dict):
-            continue
-        inline_name = inline.get('name', f'(inline #{idx})')
-        entry = {
-            'source': 'inline',
-            'name': inline_name,
-            'valid': bool(_is_string_nonempty(inline.get('name')) and
-                          (_is_string_nonempty(inline.get('prompt')) or
-                           _is_string_nonempty(inline.get('prompt_file')))),
-            'has_prompt': bool(_is_string_nonempty(inline.get('prompt')) or
-                              _is_string_nonempty(inline.get('prompt_file')))
-        }
-        discovered_subagents.append(entry)
-
-    result['checks'].append({
-        'check': 'subagent_discovery',
-        'passed': True,
-        'subagents': discovered_subagents
-    })
+    discovered_subagents = _discover_subagents(role_dir, data)
+    subagents_passed = True
+    for entry in discovered_subagents:
+        for message in entry['tier1']['errors']:
+            err(f"Subagent '{entry['id']}': {message}")
+        assets = _validate_assets(entry['_asset_dir'], entry['_data'])
+        entry['assets'] = assets
+        entry['valid'] = entry['valid'] and assets['passed']
+        for message in assets['errors']:
+            err(f"Subagent '{entry['id']}': {message}")
+        for message in assets['warnings']:
+            warn(f"Subagent '{entry['id']}': {message}")
+        subagents_passed = subagents_passed and entry['valid']
+    result['checks'].append({'check': 'subagent_discovery', 'passed': subagents_passed,
+                             'subagents': discovered_subagents})
 
     # ── skill-name-collision ──
     for s in (skills if isinstance(skills, list) else []):
-        if s in KNOWN_NAMES:
+        if isinstance(s, str) and s in KNOWN_NAMES:
             warn(f"Skill '{s}' collides with known name (built-in function name)")
 
     # ── collaboration graph validation ──
@@ -514,7 +554,7 @@ def _run_tier2(role_dir, role_id, data):
         has_cycle = _has_cycle()
 
         if has_cycle and (max_iterations is None or (isinstance(max_iterations, (int, float)) and max_iterations <= 0)):
-            graph_warnings.append("Agent-to-agent cycle detected and max_iterations is not set (defaults to 3)")
+            graph_warnings.append("Legacy collaboration cycle has no max_iterations; this block has no runtime effect. Use an explicit Graph v3 loop group bound.")
 
         if graph_errors:
             for ge in graph_errors:
@@ -626,13 +666,8 @@ def _run_tier2(role_dir, role_id, data):
     # Rule 4 (ERROR): retired live-contract tools in permission.allow or tools (role + subagents)
     perm_issues = []
     _collect_denied_tools(data, f"role '{role_id}'", perm_issues)
-    for sa_name, sa_data in file_subagent_data.items():
-        _collect_denied_tools(sa_data, f"subagent '{sa_name}'", perm_issues)
-    for inline in inline_subagents:
-        if not isinstance(inline, dict):
-            continue
-        inline_name = inline.get('name', '(inline)')
-        _collect_denied_tools(inline, f"inline subagent '{inline_name}'", perm_issues)
+    for entry in discovered_subagents:
+        _collect_denied_tools(entry['_data'], f"subagent '{entry['id']}'", perm_issues)
     if perm_issues:
         for pi in perm_issues:
             err(pi)
@@ -640,32 +675,26 @@ def _run_tier2(role_dir, role_id, data):
     else:
         result['checks'].append(_make_check('permission_legacy_tools', True))
 
-    # Rule 5 (WARN): 'loop' declared as a live function (legacy loop_* family)
-    loop_declared = functions_explicit and isinstance(functions, list) and 'loop' in functions
-    if loop_declared:
-        warn("Declared function 'loop' is a legacy loop_* tool family member; "
-             "declare bounded revise/review cycles as a loop_groups entry with max_traversals")
-        result['checks'].append(_make_check('loop_function', False, "functions contains 'loop'"))
-    else:
-        result['checks'].append(_make_check('loop_function', True))
+    result['checks'].append(_make_check(
+        'loop_function', True,
+        "loop is a host built-in; disable_functions controls whether it is enabled"))
 
     # Rule 6 (ERROR): Graph v3 declarer/worker tool split
     split_issues = []
     _check_graph_tool_split(data, f"role '{role_id}'", declarer=True, issues=split_issues)
-    for sa_name, sa_data in file_subagent_data.items():
-        _check_graph_tool_split(sa_data, f"subagent '{sa_name}'", declarer=False, issues=split_issues)
-    for inline in inline_subagents:
-        if not isinstance(inline, dict):
-            continue
-        inline_name = inline.get('name', '(inline)')
-        _check_graph_tool_split(inline, f"inline subagent '{inline_name}'", declarer=False,
-                                issues=split_issues)
+    for entry in discovered_subagents:
+        _check_graph_tool_split(entry['_data'], f"subagent '{entry['id']}'",
+                                declarer=False, issues=split_issues)
     if split_issues:
         for si in split_issues:
             err(si)
         result['checks'].append(_make_check('graph_tool_split', False, '; '.join(split_issues)))
     else:
         result['checks'].append(_make_check('graph_tool_split', True))
+
+    for entry in discovered_subagents:
+        del entry['_data']
+        del entry['_asset_dir']
 
     return result
 
@@ -675,16 +704,16 @@ def validate_role(role_dir):
     role_id = role_path.name
     role_yaml_path = role_path / 'role.yaml'
 
-    version = load_catalog_version(str(CATALOG_PATH)) or '0.20.0'
+    version = load_catalog_version(str(CATALOG_PATH))
 
     tier1, data = _run_tier1(role_yaml_path, role_id)
 
     tier2 = {'checks': [], 'errors': [], 'warnings': [], 'passed': True}
     if tier1['passed'] and data is not None:
         tier2 = _run_tier2(role_path, role_id, data)
-    elif not tier1['passed'] and data is None:
+    else:
         tier2['checks'].append(_make_check('tier2_skipped', False,
-                                           'Tier 2 skipped: Tier 1 failed with no parsed data'))
+                                           'Tier 2 skipped: Tier 1 failed'))
         tier2['passed'] = False
 
     all_errors = tier1['errors'] + tier2['errors']
@@ -700,6 +729,9 @@ def validate_role(role_dir):
         'warnings': all_warnings,
         'verdict': verdict,
         'catalog_version': version,
+        'validation_scope': 'local_authoring',
+        'runtime_contract_verified': False,
+        'resolution_scope': 'local_assets_only',
     }
 
 
@@ -725,6 +757,7 @@ def main():
         print(f"Role:     {result['role_id']}")
         print(f"Verdict:  {verdict_label}")
         print(f"Catalog:  {result['catalog_version']}")
+        print("Scope:    local authoring lint; runtime contract and external assets not verified")
         print()
 
         t1 = result['tier1']
