@@ -33,16 +33,23 @@ project facts relevant to the decision, and leave unknown facts explicitly unkno
 | risks | Concrete possible failures; empty is allowed |
 | verification_plan | Scenario to observable assertion to appropriate test/check |
 | verification_results | Actual commands/outcomes and checks not run, with reasons |
+| verification_tier | focused, runtime or extended, with the concrete reason for escalation |
+| stop_condition | Evidence sufficient for implementation/acceptance, remaining uncertainty and reproduction budget |
 | open_questions | Optional unresolved intent, environment, or API questions |
+
+An ordinary inline fix needs only target, expected behavior, likely mechanism, smallest
+change and completion checks. It does not instantiate every brief field or a plan file.
 
 A source-tracing or review request adds the concrete question, the reviewed object
 (the snapshot/diff and artifact paths to inspect) and the read-only scope. A
 consultation reports design uncertainty; it cannot certify compilation,
 implementation or tests that do not yet exist.
 
-A device-verification dispatch also includes the target project's absolute memory root,
-run ID, case IDs/revisions and complete frozen journeys, relevant profile/pitfall records,
-artifact identity, and a unique temporary evidence directory outside the repository. Follow
+A formal device-verification dispatch also includes the target project's absolute memory
+root if present, run ID, existing case IDs/revisions when applicable and complete frozen
+journeys, relevant profile/pitfall excerpts, artifact identity, and a unique temporary
+evidence directory outside the repository. A new journey may be scoped to this dispatch
+without first creating a reusable case/profile/index. Follow
 `references/device-test-memory.md`; the verifier reads history but cannot update it.
 For a transient/timing-dependent path, include the diagnostic question and capture interval
 per `references/device-video-debugging.md`, plus the remaining reproduction budget. The
@@ -72,11 +79,15 @@ id, so the accepted result is self-identifying.
 The device record links the actual execution and installation observations, including
 failed or blocked runs. Paths identify external temporary files; use null/empty paths
 when unavailable and carry the partial observations and missing evidence in `verification`.
-No new outcome or schema version is introduced. Only the lead archives accepted evidence
-into project-local memory; the worker's historical lookups never count as current execution.
-For video analysis, `evidence_paths` includes the original recording, frame metadata/index,
-decisive frames and analysis report. `verification` names the inspected source-PTS interval,
-case steps, action/log clock alignment and uncertainty, capture gaps and uninspected media.
+Empty `case_refs`/`journey_paths` and a null `device_profile` are valid for compact inline
+records without reusable cases/profiles; an independently dispatched verifier still supplies
+its frozen journey. The lead retains minimal accepted facts/evidence and may delegate
+optional organization to a journey-recorder. Only the lead merges shared records. The
+verifier's historical lookups never count as current execution. No new gate outcome is added.
+For targeted video, retain the inspected clip/decisive frames and name the action and limits.
+For detailed timing analysis, include the original recording, frame metadata/index, inspected
+source-PTS interval, relevant clock alignment/uncertainty and analysis. Name capture gaps and
+uninspected media in either tier.
 A captured file alone is not verification; no extra outcome or required video on every run.
 
 `status: pass` means no supported blocking issue exists in the assigned scope, not
@@ -103,6 +114,7 @@ The report status maps to the settled outcome as follows:
 | Review and validation | pass, revise | Required criteria supported in the assigned scope, or concrete correctable defects with stable `required_revisions` |
 | Review escalation | escalate | Essential evidence or user intent is unavailable |
 | Evidence | report | The assigned assessment completed, including negative findings; not a product verdict |
+| Optional recording | recorded, incomplete | Supplied evidence organized, or partial/unavailable archival; neither decides product acceptance |
 
 This role's mapping:
 
@@ -128,18 +140,44 @@ This role's mapping:
   other gates.
   For a local APK, cite the target file and the selected 直接安装 control with its
   screen evidence; 卓易通安装 opens the store and is not proof of local installation.
-- The shipped sample declaration in `references/graph-protocol.md` keeps its five
-  review nodes; the lead declares a `device-verification` node in a batch only
-  when acceptance depends on runtime behavior only a running app can show, and
-  then it is an independent root like the other review nodes.
-- This role declares no execution node, no validation node and no approval node,
-  because the lead owns production writes, acceptance and any user approval.
+- The six-node sample in `references/graph-protocol.md` illustrates composition, not
+  a mandatory batch. Select only nodes needed for a material risk. Declare a
+  `device-verification` node only when runtime evidence must be independent;
+  ordinary inline runtime verification does not require a graph.
+- The optional `journey-record` node lives in a separate graph from acceptance,
+  follows the Recording report below and settles `recorded` or `incomplete`.
+- This role declares no production execution node, no validation node and no approval
+  node, because the lead owns production writes, acceptance and any user approval.
   `done`, `failed`, `blocked`, `clarification_required` and `approval_required`
   are therefore documented for completeness of the engine vocabulary and are never
   submitted by these six read-only specialists.
 - `revise` and `escalate` return findings to the lead. The lead owns the repair and
   any fresh review batch for a changed snapshot, and a settled graph is not
   acceptance of the reviewed design.
+
+## Recording report (optional background outcome)
+
+The recorder submits this object as `data`; it is not a gate report and has no product
+pass/fail status. Graph acceptance confirms delivery of the payload, not its truth.
+
+| Field | Content |
+| --- | --- |
+| schema_version | 1 |
+| outcome_id | recorded or incomplete; matches the submitted outcome |
+| run_id | The supplied run identity |
+| source_snapshot | The supplied source/diff identity; never infer from the live checkout |
+| input_record | Absolute path to the sealed minimum record |
+| output_directory | The exclusive directory assigned in the dispatch |
+| written_paths | Actual files written inside that directory; empty if none |
+| proposals | Optional case/profile/index proposals, with base identity and path inside the output directory; empty if none |
+| limitations | Missing inputs, unavailable paths, unfinished outputs or failed writes; required for incomplete |
+
+`recorded` requires the requested organization to be complete with existing output paths;
+it can preserve a failed product run. `incomplete` retains partial paths and limitations
+without fabricating a successful archive. A pending graph has no accepted Recording report.
+The lead records pending/deferred/failed archival separately from product verification and
+does not await optional enrichment before repairs or delivery. See
+`references/background-recording.md` for lifetime, ownership and recovery constraints.
 
 ## Submission and acceptance
 

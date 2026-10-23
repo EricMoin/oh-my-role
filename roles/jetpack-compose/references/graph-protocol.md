@@ -8,9 +8,10 @@ against rolebox `docs/graph-outcome-protocol.md` and `src/graph/` whenever the
 installed runtime version changes.
 
 The lead is the sole production-code writer and the declaring session: it owns the
-plan, the node briefs and every repair. The six specialists are read-only evidence
-nodes. The graph schedules evidence gathering and review; it never schedules
-architectural decisions, and no specialist writes production code.
+plan, the node briefs and every repair. The six reviewers/verifiers are read-only evidence
+nodes. A seventh child, `journey-recorder`, can organize sealed evidence inside its assigned
+record directory in a separate optional graph; see `references/background-recording.md`.
+The lead owns architectural decisions, and no specialist writes production code.
 
 ## Tools
 
@@ -61,14 +62,16 @@ Inspect the call result: the persisted plan **and** `start.kind`. `started` and
 is not proof of dispatch. Diagnose a refusal before any recovery, and never declare
 a duplicate graph because startup looks slow.
 
-## Canonical review declaration
+## Review declaration example
 
-The declaration below is this role's single source of truth. It is a complete
-`graph_declare` argument: replace `name` with the request identity and every prompt
-placeholder with the real brief for the current snapshot. Keep the pinned node ids,
-agents, declared outcomes, edges and join. The sample stays a five-node review batch;
-a batch whose acceptance depends on runtime behavior a running app must show declares
-one additional `device-verification` node as described under Topology semantics.
+The six-node declaration below is an executable protocol example tested against the
+runtime, not the default workflow or a required reviewer set. It is the declaration value
+passed to `graph_declare({declaration: ...})`. Replace its name and prompt placeholders;
+select only nodes that resolve named material risks. Remove irrelevant nodes and their
+edges/inputs together, retaining only real dependencies and a finite execution budget.
+A single relevant reviewer is valid. Add a device-verifier only when independent runtime
+evidence is needed. Ordinary bounded changes can stay inline. Optional recording uses the
+separate one-node example in `references/background-recording.md`, never an acceptance edge.
 
 ```json
 {
@@ -238,7 +241,7 @@ one additional `device-verification` node as described under Topology semantics.
   declare no inputs: each reviews the snapshot named in its own prompt and settles
   `pass`, `revise` or `escalate`. Do not add serial edges merely to impose a
   checklist order.
-- `device-verification` is the optional review root for a batch whose acceptance
+- `device-verification` is the optional review root when independent acceptance evidence
   depends on runtime behavior only a running app can show: navigation and
   back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or
   process recreation, notifications or deep links, crash/ANR, or user-visible
@@ -252,10 +255,11 @@ one additional `device-verification` node as described under Topology semantics.
   inputs unless it really reads an accepted upstream report, and like every other
   specialist it never edits production files. An unavailable device, SDK or
   emulator is an `escalate` and a recorded limitation is never a pass.
-  Its dispatch also carries the memory root, run ID, case IDs/revisions, complete
-  journeys and relevant device pitfalls per `references/device-test-memory.md`.
-  The worker returns temporary evidence and `device_test_record`; only the lead
-  archives it and updates project-local memory after accepting the result.
+  Its dispatch carries the memory root if present, run ID, existing case IDs/revisions
+  where applicable, a complete frozen journey and relevant device pitfalls. The worker
+  returns temporary evidence and `device_test_record`; the lead preserves minimum facts
+  before cleanup. A separate recorder can organize sealed copies while the lead repairs;
+  only the lead merges shared case/profile/index proposals.
 - `architecture` is the join node. Its declared inputs are the two accepted `report`
   results, and `join: {strategy: "all"}` releases it only after both producers
   settle `report`. Both edges carry `report` into that same consumer.
@@ -267,7 +271,8 @@ one additional `device-verification` node as described under Topology semantics.
 
 ## Node brief
 
-Every node prompt carries enough context to act without the lead's conversation:
+Every review node prompt carries enough context to act without the lead's conversation
+(recorder briefs use `references/background-recording.md` instead):
 
 - Goal, expected behavior, the user authorization already given, and the concrete
   question this node answers.
@@ -295,7 +300,7 @@ inaccessible merely because the session differs.
 
 Submitting an outcome is the only way a node settles:
 
-1. Finish the read-only assessment and write the report first.
+1. Finish the assigned assessment or optional recording and prepare its report first.
 2. Call `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`
    with the node's declared `outcome_id`, the attempt credential this dispatch
    carried, and the schema_version 1 payload as `data`. Use only your own attempt
@@ -329,8 +334,9 @@ accepted outcome, and no control decision replaces a declared review gate.
 
 ## Read state
 
-After a confirmed start, yield for the real GRAPH COMPLETE or GRAPH BLOCKED
-notification. Notifications identify the graph and run and carry a stable
+After a confirmed start, continue independent work. Wait for GRAPH COMPLETE or GRAPH
+BLOCKED only when a required report blocks the next decision; optional recording never
+blocks product repair or acceptance. Notifications identify the graph and run and carry a stable
 notification ID; they are not business reports, and delivery is at least once.
 Read accepted results with
 `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})`

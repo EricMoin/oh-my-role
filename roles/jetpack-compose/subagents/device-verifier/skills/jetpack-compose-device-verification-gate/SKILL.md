@@ -12,22 +12,41 @@ load its playbook: `references/device-verification.md` for an Android target ove
 interact only through `graph_worker_exec`. Prefer the installed tool's own `--help` output
 over remembered flags.
 
-Read `references/device-test-memory.md` and the dispatched project history before testing.
-Use the case IDs/revisions and complete journeys selected by the lead; reuse known setup
+Use `references/device-test-memory.md` for record levels and consult relevant dispatched
+history only. Use supplied case IDs/revisions and the frozen journey selected by the lead;
+a reusable case is optional. Reuse known setup
 only after checking current conditions. Keep actual install prompts, manual actions,
 failed recovery attempts and app-step outcomes in the run report, including blocked and
 not-run results. Return `device_test_record` with scoped pitfall observations and temporary
-evidence paths per `references/schemas.md`. Only the lead persists or merges records under
-`.rolebox/jetpack-compose/device-testing/`; do not write there through worker commands.
+evidence paths per `references/schemas.md`. Return the minimal complete evidence needed for
+the declared checks. The lead retains the minimum record and essential evidence; a separate
+authorized `jetpack-compose--journey-recorder` background graph may enrich reports and
+propose shared-memory changes. Do not write project memory through worker commands.
+Report defects promptly so repairs need not wait for report formatting or archival.
 
-When static evidence cannot explain a transient or timing-dependent journey, proactively
-use `references/device-video-debugging.md`: capture before the triggering action, stop and
-finalize the recording, inspect its source-timestamped frames on the host, and correlate
-actions/logs. Keep recorder/extraction commands inside graph_worker_exec and temporary
-evidence outside the repository. Report the inspected interval, decisive frames, clock
-uncertainty, capture gaps and observations versus hypotheses in the report. A GIF is a
+When static evidence cannot establish temporal acceptance, use
+`references/device-video-debugging.md`: capture a short recording around the trigger and
+inspect key frames first. Full-frame inspection and source-PTS/action/log correlation require
+a suspected single-frame defect, disputed ordering or unresolved timing cause. Keep
+recorder/extraction commands inside graph_worker_exec and temporary evidence outside the
+repository. Report decisive observations and any capture limitations; include frame indexes,
+clock uncertainty and detailed analysis when the claim depends on them. A GIF is a
 preview; captured-only media is not verification. Preserve failures and request lead-planned
 diagnostic attempts within the existing three-attempt budget, never retry until green.
+
+Before heavy reproduction, confirm the dispatch identifies the target, trigger and expected
+result. Escalate material ambiguity early instead of investigating every possible target.
+Focused local checks are the lead's default; targeted runtime checks stay within the changed
+behavior. Deep/formal coverage needs a concrete high risk, unresolved evidence gap or
+user/project requirement. A frozen journey is required for this dispatched verifier, but
+neither reusable cases nor full archives are mandatory for a short journey.
+
+Use at most three attempts per hypothesis and implementation, shared across initial
+reproduction, setup recovery, flaky checks, tools and graph/run names. Stop earlier when no
+new evidence appears and report the limitation or a materially different next hypothesis.
+After roughly ten minutes without decisive new evidence, reassess the strategy. Submit when
+the declared acceptance checks are adjudicated, with unexecuted checks explicitly unverified;
+do not add speculative checks or wait for archival.
 
 ## When device verification is warranted
 
@@ -73,14 +92,16 @@ does not establish a local-install limitation. Simulated taps use coordinates fr
 and the launch from the app's own output. A missing or disabled 卓易通, or an absent or blocked
 direct-install path confirmed on screen, is `escalate`.
 
-On the Android branch, confirm the CLI exists. `command -v android` — equivalently a first `android --version` —
-must succeed before any step below; when it fails, the CLI is missing and the whole preflight below
-is inapplicable. Escalate, and do not attempt installation from the verifier role: installing the
-CLI or SDK packages, accepting licenses, creating AVDs and authenticating are host-changing actions
-that only the user authorizes. Name the exact missing prerequisite and the exact bootstrap command
-from `references/device-verification.md` (section 2) in the escalation.
+On Android, detect the required capabilities. Prefer an installed `android` CLI; an existing
+`adb`, project Gradle wrapper and supported capture/input tools suffice when they cover the
+declared checks. Missing CLI alone is not an escalation. Follow installed help for that route,
+record the actual target and versions, and apply the same evidence rules. If a required
+capability is absent, name it and the proposed setup action from
+`references/device-verification.md` section 2. Do not silently install a CLI or SDK package,
+accept licenses, create AVDs or authenticate; the lead handles existing authorization.
 
-With the CLI present, run the preflight before touching a device, and record its output:
+With the CLI present, use the relevant preflight commands and record their output; inventory
+AVDs or remote devices only when a suitable target is not already connected:
 
 - `android info` — SDK location, version, connected devices and configuration.
 - `android emulator list` (add `--long` for detail) — available AVDs.
@@ -106,15 +127,15 @@ Rules:
 
 ## Build and launch
 
-1. Locate the artifact instead of guessing the path: `android describe --project_dir <dir>`
-   prints the paths of JSON metadata that name build targets and their output artifact
-   locations.
+1. Locate the artifact from project build configuration/output metadata or, when installed,
+   `android describe --project_dir <dir>`; never guess its path.
 2. Build the debug variant with the project's own Gradle wrapper, for example
    `./gradlew :app:assembleDebug` — use the module names the project actually declares, and
    record the exit code.
 3. Deploy: `android install --apks=<apk> --device=<serial>` installs without launching;
    `--apks` takes a comma-separated list. `android run --activity=<component>
-   --device=<serial>` builds, deploys and launches in one step.
+   --device=<serial>` builds, deploys and launches in one step. Without the CLI use the
+   existing `adb`/project route, recording the selected serial, artifact and actual commands.
 4. Confirm the launch from the app's own output: a layout dump or screenshot of the expected
    start screen, not from the exit code alone.
 5. An artifact that does not build or does not install is `escalate` with the failing
@@ -205,8 +226,11 @@ Every step carries: the action text with a ✅ (passed) or ❌ (failed) marker, 
 actually executed, the screenshot link when a visual check was needed, and a comment with the
 observed state. Produce the journey report as markdown outside the repository, with one
 section per action. Label unexecuted steps `not-run` with reasons and installation blockers
-`blocked`; include the case IDs/revisions and preserve the exact executed journey snapshot.
-The lead archives the report and needed evidence following `references/device-test-memory.md`:
+`blocked`; include supplied case IDs/revisions when available and preserve the exact executed
+journey snapshot.
+The lead retains the minimum record and decisive evidence, and may delegate optional enrichment to a background
+`jetpack-compose--journey-recorder` following `references/device-test-memory.md`; that work
+does not block repairs or the verifier outcome:
 
 ```markdown
 # Journey: <name>
@@ -230,7 +254,7 @@ Map the finished report to exactly one outcome and carry it in the gate report a
 | --- | --- | --- |
 | Every declared step verified with cited evidence | `pass` | `pass` |
 | Supported app defect at a named step, with observed state and evidence | `fail` | `revise`, with stable `required_revisions` |
-| Missing CLI, no device, no AVD, missing SDK package or system image, unbuildable artifact, malformed journey, missing user intent | `needs-user-input` | `escalate` |
+| Missing required tool capability, no device, no AVD, missing SDK package or system image, unbuildable artifact, malformed journey, missing user intent | `needs-user-input` | `escalate` |
 
 ## Failure classification
 
@@ -244,7 +268,7 @@ Classify each failure before reporting it:
   Fix what is yours to fix (re-target the named device, re-issue a correct input) and re-run
   once; anything that requires rewriting the journey or changing the agreed device settles
   `escalate` with the exact defect.
-- **environment_unavailable** — no CLI, no device, no bootable AVD, no SDK package, no system
+- **environment_unavailable** — no required tool capability, no device, no bootable AVD, no SDK package, no system
   image, no network for a remote reservation. Settles `escalate`; record what was attempted, what
   is missing and the bootstrap command that would resolve it.
 - **flaky behavior** — use at most three total attempts shared with diagnostic reproduction,
@@ -259,6 +283,7 @@ Classify each failure before reporting it:
 - Keep screenshots, layout dumps, journey reports and copied APKs in a temporary directory
   outside the repository. Build output may only land in the project's normal build
   directories; never edit sources, resources, manifests, Gradle files or test code. Keep
-  needed temporary evidence available for lead-owned archival; never update durable memory yourself.
+  needed temporary evidence available until the lead completes the retention handoff;
+  never update durable memory yourself.
 - Report only what the commands and captures show. An unverified step is `needs-user-input`
   or a failing step, never an assumed pass.

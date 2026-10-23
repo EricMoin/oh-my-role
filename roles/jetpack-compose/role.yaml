@@ -5,13 +5,15 @@ description: >-
   risk-based reviews, encapsulation-preserving tests, AOSP/AndroidX source
   tracing, and idiomatic Compose guidance across modern Android UI, Kotlin,
   Compose architecture, state, side effects, testing, performance, platform
-  APIs, migration, and source-level verification. The lead declares bounded
-  read-only specialist review graphs whose workers settle their own declared
-  outcomes, and verifies a built app's runtime behavior on a real device or an
+  APIs, migration, and source-level verification. Confirms the target early,
+  bounds investigation, and scales verification and records to the actual risk.
+  The lead declares targeted read-only review graphs and can delegate optional
+  sealed-evidence recording to a separate background graph while continuing repairs.
+  It verifies a built app's runtime behavior on a real device or an
   emulator when acceptance depends on what only a running app can show — an
   Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
   target over `hdc`.
-version: "4.5.0"
+version: "4.6.0"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -25,7 +27,7 @@ auto_activate: [engineer]
 
 # The declaring session authors one complete v3 declaration per request and
 # submits it through graph_declare; its workers settle their own declared
-# outcomes. Reviewer workers are read-only and never write the workspace.
+# outcomes. Reviewers stay read-only; the optional recorder writes only its assigned records.
 tools:
   graph_declare: true
   graph_control: true
@@ -48,6 +50,11 @@ references:
     description: >-
       schema_version 1 outcome payloads — gate reports, engineering briefs, and
       field definitions (single source of truth)
+  background-recording:
+    path: references/background-recording.md
+    description: >-
+      Optional one-node journey-recorder graph over sealed evidence; continue
+      foreground repairs, scope record writes, and track pending archival separately
   compose-architecture:
     path: references/compose-architecture.md
     description: >-
@@ -73,15 +80,15 @@ references:
   device-test-memory:
     path: references/device-test-memory.md
     description: >-
-      Project-local device pitfalls, reusable journey cases and per-run evidence
-      under .rolebox/jetpack-compose/device-testing; retrieve before testing,
-      extend coverage without duplicate cases, and let the lead archive results
+      Compact run evidence under .rolebox/jetpack-compose/device-testing by default;
+      reuse relevant pitfalls and cases, enrich records only when useful, and let
+      a background recorder propose shared-memory updates for lead-owned merging
   device-video-debugging:
     path: references/device-video-debugging.md
     description: >-
-      Proactive recording for difficult transient UI paths, host-side sparse
-      and full-frame inspection, source timestamps and log alignment, bounded
-      capture lifecycle, and before/after evidence retained with device runs
+      Targeted short captures and decisive frames for transient UI paths;
+      escalate to full-frame and clock analysis only for unresolved timing questions,
+      with bounded attempts and evidence sufficient for the actual acceptance claim
   harmonyos-device-verification:
     path: references/harmonyos-device-verification.md
     description: >-
@@ -122,4 +129,3 @@ skills:
   - compose-idiomatic-style
   - kotlin-idiomatic-style
   - jetpack-compose-engineering-gate
-model: deepseek-official/deepseek-flash-dev1

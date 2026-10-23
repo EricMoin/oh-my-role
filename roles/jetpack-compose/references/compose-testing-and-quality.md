@@ -16,13 +16,32 @@ visibility, add test hooks, or reflect into internals merely for tests. Extracti
 create a meaningful production responsibility; use the narrowest visibility its real
 consumers need. Previews and coverage numbers do not replace behavioral assertions.
 
-Device sessions also follow `references/device-test-memory.md`: consult prior cases and
-device pitfalls, reuse paths and add uncovered branches, then have the lead archive actual
-steps and evidence under the project's `.rolebox/jetpack-compose/device-testing/`. Keep case
-definitions separate from run results so repeated regression checks do not duplicate cases.
-When static captures cannot explain a transient or timing-dependent path, use
-`references/device-video-debugging.md` for bounded recording, host frame inspection and
-action/log correlation, with comparable evidence for the repaired build.
+Confirm the affected component, trigger and expected result before expensive reproduction;
+resolve only ambiguity that changes the repair or acceptance. Use focused local checks by
+default, targeted runtime checks when the behavior requires a running app, and deep/formal
+verification only for concrete high risk, an unresolved evidence gap or a user/project
+requirement. A small change does not automatically require new previews, tests, a device
+journey or broader CI tasks.
+
+Device sessions follow the record levels in `references/device-test-memory.md`. Consult
+matching cases and device pitfalls when useful; ordinary checks keep a compact outcome and
+decisive evidence record without a new case or complete history sweep. A dispatched verifier
+executes a frozen journey. After retaining the minimum record, the lead can hand optional
+report enrichment and case/index proposals to
+`jetpack-compose--journey-recorder` in a background graph and continue repairing immediately.
+Do not defer actual acceptance checks or evidence of a blocking defect to that recorder.
+
+When static captures cannot establish temporal behavior, use a short recording and inspected
+key frames per `references/device-video-debugging.md`. Escalate to full-frame inspection and
+action/log correlation only for a suspected single-frame defect, disputed ordering or an
+unresolved timing cause. Verify the same acceptance behavior on the repaired build.
+
+Finish after selected final-code acceptance checks and required project checks pass, with no
+blocking defect. Additional testing needs a concrete new risk. Diagnostic retries share a
+maximum of three attempts per hypothesis/implementation across tools and run names, stopping
+earlier without new evidence. After roughly ten minutes without an effective change or new
+decisive evidence, reassess rather than repeating. Blocked runtime checks stay unverified;
+compile success and earlier-build results cannot replace them.
 
 ## 2. ComposeTestRule Selection
 
@@ -173,7 +192,10 @@ fun UserCardTabletPreview() = AppTheme { UserCard(user = sampleUser) }
 
 ### Quality Gates
 
-- `./gradlew :app:lintDebug` — zero warnings
-- `./gradlew :app:testDebugUnitTest` — all green
-- `./gradlew :app:connectedDebugAndroidTest` — all green
+Use actual project task names and requirements. These are examples, not a mandatory suite
+for every change; existing unrelated warnings do not become new scope automatically.
+
+- `./gradlew :app:lintDebug` — satisfy the project's lint policy for the affected scope.
+- `./gradlew :app:testDebugUnitTest` — run the selected relevant tests.
+- `./gradlew :app:connectedDebugAndroidTest` — when runtime risk or project policy requires it.
 - Coverage threshold: use the project’s configured requirement, if any; do not invent a percentage.

@@ -1,13 +1,13 @@
 // Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/jetpack-compose/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
-// and the real host drive the real role files on disk. The review declaration is read out
-// of references/graph-protocol.md, so the documented contract and the tested contract are
-// the same object. The only stand-in is the dispatch seam, which records the requests the
+// and the real host drive the real role files on disk. Review and recording declarations
+// are read from the shipped references, so the documented and tested contracts are the
+// same objects. The only stand-in is the dispatch seam, which records the requests the
 // engine hands it: no model runs, no worker executes and nothing is published. afterEach
 // deletes every temp dir, which is where each declared graph's persisted plan lives, so no
 // declared graph outlives its test.
 import { test, expect, afterEach } from "bun:test";
-import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -50,8 +50,8 @@ const { SqliteAcceptanceLedger } = await engine(
 );
 
 // The v3 surface this role is written against: one declaring session that owns
-// graph_declare/control/status/audit, and read-only workers that only submit their
-// declared outcome. None of the retired graph v2 entry points may reappear.
+// graph_declare/control/status/audit, and workers that only submit their declared
+// outcome. None of the retired graph v2 entry points may reappear.
 const RETIRED_V2_TOOLS = [
   "graph_create",
   "graph_add_node",
@@ -102,6 +102,7 @@ const SOURCE_TRACER = "source-tracer";
 const SUBAGENT_SLUGS = [
   "architecture-reviewer",
   "device-verifier",
+  "journey-recorder",
   "performance-reviewer",
   "source-tracer",
   "test-quality-reviewer",
@@ -119,6 +120,7 @@ const JOIN_NODE = "architecture";
 
 const roleDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const protocolPath = join(roleDir, "references", "graph-protocol.md");
+const recordingPath = join(roleDir, "references", "background-recording.md");
 
 const tempDirs = [];
 afterEach(() => {
@@ -135,18 +137,18 @@ function tempDir(prefix) {
 /** The loader keeps each manifest's display name; its directory is the slug. */
 const childSlug = (child) => child.name.toLowerCase().replaceAll(" ", "-");
 
-// ── The canonical declaration, read from the shipped protocol reference ─────
+// ── Canonical declarations, read from the shipped references ───────────────
 
 /**
  * Documentation is the single source of truth: the tested declaration is exactly the
- * one fenced json block of references/graph-protocol.md, so the two cannot drift.
+ * one fenced json block of its reference, so the two cannot drift.
  */
-function readShippedDeclaration() {
-  const text = readFileSync(protocolPath, "utf8");
+function readShippedDeclaration(path) {
+  const text = readFileSync(path, "utf8");
   const blocks = [...text.matchAll(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/g)];
   if (blocks.length !== 1) {
     throw new Error(
-      `${protocolPath}: expected exactly one fenced json block, found ${blocks.length}`,
+      `${path}: expected exactly one fenced json block, found ${blocks.length}`,
     );
   }
   let declaration;
@@ -154,7 +156,7 @@ function readShippedDeclaration() {
     declaration = JSON.parse(blocks[0][1]);
   } catch (error) {
     throw new Error(
-      `${protocolPath}: the fenced json block is not valid JSON: ` +
+      `${path}: the fenced json block is not valid JSON: ` +
         (error instanceof Error ? error.message : String(error)),
     );
   }
@@ -165,12 +167,14 @@ function readShippedDeclaration() {
   };
 }
 
-const shipped = readShippedDeclaration();
+const shipped = readShippedDeclaration(protocolPath);
 const declaration = shipped.declaration;
+const recording = readShippedDeclaration(recordingPath);
+const recordingDeclaration = recording.declaration;
 
 // ── (a) Role loading through the real loader ────────────────────────────────
 
-test("rolebox loads the lead, its six read-only specialist subagents and every declared skill", async () => {
+test("rolebox loads the lead, six review specialists, the journey recorder and every declared skill", async () => {
   const directory = tempDir("compose-role-loader-");
   cpSync(roleDir, join(directory, "jetpack-compose"), { recursive: true });
   const role = (await discoverRoles(directory)).get("jetpack-compose");
@@ -192,8 +196,9 @@ test("rolebox loads the lead, its six read-only specialist subagents and every d
     for (const retired of RETIRED_V2_TOOLS) {
       expect(child.tools[retired]).toBeUndefined();
     }
-    // Read-only reviewers: no Write and no Edit, and the dispatcher tools stay with
-    // the declaring lead. Only the source tracer may fetch external sources.
+    // No direct Write/Edit tools; orchestration stays with the declaring lead.
+    // The recorder's scoped writes use graph_worker_exec under its node contract,
+    // which does not imply a per-directory boundary enforced by the graph engine.
     const allow = [...(child.permission?.allow ?? [])];
     const expected = slug === SOURCE_TRACER ? [...WORKER_ALLOW, "WebFetch"] : WORKER_ALLOW;
     expect(allow.sort()).toEqual([...expected].sort());
@@ -205,7 +210,7 @@ test("rolebox loads the lead, its six read-only specialist subagents and every d
     }
   }
 
-  // Every declared skill of the primary and of all six children resolves to a real
+  // Every declared skill of the primary and of all seven children resolves to a real
   // file, and every prompt is substantial.
   const subjects = [
     [role, join(directory, "jetpack-compose")],
@@ -302,6 +307,38 @@ test("the declaration shipped in references/graph-protocol.md compiles into an e
   }
 });
 
+test("the optional recorder compiles as a bounded graph without acceptance dependencies", () => {
+  expect((recording.text.match(/```json/g) ?? [])).toHaveLength(1);
+  expect(recording.fenceCount).toBe(2);
+
+  const parsed = parseGraphDeclarationV3(recordingDeclaration);
+  if (!parsed.ok) {
+    throw new Error(`background-recording.md is not a valid v3 declaration: ${JSON.stringify(parsed.errors)}`);
+  }
+  const compiled = compileGraph(parsed.declaration, { supportedValidators: [] });
+  if (!compiled.ok) {
+    throw new Error(`background-recording.md failed to compile: ${JSON.stringify(compiled.errors)}`);
+  }
+  expect(compiled.kind).toBe("executable");
+  expect(compiled.plan.graphId).not.toBe(declaration.name);
+  expect(compiled.plan.budget).toEqual({ max_executions: 1 });
+  expect(compiled.plan.nodes).toHaveLength(1);
+  expect(compiled.plan.edges).toEqual([]);
+
+  const node = recordingDeclaration.nodes[0];
+  expect(node.id).toBe("journey-record");
+  expect(node.agent).toBe("jetpack-compose--journey-recorder");
+  expect(node.completion).toEqual({ mode: "explicit" });
+  expect(node.budget).toEqual({ timeout_ms: 120000 });
+  expect(node.inputs ?? []).toEqual([]);
+  expect(node.tools ?? []).toEqual([]);
+  expect(node.outcomes.map((outcome) => outcome.id).sort()).toEqual([
+    "incomplete", "recorded",
+  ]);
+  expect(compiled.plan.terminalOutcomes).toHaveLength(2);
+  expect(declaration.nodes.some((reviewNode) => reviewNode.agent === node.agent)).toBe(false);
+});
+
 // ── (c) The real declare/dispatch/settle path, in process ───────────────────
 
 const NOW = 1_700_000_000_000;
@@ -311,7 +348,7 @@ const NOW = 1_700_000_000_000;
  * shipped plan, the dispatch seam records every attempt the engine arms, and the real
  * host credential vault stores the credentials those attempts carry.
  */
-function declareGraph() {
+function declareGraph(plannedDeclaration = declaration) {
   const dir = tempDir("compose-graph-");
   const requests = [];
   const tools = createGraphToolSet({
@@ -326,7 +363,7 @@ function declareGraph() {
     }).capability(),
   });
   const declared = tools.graph_declare({
-    declaration: structuredClone(declaration),
+    declaration: structuredClone(plannedDeclaration),
   });
   return { dir, requests, tools, declared, graphId: declared.graph_id };
 }
@@ -645,4 +682,81 @@ test("a settled graph is not acceptance: a revise gate report stays readable on 
   expect(document).toContain("ARCH-1");
   expect(document).toContain('"revise"');
   expect(phaseOf(status)).toBe("complete");
+});
+
+test("review completes in the same workspace while optional recording is still pending", async () => {
+  const review = declareGraph();
+  const declared = review.tools.graph_declare({
+    declaration: structuredClone(recordingDeclaration),
+  });
+  const archive = { ...review, declared, graphId: declared.graph_id };
+  await start(review);
+
+  expect(nodeIds(review.requests.filter((request) => request.graphId === review.graphId)).sort()).toEqual(
+    [...ROOT_NODES].sort(),
+  );
+  expect(nodeIds(review.requests.filter((request) => request.graphId === archive.graphId))).toEqual([
+    "journey-record",
+  ]);
+
+  for (const node of declaration.nodes) {
+    const outcome = node.outcomes.some((entry) => entry.id === "report") ? "report" : "pass";
+    const result = await settle(review, node.id, outcome, {
+      data: gateReport(node.id, outcome),
+    });
+    expect(result.decision).toBe("accepted");
+  }
+  expect(phaseOf(statusJson(review.tools, review.graphId))).toBe("complete");
+  expect(phaseOf(statusJson(archive.tools, archive.graphId))).not.toBe("complete");
+
+  const ledger = await openLedger(review.dir);
+  try {
+    expect(acceptedAttempts(ledger, review.graphId)).toHaveLength(declaration.nodes.length);
+    expect(acceptedAttempts(ledger, archive.graphId)).toEqual([]);
+  } finally {
+    ledger.close();
+  }
+});
+
+test.each(["recorded", "incomplete"])("the recorder settles %s without producing a review verdict", async (outcome) => {
+  const graph = declareGraph(recordingDeclaration);
+  await start(graph);
+  expect(nodeIds(graph.requests)).toEqual(["journey-record"]);
+
+  const verdict = await settle(graph, "journey-record", "pass");
+  expect(verdict.decision).toBeUndefined();
+  expect(verdict.refusals.length).toBeGreaterThan(0);
+
+  const inputRecord = join(graph.dir, "sealed-run.md");
+  const outputDirectory = join(graph.dir, "archive", "attempt-1");
+  const recordedPath = join(outputDirectory, "report.md");
+  const observation = "Observed failure on the original build; repaired build not run.";
+  writeFileSync(inputRecord, observation);
+  if (outcome === "recorded") {
+    mkdirSync(outputDirectory, { recursive: true });
+    writeFileSync(recordedPath, observation);
+  }
+  const data = {
+    schema_version: 1,
+    outcome_id: outcome,
+    run_id: "sample-baseline",
+    source_snapshot: "compose-sample@abc1234 + uncommitted working tree",
+    input_record: inputRecord,
+    output_directory: outputDirectory,
+    written_paths: outcome === "recorded" ? [recordedPath] : [],
+    proposals: [],
+    limitations: outcome === "incomplete" ? ["Optional report was not written."] : [],
+  };
+  const result = await settle(graph, "journey-record", outcome, { data });
+  expect(result.decision).toBe("accepted");
+  expect(result.verdict).toBe("committed");
+  expect(result.refusals).toEqual([]);
+  expect(result.phase).toBe("complete");
+
+  const replay = await settle(graph, "journey-record", outcome, { data });
+  expect(replay.decision).toBe("accepted");
+  expect(replay.verdict).toBe("replayed");
+  expect(graph.requests).toHaveLength(1);
+  expect(readFileSync(inputRecord, "utf8")).toBe(observation);
+  expect(JSON.stringify(statusJson(graph.tools, graph.graphId))).toContain(data.source_snapshot);
 });

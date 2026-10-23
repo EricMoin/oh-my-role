@@ -15,6 +15,16 @@ invariants, ownership, lifetime and a minimal coherent boundary; reviews inspect
 actual stable implementation snapshot. Early consultations resolve specific
 uncertainties and do not approve unwritten code.
 
+The lead confirms the target before expensive investigation, asking early only when
+different interpretations change the fix. A bounded local task starts with a short
+target/behavior/mechanism/change/check contract. Verification is focused by default,
+adds runtime evidence when the behavior requires it, and expands only for a named risk.
+Source evidence plus adequate observation can justify implementation without exhaustive
+research. Three attempts per unchanged hypothesis include exploration and capture retries;
+ten minutes without diagnosis or implementation progress triggers reassessment, not an
+automatic permission request. Final-code evidence covering the selected acceptance criteria
+and no remaining blocking defect is the completion condition.
+
 The previous workflow duplicated mandatory phases across the parent prompt, auto-injected
 engineer function and gate skills. Tests were judged by ratios, per-component coverage
 and framework prescriptions; architecture checks prescribed layers irrespective of need.
@@ -34,17 +44,28 @@ Sources of truth:
 - `functions/engineer.md`: short per-message reminder, including continuation behavior.
 - `references/schemas.md`: concise brief and evidence report.
 - `references/graph-protocol.md`: engine semantics and recovery.
+- `references/background-recording.md`: separate optional recorder graph, sealed inputs,
+  exclusive output ownership, accepted recording outcomes and actual host lifecycle limits.
 - `references/device-test-memory.md`: project-local device pitfalls, reusable cases,
-  per-run evidence and lead-owned archival under `.rolebox/jetpack-compose/device-testing/`.
+  compact per-run evidence and optional reusable records under `.rolebox/jetpack-compose/device-testing/`.
 - `references/device-video-debugging.md`: when transient paths need recording, how to
   inspect source-timestamped frames and correlate actions/logs, and how to compare repairs.
 - Domain skills: contextual guidance loaded for the current decision.
 
-Device verification begins with a history lookup and ends with durable records, including
-setup failures and unexecuted steps. Case identity follows behavior and preconditions;
-regression re-runs keep that identity and add execution records. Independent workers keep
-their repository read-only boundary and return temporary evidence for the lead to archive.
-Historical evidence helps plan coverage but never certifies a changed build or environment.
+Device verification consults relevant history and retains minimum durable facts/evidence,
+including setup failures and unexecuted steps. Cases, profiles and indexes are maintained
+when reuse warrants them; full dossiers are not a default completion requirement. Start
+temporal checks with short captures and decisive frames; full-frame/clock analysis is for
+remaining timing questions. Historical evidence never certifies a changed build/environment.
+
+The seventh child, `journey-recorder`, handles optional evidence organization in a separate
+one-node graph. Dispatch it as soon as useful inputs are sealed, then continue foreground
+repairs. It cannot inspect changing production code, drive devices, run checks or decide
+acceptance. Only its assigned disjoint output directory is writable by contract; the lead
+alone merges shared index/profile/case proposals. Graph v3 does not enforce this subtree
+as a per-node filesystem sandbox. Optional archive state is separate from product status,
+and no promise is made that a worker survives host exit. Minimal evidence is retained before
+handoff; required independent review still blocks acceptance when its result is necessary.
 
 Validation should distinguish loader/protocol compatibility from model behavior. Real
 rolebox loader and graph-engine tests can establish the former; realistic task trials

@@ -29,14 +29,30 @@ screenshot tooling, or Flow assertion library. Respect actual project requiremen
 
 Follow the project's existing test stack before adding new frameworks.
 
-For physical-device or emulator sessions, read `references/device-test-memory.md` and the
-project's `.rolebox/jetpack-compose/device-testing/` index before defining a journey. Reuse
-or extend existing cases by goal, preconditions and assertions; a regression re-run is a new
-execution record, not a new case. The lead saves actual paths, device/install pitfalls,
-failures and evidence there after the run. Old results never replace current verification.
-For difficult transient paths, use `references/device-video-debugging.md` to record and
-inspect the failing interval frame by frame, correlate actions/logs, and compare the same
-case after repair. Preserve original recordings and inspected frames with the run evidence.
+Confirm the affected component and expected behavior before expensive reproduction; resolve
+material ambiguity early. Default to focused local checks. Use targeted device verification
+only for acceptance that needs a running app; use deep/formal journeys for a concrete high
+risk, an unresolved evidence gap or a user/project requirement. Select additions by risk:
+small reversible changes do not automatically need new previews, tests or test tooling.
+
+For device sessions, follow the record levels in `references/device-test-memory.md`. Read
+only applicable known cases or pitfalls; inline checks need no complete history search, XML
+or new reusable case. Keep a compact outcome with decisive evidence, and distinguish a new
+run from a reusable case. A dispatched verifier still executes a frozen journey. The lead
+retains the minimum record, then may delegate optional report enrichment and case/index
+proposals to `jetpack-compose--journey-recorder` in a background graph and continue fixes
+without waiting. Shared-memory merges stay lead-owned. Old results never prove current code.
+
+For temporal behavior, start with short video and inspected key frames per
+`references/device-video-debugging.md`; inspect an interval frame by frame and correlate
+clocks only when a single-frame defect, disputed ordering or unresolved timing cause needs
+it. Keep original and decisive evidence for the repaired-build comparison.
+
+Stop after final-code acceptance and required project checks pass with no blocking defect.
+Broaden testing only for a concrete new risk. Share a maximum of three diagnostic attempts
+per hypothesis/implementation across tools and run names; stop earlier when no new evidence
+is added, and reassess after roughly ten minutes without an effective change or decisive
+evidence. Report required checks that could not run as unverified, never passed.
 
 ## Previews
 
@@ -128,14 +144,14 @@ If the project does not have screenshot tooling, do not introduce it for a small
 
 1. Inspect existing test frameworks, rules, fake patterns, and naming.
 2. Use the existing production boundary; split route/content only when it improves responsibility separation, not merely test access.
-3. Add previews for relevant UI states.
-4. Add unit tests for state/business logic and Compose UI tests for user-visible behavior.
+3. Add previews for relevant UI states when they improve inspection of this change.
+4. Add unit or Compose UI tests where they protect a plausible regression through behavior.
 5. Use instrumented or screenshot tests only where they answer a risk that unit/UI tests cannot.
 6. Run the narrowest relevant test command, then broader checks if the change affects shared UI or architecture.
 
 ## Validation Checklist
 
-- [ ] Important UI states have previews.
+- [ ] Relevant UI states are inspectable; previews are added when useful for this change.
 - [ ] Tests use semantics/user actions rather than private implementation details.
 - [ ] ViewModel tests use deterministic fakes and coroutine test utilities.
 - [ ] Device/instrumented tests are used for real platform behavior when needed.

@@ -1,248 +1,242 @@
 # Device test memory
 
-Use this protocol whenever the lead or device-verifier attempts physical-device or emulator
-verification, including runs blocked before installation. Read existing records before planning;
-persist actual results before closing the task. This is project-local operational memory, not
-proof that the current build works and not a replacement for automated regression tests.
+Use this protocol for physical-device or emulator verification, including runs blocked before
+installation. Preserve enough observed evidence to recover an interrupted task. This is
+project-local operational memory, not proof that the current build works and not a replacement
+for automated regression tests. Choose the smallest useful record; documentation completeness
+must not delay a repair or require another device run.
+
+## Record depth
+
+- **Compact (default):** a run snapshot, incremental outcomes and the essential sanitized raw
+  evidence. Include the target/build, declared actions and assertions, actual result, failures,
+  blockers and unverified scope. Inline checks do not require a reusable case, device profile,
+  XML journey, index entry, frame catalog or narrative report merely to satisfy this protocol.
+- **Reusable:** add or revise a case when it represents a recurring regression or a useful new
+  branch of an existing journey. Independent dispatch requires a frozen executable journey,
+  not a reusable case. Update a device profile only for relevant existing knowledge or a newly
+  observed environment pitfall. Reuse the same case for the same behavior; a new run is not a
+  new case. Independent device-verifier dispatches retain their complete journey contract.
+- **Deep evidence:** retain the additional temporal analysis required to resolve a specific
+  timing question, or the broader records required by an explicitly requested audit or
+  independently repeatable handoff. Follow `references/device-video-debugging.md` for escalation
+  criteria. A simple animation fix does not automatically select this depth.
+
+These levels control record depth, not acceptance truth. A failed assertion remains failed,
+required current-build checks still run, and setup failure leaves app steps `not-run` at every
+level. Optional enrichment can be skipped or delegated to `jetpack-compose--journey-recorder`.
 
 ## Storage and ownership
 
-Resolve the target project's workspace root once and pass its absolute path in the dispatch.
-Use that root, not the role installation, an Android module, the shell's incidental working
-directory, or the agent's home. In a monorepo include the app/module and application ID in
-every case and run so different apps cannot share results accidentally.
+Resolve the target project's absolute workspace root once. Use that root, not the role
+installation, Android module, incidental shell directory or agent home. In a monorepo include
+app/module and application ID in each run and reusable case.
 
-The lead creates this directory lazily on the first device-testing task:
+Create only the files needed for the selected depth:
 
 ```text
 <project-root>/.rolebox/jetpack-compose/device-testing/
-  README.md                         # searchable index and project/app identity
-  devices/<profile-id>.md            # environment and scoped installation/interaction pitfalls
-  cases/<case-id>.md                 # reusable intent, prerequisites, journey and assertions
-  runs/<run-id>/report.md            # what this execution actually did and observed
-  runs/<run-id>/journeys/<case-id>.xml # exact journey snapshot executed in this run
-  runs/<run-id>/evidence/            # retained screenshots, layouts and focused log excerpts
-  runs/<run-id>/evidence/video/<take-id>/ # original recording, frame index, key frames and analysis
+  runs/<run-id>/snapshot.md          # target/build, plan, evidence directory and record depth
+  runs/<run-id>/observations.md      # incremental actual outcomes; sealed at handoff
+  runs/<run-id>/evidence/            # essential sanitized captures/logs; video when needed
+  runs/<run-id>/report.md            # optional enriched report
+  runs/<run-id>/journeys/<case-id>.xml # frozen executable journey when used
+  runs/<run-id>/proposals.md         # optional proposed shared-memory changes
+  runs/<run-id>/archive/<unique-id>/ # exclusive background recorder output, if dispatched
+  README.md                         # optional searchable index
+  devices/<profile-id>.md            # relevant environment knowledge/pitfalls
+  cases/<case-id>.md                 # reusable intent, journey and assertions
 ```
 
-Use descriptive stable slugs for profile and case IDs, and a timestamp with timezone plus a
-unique suffix for run IDs. Create a fresh run directory; never overwrite a prior run. Record
-the schema version as `1` in the index and record templates below. Keep paths relative to this
-memory directory in stored records so they survive moving the checkout.
+Use descriptive stable profile/case IDs and a timestamp with timezone plus a unique suffix
+for each run ID. Never overwrite a prior run. Record `schema_version: 1`; keep stored links
+relative to the memory directory or run so they survive moving the checkout.
 
-The lead alone writes the index, device profiles, cases and durable run records. The independent
-verifier keeps Write/Edit disabled, reads the relevant records, writes captures and its report
-only to its unique temporary directory outside the repository, and returns their paths and
-observations in accepted outcome data. It never writes `.rolebox` via a shell to evade its
-read-only boundary. The lead archives the needed evidence and reconciles memory after reading
-the accepted result; an inline verification by the lead follows the same record contract and
-may write directly to the run directory. Normal build output stays in normal build directories.
+For a short run, snapshot and observations may be one compact file.
 
-Do not leave reports, screenshots, logs, helper scripts or copied APKs in the project root.
-Put any necessary scratch helpers under the run directory (or the verifier's temporary
-directory). Reference the built artifact and its digest rather than retaining APK copies.
-Keep this subtree untracked: respect an existing `.rolebox/` ignore; otherwise add only this
-subtree to the repository's local exclude file. Do not force-add records or alter shared ignore
-policy just to store them. No Git repository is required. Local ignored memory is available to
-agents using this checkout; it is not automatically shared across machines or worktrees. If
-prior records are elsewhere, import only an explicitly identified project-matching source and
-record its origin; never silently merge unrelated projects' histories.
+The lead owns target selection, execution decisions, acceptance and the minimum durable
+snapshot/outcomes. The independent device-verifier keeps Write/Edit disabled and writes its
+incremental report and captures only to its unique external temporary evidence directory. It
+returns paths and observations in accepted outcome data; it never writes `.rolebox` through a
+shell to evade that boundary. Inline lead verification may write directly into its run.
 
-## Before testing: retrieve, compare, extend
+The journey-recorder may write only its assigned run subtree, after the lead seals and hands
+off its inputs. Give it exclusive write ownership of that subtree until completion/failure;
+the lead and other workers must not edit it concurrently. The recorder may add a report,
+relative links and proposals, but must not change sealed snapshots, observations or raw
+evidence, rerun a device journey, operate a device, edit product/test code, decide acceptance,
+or write shared indexes, profiles or cases. The lead alone merges shared-memory proposals,
+serially after rereading current files. This write scope is a dispatch/prompt contract, not a
+filesystem sandbox guarantee; follow `references/background-recording.md` for graph details.
+A later verification uses a fresh run directory.
 
-1. Read the index, then search `cases/`, relevant device profiles and recent related runs by
-   app/module, feature, entry screen, action, assertion and failure symptom. An empty or missing
-   directory means no local history, not that the behavior has never been tested.
-2. Compare the intended case by **app + goal/assertion + start state + significant environment
-   conditions**, not title or literal command sequence. Use the existing case ID for the same
-   behavior. Re-running a regression creates a new run, not a duplicate case.
-3. Reuse the known setup/navigation prefix and add the uncovered branch or assertion. A distinct
-   scenario gets a new case ID with `extends` pointing to the base case ID and revision, plus the
-   coverage delta and reason. Each executable journey must still be complete: materialize the
-   inherited steps in the run snapshot so the worker never has to improvise them.
-4. Validate old prerequisites and selectors against the current UI, OS/ROM build, app variant,
-   permissions, account/data fixtures and tooling. Old coordinates are historical evidence,
-   never reusable selectors. Use semantic labels/IDs and resolve coordinates from a fresh screen.
-   Mark obsolete paths `stale` or `superseded`, with the reason and replacement, rather than
-   silently deleting them. Increment a case revision when its steps or expectations change.
-5. Explain the selection in the run plan: cases reused, extended, added or skipped and why.
-   Risk-based regression re-runs are valid; avoiding duplicate case definitions must not skip
-   current-build verification. An old pass is never a current pass, even on the same device.
-6. Freeze the journey before dispatch. Include case IDs/revisions, the materialized journey,
-   target profile and relevant pitfall excerpts, absolute memory root for read-only lookup,
-   artifact identity, and a unique external evidence directory. When multiple workers exist,
-   serialize use of the same device and let only the lead merge durable records.
-7. Before device operations, the lead creates the run header as `in-progress`, saves the
-   frozen journey snapshots and links the run from the index. Persist setup results and
-   meaningful execution checkpoints as they become available; do not rely on a final chat
-   message to preserve the whole session if it is interrupted. The independent worker keeps
-   its own incremental report in the external evidence directory for lead-owned recovery.
+Keep scratch helpers inside the run or verifier's temporary directory and normal build output
+in normal build directories. Reference the artifact path and digest instead of copying APKs.
+Keep this subtree untracked: respect `.rolebox/` ignores, or add only this subtree to the
+repository's local exclude file. Do not force-add records or change shared ignore policy.
+No Git repository is required. Memory belongs to this checkout; import another history only
+from an explicitly identified project-matching source and record its origin.
+
+## Before testing: bound lookup and freeze the target
+
+1. Confirm the app, entry point, behavior and acceptance assertion before device exploration.
+   If plausible targets require materially different fixes, resolve that ambiguity first.
+   Do not investigate every candidate merely to postpone target confirmation.
+2. Perform one focused lookup of an existing index, matching cases/profile and a recent related
+   run if available. Match app/module, goal/assertion, start state and relevant environment.
+   Missing records mean no local history. Stop lookup when a usable setup/pitfall is found or
+   the focused search returns none; exhaustive history reconstruction is not a prerequisite.
+3. Reuse relevant setup/navigation, revalidating prerequisites/selectors against the current
+   UI, OS/ROM, variant, permissions and fixtures. Old coordinates are historical evidence;
+   use semantic targets and fresh screen state. An old pass is never a current pass.
+4. Save a compact `in-progress` snapshot before device operations with identity, the short
+   action/assertion list, the hypothesis if diagnostic, required evidence and the next stop
+   condition. Persist meaningful outcomes as they occur so interruption cannot erase the run.
+5. For independent dispatch, also freeze the complete executable journey with existing case
+   IDs/revisions when available (an ephemeral run-scoped journey need not create a case).
+   Include target profile or observed target facts, relevant pitfalls, absolute memory root,
+   artifact identity and unique external evidence directory. Serialize access to the same
+   device. The worker persists its own incremental report for lead-owned recovery.
+6. Apply one shared per-hypothesis budget of at most three attempts across exploration,
+   reproduction, diagnosis and flakiness measurement. Each retry needs a concrete new question
+   or changed condition; stop earlier when evidence adds nothing. New take names, tool changes
+   or calling a run “exploratory” do not reset the budget. Renaming the same unresolved
+   hypothesis does not create a new budget. A code fix permits a new current-build
+   validation round, with a stated expected change. Once evidence explains the defect, repair;
+   once required current-build assertions pass and no material uncertainty remains, stop.
+
+For reusable cases, compare by **app + goal/assertion + start state + significant conditions**.
+A distinct branch may use `extends` with its base case/revision and coverage delta; materialize
+all inherited steps in the executed snapshot. Increment revision when steps/expectations
+change and mark obsolete cases `stale`/`superseded` with a reason/replacement. The lead can merge
+these maintenance changes later; they are not prerequisites for fixing the current defect.
 
 ## Installation and device pitfalls
 
-Treat installation as its own setup phase, separate from the app journey. Record command
-start, completion/exit status (or pending/timeout), the current installer screen, any manual
-action, the final install result, and a launch of the intended package/build. The absence of
-a terminal error or the presence of an older installed app is not proof of successful deploy.
+Treat installation as setup, separate from app assertions. Record command start/result
+(or pending/timeout), any observed installer prompt/manual action, final install result, and
+launch of the intended package/build. An older installed app or absence of terminal error is
+not proof that the requested artifact was deployed.
 
-For example, some devices may show an on-device “同意并安装” or similar confirmation after
-an `adb install` attempt. This is a diagnostic possibility, not a universal brand rule or
-an observed fact about the current device. When installation waits or appears blocked:
+Some devices may show “同意并安装” or a similar confirmation after `adb install`. This is a
+diagnostic possibility, not a universal brand rule or an observed fact about this device.
+When installation waits or appears blocked:
 
-- Inspect the current installer screen before issuing another install command. Capture the
-  actual prompt text, package/file being installed and current control location; do not loop
-  on installs or blindly tap coordinates remembered from another phone.
-- Complete an ordinary confirmation for the requested app when it is within the existing
-  authorization and available interaction tools. Record whether the agent or user performed
-  it and what was observed afterwards. If a physical action, unlock, credential or policy
-  decision is required, identify that exact blocker and request only the missing human action.
-- Await/inspect the original install attempt's result with a bounded wait; if it timed out,
-  check device/package state before one justified retry. A retry is a separately recorded
-  setup attempt. Confirm the installed package/version and the intended artifact's build
-  identity where observable, then verify its start screen before beginning app assertions.
-- Do not bypass installation security, disable protection, uninstall an existing app or clear
-  its data merely to make deployment green. Diagnose the observed signature/version conflict,
-  storage failure, connection/trust state or policy restriction and record the recovery tried.
-  If recovery needs authority or information not already supplied, leave setup blocked and
-  app steps `not-run`; the gate is `escalate`, not an app failure or a pass.
+- Inspect the current installer screen before issuing another install. Record the actual
+  prompt, package/file and current control; do not loop installs or blindly reuse coordinates.
+- Complete an ordinary confirmation for the requested app within existing authorization and
+  available tools, recording agent/user action and the result. If physical action, unlock,
+  credentials or a policy decision is required, request only that missing human action.
+- Inspect the original attempt with a bounded wait. After timeout check device/package state
+  before one justified retry, recorded separately. Confirm package/version and observable
+  artifact build identity, then its start screen before app assertions.
+- Do not bypass security, disable protection, uninstall an app or clear data just to make
+  deployment green. Diagnose the observed conflict, storage, trust or policy restriction.
+  If necessary authority/information is missing, setup is blocked and app steps `not-run`;
+  a dispatched gate is `escalate`, not an app failure or pass.
 
-Every pitfall has a stable ID within its device profile, a precise scope (model/OS/ROM/tool
-version/install route), symptom and evidence, attempted fixes including failures, confirmed
-resolution or unresolved blocker, human-action requirement, and first/last observed run/date.
-Separate `observed`, `hypothesis` and `resolved`; never promote a suspected fix without a
-successful check. Revalidate after a ROM/tool/route change. Merge another occurrence into the
-same pitfall with new run links; preserve conflicting evidence and narrow its applicability.
-An app defect belongs in the run with a failing case, not as a device workaround.
+Record a novel pitfall compactly in the run first. A reusable profile entry has a stable ID,
+precise model/OS/ROM/tool/install-route scope, symptom/evidence, attempted fixes including
+failures, confirmed resolution or blocker, human-action requirement and first/last run/date.
+Separate `observed`, `hypothesis` and `resolved`; revalidate after scope changes. Merge repeat
+occurrences with new run links, preserve conflicting evidence and narrow applicability. An
+app defect belongs to the failing assertion, not a device workaround. Updating a profile can
+be proposed by the recorder without blocking repair.
 
-For transient or timing-dependent paths that static evidence cannot explain, follow
-`references/device-video-debugging.md`: record a bounded attempt and inspect source-timestamped
-frames on the host. Record capture/export/tool pitfalls in the scoped profile, reusable capture
-triggers in the case, and the original recording, key frames and action/log correlation in
-the run. Multiple takes reuse the case ID and preserve each attempt's result.
+For transient paths unresolved by static evidence, follow `references/device-video-debugging.md`.
+Use the existing attempt budget, retain each failed take, and add only the capture metadata and
+analysis needed for that question. Reusable capture triggers and export pitfalls can be added
+to cases/profiles later.
 
-## Record contract and starter templates
+## Minimal record contract
 
-Fill facts from observation; use `unknown`, `not-run` or `not-observed` rather than inventing
-values. The following placeholders are templates, not executed tests. Keep short records for
-short runs; list only relevant environment conditions, without dropping identity or outcomes.
-
-### Index: `README.md`
-
-```markdown
-# Device testing memory
-schema_version: 1
-Project/app identities: <project, modules, application IDs>
-
-| Case ID | Revision | Goal / coverage | Conditions | State | Latest run |
-| --- | --- | --- | --- | --- | --- |
-| <case-id linked to cases/...> | <revision> | <assertion> | <conditions> | active/stale/superseded | <run link and result> |
-
-Device profiles: <links to devices/...>
-Open pitfalls and blocked runs: <links and next action>
-```
-
-### Device: `devices/<profile-id>.md`
-
-```markdown
-# <profile-id>
-schema_version: 1
-Kind: <physical/emulator>; transport: <adb/hdc>; model: <model or unknown>
-OS/API/ROM build: <observed versions>; toolchain: <observed versions>
-Relevant conditions: <locale, display/font scale, IME, permissions, network as needed>
-Last verified: <timestamp with timezone and run link>
-
-## <pitfall-id>: <symptom>
-State: <observed/hypothesis/resolved>; applicability: <exact scope>
-First observed: <run/date>; last observed: <run/date>
-Evidence: <run evidence links, command result and actual prompt text>
-Attempted recovery: <ordered actions and results, including failed attempts>
-Resolution: <confirmed steps and postcondition, or unresolved blocker>
-Human action: <none, completed action by user, or required action>
-Recheck when: <OS/ROM/tool/install route change or conflicting observations>
-```
-
-### Case: `cases/<case-id>.md`
-
-```markdown
-# <case-id>: <goal>
-schema_version: 1
-Revision: <integer>; state: <active/stale/superseded>
-App/module/application ID: <identity>
-Coverage: <user-visible assertion and risk>
-Extends: <none, or case-id@revision with coverage delta and reason>
-Applicable profiles/conditions: <requirements, not an old pass>
-Prerequisites: <install route, start screen, permissions, fixture/account alias, data/network state>
-Setup/reset: <how to reach start state without assuming a preceding run succeeded>
-Steps: <ordered user actions, semantic targets, test inputs and expected visible states>
-Journey: <complete XML using the selected transport playbook's journey contract>
-Cleanup: <what to restore; avoid destructive resets without existing authorization>
-Temporal evidence when needed: <recording trigger, action interval and required frame/log checks; otherwise none>
-History: <created/changed reason and run links; replacement if superseded>
-```
-
-### Execution: `runs/<run-id>/report.md`
+Use `unknown`, `not-run` or `not-observed` rather than inventing facts. The following template
+may be split between `snapshot.md` and incremental `observations.md`; a compact record can be
+only a few lines. Fields irrelevant to the run may be `none` or omitted with a clear reason.
 
 ```markdown
 # <run-id>
 schema_version: 1
-Started/finished: <timestamps with timezone>
-State: <in-progress/completed/blocked/interrupted>
+Started/updated: <timestamps with timezone>
+Execution state: <in-progress/completed/blocked/interrupted>
+Record depth: <compact/reusable/deep>
+Archive state: <minimal-saved/not-needed/pending/completed/failed/skipped>
 App/module/application ID: <identity>
-Source snapshot: <commit plus local diff identity, or non-Git snapshot identity>
-Artifact: <variant, version/build ID, path and digest; unknowns explicit>
-Device: <profile link plus actual OS/ROM/tool versions and relevant conditions for THIS run>
-Selection: <reused/extended/new/skipped cases and reasons>
-Case revisions and journey snapshots: <case-id@revision and local journeys/... links>
-Setup/install: <commands, exits/pending/timeout, UI prompts, agent/user actions and final result>
-
-| Case / step | Action / semantic target | Actual command or manual action | Expected | Observed | Result | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| <case-id / step> | <action> | <executed action> | <assertion> | <observation> | pass/fail/blocked/not-run | <relative evidence link> |
-
-Result by case: <pass/fail/blocked/not-run; first failure and remaining unexecuted steps>
+Source/artifact: <commit + local diff identity or other snapshot; variant, build ID, path, digest; unknowns explicit>
+Target: <device alias, observed OS/ROM/tool versions and relevant conditions; profile link if any>
+Plan: <entry/start state, ordered actions and required assertions; journey snapshot if dispatched>
+Diagnostic budget/stop: <hypothesis, attempts consumed, expected evidence or next stopping condition>
+Setup: <actual deploy result, relevant prompt/actions; blocked app steps are not-run>
+Outcomes: <assertion → expected/observed → pass/fail/blocked/not-run → essential evidence path>
 Failure classification: <app_defect/harness or environment defect/environment_unavailable/flaky behavior/none>
-Gate result if dispatched: <status and outcome_id from accepted data; otherwise inline>
-Pitfall observations: <profile/pitfall IDs; new observations, hypotheses, attempted fixes and next action>
-Evidence manifest: <retained relative paths; inspected vs captured-only; unavailable/deleted items explicit>
-Video analysis when needed: <capture provenance/settings/digest, source PTS interval, frame index/inspected frames, action/log clock alignment and uncertainty, findings vs hypotheses, baseline/fix run links; otherwise not-needed/unavailable with reason>
-Cleanup: <device/settings/data/artifact disposition; outstanding restoration>
-Limitations/next coverage: <what remains unverified and useful extensions>
+Accepted gate: <status and outcome_id if dispatched; otherwise inline>
+Evidence: <retained paths/digests where needed; inspected vs captured-only; missing items explicit>
+Limitations/cleanup: <unverified scope, first failure, remaining steps, outstanding restoration>
+Enrichment: <none, or graph/node and assigned run root; pending/failed work and recoverable input paths>
 ```
 
-Record exploration too: keep its actual action trail and observations in the run, labeled
-exploratory. The lead may turn it into a new case afterwards; it is not retroactive acceptance
-of a journey that was never declared. A failed assertion remains failed even if later actions
-succeed. When interruption or a setup blocker ends execution, preserve the partial run and
-mark the remaining steps `not-run`. An unfinished `in-progress` record found next session
-must be reconciled as interrupted or resumed with explicit new evidence, never assumed passed.
+Record exploratory actions that materially affect the diagnosis, with actual actions and
+observations labeled exploratory; do not transcribe every redundant read. They are not
+retroactive acceptance of an undeclared journey. A failed assertion stays failed even if a
+later action succeeds. Preserve partial runs at interruption/setup failure and mark remaining
+steps `not-run`. Reconcile an old `in-progress` record as interrupted or resumed with explicit
+new evidence; never infer a pass.
 
-## Closeout and handoff
+Reusable artifacts need only these additional facts:
 
-For a dispatched run, include a `device_test_record` object in the gate data per
-`references/schemas.md`: `run_id`, `case_refs` (IDs and revisions), `device_profile`,
-`report_path`, `journey_paths`, `evidence_paths`, and `pitfall_observations` (empty if none).
-Paths point to the verifier's external temporary files until the lead archives them. If
-capture or file output is unavailable, use null/empty paths and include the actual partial
-observations and missing evidence in `verification`; do not fabricate a report path. The lead
-creates a blocked/interrupted durable record even when no worker report can be retrieved.
+- **Index:** project/app identities, case ID/revision/coverage/state/latest run, relevant profile
+  links and open blockers. An absent index does not make a compact run invalid.
+- **Profile:** environment scope and the pitfall contract above; no generic inventory or new
+  profile required merely because a device was used.
+- **Case:** app identity, goal/risk, revision/state, prerequisites/start/reset, semantic actions
+  and assertions, full executable journey when used, applicable conditions, cleanup, `extends`
+  delta if any, temporal capture trigger when necessary, and change/run history.
+- **Enriched report:** source/artifact/target snapshot, declared vs executed steps, actual
+  command/manual actions, expected vs observed results and evidence, setup/failure classification,
+  limitations/cleanup, and only the video analysis needed for the selected depth.
 
-After each run, the lead:
+## Closeout and optional background enrichment
 
-1. Reads accepted evidence (or its own inline execution), preserving failures and missing steps.
-2. Copies the necessary captures, logs, exact journey snapshots and report into the run
-   directory before temporary evidence disappears. Rewrite links to relative durable paths
-   and verify that every retained link resolves. Missing evidence remains explicitly missing.
-3. Updates profiles/pitfalls and case revisions, then the index. Serialize these merges and
-   reread existing files first; never replace another agent's records with an older snapshot.
-4. Reports the run path, reused/new case IDs, observed pitfalls and verification limitations
-   to the user. A memory write failure is a handoff limitation, not a reason to rerun the app
-   or erase a verified result; surface it explicitly and retain retrievable evidence.
+For a dispatched verification, return `device_test_record` per `references/schemas.md`:
+`run_id`, `case_refs` (IDs/revisions; empty for an ephemeral journey), `device_profile` (null if
+none), `report_path`, `journey_paths`, `evidence_paths`, and `pitfall_observations` (empty if
+none). Paths initially point to the verifier's external files. If output/capture is unavailable,
+use null/empty paths and retain actual partial observations and missing evidence in
+`verification`; never fabricate a report. The lead preserves a minimal blocked/interrupted
+record even when the worker report cannot be retrieved.
 
-Retain only relevant, sanitized evidence. Use profile/account aliases, strip raw device
-serials, personal data, secrets and graph credentials from commands/logs, and inspect screenshots
-and recordings for sensitive content before retaining them. Technical model and OS/ROM versions belong in
-project-local profiles when needed to reproduce a pitfall, never as personal host facts in
-the shipped role. Do not archive unrelated logs or installed-app inventories. If bulky evidence
-is pruned later, keep the textual result and mark its links unavailable; never leave a broken
-link presented as accessible evidence. Promote a frequently repeated case into the project's
-existing automated test suite when warranted, and link that test from the case.
+The foreground obligation is small and cannot be delegated away:
+
+1. Read the evidence needed for acceptance, retaining failures and missing steps as such.
+2. Save source/artifact/target identity, actual outcomes and essential sanitized raw evidence
+   into the unique run directory before temporary inputs disappear. Do not use per-command
+   worker scratch as a handoff location: it may be removed after the command. Verify these
+   essential durable paths. This can be one compact checkpoint; polished tables, case maintenance, full frame
+   catalogs and narrative reports are optional.
+3. If optional enrichment adds value, seal the snapshot/observations and raw evidence, set
+   archive state `pending`, and declare a separate graph for `jetpack-compose--journey-recorder`
+   with exact inputs, a disjoint exclusive archive directory and expected report/proposals. Submit it asynchronously
+   before continuing the next repair/build step; do not put it on the device/code verification
+   dependency path or wait for it merely to resume fixing the defect. Do not dispatch for a
+   trivial record whose enrichment has no reuse value. If asynchronous execution is unavailable,
+   leave enrichment pending/skipped explicitly; do not claim a worker is running.
+4. The recorder produces only derived run-local documentation and shared-memory proposals.
+   Incorporate its result opportunistically; the lead rereads and serially merges useful
+   index/profile/case changes. Optional archive failure or a still-running graph is an explicit
+   archival limitation, not app failure and not a reason to rerun checks or delay delivery.
+   Keep recovery inputs and graph identity; report a background job as running only while the
+   runtime supports that status; do not promise survival after the host exits. Do not claim
+   completion before accepting its output.
+5. Report observed verification, material limitations and the compact record path. Mention
+   pending/failed enrichment when applicable; do not present optional bookkeeping as unfinished
+   product repair. If the user explicitly requires complete archival for handoff, that output
+   becomes required and must be checked before claiming that handoff complete.
+
+Preserve failures and required evidence; never discard them to simplify a report. Retain only
+relevant, sanitized material: use device/account aliases, strip raw serials, personal data,
+secrets and graph credentials from logs/commands, and inspect captures for sensitive content
+before retention. Do not archive unrelated logs or app inventories. Relevant model/OS facts
+belong in local records, not personal host facts in the shipped role. If bulky optional
+intermediates are pruned later, keep the result and mark unavailable links; never present a
+broken link as accessible evidence. Promote frequently repeated cases into the existing
+automated suite when warranted, linking the test from the case.

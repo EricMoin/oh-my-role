@@ -3,18 +3,44 @@
 Load this playbook when a difficult UI path depends on transient or ordered behavior:
 flicker, an unexpected intermediate screen, navigation/Back races, overlapping gestures,
 IME/focus transitions, animation or lifecycle timing, or an intermittent defect that static
-screenshots and layout dumps cannot explain. Proactively record a bounded reproduction and
-inspect extracted frames; do not keep repeating taps and guessing from final screenshots.
-Ordinary stable assertions need no video. State why recording is useful or unavailable.
+screenshots and layout dumps cannot explain. Start with a short targeted capture and decisive
+frames when that answers the acceptance question; inspect it rather than repeating taps and
+guessing from final screenshots. Stable assertions need no video. Animation alone does not
+require full-frame analysis. State the question that recording must answer and stop when
+sufficient evidence answers it.
 
 Use `references/device-test-memory.md` for case lookup, run identity and archival. The
 independent verifier still executes only the declared journey; recording adds observation,
 not permission to change the actions, insert delays or explore other paths. If the problem
 appears during a failed run, preserve that failure. The lead plans a separate diagnostic
 attempt using the same case and start state, within the existing bounded reproduction budget.
-Diagnosis and flakiness measurement share at most three attempts in one verification round;
-switching tools or take names does not reset that budget. Exploration is labeled separately.
-Never rerun until a recording happens to look successful.
+Exploration, reproduction, diagnosis and flakiness measurement share at most three attempts
+per hypothesis in a verification round. A retry must test a concrete new question or changed
+condition; stop earlier if it adds no evidence. Switching tools, take names, case labels or
+calling an attempt “exploratory” does not reset that budget. Renaming the same hypothesis
+does not create a new budget. A repaired artifact permits a
+new validation round with an explicit expected change. Never rerun until a recording looks
+successful, or collect additional takes merely to improve optional documentation.
+
+## Select evidence depth and stop condition
+
+- **No video:** stable assertions with sufficient layout, state, screenshot or automated-test
+  evidence. Recording is unnecessary merely to populate a run archive.
+- **Targeted (default for temporal behavior):** capture the short triggering action and aftermath,
+  view the clip and inspect decisive frames showing the relevant before/during/after states.
+  Retain the original, actual action/result, build/target identity and inspected frame timestamps
+  or known timing limits. For example, visible continuous closing motion may establish an
+  ordinary animation requirement without a complete frame catalog or cross-clock analysis.
+- **Detailed timing:** escalate only for a suspected one-frame defect, disputed event order,
+  an unexplained race, or another acceptance claim that targeted evidence cannot establish.
+  Inspect every recorded frame in the bounded relevant interval and align logs/actions only
+  as needed to answer that timing question. State the unresolved question before escalating.
+
+Do not use targeted sampling to assert that no transient defect ever occurred, or that exact
+ordering/duration is established. If those are required assertions, use detailed timing or
+state the coverage limit. Once the relevant assertion is established on the current artifact
+and no material uncertainty remains, stop capture/analysis and continue repair or delivery.
+Full catalogs, contact sheets and optional narrative enrichment are not acceptance gates.
 
 ## Capture the sequence
 
@@ -24,16 +50,19 @@ Never rerun until a recording happens to look successful.
    Tool detection and using an installed tool need no extra confirmation. If a required tool
    is absent, use an existing equivalent or report the exact prerequisite; installation
    follows the existing host authorization rules, never a silent package-manager change.
-2. Select the same device, app build, profile, case revision and initial state as the run.
+2. Select the same device, app build and initial state as the run, with existing profile/case
+   revisions when applicable; recording does not require creating those reusable records.
    Choose a short duration and storage budget covering the lead-in, triggering action and
    aftermath. Create a unique capture name for each attempt; never overwrite a failed take.
    Record dimensions, orientation, relevant display/IME settings and capture options.
 3. Start recording before the triggering action, verify that the recorder started, then
    execute the declared path. Record host timestamps around each command/manual action,
-   the action's result, and relevant device log/trace timestamps. Host dispatch time is not
-   the exact moment the device handled input. Use an identifiable visible event and log
-   event to align the timelines; record their offset and uncertainty, not assumed equality
-   between wall clock, device clock, trace clock and video presentation timestamps (PTS).
+   and the action's result. Host dispatch time is not the exact moment the device handled input.
+   If the assertion depends on cross-source ordering, retain relevant device logs/traces and
+   align them with an identifiable visible event; record offset and uncertainty. Do not assume
+   equality between wall clock, device clock, trace clock and video presentation timestamps
+   (PTS). Otherwise record that cross-clock alignment was not needed; do not perform it just
+   to fill a report field.
 4. Stop only the recorder process/session this run started, using its documented graceful
    stop or finite duration. Keep input execution available while it records; a blocking
    recording call must not prevent the journey from running. Wait for file finalization,
@@ -79,20 +108,26 @@ capture/export within existing authorization. A supplied video may be analyzed, 
 its provenance and unknown build/timing facts explicitly. If no video route is available,
 use timestamped screenshots/layouts plus logs and state the lost temporal coverage.
 
-## Inspect on the host: overview, then every frame near the anomaly
+## Inspect on the host: decisive frames, detailed timing when needed
 
-Open the recording in a supported viewer when available. Always visually inspect extracted
-frames before citing them; creating PNGs or finding log lines alone is not visual analysis.
-Locate the relevant interval with a sparse overview, then decode **every recorded frame**
-in that interval plus enough before/after context to bracket the transition. Inspect normal
-state, first visible divergence and subsequent recovery/failure. An overview can miss a
-one-frame defect, so widen the interval if needed; do not use sparse sampling as a pass check.
+Open the recording in a supported viewer when available. Always visually inspect frames before
+citing them; creating PNGs or finding log lines alone is not visual analysis. For targeted
+evidence, inspect the relevant transition and its decisive before/during/after frames and
+record what they establish. A viewer with frame stepping/timestamps can suffice; generating
+every derivative below is optional.
 
-These FFmpeg examples operate on a short existing capture. Resolve `VIDEO` and `OUT` to
+For detailed timing, locate the relevant interval with a sparse overview, then decode **every
+recorded frame** in that interval plus enough before/after context to bracket the transition.
+Inspect normal state, first visible divergence and subsequent recovery/failure. An overview
+can miss a one-frame defect, so widen the interval if the unresolved question requires it.
+Sparse sampling cannot establish absence of a one-frame defect.
+
+The following FFmpeg examples support detailed timing on a short existing capture; use only
+the commands needed for the evidence question. Resolve `VIDEO` and `OUT` to
 absolute paths; `OUT` must be a fresh analysis directory in the verifier's external evidence
 directory (or the lead's run directory). The placeholders are not literal commands to run.
-Record versions, exact commands, exits and stderr. Equivalent installed tools are acceptable
-if they preserve frame timing and provide the same evidence.
+For commands actually used, record relevant versions, commands, exits and failures. Equivalent
+installed tools are acceptable if they preserve the timing needed for the assertion.
 
 ```sh
 VIDEO='/absolute/path/to/original.mp4'
@@ -141,10 +176,10 @@ use video alone to claim a performance regression: corroborate with trace/profil
 
 ## Locate, explain, verify
 
-- Tie the first visible divergence to the case step, actual input and expected state. Cite
-  the original video, source PTS interval and decisive frames, including the last observed
-  normal frame. This brackets the visible symptom; it does not identify an exact internal
-  transition time when capture frames are missing.
+- Tie the visible result or divergence to the declared step, actual input and expected state.
+  Cite the original and inspected decisive frames with timestamps or explicit timing limits.
+  For detailed timing include the source PTS interval and last observed normal frame. This
+  brackets the symptom; missing capture frames prevent an exact internal transition time.
 - Correlate with the relevant logs, layout/state observations and code path. Separate direct
   observations, hypotheses and supported root cause. Mere temporal proximity is not causal
   proof. Only the lead repairs code; the verifier returns scoped findings and evidence.
@@ -158,22 +193,28 @@ use video alone to claim a performance regression: corroborate with trace/profil
   apply the existing pass/revise/escalate evidence rules. Missing optional video does not block
   an assertion independently established by sufficient evidence from another method.
 
-## Durable evidence and handoff
+## Durable evidence and optional enrichment
 
-Store under `runs/<run-id>/evidence/video/<take-id>/` through the lead-owned archival flow:
-original recording, media/frame metadata, action timeline and clock alignment, exact
-extraction commands/logs, frame index and decisive PNGs, plus optional labeled previews.
-The verifier produces these in its external temporary directory and returns their paths
-in `device_test_record.evidence_paths`; no worker writes the project's memory directory.
+Before temporary files disappear, the lead saves essential sanitized evidence under
+`runs/<run-id>/evidence/video/<take-id>/`: the original recording/digest, build/target and
+capture provenance, triggering action/result, inspected decisive frames/timestamps and any
+coverage limits. For detailed timing also retain the required frame index, extraction metadata,
+clock alignment and correlation findings. Keep observations separate from hypotheses. Do not
+create those additional artifacts for a targeted check that does not need them.
 
-Add a video-analysis section to the run report: trigger/diagnostic question, case/step,
-capture tool/settings and take provenance, original digest, coverage/truncation, source
-PTS interval, clock offset/uncertainty, inspected frame links, log/code correlation,
-observations vs hypotheses, and baseline/fix run links. When a case repeatedly needs this
-technique, record the capture trigger and evidence requirements in that case. Record device
-recording/export quirks and successful recovery in its scoped profile, avoiding new case
-definitions for every take. Check recordings and frames for sensitive content before archival;
-include any audio track in that check when the chosen recorder captures one;
+The device-verifier produces evidence in its external temporary directory and returns its
+paths through `device_test_record.evidence_paths`; it never writes project memory. After
+saving and sealing the minimal evidence and acceptance observations, the lead may dispatch
+`jetpack-compose--journey-recorder` under `references/background-recording.md` to enrich the
+assigned run's report and propose reusable capture triggers/profile pitfalls. The recorder
+cannot operate a device or decide verification, and optional enrichment must not delay the
+next repair or delivery. Leave archive state pending/failed explicitly if it is unfinished;
+never reinterpret that as an app failure or rerun a successful check for archival purposes.
+
+Case/profile/index maintenance and labeled previews are optional unless explicitly required
+by the handoff. Repeated takes reuse the case; only recurring useful capture triggers or new
+observed recording/export pitfalls warrant shared-memory proposals. Check recordings and frames
+for sensitive content before archival; include audio when the chosen recorder captures it;
 retain a restricted original only when appropriate, and label any redaction as a derivative.
 If the original cannot be retained, record that limitation rather than silently substituting
 a GIF or edited clip. Keep decisive evidence when pruning bulky intermediate frames.

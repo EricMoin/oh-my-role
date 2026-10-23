@@ -6,7 +6,10 @@ description: Design and verify consequential Compose changes using invariants, o
 
 Read `PROMPT.md` for the design and encapsulation policy and `references/schemas.md`
 for the concise design brief. Read `references/graph-protocol.md` only when independent
-specialist review is useful. Work directly on ordinary bounded changes.
+specialist review or background recording is useful. Work directly on ordinary bounded
+changes: target, expected behavior, failure mechanism, smallest change and completion checks
+are sufficient. Ask early if multiple targets require different fixes; clear intent needs
+no approval ritual. Apply PROMPT.md's focused/runtime/extended tiers, not every gate.
 
 Before implementation, trace the affected behavior across its callers and owners. State
 invariants and lifecycle responsibilities. Compare alternatives only where the decision
@@ -31,8 +34,9 @@ pattern prescriptions.
 When acceptance depends on runtime behavior only a running app can show — navigation and
 back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or process
 recreation, notifications or deep links, crash/ANR, or user-visible jank — verify the
-built app on a real device or an emulator over the target's own transport and declare a
-`jetpack-compose--device-verifier` node for independent on-device evidence. An `.apk` on a
+built app on a real device or an emulator over the target's own transport. Declare a
+`jetpack-compose--device-verifier` node only when independent on-device evidence is needed;
+an inline targeted runtime check is sufficient otherwise. An `.apk` on a
 HarmonyOS NEXT or OpenHarmony target with no `adb` is transferred over `hdc` and installed on
 the device by opening the local APK in 文件管理 and choosing 直接安装. 卓易通安装 opens the 卓易通
 application store instead of installing that file; never use it for this step or run `hdc install <apk>`. Read
@@ -42,20 +46,26 @@ are always available and cover bootstrap on a machine with no CLI or `hdc` — a
 `android-cli` skill when the harness provides it, as optional enrichment. That gate is read-only
 like the other review gates: it settles `pass` when the declared journey and its acceptance
 criteria hold with cited evidence, `revise` for a concrete app defect reproduced on the device,
-and `escalate` when the CLI, device, emulator or SDK is unavailable or the artifact cannot be
+and `escalate` when a required tool capability, device, emulator or SDK is unavailable or the artifact cannot be
 built or installed. An unavailable prerequisite is a recorded limitation, never a pass.
 
-Stop repeating a failed approach when evidence does not improve. Diagnose the design or
-environment and state the remaining blocker rather than manufacturing gate passes.
+Each investigation must resolve a named uncertainty that affects the fix or acceptance.
+Use at most three attempts per unchanged hypothesis/build/setup, including exploration and
+capture retries; stop sooner when evidence does not improve. Reassess after roughly ten
+minutes without diagnosis or implementation progress. A new tool, graph or take name is not
+a fresh budget. Begin the repair once adequate evidence supports it. After two unsuccessful
+substantive repairs of the same mechanism, diagnose the blocker rather than adding mechanisms.
 
-For every attempted device run, follow `references/device-test-memory.md`: retrieve the
-project's `.rolebox/jetpack-compose/device-testing/` history before selecting cases, reuse
-case IDs and extend only missing coverage, and persist installation pitfalls and actual
-step results afterwards. The lead alone archives durable evidence and merges the index;
-workers return temporary evidence with `device_test_record`. A prior pass cannot verify a
-new build, and a blocked installation must retain its observations and not-run app steps.
+Use `references/device-test-memory.md` for compact run facts, relevant history and essential
+evidence. Reusable cases, full journey versioning and profiles are conditional, not a
+completion tax for every fix. Noncritical enrichment can be dispatched to a separate
+`jetpack-compose--journey-recorder` graph per `references/background-recording.md`; continue
+repair immediately on a new source snapshot while it organizes sealed evidence. The lead
+alone merges shared records. Old passes do not verify new builds; failed/blocked outcomes
+and not-run steps survive both inline and delegated recording.
 
-For hard transient/timing-dependent UI paths, load `references/device-video-debugging.md`
-and proactively capture a bounded reproduction when static evidence is insufficient.
-Inspect source-timestamped frames on the host, correlate logs/actions and recheck the same
-case after repair. Recording and extraction alone are not inspection or proof of root cause.
+For transient UI paths, use a short capture and decisive frames first. Full-frame analysis
+and clock correlation are needed only for unresolved timing/order claims; use
+`references/device-video-debugging.md`. Missing required temporal evidence remains unverified.
+Finish when selected checks establish the requested behavior on final code and no blocking
+defect remains. Optional archival can remain pending and never justifies another app run.

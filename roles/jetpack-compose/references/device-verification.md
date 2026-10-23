@@ -3,14 +3,48 @@
 This reference is the working playbook for the `device-verifier` specialist and for the lead
 who prepares a device-verification dispatch. It covers what to verify on a device, how to
 drive the app with the `android` CLI and `adb`, how to evaluate a journey, and how the
-result maps to the gate report and the settled outcome. It is portable and self-sufficient:
-it names source roles instead of local paths, and section 2 bootstraps a machine that has no
-CLI yet.
+result maps to the gate report and the settled outcome. It names source roles instead of local
+paths; section 2 covers capability detection and optional bootstrap.
 
-Before planning or executing a journey, read `references/device-test-memory.md` and the
-project's existing device profiles and cases. It defines reusable paths, installation
-pitfalls and per-run records under `.rolebox/jetpack-compose/device-testing/`. The verifier
-returns external temporary evidence; the lead archives it there after every attempted run.
+Use `references/device-test-memory.md` for record levels and reusable device knowledge.
+Consult only the matching case or known device pitfall when it can shorten this run; a
+simple inline check needs no full history search or new case. Keep a compact account of the
+build/device, acceptance checks, outcomes and decisive evidence. A dispatched verifier
+returns external temporary evidence; the lead retains the minimum record and essential
+evidence before handing noncritical archival to
+`jetpack-compose--journey-recorder` in a background graph, then continues repairs immediately.
+Neither record formatting nor case/index maintenance blocks a fix or acceptance. Keep source
+evidence available until the handoff is complete.
+
+### Scope, verification level and stopping
+
+Before expensive reproduction, identify the affected screen/component, trigger, expected
+result and acceptance checks from the request and code. Resolve ambiguity that would change
+the repair or its acceptance early; do not inspect every plausible target first or request
+ceremonial confirmation when the target is already clear.
+
+- **Focused/local (default):** use the narrowest existing checks that cover a local change.
+  Do not start a device or invent a journey merely to satisfy this playbook.
+- **Targeted runtime:** when acceptance depends on a running app, verify only the changed
+  behavior and directly affected boundary. Inline verification can use a short action and
+  outcome list; no XML, case revision or full archive is required.
+- **Deep/formal:** use a frozen journey, broader device coverage or detailed temporal
+  investigation only for a concrete high risk, an unresolved evidence gap or a user/project
+  requirement. A dispatched verifier receives a complete frozen journey even for a short
+  path; dispatch does not itself justify broader coverage.
+
+State the question each diagnostic attempt answers. At most three attempts may test the
+same hypothesis on the same implementation, counting initial reproduction, setup retries
+and flaky checks across tools and graph/run names. Stop sooner when no new evidence is
+produced: use the evidence to repair, change to a materially different hypothesis, or report
+the specific limitation. After roughly ten minutes without an effective code change or new
+decisive evidence, reassess scope and strategy; this is not a timeout for a justified build.
+Changing a tool, renaming a journey or opening a graph does not reset the budget.
+
+Finish when the final implementation has passed the selected acceptance checks, required
+project checks are satisfied and no blocking defect remains. Additional checks require a
+new concrete risk. An unavailable required check remains explicitly unverified; never
+convert a limitation, an earlier build's result or a failed attempt into a pass.
 
 This playbook is the **Android transport**: the `android` CLI and `adb`, for an `.apk` on an
 Android device or an emulator. A HarmonyOS NEXT or OpenHarmony target is a different
@@ -42,7 +76,7 @@ Precedence when sources disagree: the installed binary's `--help` output wins, t
 `android-cli` skill when it is present, then this file. Re-check a flag before using it, and never
 assume a subcommand exists because a document names it.
 
-Read the CLI version at run time — `android --version` and `android info` — and record what those
+When using the CLI, read its version at run time — `android --version` and `android info` — and record what those
 commands printed in the gate report. Never quote a version from this file: it deliberately carries
 none, and a version read somewhere else is not evidence about the machine under verification. A
 first invocation on a fresh machine may unpack its payload and print a terms-of-service and metrics
@@ -61,16 +95,18 @@ serial.
 
 ## 2. Bootstrap: the CLI, its skills and a runnable device
 
-The CLI itself is the hard prerequisite for every later section of this file; the harness
-`android-cli` agent skill is optional enrichment and the SDK only matters once the CLI exists.
-Bootstrap in this order, and treat installation, environment initialization, skill management,
+Choose tooling by the capabilities needed for the selected acceptance checks. Prefer an
+already installed `android` CLI; an existing `adb`, project Gradle wrapper and supported
+capture/input tools are sufficient when they can cover those checks. A missing CLI alone
+is not a blocker and does not justify installing one. Bootstrap only a genuinely missing
+capability, and treat installation, environment initialization, skill management,
 SDK package downloads, AVD creation and authentication as host-changing actions that need the
 user's authorization (step 7). Detection (step 1) is read-only and needs no authorization.
 
 1. **Detection.** Confirm the tool is on `PATH` with `command -v android`, equivalently a first
-   `android --version`. If the command is not found, the CLI is absent and every later section of
-   this file is inapplicable until bootstrap succeeds. The same check tells the verifier whether
-   the machine is already bootstrapped.
+   `android --version`. If absent, inspect the available `adb` and project toolchain and
+   record the supported alternative. CLI-specific commands below apply only when installed;
+   the acceptance, evidence and stopping rules apply to either route.
 2. **Install the CLI.** Use the platform command published by the `android-cli` skill, reproduced
    here so this reference stays self-sufficient:
    - Linux x86_64: `curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/install.sh | bash`
@@ -97,10 +133,11 @@ user's authorization (step 7). Detection (step 1) is read-only and needs no auth
    `android device remote` after `android auth login`.
 7. **Authority.** Installing the CLI, downloading SDK packages, accepting licenses, creating AVDs
    and authenticating are host-changing actions. The device-verifier MUST NOT perform them
-   silently: it settles `escalate` and reports `needs-user-input`, naming the exact missing
-   prerequisite and the exact bootstrap command. The lead asks the user for authorization, runs the
-   documented bootstrap only with that authorization or hands the commands to the user, and then
-   re-dispatches verification.
+   silently: when needed capabilities are unavailable, it settles `escalate` and reports
+   `needs-user-input`, naming the actual missing capability and proposed bootstrap command.
+   The lead checks existing task authorization before asking; do not request permission
+   again for setup already authorized. Without that authority, obtain it or hand the command
+   to the user, then re-dispatch verification.
 8. **Refusal or impossibility.** When bootstrap cannot happen — offline host, license not accepted,
    locked-down machine, no authorization — record the limitation, mark the runtime behavior
    unverified, fall back to compiling the project's instrumented tests where the project supports
@@ -150,19 +187,19 @@ include non-interactive and hidden elements) and compare them yourself.
    that has no `adb` but answers `hdc list targets` is neither this branch nor the legacy
    adb-compatible build: it is an `hdc` target whose local APK is opened in 文件管理 and installed
    with 直接安装, never the 卓易通安装 store button (section 5 of `references/harmonyos-device-verification.md`).
-1. Confirm the CLI is present: `command -v android`, equivalently a first
-   `android --version`. When it is absent, stop here — section 2 is the bootstrap path
-   and none of the steps below applies until it succeeds; settle `escalate` per
-   section 2 step 7.
-2. Run `android info`; record the SDK path, tool version and connected devices.
-3. Run `android emulator list --long`; record available AVDs.
+1. Detect available capabilities per section 2. Use installed `android` commands or the
+   existing `adb`/project toolchain route; escalate only for a capability needed by acceptance.
+2. With the CLI, run `android info`; otherwise read `adb version`, `adb devices` and the
+   project's SDK configuration. Record the relevant tool version and selected target.
+3. Query AVDs only if no suitable device is connected or the dispatch requires one.
+   With the CLI use `android emulator list --long`; do not inventory unrelated environments.
 4. Choose the target:
    - a device already connected, or the AVD named in the dispatch;
    - start it with `android emulator start <avd>` (add `--headless` when no window is
      needed) and wait for the command to return — it returns only when the emulator is
      ready;
-   - for physical hardware use `android device remote` and authenticate with
-     `android auth login` first.
+   - use a connected physical device directly; for a required remote reservation use
+     `android device remote` with the existing authorization for authentication/reservation.
 5. Never start a second device while one is connected, and never replace the agreed device
    profile on your own initiative; a profile change is a lead/user decision.
 
@@ -170,15 +207,17 @@ include non-interactive and hidden elements) and compare them yourself.
 
 ## 5. Build and launch
 
-1. Locate the artifact: `android describe --project_dir <dir>` prints the metadata paths that
-   name build targets and their output artifacts. Do not guess `app/build/outputs/...`.
+1. Locate the artifact from the project's build configuration/output metadata or, when
+   available, `android describe --project_dir <dir>`. Do not guess `app/build/outputs/...`.
 2. Build the debug variant with the project's own wrapper, for example
    `./gradlew :app:assembleDebug` (use the real module path). Record the exact command and
    exit code.
 3. Install and launch:
    - `android install --apks=<apk> --device=<serial>`, then launch the entry activity; or
    - `android run --activity=<component> --device=<serial>`, which builds, deploys and
-     launches in one step.
+     launches in one step; or
+   - the already available `adb`/project deployment route, with the selected serial,
+     artifact and actual command recorded. Check the local tool's help for supported flags.
 4. Confirm the start screen from the app itself — a layout dump or a screenshot — not from
    the absence of an error. A build or install failure is an environment finding
    (`escalate`), never an app defect and never a pass.
@@ -215,11 +254,12 @@ to collect, and say which method produced it.
 into center coordinates, so the two can be combined in one shell command. Always examine the
 PNG visually before drawing a conclusion from it — both the plain and the annotated form.
 
-For flicker, navigation races, gestures or IME/animation transitions that static images do
-not explain, proactively record the reproduction and inspect frames on the host per
-`references/device-video-debugging.md`. Preserve source timestamps, correlate actions/logs,
-and retain the original recording and decisive frames through lead-owned archival. GIFs
-are optional previews; missing essential temporal evidence is never a pass.
+For temporal behavior that static images cannot establish, start with a short recording and
+visually inspected key frames per `references/device-video-debugging.md`. Inspect every
+frame in a bounded interval and correlate action/log clocks only for a suspected single-frame
+defect, disputed ordering or unresolved timing cause. Retain the original recording and
+decisive evidence needed for the claim; a contact sheet or GIF is optional. Missing essential
+temporal evidence is never a pass.
 
 ### 6.3 Input primitives
 
@@ -253,7 +293,9 @@ take another full dump".
 
 ## 7. Journey contract
 
-A journey is the XML test of app behavior that device verification executes. The format, from
+A formal journey is the frozen XML test of app behavior that a dispatched verifier executes.
+This is not required for an inline targeted runtime check, whose declared actions and
+observed outcomes may be a compact list. The formal format, from
 `references/journeys.md`:
 
 ```xml
@@ -312,9 +354,12 @@ Practical consequences:
 
 ## 8. Journey report format
 
-The verifier's report is a markdown file written outside the repository. The lead retains
-it and the referenced evidence in the run directory per `references/device-test-memory.md`;
-an inline run by the lead may write there directly. Per action, record the verdict
+The formal verifier's report is a markdown file written outside the repository. The lead
+retains the minimum record and decisive evidence, and may delegate optional enrichment to the background
+`jetpack-compose--journey-recorder` per `references/device-test-memory.md`; it does not wait
+for that work before fixing an observed defect. An inline check uses a compact record and
+needs no separate per-action report unless evidence complexity warrants one. In a formal
+report, per action record the verdict
 marker (✅ passed, ❌ failed), the commands actually executed, the screenshot link
 when a visual check was needed, and a comment with the observed state:
 
@@ -346,9 +391,10 @@ include case IDs/revisions and a `device_test_record` in the submitted data for 
 
 ## 9. From acceptance criteria to journey steps
 
-The lead first searches existing cases and recent runs per `references/device-test-memory.md`,
-reuses or extends the matching case, and freezes the complete journey before dispatch;
-the verifier executes it and must not rewrite it. A criterion becomes one or more
+For a formal dispatch, the lead checks an applicable existing case when available and
+freezes the complete journey before dispatch; a reusable case is optional, and a short
+task-specific journey is sufficient. The verifier executes it and must not rewrite it.
+Inline targeted checks may state these actions directly without XML. A criterion becomes one or more
 `<action>` elements in execution order:
 
 | Criterion shape | Journey steps | Evidence the step must produce |
@@ -369,7 +415,8 @@ it.
 
 ## 10. Physical devices
 
-Physical verification uses the same commands with a physical serial:
+Use an already connected physical device with its selected serial. When the acceptance
+requires a remote reservation, the CLI route is:
 
 1. `android auth login` (add `--no-use-keyring` in a non-interactive environment).
 2. `android device remote models` to choose a model, `android device remote create
@@ -389,9 +436,9 @@ unavailable reservation is `environment_unavailable` and settles `escalate`.
 
 If no device can be started and no reservation can be made:
 
-1. Still compile the instrumented tests with the project's wrapper (for example
-   `./gradlew :app:assembleDebugAndroidTest`) so the test code is at least known to build,
-   and record the exit code.
+1. If affected instrumented tests already exist and their build is useful, compile them with
+   the project's wrapper (for example `./gradlew :app:assembleDebugAndroidTest`) and record
+   the exit code. Do not add tests or run unrelated builds merely because runtime is blocked.
 2. Record the limitation explicitly in the gate report `verification` field: which device was
    attempted, what failed, and which acceptance criteria therefore remain unverified.
 3. Settle `escalate` with report status `needs-user-input`. A compilation result is not
@@ -410,9 +457,11 @@ If no device can be started and no reservation can be made:
 | `environment_unavailable` | No device, no bootable AVD, no SDK, no reservation | `needs-user-input` | `escalate` |
 | Flaky behavior | The same step passes and fails across bounded repetitions; observed rate recorded | `fail` | `revise` with the recorded rate |
 
-Bounded repetition means at most three attempts in one verification round, with the failure
-rate (failures over attempts) and the exact command recorded. Repeating a check never
-converts a failure into a pass, and running until green is forbidden.
+Bounded repetition means at most three attempts for the same hypothesis and implementation,
+including diagnosis, setup recovery and flaky checks across tools, rounds and graph names.
+Record the failure rate (failures over attempts) and exact command. Stop earlier when no new
+evidence is produced. A changed implementation permits targeted re-verification; repeating
+an unchanged check never erases its earlier failure, and running until green is forbidden.
 
 ---
 
@@ -421,9 +470,11 @@ converts a failure into a pass, and running until green is forbidden.
 - No production, test, manifest, resource or Gradle edits, and no fixes for defects it finds.
 - No fabricated passes: an unverified step is reported as unverified, never assumed.
 - The verifier writes no review artifacts inside the repository; screenshots, dumps, reports
-  and copied APKs live in its temporary directory outside it until the lead archives relevant
-  evidence per `references/device-test-memory.md`. This does not permit worker memory writes.
-- No devices left running, and no reservations left open.
+  and copied APKs live in its temporary directory outside it until the lead retains the
+  relevant evidence per `references/device-test-memory.md`; optional recorder outputs are separate.
+  This does not permit verifier memory writes.
+- Stop only devices and release only reservations created by this verification; leave
+  pre-existing devices available to the user and lead.
 - No journey rewrites, no interpretation of a malformed action, no retry-until-green.
 - No verdict outside the submitted `schema_version: 1` gate report, and no attempt credential
   in any output.

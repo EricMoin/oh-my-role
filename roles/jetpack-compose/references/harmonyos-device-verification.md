@@ -6,10 +6,14 @@ on-device tooling, journey evaluation, failure classification and the mapping to
 Android playbook settles. It names relative tool locations and values read at run time, never a local path, a device serial,
 a bundle name or a version; the Android side is `references/device-verification.md`.
 
-Read `references/device-test-memory.md` before planning or executing a journey. Search the
-project's existing cases and scoped device pitfalls, reuse or extend the applicable path,
-and return actual steps and install observations for lead-owned archival under
-`.rolebox/jetpack-compose/device-testing/`, including setup failures and not-run steps.
+Apply the target-confirmation, verification-level and stopping rules in
+`references/device-verification.md` to this transport too. Resolve material ambiguity before
+heavy reproduction. Inline targeted checks need only the actual actions, outcomes and
+decisive evidence; reserve a frozen journey and full report for formal dispatch. Consult an
+applicable case or scoped device pitfall when it helps this run, without a mandatory history
+sweep. Use `references/device-test-memory.md` for record levels, including setup failures and
+not-run checks. The lead can hand noncritical records to `jetpack-compose--journey-recorder`
+in a background graph and continue fixing immediately; archival is not a prerequisite to repair.
 
 ---
 
@@ -302,17 +306,20 @@ Interaction rules:
 - Wait and dump again before declaring an element absent, and say which method produced the evidence when a web
   view, a video or an animation makes a surface dump incompletely.
 
-For a difficult transient/timing-dependent path, load `references/device-video-debugging.md`
-and proactively obtain a bounded recording through an actually supported device/system
-capability, then inspect timestamped frames on the host. `uitest uiRecord` records operation
+For temporal behavior that static evidence cannot establish, load
+`references/device-video-debugging.md` and obtain a short recording through an actually
+supported device/system capability. Inspect key frames first; full-frame inspection and
+clock correlation are for a suspected single-frame defect, disputed ordering or unresolved
+timing cause. `uitest uiRecord` records operation
 events, not screen video; do not invent a generic `hdc` recording command. If capture/export
 is unavailable within this verifier's boundaries, report the missing temporal coverage and
-have the lead arrange a supported route. Original recordings, decisive frames and action/log
-alignment follow the same temporary-evidence and lead-owned archival contract.
+have the lead arrange a supported route. Retain original recordings and decisive evidence;
+optional presentation and indexing may use the background archival contract.
 
 ## 7. Journey evaluation
 
-A journey is the declared list of actions device verification executes. The contract is the one
+A formal journey is the frozen list of actions a dispatched verifier executes. An inline
+targeted check may use a short action/outcome list without XML or a new case. The contract is the one
 `references/device-verification.md` defines, and it binds this transport identically: evaluate the actions in declared
 order, each independently and exactly as written; a `check` or `verify` action inspects the current screen without
 interacting, so no scroll, tap or navigation may satisfy it, and it fails when the expected state is not currently visible;
@@ -333,9 +340,11 @@ budget with the observed rate retained, never a retry-until-green or a rewrite o
 
 The verifier writes the per-step report as markdown outside the repository, one section per
 action, marked `[evaluated]` or `[failed]`; label remaining steps `not-run` with a reason.
-Include case IDs/revisions and `device_test_record` per `references/schemas.md`. The lead
-archives the report and needed evidence per `references/device-test-memory.md`; inline
-lead verification may write directly to that run directory.
+Include supplied case IDs/revisions and `device_test_record` per `references/schemas.md`.
+The lead retains the minimum record and needed evidence, and may delegate optional enrichment to the background
+`jetpack-compose--journey-recorder` per `references/device-test-memory.md`; repairs do not
+wait for that work. Inline checks need only a compact record unless their complexity or a
+project/user requirement warrants this formal report.
 
 ```markdown
 # Journey: <name of the journey>
@@ -426,8 +435,14 @@ checkserver`, `hdc shell uitest --version`); a version read elsewhere is not evi
 | `environment_unavailable` | No device, no `hdc`, no SDK, no debug signature, an unbuildable or uninstallable artifact, missing user intent | `needs-user-input` | `escalate` |
 | Flaky behavior | The same step passes and fails across bounded repetitions; the observed rate is recorded | `fail` | `revise` with the recorded rate |
 
-Bounded repetition means at most three attempts per verification round with the failure rate and the command recorded. A
-compilation or install result is not runtime verification: never report a pass for a journey that did not run.
+Bounded repetition means at most three attempts for the same hypothesis and implementation,
+including reproduction, setup recovery and flaky checks across tools, rounds and graph names.
+Stop earlier when no new evidence is produced; change strategy or report the limitation.
+After roughly ten minutes without an effective change or new decisive evidence, reassess
+scope and strategy. A changed implementation permits targeted re-verification. A compilation
+or install result is not runtime verification: never report a pass for a journey that did not run.
+Once final-code acceptance and required project checks pass with no blocking defect, finish;
+new checks need a concrete risk, and record formatting does not extend the verification gate.
 
 ## 11. Boundaries
 
@@ -441,8 +456,9 @@ compilation or install result is not runtime verification: never report a pass f
 - State the disposition of the installed artifact: when the dispatch asks for a restored device, remove the
   artifact the run installed with `hdc uninstall` and say so, and never leave a device or emulator in a changed state
   without reporting it.
-- The verifier keeps every pulled artifact — screenshots, layout dumps, journey reports, logs — in its temporary
-  directory outside the repository for the lead to archive per `references/device-test-memory.md`. Use a profile alias
+- The verifier keeps decisive artifacts — screenshots, layout dumps, journey reports, logs — in its temporary
+  directory outside the repository for the lead to retain
+  per `references/device-test-memory.md`. Keep sources available until that handoff completes. Use a profile alias
   instead of a raw serial; retain technical model/OS/ROM/tool versions only when relevant to reproduction. Never retain
   unrelated installed-bundle names, personal identifiers or credentials, or copy local device facts into shipped role files.
 - What this reference does not cover: ArkTS and ArkUI production engineering, HarmonyOS product architecture,

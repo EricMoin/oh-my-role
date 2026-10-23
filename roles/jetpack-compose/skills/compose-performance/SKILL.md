@@ -24,6 +24,26 @@ Use video to locate visible symptoms, then corroborate with traces/profiling for
 claims. Capture overhead, dropped recording frames and preview GIF timing can distort the
 observation; recorded FPS is not display FPS. Preserve baseline and repaired runs separately.
 
+Confirm the affected component, trigger and expected result before collecting expensive
+evidence. A local animation correctness fix needs targeted runtime verification, not an
+automatic benchmark program. Start temporal checks with a short recording and inspected
+key frames; full-frame analysis and clock correlation need a suspected single-frame defect,
+disputed ordering or an unresolved timing cause. Deep profiling needs a concrete performance
+question whose answer changes the repair or acceptance.
+
+Each diagnostic attempt must answer a named hypothesis. At most three attempts share that
+hypothesis and implementation across tools, run names and graphs; stop earlier when no new
+evidence appears. After roughly ten minutes without an effective change or decisive evidence,
+reassess scope and strategy. Once the final code satisfies selected acceptance and required
+project checks with no blocking defect, stop; additional measurements need a concrete risk.
+Never substitute compilation or a captured-but-uninspected recording for runtime evidence.
+
+Keep compact measurement outcomes and decisive evidence by default. Use the record levels
+in `references/device-test-memory.md`; after the lead retains the minimum record, optional
+report enrichment and case/index proposals may run in a background
+`jetpack-compose--journey-recorder` graph while the lead continues repairs.
+Actual measurements, defect reporting and acceptance decisions stay on the critical path.
+
 → stability root cause found? Hand off to the **Stability and Strong Skipping** section in the `compose-runtime-state` skill for the fix workflow.
 
 ## Common Fixes
@@ -124,7 +144,9 @@ Pass stable primitives or stable UI models. Keep callbacks simple and measure be
 
 ## Baseline Profiles and Macrobenchmarks
 
-For production apps, performance work should include repeatable benchmarks:
+For a measured performance regression on an important production flow, use repeatable
+benchmarks when the project supports them or the risk justifies setup. A local behavior fix
+does not automatically require adding a benchmark module or Baseline Profile:
 
 - Generate the Baseline Profile with `./gradlew :baselineprofile:generateBaselineProfile` (a `generateBaselineProfile` task exists per target module, e.g. `:app:generateBaselineProfile`). The generator writes the profile to `baseline-prof.txt` in the profiled module's `src/<variant>/generated/baselineProfiles/` directory.
 - Run Macrobenchmark startup, scroll, navigation, and animation-sensitive scenarios with `./gradlew :macrobenchmark:connectedBenchmarkAndroidTest` (or `:macrobenchmark:connectedCheck` for the whole module).
