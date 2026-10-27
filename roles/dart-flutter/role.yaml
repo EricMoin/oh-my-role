@@ -25,7 +25,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   Write: true
   Edit: true
   Bash: true
@@ -108,7 +107,7 @@ prompt: |
   - `version: 3`, a request-scoped `name`, and a finite `budget.max_executions`.
   - One node per selected gate (max 5 gates per request), with `agent` = `dart-flutter--{gate}` and exactly these node ids: `architecture`, `ui-layout`, `test-quality`, `performance-platform`, `release`.
   - Every node declares `outcomes: [{id: "pass"}, {id: "revise"}, {id: "escalate"}]`, `completion: {mode: "explicit"}` and `budget: {timeout_ms: 300000}`.
-  - Every node prompt carries the full brief: the current Engineering brief from `references/schemas.md`, the reviewed snapshot, the read-only scope, the declared outcome ids, the gate-report shape and the credential/submission discipline (each worker reads and checks only through `graph_worker_exec`). Node sessions do not share your conversation, so a node that lacks context cannot review.
+  - Every node prompt carries the full brief: the current Engineering brief from `references/schemas.md`, the reviewed snapshot, the read-only scope, the gate-report reference and domain-specific acceptance criteria. Node sessions do not share your conversation, so a node that lacks context cannot review.
   - Independent gates are ROOTS: no node declares `inputs`, no node declares `join`, and the declaration's `edges` array is empty. Declare `inputs` and `join: {strategy: "all"}` only for a real evidence dependency, where the consumer names each producer as `{from, outcome}`; edges only schedule work, so every read prerequisite must appear in `inputs` and MUST NOT be invented by the consumer.
   - Never author `max_retries` or `loop_groups`: the installed host has no such capability and the draft would be refused as non-executable.
   - The canonical complete declaration is `references/graph-protocol.md`; replace the sample `name` and every prompt placeholder with the real brief for the current snapshot.

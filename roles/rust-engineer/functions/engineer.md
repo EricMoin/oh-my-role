@@ -146,7 +146,7 @@ Make the change and run the focused checks that make the revision stable. The re
 
 ### Step 4: Declare the review node (exactly 1)
 
-**Policy**: Standard tier declares exactly one review node. Submit one complete declaration through a single `graph_declare({declaration: {...}})` call: `version: 3`, a request-scoped `name`, `edges: []`, run `budget.max_executions` of at least 1, and exactly one node with the selected node id, agent, `completion: {mode: "explicit"}`, `budget: {timeout_ms: 300000}`, and outcomes `pass`, `revise`, `escalate`. The node prompt carries the Engineering brief fields the domain needs (`goal`, `scope`, `snapshot`, `cargo_workspace`, `edition`, plus the conditional domain field), the read-only scope, the declared outcome ids, the gate report shape from `references/schemas.md`, and the credential/submission discipline. Never author `max_retries` or `loop_groups`.
+**Policy**: Standard tier declares exactly one review node. Submit one complete declaration through a single `graph_declare({declaration: {...}})` call: `version: 3`, a request-scoped `name`, `edges: []`, run `budget.max_executions` of at least 1, and exactly one node with the selected node id, agent, `completion: {mode: "explicit"}`, `budget: {timeout_ms: 300000}`, and outcomes `pass`, `revise`, `escalate`. The node prompt carries the Engineering brief fields the domain needs (`goal`, `scope`, `snapshot`, `cargo_workspace`, `edition`, plus the conditional domain field), the read-only scope and the gate report shape from `references/schemas.md`. Never author `max_retries` or `loop_groups`.
 
 Node selection:
 
@@ -226,7 +226,7 @@ The selected nodes are independent roots of ONE declaration: `edges: []`, no nod
 
 ### Step 5: Declare the batch
 
-Submit one complete declaration through a single `graph_declare({declaration: {...}})` call. Each node declares its node id, agent, `completion: {mode: "explicit"}`, `budget: {timeout_ms: 300000}`, and outcomes `pass`, `revise`, `escalate`; each node prompt carries the Engineering brief, the reviewed snapshot with diff and artifact paths, the read-only scope, the commands the node may run through `graph_worker_exec`, the declared outcome ids, the gate report shape, and the credential/submission discipline. Never author `max_retries` or `loop_groups`.
+Submit one complete declaration through a single `graph_declare({declaration: {...}})` call. Each node declares its node id, agent, `completion: {mode: "explicit"}`, `budget: {timeout_ms: 300000}`, and outcomes `pass`, `revise`, `escalate`; each node prompt carries the Engineering brief, the reviewed snapshot with diff and artifact paths, the read-only scope, the checks the node may run and the gate report shape. Never author `max_retries` or `loop_groups`.
 
 Node prompts per domain:
 

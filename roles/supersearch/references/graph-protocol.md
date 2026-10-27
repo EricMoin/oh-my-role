@@ -22,10 +22,6 @@ declare, control, query or audit a graph, and never create a child graph.
 | `graph_status` | Reads committed state: phase, nodes, attempts, controls, approvals, budget, unsettled effects | The declaring SuperSearch session |
 | `graph_audit` | Diagnoses storage and recovery blockers without mutating state | The declaring SuperSearch session |
 
-Workers use `graph_worker_exec` for reading, searching, fetching, scratch-script
-writing and checks in their workspace sandbox. Tool availability does not enlarge
-the role's or the node's scope.
-
 ## Declaration shape
 
 `graph_declare` receives the whole object: `version: 3`, `name` (the graph id), a
@@ -78,7 +74,7 @@ cannot produce evidence settles honestly instead of fabricating one.
     {
       "id": "supersearch--local-scout",
       "agent": "supersearch--local-scout",
-      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the local channel scope, the read-only workspace rules, the .rolebox/scratch/ exception, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the local channel scope, the read-only workspace rules, the .rolebox/scratch/ exception, the schema_version 1 scout-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 300000 },
       "outcomes": [
@@ -91,7 +87,7 @@ cannot produce evidence settles honestly instead of fabricating one.
     {
       "id": "supersearch--web-scout",
       "agent": "supersearch--web-scout",
-      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 300000 },
       "outcomes": [
@@ -104,7 +100,7 @@ cannot produce evidence settles honestly instead of fabricating one.
     {
       "id": "supersearch--source-scout",
       "agent": "supersearch--source-scout",
-      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the source channel scope (GitHub, repositories, issues, releases, package metadata, official docs), the read-only workspace rules, the .rolebox/scratch/ exception for API pagination scripts, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the accepted input attempts to consume, the source channel scope (GitHub, repositories, issues, releases, package metadata, official docs), the read-only workspace rules, the .rolebox/scratch/ exception for API pagination scripts, figure-candidate extraction, the schema_version 1 scout-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 300000 },
       "outcomes": [
@@ -117,7 +113,7 @@ cannot produce evidence settles honestly instead of fabricating one.
     {
       "id": "supersearch--evidence-auditor",
       "agent": "supersearch--evidence-auditor",
-      "prompt": "Template placeholder - replace with the real node brief: the objective, the three accepted evidence_ready results to consume and their attempt bindings, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape, and the exact outcome ids this node may submit (audit_ready, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: the objective, the three accepted evidence_ready results to consume and their attempt bindings, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 420000 },
       "outcomes": [
@@ -168,7 +164,7 @@ vocabulary and the same declared exits.
     {
       "id": "supersearch--web-scout",
       "agent": "supersearch--web-scout",
-      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape, and the exact outcome ids this node may submit (evidence_ready, no_evidence, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: objective, freshness and acceptance criteria, the web channel scope, the anti-crawl engine order, the read-only workspace rules, the .rolebox/scratch/ exception, figure-candidate extraction, the schema_version 1 scout-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 300000 },
       "outcomes": [
@@ -181,7 +177,7 @@ vocabulary and the same declared exits.
     {
       "id": "supersearch--evidence-auditor",
       "agent": "supersearch--evidence-auditor",
-      "prompt": "Template placeholder - replace with the real node brief: the objective, the accepted evidence_ready result to consume and its attempt binding, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape, and the exact outcome ids this node may submit (audit_ready, blocked, failed). Settle the node with graph_submit_outcome using only the attempt credential this dispatch carries; an accepted decision (verdict committed or replayed with no refusals) is the only thing that settles it.",
+      "prompt": "Template placeholder - replace with the real node brief: the objective, the accepted evidence_ready result to consume and its attempt binding, the audit-only scope, the html report path when a report was requested, the schema_version 1 audit-report shape.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 420000 },
       "outcomes": [
@@ -216,10 +212,6 @@ vocabulary and the same declared exits.
 | Evidence auditor | `audit_ready` | The requested audit completed and the audit report is recorded |
 | Evidence auditor | `blocked`, `failed` | The audit could not run or could not be completed; never a passing audit |
 
-Write the report before submitting it. Nothing else settles a v3 node: a prose
-answer, a chat message or a signal fence is not an outcome, and only the
-declaration names the outcome ids a node may submit.
-
 ## Node brief
 
 Supply enough context to search without the declaring conversation:
@@ -228,20 +220,11 @@ Supply enough context to search without the declaring conversation:
 - The exact channel scope and expected evidence type; read-only workspace rules
   and the `.rolebox/scratch/` / `.rolebox/reports/` write exceptions.
 - The report shape from [schemas.md](schemas.md) and the figure-candidate rule.
-- The exact outcome ids the node may submit, the credential discipline and the
-  acceptance rule: only an accepted decision with no refusals settles the node.
-- That workspace commands use `graph_worker_exec`.
 - For the auditor: the accepted `evidence_ready` inputs, their attempt bindings,
   the html report path when one was produced, and the audit scope.
 
 ## Acceptance semantics
 
-- The only settling decision is `accepted` with verdict `committed` or `replayed`
-  and no refusals. A rejection or refusal writes nothing and leaves the attempt
-  open, so repair the payload or the missing evidence and resubmit.
-- An identical retry after an uncertain delivery is idempotent; a conflicting
-  submission cannot overwrite a settled attempt. Once accepted, stop work on that
-  attempt.
 - Routing follows accepted outcome ids, not payload keys: fields in submitted
   `data` are inert and the engine never inspects them.
 - A consumer is released only by the accepted results its declared `inputs` name.

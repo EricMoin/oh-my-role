@@ -18,8 +18,8 @@ The recorder organizes supplied facts; it does not perform or replace verificati
    no concurrent lead or worker writes there. Shared cases, profiles and README/index files
    remain lead-owned. The recorder writes proposed changes inside its own output directory.
 3. Supply exact readable inputs, the absolute output directory, desired optional outputs
-   and a finite budget. The worker uses `graph_worker_exec` for filesystem commands; direct
-   Write/Edit tools stay disabled. Do not grant production, device, build, install, Git,
+   and a finite budget. Direct Write/Edit tools stay disabled; scoped writes use the
+   authorized host command tool. Do not grant production, device, build, install, Git,
    network or cleanup work. Resolve actual paths before copying; never follow an output
    symlink outside the assigned directory or rewrite input evidence.
 4. This directory restriction is a role/node contract, not a per-node filesystem sandbox
@@ -42,7 +42,7 @@ declaration value passed to `graph_declare({declaration: ...})`.
     {
       "id": "journey-record",
       "agent": "jetpack-compose--journey-recorder",
-      "prompt": "Replace this placeholder with run_id, source_snapshot, artifact identity, exact sealed input paths, the retained minimal record, a unique disjoint absolute output directory and the optional outputs to organize. Read only these supplied inputs, preserving failures and not-run steps. Use graph_worker_exec for commands and write only inside the assigned output directory; this is a role scope contract, not a claim of per-node sandbox enforcement. Do not inspect live production code, execute tests, operate devices, recapture media or edit shared indexes/cases/profiles. Return proposals inside your output directory. Submit recorded when the requested organization is complete, or incomplete with actual partial paths and limitations when evidence or capabilities are missing, using graph_submit_outcome with your dispatch credential and the schema_version 1 Recording report from references/schemas.md. No product pass/revise verdict. Stop after accepted submission.",
+      "prompt": "Replace this placeholder with run_id, source_snapshot, artifact identity, exact sealed input paths, the retained minimal record, a unique disjoint absolute output directory and the optional outputs to organize. Read only these supplied inputs, preserving failures and not-run steps. Write only inside the assigned output directory; this is a role scope contract, not a claim of per-node sandbox enforcement. Do not inspect live production code, execute tests, operate devices, recapture media or edit shared indexes/cases/profiles. Return proposals inside your output directory. Submit recorded when the requested organization is complete, or incomplete with actual partial paths and limitations when evidence or capabilities are missing, using the schema_version 1 Recording report from references/schemas.md. No product pass/revise verdict.",
       "completion": { "mode": "explicit" },
       "budget": { "timeout_ms": 120000 },
       "outcomes": [{ "id": "recorded" }, { "id": "incomplete" }]

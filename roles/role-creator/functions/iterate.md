@@ -58,8 +58,8 @@ loop_groups: [
 ```
 
 Select a supported graph host first: OpenCode/Pi use native workspace tools;
-dsh uses `graph_worker_exec`; Codex cannot execute rolebox graphs. Omit node
-`tools` and `toolPresentation` for this workspace-only pipeline. Wrap these nodes,
+dsh uses authorized native tools and rolebox capabilities; Codex cannot execute
+rolebox graphs. Omit node `tools` and `toolPresentation` for this workspace-only pipeline. Wrap these nodes,
 edges and loop groups in one declaration with `version: 3`, a request-specific
 `name` and `budget: {max_executions: 8}`. Submit through `graph_declare` and end
 your turn after a confirmed start. A continuation beyond the traversal cap stops the run with

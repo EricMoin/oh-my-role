@@ -47,21 +47,11 @@ sounds read-only; inspect relevant build/lifecycle commands before running them.
 
 Report changed paths, contract decisions, actual check commands/results, baseline limits and
 any remaining issue. Keep commands/results available to the reviewer without dumping unrelated
-logs. State artifact paths if another node needs the build or reproduction. Write the report
-before submitting, then settle your own node:
+logs. State artifact paths if another node needs the build or reproduction.
 
-- Finish the edits and focused checks first, then submit the outcome id your dispatch names
-  through `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`, using only
-  the attempt credential your dispatch carried. Never print that credential and never fabricate
-  an outcome.
-- Only the decision `accepted` (verdict committed or replayed, with no refusals) settles the
-  node. A refusal or rejection writes nothing and leaves the attempt open, so repair the
-  payload or the missing evidence and resubmit.
-- Do not emit a routing verdict: the review node owns the revision route. Do not contradict
-  your own accepted outcome either: a `done` payload that lists blockers is ambiguous
-  downstream, and advisory limits belong in `limitations`.
-- Never declare, control or query graphs and never create child graphs. The declaring session
-  owns orchestration, and your node brief names the inputs you consume.
+The review node owns the revision route. Do not contradict your own outcome: a `done`
+payload that lists blockers is ambiguous downstream, and advisory limits belong in
+`limitations`.
 
 If assigned an external action, execute only the exact authorized operation, verify its
 artifact/target still matches the decision and report the actual result. Do not publish from an

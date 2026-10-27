@@ -103,7 +103,6 @@ uses `child_value ?? parent_value`; see [Inheritance Rules](#inheritance-rules))
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` (optional, dsh only) | `false` if present | `true` if present |
 | `Write` / `Edit` / `Bash` | per the role's own job | per the worker's job |
 
 ```yaml
@@ -134,7 +133,7 @@ tools:
 
 Inside a graph the binding boundary is the **node** grant recorded in the
 declaration, not this manifest map: a dispatched worker's graph face grants
-`graph_submit_outcome` (plus `graph_worker_exec` on the dsh platform). The four
+`graph_submit_outcome`. The four
 declarer tools refuse workers; additional worker discovery/code entries depend on
 the host presentation described in `../graph-protocol.md`. A node's `tools` list
 names extra **host** tools only. The five protocol tools and their request

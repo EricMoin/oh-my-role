@@ -46,8 +46,8 @@ If the user didn't pick a template in step 2, recommend one based on what you le
 
 ### Step 4: Generate
 
-Select the host before dispatch. OpenCode/Pi workers use native workspace
-tools; dsh workers use `graph_worker_exec`. Codex has no rolebox graph execution:
+Select the host before dispatch. OpenCode/Pi/dsh workers use authorized native
+workspace tools and rolebox capabilities. Codex has no rolebox graph execution:
 there, author a non-graph role using the host's own tools. For a supported graph
 host, omit node `tools` and `toolPresentation` for ordinary workspace work; add
 only verified registered host capabilities when integrations are required.
@@ -78,7 +78,7 @@ readable resource paths and the authoring report contract from
 
 Submit the whole object with `graph_declare({declaration: {...}})`. There is no incremental node/edge construction step and no separate run step. Inspect the returned start decision: `started` or `resumed` is real dispatch; `saved`, `blocked` and `refused` are not. After a confirmed start, end your turn and yield for the real completion notification.
 
-The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. It settles its own attempt by submitting its declared outcome through `graph_submit_outcome`. When the run reports completion, read its accepted result once via `graph_status(graph_id, scope: "all", format: "json", include_output: true, include_history: true)` before moving on.
+The Generator writes all role artifact files: role.yaml, PROMPT.md, skills, functions, subagents. Its authoring report names the files written. When the run reports completion, read its accepted result once via `graph_status(graph_id, scope: "all", format: "json", include_output: true, include_history: true)` before moving on.
 
 ### Step 5: Draft Eval Cases
 

@@ -12,8 +12,7 @@ graph-examples.json are topology templates; embed real contracts before dispatch
 ## Ownership and stages
 
 Only Emperor, the declaring session, orchestrates. Every dispatched agent is a
-worker, including Chancellor and Jinyiwei. Workers may submit their own outcome;
-they cannot declare/control graphs, query the global store or create child graphs.
+worker, including Chancellor and Jinyiwei.
 The subagent directory hierarchy is a catalog of agent IDs, not runtime authority.
 Emperor dispatches every planning, review, draft, reconciliation and execution
 stage directly. Jinyiwei executes unknown-domain work or returns a routing suggestion.
@@ -84,34 +83,13 @@ submission for all Emperor templates.
 
 ## Worker results
 
-Pi provides sandboxed native worker tools. dsh graph workers expose only
-graph_submit_outcome and graph_worker_exec; use the latter for reading, editing,
-checks and commands in the workspace sandbox. Planning/review/approval workers
-use read-only commands only. Implementation and Test workers run their assigned
-checks within scope. Tool availability does not enlarge role or task scope. If Context7 or other research
-tools are unavailable inside this boundary, use available local source/official
-evidence or report the missing evidence; never bypass the host execution guard.
-
-Workers read their own host handoff, declared outcomes and materialized inputs.
-Submit graph_submit_outcome({graph_id, node_id, outcome_id, credential, data}) using
-only that attempt's credential. Never print credentials in reports/fences or read
-host state to discover them. The host derives attempt, submission and compiled
-revision identities; workers do not supply those as tool arguments.
+Planning, review and approval workers keep repository content read-only.
+Implementation and Test workers run their assigned checks within scope.
 
 Business data follows schemas.md. Outcome vocabulary:
 - Strategy stages: strategy; independent review: pass or veto.
 - Execution: done, failed, blocked, clarification_required, approval_required.
 - Approval preparation: approval_required (a request, never permission).
-
-Only decision: accepted with verdict: committed or replayed and no refusals settles
-a submission. Rejection/refusal leaves no successful result and cannot release a
-consumer. Inspect diagnostics and repair the payload or missing evidence; do not
-remove a required gate. An identical retry after an uncertain delivery is idempotent;
-a conflicting submission cannot overwrite a settled attempt. Once accepted, stop
-work on that attempt. signal and result fences do not complete Graph v3 nodes.
-Optional result fences mirror data only for readability; accepted results are the
-transport authority. Local function evidence tracks the accepted tool response,
-not merely a call, signal or fence.
 
 These templates do not register business JSON schemas or trusted command validators.
 Structural acceptance does not establish that the reported work or checks succeeded.
@@ -136,27 +114,18 @@ Never confuse historical attempts with the current result. A complete graph may
 contain a failed/blocked business outcome and may still have unsettled effects.
 Inspect every required report; neither graph phase nor worker exit proves success.
 
-## Worker execution boundary
+## Execution requirements
 
-Where a task executes is part of the contract, not an implementation detail. On a
-command-only host a dispatched worker holds graph_submit_outcome and
-graph_worker_exec and nothing else: no native file tools, writes confined to the
-workspace and scratch locations, a disposable environment with no credentials and
-no host caches, and a macOS-only OS sandbox. A plan that requires a credential, a
-push, a publish, a deployment or any other host state cannot be completed inside
-that boundary, and must not be dispatched as though it could.
+State the runtime, required tools or service access, relevant paths and interactive
+steps in the task brief. Dispatch only work supported by the available host and
+role permissions. A denied operation is failed(category: boundary_denial), with
+the exact command, path and restriction. Recover in a context with the required
+capability or report the unresolved work; do not repeat the same denied operation
+without changed prerequisites.
 
-State execution requirements as requirements, not as assumed tool names: name the
-runtime, the credentials or service access a step needs, the paths outside the
-workspace it must touch, and anything interactive. A worker reports a denied
-operation as failed(category: boundary_denial) rather than a generic acceptance
-failure, and never by silently substituting another approach. On that outcome the
-coordinator does not retry the same work: it recovers the task in a context that
-holds the capability or reports the boundary limit to the user as unresolved work.
-
-Do not quote absolute platform paths for another machine's sandbox: describe the
-restriction (writes confined, no credentials, disposable home) and let the worker
-discover the exact spelling at execution time.
+The runtime delivers declared outcomes, data-schema references, attempt identity
+and upstream results. Keep that machinery out of node briefs and focus them on
+business criteria, authorization, scope and evidence.
 
 ## Authorization and approval
 

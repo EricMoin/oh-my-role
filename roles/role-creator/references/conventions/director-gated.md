@@ -8,9 +8,8 @@ reports, and routes the work by the outcomes each node declares.
 
 The protocol contract is `roles/role-creator/references/graph-protocol.md`.
 
-Select the target host first using `references/graph-protocol.md`. OpenCode and
-Pi workers use their native workspace tools; only dsh workers use
-`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+Select the target host first using `references/graph-protocol.md`. OpenCode, Pi
+and dsh workers use authorized native workspace tools and rolebox capabilities. Codex does not support rolebox graph execution, so choose a
 non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
 extra tools must use names actually registered by the selected host. File-tool
 denials do not enforce read-only behavior when a shell remains available.
@@ -93,7 +92,6 @@ not wired into graph resolution (no runtime effect), and it reads no
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` | Omit; dsh-only execution entry | Omit in portable manifests; supplied by dsh |
 | `Write` / `Edit` / `Bash` | per the director's job (a pure director denies `Write`/`Edit`) | per the gate's job (a read-only gate denies `Write`/`Edit`, keeps `Bash` for its checks) |
 
 ### Example role.yaml
@@ -161,8 +159,8 @@ The director contains no domain expertise. It knows *who* to ask, *when* and
 ## Subagent role.yaml
 
 Worker definitions are minimal (8-15 lines). They reference a gate skill and
-defer to it for their logic. A gate worker settles its declared outcomes with
-`graph_submit_outcome` using the credential its dispatch carried.
+defer to it for their domain logic. The runtime supplies the node's outcome/data
+contract and execution handoff; keep those mechanics out of the worker prompt.
 
 ```yaml
 name: Intake Strategist
@@ -171,8 +169,8 @@ mode: subagent
 prompt: |
   You frame architecture requests. Identify stakeholders, constraints,
   quality attributes and scope boundaries, and produce an Architecture State
-  document for downstream nodes. Settle your declared outcome with
-  graph_submit_outcome and never print the credential.
+  document for downstream nodes. Identify missing inputs and record the evidence
+  supporting each conclusion.
 tools:
   graph_declare: false
   graph_control: false
@@ -279,9 +277,8 @@ Gates remain **gate SKILL.md plus declared outcomes**:
 - A gate that cannot proceed settles `blocked`; a gate whose verification cannot
   run settles `failed`. Those outcomes carry no outbound edge and are declared
   exits.
-- Only an accepted decision with `verdict` `committed` or `replayed` and no
-  refusals settles a gate. A rejection leaves the attempt open; a refusal writes
-  nothing, so the worker repairs the payload and resubmits.
+- The director routes accepted outcomes; domain criteria determine which outcome
+  the work warrants. Runtime handoff and settlement instructions are injected.
 
 ### Example Declaration Shape
 

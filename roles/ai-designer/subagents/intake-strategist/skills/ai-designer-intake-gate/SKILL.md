@@ -7,7 +7,7 @@ description: Intake gate for AI Designer subagent. Frames the design problem, cl
 
 ## Runtime
 
-Follow the director-supplied `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated state, and submit the declared outcome your report maps to there, through `graph_submit_outcome` with only the attempt credential your dispatch carried. Use supplied reference paths, not project-relative guesses. Work only on this gate; do not delegate.
+Follow `gate-contract`: load the provided principle cards, consume current upstream state, carry forward the full updated Design State, and apply the gate-specific outcome mapping. Use supplied reference paths, not project-relative guesses. Work only on this gate.
 
 ## Mission
 

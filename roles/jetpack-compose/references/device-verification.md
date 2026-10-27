@@ -476,5 +476,3 @@ an unchanged check never erases its earlier failure, and running until green is 
 - Stop only devices and release only reservations created by this verification; leave
   pre-existing devices available to the user and lead.
 - No journey rewrites, no interpretation of a malformed action, no retry-until-green.
-- No verdict outside the submitted `schema_version: 1` gate report, and no attempt credential
-  in any output.

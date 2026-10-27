@@ -39,7 +39,7 @@ Confirm that the proposed public API surface is minimal, well-documented, semver
 
 ## Output Format
 
-Finish the report, then settle this node by submitting it as the `data` argument of `graph_submit_outcome` with the declared outcome id (`pass`, `revise` or `escalate`) and the attempt credential the dispatch carried. The report is the `schema_version: 1` payload contract of `references/schemas.md`; it is not a fenced chat message, and no prose verdict settles the node. This node stays unsettled until you submit through `graph_submit_outcome` and nothing else settles it; only an accepted decision (verdict `committed` or `replayed`, with no refusals) settles it, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. The report fields are:
+Use the `schema_version: 1` gate report from `references/schemas.md`. The report fields are:
 
 ```yaml
 schema_version: 1

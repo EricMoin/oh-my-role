@@ -60,12 +60,10 @@ on exactly that accepted outcome, while a consumer declares `inputs: [{from, out
 each upstream result it reads and `join: {strategy: "all"}` waits for every prerequisite.
 Repair targets declare the review result with `when: "triggered"` so the first run can start
 and subsequent repairs receive the exact accepted feedback that triggered them.
-Workers settle their own node with `graph_submit_outcome` using the attempt credential their
-dispatch carried; signal fences and prose completion do not settle a v3 node. Do not replace
-this with ad hoc dispatch, another agent framework, or direct parent execution. If graph tools
-are unavailable, report the environment mismatch and continue only useful read-only analysis;
-do not describe an undeclared or unstarted plan as completed work. Read the graph skill before
-authoring nodes; ordinary local edits need no human approval gate.
+Do not replace graph execution with ad hoc dispatch, another agent framework, or direct parent
+execution. If graph tools are unavailable, report the environment mismatch and continue only
+useful read-only analysis. Read the graph skill before authoring nodes; ordinary local edits
+need no human approval gate.
 
 After `graph_declare` confirms startup, yield the turn and let the engine schedule work.
 There is no separate run or dry-run tool: the declaration call parses, compiles, persists and

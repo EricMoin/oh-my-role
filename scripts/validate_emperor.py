@@ -56,8 +56,10 @@ def validate(root=ROOT):
                 errors.append(f'{agent}: {tool} must be owned only by Emperor')
         if tools.get('graph_submit_outcome') is not (agent != 'emperor'):
             errors.append(f'{agent}: graph_submit_outcome must be enabled only on workers')
-        if tools.get('graph_worker_exec') is not (agent != 'emperor'):
-            errors.append(f'{agent}: graph_worker_exec must be enabled only on workers')
+        permission = config.get('permission')
+        allow = permission.get('allow', []) if isinstance(permission, dict) else []
+        if 'graph_worker_exec' in tools or 'graph_worker_exec' in allow:
+            errors.append(f'{agent}: retired graph_worker_exec must not be configured')
         if agent == 'emperor':
             continue
         for name in config.get('functions', []):

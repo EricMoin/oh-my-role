@@ -4,7 +4,7 @@ description: Execute an Emperor subtask with explicit scope, research, verificat
 ---
 # Execution contract
 
-Read the entire subtask and references/graph-protocol.md before executing. Confirm
+Read the entire subtask and the business report contract in schemas.md. Confirm
 plan_revision, dependencies, write_scope, authorized_scope and verification checks.
 Read repository instructions first. Modify only the assigned scope; report missing
 prerequisites or cross-domain work instead of silently expanding it.
@@ -44,33 +44,12 @@ a continuation for remaining work. Never submit done after a non-success outcome
 
 Return the Execution Report from schemas.md. Complete work submits done; unfinished
 work submits failed with the partial report nested inside it. Missing prerequisites
-and actual user choices use blocked and clarification_required. Follow the worker
-submission contract in graph-protocol.md: your own handoff, credential, declared
-outcome_id and complete data, then verify the accepted receipt. Optional fences mirror
-data only. Workers cannot declare/control/query graphs or route to child workers.
+and actual user choices use blocked and clarification_required.
 
-## Execution boundary
+## Capability failures
 
-The host decides which tools a dispatched worker actually holds, and that answer
-differs by platform: one host presents native file and command tools inside an OS
-sandbox, another presents only graph_submit_outcome and graph_worker_exec. This
-role's tool flags are the permission the role asks for, not a promise about what
-the platform presents; the manifest can set Write, Edit and Bash explicitly, and a
-graph worker on the command-only host still reaches the filesystem solely through
-graph_worker_exec.
-
-Discover the boundary before you depend on it:
-
-- Do not assume an absolute-path capability. A command that needs a credential,
-  a host cache or host state fails on construction in a disposable environment,
-  and a path outside the writable set answers `Operation not permitted`.
-- `Operation not permitted` is a boundary denial, not a task failure. Do not retry
-  the identical command and do not conclude the task is impossible. Route to an
-  allowed location or report it as a boundary_denial failure naming the exact path,
-  the command and the restriction.
-- Keep an operation that cannot succeed inside the worker boundary out of the
-  worker's completion criterion: a push, a publish, a deployment, an interactive
-  flow or a platform-specific step has to be reported to the coordinator instead.
-
-Scope discipline is unchanged: write only the assigned paths, and edit through
-whichever tool the platform presents.
+Use only the assigned write_scope and authorized_scope. When a required operation
+is denied by the host or an essential tool is unavailable, report the exact command,
+path and restriction as failed(category: boundary_denial). Do not repeat the same
+operation without a change in prerequisites; preserve completed work so Emperor
+can arrange the remaining work in a context with the required capability.

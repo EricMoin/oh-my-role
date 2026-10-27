@@ -89,11 +89,10 @@ Graph-orchestrated and director-gated roles run coordination on the rolebox Grap
 | `graph_control(command, ...)` | Run/attempt lifecycle: `failure`, `timeout`, `cancel`, `budget-stop`, `retry`, `approval-request`, `approve`, `reject` |
 | `graph_status({...})` | Read the shared read model once: phase, runs, nodes, attempts, accepted results, loops, approvals, controls, budget, unsettled effects |
 | `graph_audit({...})` | Read-only store inventory for storage/recovery blockers; mutates nothing |
-| `graph_worker_exec(command)` | dsh-only worker execution; OpenCode/Pi workers use native tools |
 
-**Declarer/worker split:** a declaring role holds `graph_declare`, `graph_control`, `graph_status` and `graph_audit` true and `graph_submit_outcome` false; a worker holds the inverse. Omit the dsh-only `graph_worker_exec` marker in portable manifests. The `tools:` block in `role.yaml` is the machine-checkable marker of the split.
+**Declarer/worker split:** a declaring role holds `graph_declare`, `graph_control`, `graph_status` and `graph_audit` true and `graph_submit_outcome` false; a worker holds the inverse. The `tools:` block in `role.yaml` is the machine-checkable marker of the split.
 
-**Declared outcomes:** every node declares its `outcomes` and `completion: {mode: "explicit"}`. Only an accepted submission settles a node: verdict `committed` or `replayed` with no refusals. A refusal writes nothing and leaves the attempt open; a result fence or a control signal never settles a v3 node.
+**Declared outcomes:** every node declares its `outcomes`, optional data contract and `completion: {mode: "explicit"}`. The runtime injects that contract and the attempt handoff. Node prompts and gate skills carry domain responsibilities, outcome semantics, evidence requirements and acceptance criteria; do not copy credential, settlement, JSON fallback or graph-access instructions into them.
 
 **Outcome-bound edges:** every edge is `{from, to, outcome}` and binds one outcome its source node declares. There is no implicit "any outcome" edge and no predicate field.
 

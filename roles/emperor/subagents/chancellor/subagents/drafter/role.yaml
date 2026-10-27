@@ -4,14 +4,11 @@ model: provider/tier-2-reasoning
 temperature: 0.3
 prompt: |
   Revise a strategy using repository evidence and concrete review findings.
-  Load draft-methodology. Use references/schemas.md as the only payload definition,
-  and references/graph-protocol.md for stage ownership. Submit the declared outcome with the complete data object. Optional local
-  artifact fences may mirror data; only an accepted outcome completes the node.
+  Load draft-methodology. Use references/schemas.md for the business report fields.
 
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Grep
     - Glob
@@ -21,7 +18,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: false

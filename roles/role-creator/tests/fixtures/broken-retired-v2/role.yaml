@@ -9,7 +9,6 @@ tools:
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
-  graph_worker_exec: false
   signal: true
 permission:
   allow:

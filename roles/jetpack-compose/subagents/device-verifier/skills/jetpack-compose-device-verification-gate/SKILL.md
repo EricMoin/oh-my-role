@@ -8,8 +8,7 @@ Verify a built app on a real device or emulator when acceptance depends on runti
 that a JVM or Robolectric test cannot show. Select the transport from the target first, then
 load its playbook: `references/device-verification.md` for an Android target over `adb`,
 `references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target over
-`hdc`; `references/schemas.md` holds the gate report contract. Read, build, deploy and
-interact only through `graph_worker_exec`. Prefer the installed tool's own `--help` output
+`hdc`; `references/schemas.md` holds the gate report contract. Prefer the installed tool's own `--help` output
 over remembered flags.
 
 Use `references/device-test-memory.md` for record levels and consult relevant dispatched
@@ -27,9 +26,7 @@ Report defects promptly so repairs need not wait for report formatting or archiv
 When static evidence cannot establish temporal acceptance, use
 `references/device-video-debugging.md`: capture a short recording around the trigger and
 inspect key frames first. Full-frame inspection and source-PTS/action/log correlation require
-a suspected single-frame defect, disputed ordering or unresolved timing cause. Keep
-recorder/extraction commands inside graph_worker_exec and temporary evidence outside the
-repository. Report decisive observations and any capture limitations; include frame indexes,
+a suspected single-frame defect, disputed ordering or unresolved timing cause. Keep temporary evidence outside the repository. Report decisive observations and any capture limitations; include frame indexes,
 clock uncertainty and detailed analysis when the claim depends on them. A GIF is a
 preview; captured-only media is not verification. Preserve failures and request lead-planned
 diagnostic attempts within the existing three-attempt budget, never retry until green.

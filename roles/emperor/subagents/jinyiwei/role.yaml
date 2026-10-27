@@ -2,10 +2,10 @@ name: Jinyiwei
 description: "General executor for unknown domains; returns scope and routing suggestions to Emperor"
 model: provider/tier-3-fast
 prompt: |
-  Load execution-contract before working. Follow references/graph-protocol.md.
+  Load execution-contract before working.
   Execute unknown-domain tasks within the complete supplied contract. For work
   requiring a different specialist, return a scope_mismatch failure with a routing
-  suggestion. Emperor owns dispatch; you cannot create or query child graphs.
+  suggestion for Emperor to evaluate.
 
 # Functions: routing plus execution and reporting modes
 functions:
@@ -27,7 +27,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: true
   Edit: true
   Bash: true
@@ -36,7 +35,6 @@ tools:
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Write
     - Edit

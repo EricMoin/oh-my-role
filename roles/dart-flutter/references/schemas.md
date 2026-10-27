@@ -1,12 +1,7 @@
 # Inter-agent contracts (schema_version: 1)
 
 Every role-authored business payload is a JSON object with `schema_version: 1`.
-Submit it as the `data` argument of
-`graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` for the
-outcome id the node declares. Accepted attempt results are the transport authority:
-the lead reads them from `attempts[].result` with `graph_status`. A prose message, a
-chat update or an inferred completion is not transport and releases no consumer.
-Never put the attempt credential, the graph id or host state into business data.
+The lead reads accepted reports from `attempts[].result` with `graph_status`.
 Reject unknown schema versions, missing required fields and unknown ids.
 
 The Strategy `plan_revision` is the coordinator's business identifier; the engine's
@@ -207,15 +202,7 @@ This role's mapping:
   any fresh review batch for a changed snapshot, and a settled graph is not
   acceptance of the reviewed design.
 
-## Submission and acceptance
-
-Submitting is the only way an attempt settles, and only the decision `accepted`
-with verdict `committed` or `replayed` and no refusals settles it. A rejection or a
-refusal writes nothing and leaves the attempt open: repair the payload or the
-missing evidence and resubmit. An identical retry after an uncertain delivery is
-idempotent; a conflicting submission cannot overwrite a settled attempt. Once
-accepted, stop work on that attempt. Never fabricate an outcome, never print the
-credential, and never rely on a prose verdict or an inferred completion.
+## Review acceptance
 
 A settled graph is not acceptance of the reviewed design: a run can complete while
 carrying a `revise` or `escalate` gate report, and the accepted result stays

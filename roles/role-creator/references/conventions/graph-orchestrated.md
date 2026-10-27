@@ -10,9 +10,8 @@ The live contract for the protocol is
 `roles/role-creator/references/graph-protocol.md`; every claim below is grounded
 in the installed rolebox source it cites.
 
-Select the target host first using `references/graph-protocol.md`. OpenCode and
-Pi workers use their native workspace tools; only dsh workers use
-`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+Select the target host first using `references/graph-protocol.md`. OpenCode, Pi
+and dsh workers use authorized native workspace tools and rolebox capabilities. Codex does not support rolebox graph execution, so choose a
 non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
 extra tools must use names actually registered by the selected host. File-tool
 denials do not enforce read-only behavior when a shell remains available.
@@ -99,7 +98,6 @@ Orchestration lives in the v3 declaration, not in role.yaml.
 | `graph_status` | `true` | `false` |
 | `graph_audit` | `true` | `false` |
 | `graph_submit_outcome` | `false` | `true` |
-| `graph_worker_exec` | Omit; dsh-only execution entry | Omit in portable manifests; supplied by dsh |
 | `Write` / `Edit` / `Bash` | per the role's own job (a thin declarer denies all three) | per the worker's job |
 
 A node may also declare extra **host** tools in the declaration's `tools` string
@@ -166,8 +164,9 @@ Author the whole topology as **one declaration object**, one per request:
    continuation.
 2. **Declare one node per specialist stage.**
    Each node has an `id`, an `agent` (`<role>--<slug>`) and a `prompt` carrying
-   every input the worker needs — node sessions share no conversation history.
-   Declare the node's `outcomes`, `completion: {mode: "explicit"}` and
+   the task, domain acceptance criteria and readable inputs — node sessions share
+   no conversation history. Keep outcome/data declarations in structured fields;
+   the runtime injects them and the attempt handoff. Declare the node's `outcomes`, `completion: {mode: "explicit"}` and
    `budget.timeout_ms`; declare `tools` only for an extra host capability the
    node genuinely needs.
 3. **Declare the routes.**

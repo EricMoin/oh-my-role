@@ -49,15 +49,10 @@ create new attempts/runs and require safe side-effect recovery. Notifications ar
 wakeups to read committed state; duplicate notifications are not new work. Unreadable
 state is a blocker.
 
-Execution requirements are part of the contract: a dispatched worker on a
-command-only host holds only graph_submit_outcome and graph_worker_exec, with writes
-confined to the workspace and a disposable environment that has no credentials and
-no host caches. A plan that needs a credential, a push, a publish, a deployment or
-any other host state states that as a requirement and is not dispatched as though the
-worker could perform it. Such a refusal is reported as failed(category:
-boundary_denial) naming the exact path, command and restriction; the coordinator
-recovers the work in a context that holds the capability instead of retrying it
-inside the same boundary.
+State the task's execution requirements and check them against the host and role
+permissions. Report denied operations as failed(category: boundary_denial), with
+the exact command, path and restriction, so the coordinator can arrange remaining
+work in a context with the required capability.
 
 The graph.orchestration selector is omitted: the current loader recognizes only the
 old graph_v2 spelling and gives it no runtime effect. It does not select declaration
@@ -79,11 +74,11 @@ From the repository root (Python requires PyYAML):
 python3 scripts/sync_emperor.py --check
 python3 scripts/validate.py
 python3 -m unittest discover -s scripts/tests -p 'test_emperor_contract.py' -v
-bun test --isolate scripts/tests/emperor-rolebox.test.ts
+ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs scripts/tests/emperor-rolebox.test.ts
 ```
 
-The Bun tests use a sibling rolebox checkout and its installed dependencies; set
-ROLEBOX_DIR for another location. They exercise the real loader/resolver, strict v3
+The runtime tests use Node and the rolebox checkout’s installed dependencies; set
+ROLEBOX_ROOT to that checkout. They exercise the real loader/resolver, strict v3
 parser, SQLite acceptance store, worker boundary and control tools with scripted
 dispatch. They make no model calls and do not certify live model behavior.
 See [evals/README.md](evals/README.md) for behavioral coverage and its limits.

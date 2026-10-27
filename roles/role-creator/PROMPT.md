@@ -8,7 +8,7 @@ The repository stores roles under `roles/`; installed hosts have separate role d
 
 Identify the requested role directory and target host before generating tool instructions.
 Use existing session context; ask only for information that materially changes the result.
-OpenCode, Pi and dsh support Graph v3 with different worker tools. Codex's current
+OpenCode, Pi and dsh support Graph v3 with their authorized native task tools. Codex's current
 rolebox MCP adapter has no graph dispatch backend or hot reload. For Codex, author a
 simple role or explain that graph execution requires another supported host.
 Read `references/graph-protocol.md` for the host matrix and current declaration grammar.
@@ -34,8 +34,8 @@ source revision in `tests/rolebox-revision.txt`.
    exist; validation pass then terminates that graph. The full three-stage example is
    for requests with grading evidence already available. Include explicit `inputs` for every consumed accepted result, including
    `when: triggered` for revision feedback. Edges schedule work; inputs deliver data.
-   A worker uses the host's installed execution tools: `graph_worker_exec` on dsh,
-   native filesystem/shell/skill tools on OpenCode or Pi.
+   Put the task, domain criteria and readable inputs in each node brief. The runtime
+   supplies the current node's declared outcomes, data contract and attempt handoff.
 4. Inspect the start result. After a confirmed start, yield for the notification and
    collect accepted results once with `graph_status`. Diagnose a refusal before retrying;
    never declare duplicate graphs merely because startup is slow.

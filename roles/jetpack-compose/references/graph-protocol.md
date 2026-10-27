@@ -22,11 +22,9 @@ The lead owns architectural decisions, and no specialist writes production code.
 | `graph_status({...})` | Reads committed state: phase, nodes, attempts, controls, approvals, budget and unsettled effects | The declaring lead session |
 | `graph_audit({...})` | Diagnoses storage and recovery blockers without mutating state | The declaring lead session |
 | `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` | Settles the caller's own attempt with one declared outcome; the host derives attempt, submission and compiled-revision identity | Each worker, for its own node and attempt only |
-| `graph_worker_exec(command)` | Sandboxed workspace commands for reading, editing, checks and tests | Each worker, inside its own scope |
 
-A specialist NEVER declares, controls, queries or audits a graph, never creates a
-child graph, never dispatches another worker and never reads another attempt's
-credential. Tool availability does not enlarge the role or the node scope.
+The runtime supplies each node's declared outcomes, any declared schema identities/versions, attempt handoff,
+and execution rules. Role briefs supply domain responsibilities and acceptance criteria.
 
 ## Declare and start
 
@@ -84,7 +82,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "source-behavior",
       "agent": "jetpack-compose--source-tracer",
-      "prompt": "Template placeholder - replace with the real evidence brief for this node: the goal and the concrete source question, for example how the named Compose runtime, Material 3 or AndroidX API actually resolves a state read at the reviewed version; the snapshot or diff under review with commit and uncommitted changes; the readable source roots and module versions; the exact file:line or command evidence to collect; and the read-only scope. Do not edit files, run mutating builds or write shared caches. Submit exactly the declared outcome id report through graph_submit_outcome with the attempt credential this dispatch carried, as schema_version 1 data following references/schemas.md. A report means the assessment completed, including negative findings, and is never a product verdict. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every workspace command.",
+      "prompt": "Template placeholder - replace with the real evidence brief for this node: the goal and the concrete source question, for example how the named Compose runtime, Material 3 or AndroidX API actually resolves a state read at the reviewed version; the snapshot or diff under review with commit and uncommitted changes; the readable source roots and module versions; the exact file:line or command evidence to collect; and the read-only scope. Do not edit files, run mutating builds or write shared caches. Return the schema_version 1 source report following references/schemas.md. A report means the assessment completed, including negative findings, and is never a product verdict.",
       "completion": {
         "mode": "explicit"
       },
@@ -100,7 +98,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "source-versions",
       "agent": "jetpack-compose--source-tracer",
-      "prompt": "Template placeholder - replace with the real evidence brief for this node: the concrete dependency question, for example which AndroidX, Compose BOM, Kotlin or Gradle versions the reviewed snapshot actually resolves and which API surface they expose; the snapshot or diff under review with commit and uncommitted changes; the build files, version catalogs and lock files to read; the exact resolution command or file:line evidence to collect; and the read-only scope. Do not edit files, run mutating builds or write shared caches. Submit exactly the declared outcome id report through graph_submit_outcome with the attempt credential this dispatch carried, as schema_version 1 data following references/schemas.md. A report means the assessment completed, including negative findings, and is never a product verdict. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every workspace command.",
+      "prompt": "Template placeholder - replace with the real evidence brief for this node: the concrete dependency question, for example which AndroidX, Compose BOM, Kotlin or Gradle versions the reviewed snapshot actually resolves and which API surface they expose; the snapshot or diff under review with commit and uncommitted changes; the build files, version catalogs and lock files to read; the exact resolution command or file:line evidence to collect; and the read-only scope. Do not edit files, run mutating builds or write shared caches. Return the schema_version 1 source report following references/schemas.md. A report means the assessment completed, including negative findings, and is never a product verdict.",
       "completion": {
         "mode": "explicit"
       },
@@ -116,7 +114,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "architecture",
       "agent": "jetpack-compose--architecture-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the architecture invariants, ownership and dependency rules to check, the concrete question, the read-only scope, and the two declared inputs source-behavior:report and source-versions:report that this dispatch carries. Consume those accepted reports as evidence, never as verdicts, and load the architecture gate skill for this review. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carried and the gate report from references/schemas.md as schema_version 1 data: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload and resubmit. Use graph_worker_exec for read-only inspection commands.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the architecture invariants, ownership and dependency rules to check, the concrete question, the read-only scope, and the two declared inputs source-behavior:report and source-versions:report that this dispatch carries. Consume those accepted reports as evidence, never as verdicts, and load the architecture gate skill for this review. Return the schema_version 1 gate report from references/schemas.md: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable.",
       "completion": {
         "mode": "explicit"
       },
@@ -151,7 +149,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "ui-layout",
       "agent": "jetpack-compose--ui-layout-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the layout, modifier, Material 3 and accessibility invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the ui-layout gate skill and inspect only. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carried and the gate report from references/schemas.md as schema_version 1 data: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload and resubmit. Use graph_worker_exec for read-only inspection commands.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the layout, modifier, Material 3 and accessibility invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the ui-layout gate skill and inspect only. Return the schema_version 1 gate report from references/schemas.md: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable.",
       "completion": {
         "mode": "explicit"
       },
@@ -173,7 +171,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "test-quality",
       "agent": "jetpack-compose--test-quality-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the test-pyramid, composeTestRule, determinism, coverage and preview invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the test-quality gate skill and inspect only. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carried and the gate report from references/schemas.md as schema_version 1 data: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload and resubmit. Use graph_worker_exec for read-only inspection commands.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the test-pyramid, composeTestRule, determinism, coverage and preview invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the test-quality gate skill and inspect only. Return the schema_version 1 gate report from references/schemas.md: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable.",
       "completion": {
         "mode": "explicit"
       },
@@ -195,7 +193,7 @@ separate one-node example in `references/background-recording.md`, never an acce
     {
       "id": "performance",
       "agent": "jetpack-compose--performance-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the recomposition, stability, allocation, Macrobenchmark and Baseline Profile invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the performance gate skill and inspect only. Submit exactly one declared outcome through graph_submit_outcome with the attempt credential this dispatch carried and the gate report from references/schemas.md as schema_version 1 data: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable. Only an accepted decision, verdict committed or replayed with no refusals, settles this node; a refusal writes nothing, so repair the payload and resubmit. Use graph_worker_exec for read-only inspection commands.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with artifact paths, the recomposition, stability, allocation, Macrobenchmark and Baseline Profile invariants to check, the concrete question, the read-only scope, and the declared inputs, which are none. Load the performance gate skill and inspect only. Return the schema_version 1 gate report from references/schemas.md: pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, or escalate when essential evidence or user intent is unavailable.",
       "completion": {
         "mode": "explicit"
       },
@@ -284,9 +282,8 @@ Every review node prompt carries enough context to act without the lead's conver
   workspace, run mutating builds or write shared caches.
 - Project facts and constraints: relevant versions, established architecture, build
   and test conventions, invariants, and the design decision under review.
-- The declared outcome ids the node may submit, the report shape from
-  `references/schemas.md`, the attempt credential carried by the dispatch, and the
-  submission discipline below.
+- The report reference `references/schemas.md` and the evidence needed to assess
+  this node's domain-specific acceptance criteria.
 - For a consumer, the declared inputs it reads. Dispatch inputs are authoritative
   over the prompt snapshot. If a declared input is missing or incomplete, settle
   `escalate` with the exact missing evidence instead of inventing a predecessor
@@ -295,25 +292,6 @@ Every review node prompt carries enough context to act without the lead's conver
 Node sessions do not share conversation history. Declared inputs and the shared
 workspace carry upstream results and artifacts; do not claim a file is
 inaccessible merely because the session differs.
-
-## Worker submission
-
-Submitting an outcome is the only way a node settles:
-
-1. Finish the assigned assessment or optional recording and prepare its report first.
-2. Call `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`
-   with the node's declared `outcome_id`, the attempt credential this dispatch
-   carried, and the schema_version 1 payload as `data`. Use only your own attempt
-   credential: never print it, never write it into a file or report, and never use
-   another attempt's credential.
-3. Never supply attempt, submission or compiled-revision identity; the host derives
-   them from its own state.
-4. The only settling decision is `accepted` with verdict `committed` or `replayed`
-   and no refusals. A rejection or refusal writes nothing and leaves the attempt
-   open: read the refusal diagnostics, repair the payload or the missing evidence,
-   and resubmit. An identical retry after an uncertain delivery is idempotent; a
-   conflicting submission cannot overwrite a settled attempt. Once accepted, stop
-   work on that attempt.
 
 ## Recovery
 

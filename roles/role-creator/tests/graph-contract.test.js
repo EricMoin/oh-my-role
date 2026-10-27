@@ -1,4 +1,4 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/role-creator/tests/graph-contract.test.js
+// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/role-creator/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
 // and the real host drive the real role files on disk. The declaration this meta-role
 // teaches and validates with is read out of references/graph-protocol.md, so the
@@ -7,7 +7,7 @@
 // worker executes and nothing is published. afterEach deletes every temp dir, which is
 // where each declared graph's persisted plan lives, so no declared graph outlives its
 // test.
-import { test, expect, afterEach } from "bun:test";
+import { test, expect, afterEach } from "vitest";
 import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 if (!process.env.ROLEBOX_ROOT) {
   throw new Error(
     "Set ROLEBOX_ROOT to the rolebox checkout to validate, for example " +
-      "ROLEBOX_ROOT=/path/to/rolebox bun test --isolate " +
+      "ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs " +
       "roles/role-creator/tests/graph-contract.test.js",
   );
 }
@@ -43,6 +43,7 @@ const { discoverRoles } = await engine("src/loader/role-loader.ts");
 const { resolveSkills } = await engine("src/resolver/skill-resolver.ts");
 const { resolveAllRoles } = await engine("src/resolver/orchestrator.ts");
 const { OutcomeHost } = await engine("src/graph/host/outcome-host.ts");
+const { buildAttemptDeliveryPrompt } = await engine("src/graph/host/delivery.ts");
 const { HostCredentialVault } = await engine(
   "src/graph/host/credential-vault.ts",
 );
@@ -110,7 +111,7 @@ const V3_TOOLS = [
 ];
 // role.yaml's `tools:` block is a boolean map — the loader surfaces it as
 // Record<string, boolean> (rolebox src/loader/role-loader.ts). The declaring primary
-// holds the four declarer tools and never the worker pair.
+// holds the four declarer tools and never the worker submission entry.
 const V3_DECLARER_TOOLS = {
   graph_declare: true,
   graph_control: true,
@@ -223,6 +224,38 @@ function readShippedDeclaration() {
 
 const shipped = readShippedDeclaration();
 const declaration = shipped.declaration;
+
+test("node briefs and example workers keep domain criteria without copying runtime handoff", async () => {
+  const assertDomainBrief = (prompt) => {
+    expect(prompt).not.toMatch(/graph_worker_exec|attempt credential|no refusals|never create child graphs|exactly one fenced/i);
+    expect(prompt).not.toContain("graph_submit_outcome");
+  };
+  for (const node of declaration.nodes) assertDomainBrief(node.prompt);
+  expect(declaration.nodes.find((node) => node.id === GENERATOR).prompt).toContain("required_revisions");
+  expect(declaration.nodes.find((node) => node.id === VALIDATOR).prompt).toContain("Verify read-only");
+  expect(declaration.nodes.find((node) => node.id === GRADER).prompt).toContain("pass threshold");
+  const directory = tempDir("role-creator-worker-prompts-");
+  cpSync(roleDir, join(directory, "role-creator"), { recursive: true });
+  const role = (await discoverRoles(directory)).get("role-creator");
+  for (const child of role.subagents) {
+    if (child.name === "Generator") {
+      // The authoring meta-role explains the manifest split, but never supplies
+      // a credential or settlement recipe for its own execution.
+      expect(child.prompt).not.toMatch(/with (?:the|your) (?:attempt|delivered) credential/i);
+    } else {
+      assertDomainBrief(child.prompt);
+    }
+  }
+  for (const name of ["director-gated", "nested-statemachine"]) {
+    const text = readFileSync(join(roleDir, `references/conventions/${name}.md`), "utf8");
+    for (const match of text.matchAll(/```yaml\s*\n([\s\S]*?)\n```/g)) {
+      const manifest = parseFrontmatter(`---\n${match[1]}\n---\n`).metadata;
+      if (manifest.mode === "subagent" && typeof manifest.prompt === "string") {
+        assertDomainBrief(manifest.prompt);
+      }
+    }
+  }
+});
 
 // ── (a) Role loading through the real loader ────────────────────────────────
 
@@ -600,6 +633,15 @@ test("one start arms the generator root, an accepted submission commits and an i
     expect(acceptedAttempts(ledger, graph.graphId)).toEqual([]);
 
     const first = armed(graph.requests, GENERATOR);
+    expect(first.outcomes.map((outcome) => outcome.id)).toEqual(NODE_OUTCOMES[GENERATOR]);
+    expect(first.completion).toEqual({ mode: "explicit" });
+    const delivery = buildAttemptDeliveryPrompt(first);
+    expect(delivery).toContain(first.prompt);
+    expect(delivery).toContain(JSON.stringify({
+      outcomes: first.outcomes, completion: first.completion,
+    }, null, 2));
+    expect(delivery).toContain("graph_submit_outcome");
+    expect(first.prompt).not.toContain("graph_submit_outcome");
     const report = authoringReport();
     const accepted = await settle(graph, GENERATOR, "generated", { data: report });
     expect(accepted.decision).toBe("accepted");
@@ -783,7 +825,7 @@ test("documented state-machine gates and composed termination execute with the r
   expect(evaluateCondition(stop, env)).toBe(true);
 });
 
-test("portable workspace nodes retain native host tools and never require dsh execution on Pi or OpenCode", async () => {
+test("portable workspace nodes retain native host tools without a dedicated worker command entry", async () => {
   const native = ["bash", "read", "edit", "write", "graph_submit_outcome"];
   const catalog = native.map((name) => ({ name, description: name, inputSchema: {} }));
   for (const node of declaration.nodes) {
@@ -802,8 +844,7 @@ test("portable workspace nodes retain native host tools and never require dsh ex
     expect(() => opencode.assertAllowed("worker", "read")).not.toThrow();
     expect(() => opencode.assertAllowed("worker", "graph_worker_exec")).toThrow();
   }
-  expect(DSH_GRAPH_WORKER_GRANT).toContain("graph_worker_exec");
-  expect(DSH_GRAPH_WORKER_GRANT).toContain("graph_submit_outcome");
+  expect(DSH_GRAPH_WORKER_GRANT).toEqual(["graph_submit_outcome"]);
   expect(() => piWorkerToolConfig(native, [], { mode: "code" }, {})).toThrow("unsupported");
   const opencodeV1 = new OpencodeWorkerTools({ host: () => undefined,
     catalog: async () => catalog, nativeActivation: false, supportsPresentation: false });

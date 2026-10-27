@@ -87,9 +87,6 @@ Supply enough context to act without the parent conversation:
   needed guidance or actual readable resource paths; avoid vague "use the parent's skill".
 - Commands/configuration already discovered, or permission to derive a focused check from
   local tools when a script is absent. State the checks required for this task.
-- The exact outcome ids the node may submit, the attempt credential carried by its dispatch,
-  and the `graph_submit_outcome` discipline: only an accepted decision settles the node and a
-  refusal writes nothing. State that workspace commands use `graph_worker_exec`.
 - Mode, required report shape, and the upstream inputs it consumes.
 
 Keep the brief centered on the task delta, acceptance criteria, relevant evidence and scope.
@@ -97,7 +94,8 @@ Distinguish user requirements from implementation suggestions. Reconcile counts,
 other measurable constraints before dispatch; do not invent exact quotas or broad test matrices
 for a task that does not need them. State what a check proves and allow the worker to choose a
 cheaper equivalent check when the command itself is not a requirement. The engine supplies
-attempt identity, credentials and input contents; do not paste them or repeat tool manuals.
+attempt identity, declared outcomes, declared data-schema references and input contents; keep
+submission mechanics and tool manuals out of node briefs.
 
 Node sessions do not share conversation history. Declared inputs and the shared workspace
 carry upstream results and artifacts; do not claim files are inaccessible merely because
@@ -127,7 +125,7 @@ an in-place topology edit.
 Do not retry the original task for a submission-format error. An unsettled worker should
 repair its submission in the same attempt. If the worker has ended, diagnose the remaining
 work and dispatch a focused recovery graph with the existing artifacts and exact failure.
-The parent owns follow-up graphs and their budgets; workers never create child graphs.
+The parent owns follow-up graphs and their budgets.
 
 ## Reconcile and finish
 

@@ -23,18 +23,16 @@ prompt: |
 
   Pass threshold: score ≥7/10 on ≥60% of cases
 
-  Output and transport:
-  - Read references/schemas.md. Submit its grading-report as graph_submit_outcome
-    data when running as a graph worker; include expectation-level evidence for
-    each case and the blind A/B winner when relevant.
+  Report and acceptance criteria:
+  - Read references/schemas.md and produce its grading-report, including
+    expectation-level evidence for each case and the blind A/B winner when relevant.
   - graded means all supplied transcripts were scored, not that all cases pass.
     Submit blocked when eval cases or transcripts are missing, and failed when
     grading cannot proceed. A passing validation report is not a transcript.
   - For validation-related expectations, use the current
     references/schema/validation-catalog.md and the selected runtime evidence;
     do not assume a version string freezes the runtime schema.
-  - Only dsh provides graph_worker_exec. Use native workspace tools on OpenCode
-    or Pi. Do not edit graded artifacts, regardless of available shell tools.
+  - Do not edit graded artifacts, regardless of available shell tools.
 
   Rules:
   - Base judgments on evidence from the transcript, not speculation

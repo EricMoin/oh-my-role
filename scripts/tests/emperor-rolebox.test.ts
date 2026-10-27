@@ -1,12 +1,12 @@
 /** Compatibility with the sibling rolebox source; scripted dispatch, no model calls. */
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, expect, test } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const root = resolve(import.meta.dir, '../..');
-const rolebox = resolve(process.env.ROLEBOX_DIR ?? resolve(root, '../rolebox'));
+const root = resolve(import.meta.dirname, '../..');
+const rolebox = resolve(process.env.ROLEBOX_ROOT ?? process.env.ROLEBOX_DIR ?? resolve(root, '../rolebox'));
 const load = (path: string) => import(pathToFileURL(resolve(rolebox, path)).href);
 const { discoverRoles } = await load('src/loader/role-loader.ts');
 const { resolveSkills } = await load('src/resolver/skill-resolver.ts');
@@ -106,7 +106,7 @@ test('real loader and resolver preserve role ownership, skills and active functi
       expect(agent.config.tools[tool]).toBe(agent.id === 'emperor');
     }
     expect(agent.config.tools.graph_submit_outcome).toBe(agent.id !== 'emperor');
-    expect(agent.config.tools.graph_worker_exec).toBe(agent.id !== 'emperor');
+    expect(agent.config.tools.graph_worker_exec).toBeUndefined();
     if (!agent.id.startsWith('emperor--jinyiwei--')) continue;
     expect(agent.config.tools).toMatchObject({ Write: true, Edit: true, Bash: true });
     const dir = resolve(root, `roles/emperor/subagents/jinyiwei/subagents/${agent.config.name.toLowerCase()}`);

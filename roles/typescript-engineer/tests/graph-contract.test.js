@@ -1,9 +1,9 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/typescript-engineer/tests/graph-contract.test.js
+// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/typescript-engineer/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end and the real graph v3
 // toolset drive the real role files on disk. The only stand-in is the dispatch seam,
 // which records the requests the engine hands it: no model runs, no worker executes
 // and nothing is published.
-import { test, expect, afterEach } from "bun:test";
+import { test, expect, afterEach } from "vitest";
 import { mkdtempSync, cpSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
@@ -103,7 +103,6 @@ test("rolebox loads the role, its two subagents and every declared skill", async
     graph_status: true,
     graph_audit: true,
     graph_submit_outcome: false,
-    graph_worker_exec: false,
   });
   for (const retired of RETIRED_V2_TOOLS) {
     expect(role.tools[retired]).toBeUndefined();
@@ -124,6 +123,9 @@ test("rolebox loads the role, its two subagents and every declared skill", async
     for (const retired of RETIRED_V2_TOOLS) {
       expect(child.tools[retired]).toBeUndefined();
     }
+    expect(child.tools.graph_worker_exec).toBeUndefined();
+    expect(child.permission?.allow ?? []).not.toContain("graph_worker_exec");
+    expect(child.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
   }
 
   // Every declared skill of the primary and of both children resolves to a real

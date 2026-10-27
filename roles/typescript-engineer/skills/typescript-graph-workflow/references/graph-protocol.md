@@ -14,9 +14,6 @@ engine's graph tools during role execution.
 | `graph_status` | Reads committed state: phase, nodes, attempts, controls, approvals, budget, unsettled effects | The declaring session |
 | `graph_audit` | Diagnoses storage and recovery blockers without mutating state | The declaring session |
 
-Workers use `graph_worker_exec` for reading, editing, checks and commands in their workspace
-sandbox. Tool availability does not enlarge the role's or the node's scope.
-
 ## Declaration shape
 
 `graph_declare` receives the whole object: `version: 3`, `name` (the graph id), a finite root
@@ -44,17 +41,8 @@ terminate. `max_retries` is rejected even as `0`, and `acceptance`, `contractRef
 | Review / synthesis | `pass`, `revise` | Required criteria supported, or concrete correctable defects with stable items |
 | Approval preparation | `approval_required` | A request prepared by a non-mutating proposal node; never permission |
 
-Write the report before submitting it. Nothing else settles a v3 node: a prose answer, a
-signal fence or an inferred completion is not an outcome, and only the declaration names the
-outcome ids a node may submit.
-
 ## Acceptance semantics
 
-- The only settling decision is `accepted` with verdict `committed` or `replayed` and no
-  refusals. A rejection or refusal writes nothing and leaves the attempt open, so repair the
-  payload or the missing evidence and resubmit.
-- An identical retry after an uncertain delivery is idempotent; a conflicting submission
-  cannot overwrite a settled attempt. Once accepted, stop work on that attempt.
 - Routing follows accepted outcome ids, not payload keys: fields in a submitted data payload
   are inert data the engine never inspects. What bounds a repeated identical revision is the
   loop group's declared progress policy — the optional `{evaluator, version, subject,

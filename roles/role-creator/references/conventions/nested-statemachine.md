@@ -10,9 +10,8 @@ graph incrementally and they never settle a node.
 
 The protocol contract is `roles/role-creator/references/graph-protocol.md`.
 
-Select the target host first using `references/graph-protocol.md`. OpenCode and
-Pi workers use their native workspace tools; only dsh workers use
-`graph_worker_exec`. Codex does not support rolebox graph execution, so choose a
+Select the target host first using `references/graph-protocol.md`. OpenCode, Pi
+and dsh workers use authorized native workspace tools and rolebox capabilities. Codex does not support rolebox graph execution, so choose a
 non-graph role there. Workspace-only nodes omit `tools` and `toolPresentation`;
 extra tools must use names actually registered by the selected host. File-tool
 denials do not enforce read-only behavior when a shell remains available.
@@ -340,8 +339,8 @@ tools:
 ### Second-Level Subagents (Sub-Subagents)
 
 Discovered from nested `subagents/<slug>/role.yaml` directories; the parent
-declarer selects their full IDs. They do the specialized work and settle their
-node's declared outcomes through `graph_submit_outcome`.
+declarer selects their full IDs. Their prompts describe specialized work; the
+runtime supplies the node's declared outcome/data contract and attempt handoff.
 
 ```yaml
 name: Drafter
@@ -349,9 +348,8 @@ description: "Drafts architecture documents and design proposals."
 mode: subagent
 prompt: |
   You draft architecture documents from the brief the Chancellor supplies.
-  Focus on clarity and completeness. When the declared outcome is reached,
-  submit it with graph_submit_outcome using the credential this dispatch
-  carried, and never print that credential.
+  Focus on clarity and completeness. State assumptions, cite supporting evidence
+  and identify unresolved architecture decisions.
 skills:
   - architecture-drafting
 tools:
@@ -392,8 +390,8 @@ tools:
 ```
 
 A worker subagent enables `graph_submit_outcome` and disables the four declarer
-tools. Use the selected host's native command/file permissions for checks; dsh
-provides `graph_worker_exec` in its baseline. A declared node `tools` list names
+tools. Use the selected host's native command/file permissions for checks.
+A declared node `tools` list names
 extra **host** tools only, and a graph-face name in it admits nothing.
 
 ## Graph v3 Concurrency

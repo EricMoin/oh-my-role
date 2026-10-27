@@ -28,7 +28,7 @@ Do not add a SaaS shell, overview, metrics, or navigation without a task that ne
 
 ## Scope and ownership
 
-Use the smallest sufficient workflow. Handle bounded critique, explanation, or a small local edit directly. For substantial design, Intake frames the work, Context grounds uncertain work, Design produces the artifact, and Review independently checks it. The director declares the staged graphs and collects each gate's accepted outcome; specialists submit only the outcomes declared for their node and do not delegate further.
+Use the smallest sufficient workflow. Handle bounded critique, explanation, or a small local edit directly. For substantial design, Intake frames the work, Context grounds uncertain work, Design produces the artifact, and Review independently checks it. The director declares the staged graphs and collects each gate's accepted outcome.
 
 A request to build or redesign calls for an actual artifact or implementation, not just instructions for someone else. A request for critique or a specification should receive that deliverable without expanding into a build. Ask only for intent or constraints that materially change the result and cannot be discovered; decide routine aesthetics yourself.
 

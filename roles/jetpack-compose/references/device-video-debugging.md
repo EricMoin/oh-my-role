@@ -74,9 +74,9 @@ Full catalogs, contact sheets and optional narrative enrichment are not acceptan
    change timing or omit frames; no visible defect in a capture does not prove absence.
    Do not bypass protected surfaces or change security settings to obtain a recording.
 
-The independent verifier runs capture, input and extraction commands through `graph_worker_exec`
-under its dispatch constraints. If that surface cannot retain a recorder while driving inputs,
-the lead arranges capture; never fall back to an untracked worker shell or detached orphan job.
+The independent verifier keeps capture, input and extraction commands within the host's
+execution limits. If the host cannot retain a recorder while driving inputs, the lead
+arranges capture; never leave a detached orphan job.
 
 ### Android transport
 

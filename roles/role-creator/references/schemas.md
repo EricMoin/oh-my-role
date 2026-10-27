@@ -1,7 +1,6 @@
 # Role Creator accepted reports
 
-Submit these objects as the `data` argument of `graph_submit_outcome`. These are
-application-level contracts checked by consumers; merely declaring an outcome
+These are application-level outcome data contracts checked by consumers; merely declaring an outcome
 does not install a runtime schema validator. The tool's `outcome_id` is the
 routing authority. Keep it consistent with the report where present.
 
@@ -9,7 +8,7 @@ routing authority. Keep it consistent with the report where present.
 
 For `generated`, name the authorized role directory and every file written.
 For `blocked` or `failed`, keep the same shape, list completed files and add a
-`summary` explaining what remains. Do not include credentials.
+`summary` explaining what remains.
 
 ```json
 {

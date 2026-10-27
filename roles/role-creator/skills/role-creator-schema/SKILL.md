@@ -76,7 +76,7 @@ tools:
   graph_submit_outcome: false
 ```
 
-A declaring role holds the four declarer tools `true` and `graph_submit_outcome` `false`; a worker holds the inverse. `graph_worker_exec` is optional and dsh-only. OpenCode/Pi workers use their installed native tools; the current Codex adapter cannot execute graphs. Every role that orchestrates also ships a Graph v3 declaration, authored per request through `graph_declare` with per-node outcomes, explicit completion, outcome-bound edges and a `loop_groups` entry for each cycle. The validation catalog retires a `graph:` block (Rule 1, ERROR); `collaboration:` is a legacy schema-compat mirror with no runtime effect.
+A declaring role holds the four declarer tools `true` and `graph_submit_outcome` `false`; a worker holds the inverse. OpenCode/Pi/dsh workers use their authorized native tools and rolebox capabilities; the current Codex adapter cannot execute graphs. Every role that orchestrates also ships a Graph v3 declaration, authored per request through `graph_declare` with per-node outcomes, explicit completion, outcome-bound edges and a `loop_groups` entry for each cycle. The runtime injects the node's declared outcome IDs, data schema identities/versions, acceptance requirements, completion policy and attempt handoff; keep domain report fields and outcome meanings in role resources. The validation catalog retires a `graph:` block (Rule 1, ERROR); `collaboration:` is a legacy schema-compat mirror with no runtime effect.
 
 ## Collaboration & Memory Blocks
 

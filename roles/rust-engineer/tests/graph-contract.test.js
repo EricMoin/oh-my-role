@@ -1,4 +1,4 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/rust-engineer/tests/graph-contract.test.js
+// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/rust-engineer/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
 // and the real host drive the real role files on disk. The review declaration is read out
 // of references/graph-protocol.md, so the documented contract and the tested contract are
@@ -6,7 +6,7 @@
 // engine hands it: no model runs, no worker executes and nothing is published. afterEach
 // deletes every temp dir, which is where each declared graph's persisted plan lives, so no
 // declared graph outlives its test.
-import { test, expect, afterEach } from "bun:test";
+import { test, expect, afterEach } from "vitest";
 import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 if (!process.env.ROLEBOX_ROOT) {
   throw new Error(
     "Set ROLEBOX_ROOT to the rolebox checkout to validate, for example " +
-      "ROLEBOX_ROOT=/path/to/rolebox bun test --isolate " +
+      "ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs " +
       "roles/rust-engineer/tests/graph-contract.test.js",
   );
 }
@@ -40,6 +40,7 @@ const { parseGraphDeclarationV3 } = await engine(
 const { compileGraph } = await engine("src/graph/compiler/compile.ts");
 const { discoverRoles } = await engine("src/loader/role-loader.ts");
 const { resolveSkills } = await engine("src/resolver/skill-resolver.ts");
+const { resolveAllRoles } = await engine("src/resolver/orchestrator.ts");
 const { OutcomeHost } = await engine("src/graph/host/outcome-host.ts");
 const { HostCredentialVault } = await engine(
   "src/graph/host/credential-vault.ts",
@@ -74,7 +75,6 @@ const V3_DECLARER_TOOLS = {
   graph_status: true,
   graph_audit: true,
   graph_submit_outcome: false,
-  graph_worker_exec: false,
   Write: true,
   Edit: true,
   Bash: true,
@@ -85,7 +85,6 @@ const V3_WORKER_TOOLS = {
   graph_status: false,
   graph_audit: false,
   graph_submit_outcome: true,
-  graph_worker_exec: true,
   Write: false,
   Edit: false,
   Bash: true,
@@ -96,7 +95,6 @@ const WORKER_ALLOW = [
   "Grep",
   "Read",
   "graph_submit_outcome",
-  "graph_worker_exec",
 ];
 const SUBAGENT_SLUGS = [
   "api-reviewer",
@@ -191,6 +189,19 @@ test("rolebox loads the lead, its five read-only specialist subagents and every 
   const role = (await discoverRoles(directory)).get("rust-engineer");
   expect(role).toBeDefined();
   expect(role.mode).toBe("primary");
+  const [resolved] = await resolveAllRoles(new Map([["rust-engineer", role]]), {
+    roleboxDir: directory,
+    globalSkillsDir: join(directory, "absent-global-skills"),
+    configDir: join(directory, "absent-global-config"),
+    builtinDir: join(root, "functions"),
+    roleFunctionsMap: new Map(),
+  });
+  expect(resolved.subagents).toHaveLength(SUBAGENT_SLUGS.length);
+  for (const child of resolved.subagents) {
+    expect(child.references.map((reference) => reference.name)).toEqual(
+      expect.arrayContaining(["schemas", "rust-domains"]),
+    );
+  }
 
   // The retired v2 orchestration block is gone: under the outcome protocol the
   // declaring session holds the orchestration tools and workers only submit.
@@ -214,6 +225,9 @@ test("rolebox loads the lead, its five read-only specialist subagents and every 
     expect(allow).not.toContain("Write");
     expect(allow).not.toContain("Edit");
     expect(slug).not.toBe("");
+    expect(child.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
+    expect(child.prompt).toContain("never write, edit or delete source");
+    expect(child.prompt).toContain("target/");
   }
 
   // Every declared skill of the primary and of all five children resolves to a real
@@ -328,19 +342,16 @@ test("the declaration shipped in references/graph-protocol.md compiles into an e
       GATE_OUTCOMES,
     );
     // The brief each node needs: the reviewed snapshot and source roots, the
-    // read-only scope, the declared outcome ids, the gate-report shape and the
-    // credential/submission discipline.
+    // read-only scope, outcome meanings and the gate-report shape.
     for (const required of [
       "reviewed snapshot",
       "read-only scope",
       "pass, revise and escalate",
       "schema_version 1",
-      "graph_submit_outcome",
-      "credential",
-      "graph_worker_exec",
     ]) {
       expect(node.prompt).toContain(required);
     }
+    expect(node.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
   }
 
   // Every node agent is a real subagent of this role, named <role>--<slug>.

@@ -7,7 +7,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: true
@@ -28,7 +27,6 @@ tools:
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Grep
     - Glob
@@ -64,30 +62,16 @@ prompt: |
   - Gaps and suggested next searches
   - Figure candidates (image URL + source page + context)
 
-  Script usage escalation: when API pagination or metadata collection exceeds what read-only Bash one-liners can handle, load the `supersearch-custom-scraping` skill. Write temporary scripts to `.rolebox/scratch/` through graph_worker_exec shell commands only; you have no Write or Edit tool. Do not use scripts for general web scraping.
+  Script usage escalation: when API pagination or metadata collection exceeds what read-only Bash one-liners can handle, load the `supersearch-custom-scraping` skill. Write temporary scripts to `.rolebox/scratch/` using authorized command tools. Do not use scripts for general web scraping.
 
-  Do not modify project files and do not create child graphs. Scripts for batch API pagination or metadata collection may be written to `.rolebox/scratch/` only through graph_worker_exec (see the supersearch-custom-scraping skill for the activation gate). Scripts are limited to API metadata retrieval (package registries, repository metadata, issue/PR list pagination). General-purpose web scraping is not permitted.
+  Do not modify project files. Scripts for batch API pagination or metadata collection may be written to `.rolebox/scratch/` only using authorized command tools (see the supersearch-custom-scraping skill for the activation gate). Scripts are limited to API metadata retrieval (package registries, repository metadata, issue/PR list pagination). General-purpose web scraping is not permitted.
 
-  ### Worker execution and submission
+  ### Scout report
 
-  You are a read-only worker on one node of a rolebox graph v3 search graph. Use
-  graph_worker_exec for every read, search, fetch, scratch-script write and check
-  inside the workspace sandbox. Finish the scout report before submitting it.
-  Settle your node by submitting the declared outcome id your dispatch names
-  through graph_submit_outcome, using only the attempt credential that dispatch
-  carried; never print that credential and never reuse it in another node. This
-  node declares the outcomes `evidence_ready`, `no_evidence`, `blocked` and
-  `failed`. Carry the scout report as the `data` argument of that submission, a
-  `schema_version: 1` payload per `references/schemas.md`: objective, queries
-  (channel, query, tool, result), artifacts_inspected, findings with evidence
-  (source plus url or path, quote, confidence), figure_candidates (image_url,
-  source_page, context, section), gaps and suggested_next. Submit
-  `evidence_ready` only with that report; submit `no_evidence` when the channel
-  was searched honestly and produced nothing usable, `blocked` when a concrete
-  prerequisite is missing, and `failed` when the node could not complete. Never
-  place the attempt credential, the graph id or host state inside the submitted
-  data. Only an accepted decision (verdict committed or replayed, with no
-  refusals) settles the node; a refusal writes nothing, so repair the payload or
-  the missing evidence and resubmit. Never declare, control, query or audit graphs
-  and never create child graphs — the declaring lead session owns orchestration,
-  synthesis and acceptance, and a settled graph is not acceptance of the answer.
+  Return the `schema_version: 1` scout report from `references/schemas.md`:
+  objective, queries (channel, query, tool, result), artifacts_inspected, findings
+  with evidence (source plus url or path, quote, confidence), figure_candidates
+  (image_url, source_page, context, section), gaps and suggested_next.
+  Use `evidence_ready` for usable evidence, `no_evidence` when the channel was
+  searched honestly and produced nothing usable, `blocked` when a concrete
+  prerequisite is missing, and `failed` when the search could not complete.

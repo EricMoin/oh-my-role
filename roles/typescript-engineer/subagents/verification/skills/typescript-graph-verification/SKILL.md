@@ -35,14 +35,6 @@ new failures, established baseline failures and uncertain attribution.
 
 ## Mode and outcome
 
-The node brief names the mode and the outcome ids the declaration gives this node; submit one
-of those ids with `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`,
-using only the attempt credential your dispatch carried. Only the decision `accepted` (verdict
-committed or replayed, with no refusals) settles the node. A refusal or rejection writes
-nothing and leaves the attempt open, so repair the payload or the missing evidence and
-resubmit; never print the credential and never fabricate an outcome. The declaration names the
-ids; your dispatch passes them.
-
 **evidence / investigation:** Complete the named investigation and submit the declared report
 outcome with commands, results, observations and gaps. A successfully observed failing check
 is valid negative evidence, not a passing product, and the report is still the correct
@@ -82,5 +74,3 @@ relying on prose.
 Write the evidence report before submitting. On an accepting outcome, do not contradict that
 outcome: unresolved arrays at top level are ambiguous downstream. Put advisory limits in
 `limitations`, and never move an actual required defect there merely to obtain convergence.
-
-For detailed engine semantics, read [the graph protocol](../../../../skills/typescript-graph-workflow/references/graph-protocol.md).

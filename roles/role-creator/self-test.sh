@@ -4,6 +4,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROLE_DIR="$SCRIPT_DIR"
+REPO_ROOT="$(cd "$ROLE_DIR/../.." && pwd)"
 EXIT_CODE=0
 
 echo "=== Role Creator Self-Test ==="
@@ -70,7 +71,7 @@ if ! PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$ROLE_DIR/tests"
 fi
 
 if [ -n "${ROLEBOX_ROOT:-}" ]; then
-    if ! bun test --isolate "$ROLE_DIR/tests/graph-contract.test.js"; then
+    if ! node "$REPO_ROOT/scripts/test-runtime-contracts.mjs" "$ROLE_DIR/tests/graph-contract.test.js"; then
         EXIT_CODE=1
     fi
 else

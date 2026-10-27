@@ -10,7 +10,7 @@ description: Organize a sealed run's existing evidence inside one assigned outpu
 2. Read the minimum record and relevant supplied evidence. Preserve failed assertions,
    blocked setup, not-run steps and captured-but-uninspected media. Never relabel source
    evidence as belonging to a repaired build or claim you performed the original actions.
-3. Write requested useful records through `graph_worker_exec` only in your assigned
+3. Write requested useful records only in your assigned
    directory. Resolve output paths and do not escape through symlinks. The boundary is
    contractual; the installed host determines actual sandbox enforcement.
 4. Keep shared case/profile/index edits as proposals with their base revision/identity.
@@ -22,5 +22,4 @@ description: Organize a sealed run's existing evidence inside one assigned outpu
    is needed once the requested organization is usable. Report absent links or partial
    output honestly rather than extending the task beyond its finite budget.
 6. Submit the Recording report from `references/schemas.md` as `recorded` or `incomplete`.
-   These are archive outcomes, not acceptance decisions. Repair a refused submission if
-   possible within the budget; stop after an accepted outcome. Never spawn other workers.
+   These are archive outcomes, not acceptance decisions.

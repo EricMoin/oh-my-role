@@ -45,6 +45,18 @@ class EmperorContracts(unittest.TestCase):
         p.write_text(p.read_text().replace('graph_declare: false', 'graph_declare: true'))
         self.assertTrue(any('owned only by Emperor' in e for e in validate(self.root)))
 
+    def test_retired_worker_exec_is_rejected(self):
+        p = self.root / 'subagents/jinyiwei/role.yaml'
+        p.write_text(p.read_text().replace('  graph_submit_outcome: true',
+                                        '  graph_submit_outcome: true\n  graph_worker_exec: true'))
+        self.assertTrue(any('retired graph_worker_exec' in e for e in validate(self.root)))
+
+    def test_retired_worker_exec_allow_is_rejected(self):
+        p = self.root / 'subagents/jinyiwei/role.yaml'
+        p.write_text(p.read_text().replace('    - graph_submit_outcome',
+                                        '    - graph_submit_outcome\n    - graph_worker_exec'))
+        self.assertTrue(any('retired graph_worker_exec' in e for e in validate(self.root)))
+
     def test_signal_only_worker_completion_is_rejected(self):
         p = self.root / 'subagents/jinyiwei/subagents/test/functions/execute.md'
         p.write_text(p.read_text().replace('evidence_met()', 'signal_observed(answer)'))

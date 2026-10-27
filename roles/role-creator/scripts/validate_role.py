@@ -66,7 +66,8 @@ RETIRED_V2_GRAPH_TOOLS = {
     'graph_create', 'graph_add_node', 'graph_add_edge', 'graph_add_loop',
     'graph_run', 'graph_approve', 'graph_cancel',
 }
-DENIED_LIVE_CONTRACT_TOOLS = LEGACY_DISPATCH_TOOLS | RETIRED_V2_GRAPH_TOOLS
+RETIRED_WORKER_TOOLS = {'graph_worker_exec'}
+DENIED_LIVE_CONTRACT_TOOLS = LEGACY_DISPATCH_TOOLS | RETIRED_V2_GRAPH_TOOLS | RETIRED_WORKER_TOOLS
 
 # Catalog Rule 6: the Graph v3 declarer/worker tool split.
 GRAPH_DECLARER_SPLIT = {
@@ -75,7 +76,6 @@ GRAPH_DECLARER_SPLIT = {
     'graph_status': True,
     'graph_audit': True,
     'graph_submit_outcome': False,
-    'graph_worker_exec': False,
 }
 GRAPH_WORKER_SPLIT = {name: not held for name, held in GRAPH_DECLARER_SPLIT.items()}
 
@@ -133,12 +133,32 @@ def _check_graph_tool_split(manifest, where, declarer, issues):
                       f"the v3 {side} split")
         return
     for name, want in expected.items():
-        if name == 'graph_worker_exec' and name not in tools:
-            continue
         got = tools.get(name)
         if got is not want:
             issues.append(f"{where}: tools.{name} must be {str(want).lower()} for the "
                           f"v3 {side} split (got {got!r})")
+
+
+def _effective_prompt(manifest, context_dir):
+    path = manifest.get('prompt_file')
+    if _is_string_nonempty(path):
+        try:
+            return (context_dir / path).read_text()
+        except (OSError, UnicodeError):
+            return ''  # Tier 1 owns unreadable-prompt diagnostics.
+    prompt = manifest.get('prompt')
+    return prompt if isinstance(prompt, str) else ''
+
+
+def _worker_handoff_duplicates(prompt):
+    text = re.sub(r'\s+', ' ', prompt)
+    patterns = {
+        'credential-passing instructions': r'\b(?:submit|call|pass|use)\b[^.!?]{0,160}\b(?:attempt|dispatched|delivered|own) credential\b',
+        'settlement mechanics': r'\bonly an accepted (?:decision|submission)\b',
+        'graph/dispatch prohibitions': r'\b(?:never|do not|cannot) (?:recursively )?(?:dispatch agents|delegate(?=[.!?]|$)|delegate to (?:agents|subagents)|create child graphs|declare,? control|query (?:the )?graph)\b',
+        'JSON fallback instructions': r'\b(?:exactly one|single) fenced (?:```)?json\b',
+    }
+    return [label for label, pattern in patterns.items() if re.search(pattern, text, re.I)]
 
 
 def _run_tier1(role_yaml_path, role_id, is_subagent=False):
@@ -363,7 +383,8 @@ def _discover_subagents(role_dir, data):
         asset_dir = _subagent_asset_dir(asset_parent, name)
         entry = {'source': source, 'name': slug, 'id': identity,
                  'display_name': name, 'path': location, 'valid': tier1['passed'],
-                 'tier1': tier1, '_data': manifest, '_asset_dir': asset_dir}
+                 'tier1': tier1, '_data': manifest, '_asset_dir': asset_dir,
+                 '_prompt_context': context_dir}
         entries.append(entry)
         return entry, asset_dir, [*ancestry, slug]
 
@@ -675,6 +696,23 @@ def _run_tier2(role_dir, role_id, data):
     else:
         result['checks'].append(_make_check('permission_legacy_tools', True))
 
+    # Rule 7 is a scoped authoring warning, not a runtime validity claim.
+    handoff_issues = []
+    for entry in discovered_subagents:
+        manifest = entry['_data']
+        tools = manifest.get('tools', {})
+        if not isinstance(tools, dict) or tools.get('graph_submit_outcome') is not True:
+            continue
+        prompt = _effective_prompt(manifest, entry['_prompt_context'])
+        duplicates = _worker_handoff_duplicates(prompt)
+        if duplicates:
+            handoff_issues.append(f"subagent '{entry['id']}': runtime supplies " +
+                                  ', '.join(duplicates) + '; keep domain criteria in the prompt')
+    for issue in handoff_issues:
+        warn(issue)
+    result['checks'].append(_make_check('worker_runtime_handoff', not handoff_issues,
+                                       '; '.join(handoff_issues)))
+
     result['checks'].append(_make_check(
         'loop_function', True,
         "loop is a host built-in; disable_functions controls whether it is enabled"))
@@ -695,6 +733,7 @@ def _run_tier2(role_dir, role_id, data):
     for entry in discovered_subagents:
         del entry['_data']
         del entry['_asset_dir']
+        del entry['_prompt_context']
 
     return result
 

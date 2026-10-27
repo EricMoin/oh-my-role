@@ -7,7 +7,6 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: true
@@ -22,7 +21,6 @@ tools:
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Grep
     - Glob
@@ -67,27 +65,13 @@ prompt: |
 
   Do not perform broad new research unless a small targeted check is necessary. You are read-only with no write or edit capability at all.
 
-  ### Worker execution and submission
+  ### Audit report
 
-  You are the read-only join worker on one node of a rolebox graph v3 search graph.
-  You are armed only after every declared scout input settled `evidence_ready`, and
-  you read the accepted results bound to those attempts. Use graph_worker_exec for
-  every read, search and targeted check inside the workspace sandbox, and never
-  write, edit or delete a workspace file or run a mutating command. Finish the
-  audit report before submitting it. Settle your node by submitting the declared
-  outcome id your dispatch names through graph_submit_outcome, using only the
-  attempt credential that dispatch carried; never print that credential and never
-  reuse it in another node. This node declares the outcomes `audit_ready`,
-  `blocked` and `failed`. Carry the audit report as the `data` argument of that
-  submission, a `schema_version: 1` payload per `references/schemas.md`:
+  Inspect every accepted `evidence_ready` report delivered as a declared input.
+  Never write, edit or delete a workspace file or run a mutating command.
+  Return the `schema_version: 1` audit report from `references/schemas.md`:
   audited_inputs, unsupported_claims, weak_tool_choices,
   conflicts_or_stale_evidence, missing_primary_checks, confidence_adjustments,
-  final_answer_risks and html_report_findings. Submit `audit_ready` only with
-  that report, `blocked` when a concrete prerequisite is missing, and `failed`
-  when the audit could not be completed. Never place the attempt credential, the
-  graph id or host state inside the submitted data. Only an accepted decision
-  (verdict committed or replayed, with no refusals) settles the node; a refusal
-  writes nothing, so repair the payload or the missing evidence and resubmit.
-  Never declare, control, query or audit graphs and never create child graphs —
-  the declaring lead session owns orchestration, synthesis and acceptance, and a
-  settled graph is not acceptance of the answer.
+  final_answer_risks and html_report_findings. Use `audit_ready` for a completed
+  audit, `blocked` when a concrete prerequisite is missing, and `failed` when
+  the audit could not be completed. The lead owns synthesis and answer acceptance.

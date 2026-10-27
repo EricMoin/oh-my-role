@@ -21,24 +21,6 @@ decisions, and no specialist writes production code.
 | `graph_status({...})` | Reads committed state: phase, nodes, attempts, controls, approvals, budget and unsettled effects | The declaring lead session |
 | `graph_audit({...})` | Diagnoses storage and recovery blockers without mutating state | The declaring lead session |
 | `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` | Settles the caller's own attempt with one declared outcome; the host derives attempt, submission and compiled-revision identity | Each worker, for its own node and attempt only |
-| `graph_worker_exec(command)` | Sandboxed workspace commands for reading, editing, checks and tests | Each worker, inside its own scope |
-
-A specialist NEVER declares, controls, queries or audits a graph, never creates a
-child graph, never dispatches another worker and never reads another attempt's
-credential. Tool availability does not enlarge the role or the node scope.
-
-A worker's grant is fixed: the baseline `graph_submit_outcome` plus
-`graph_worker_exec`, and any host tool the node itself declares in its `tools`
-list. The graph face can never be granted, an undeclared capability is refused at
-call time, and this review topology needs no extra grant: every gate works from the
-workspace, the manifests, the lockfile, the committed sources and the vendored
-registry sources. A batch that genuinely needs a documentation tool declares that
-tool on the node that needs it. A gate subagent's own `role.yaml` tool list
-configures that subagent, but inside a graph the node grant above is the binding
-boundary: a `Bash`, `Read` or `Grep` entry on the worker role does not by itself
-widen what the node may call, which is why every worker uses `graph_worker_exec`
-for its reads and checks.
-
 ## Declare and start
 
 `graph_declare` is the only start path. The call performs strict parsing,
@@ -99,7 +81,7 @@ stays empty.
     {
       "id": "safety",
       "agent": "rust-engineer--safety-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the affected crates, their Cargo.toml files, build.rs, and any C header or bindgen output for an FFI surface; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, unsafe_surface, msrv, dependencies_affected, verification_plan); the concrete question, for example whether every unsafe block states its safety invariant and whether each extern boundary is unwind-safe; the read-only scope, and the commands the node may run (cargo check, cargo clippy, cargo miri test) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted) and without writing shared caches outside the workspace. Load the rust-safety-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome: its status stays closed over pass, fail or needs-user-input while the settled outcome id is submitted separately. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome and nothing else settles it; only an accepted decision, verdict committed or replayed with no refusals, settles this node, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the affected crates, their Cargo.toml files, build.rs, and any C header or bindgen output for an FFI surface; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, unsafe_surface, msrv, dependencies_affected, verification_plan); the concrete question, for example whether every unsafe block states its safety invariant and whether each extern boundary is unwind-safe; the read-only scope, and the commands the node may run (cargo check, cargo clippy, cargo miri test) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted). Load the rust-safety-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Return the schema_version 1 gate report from references/schemas.md; its status is pass, fail or needs-user-input, and outcome_id records the corresponding pass, revise or escalate decision.",
       "completion": {
         "mode": "explicit"
       },
@@ -121,7 +103,7 @@ stays empty.
     {
       "id": "async",
       "agent": "rust-engineer--async-auditor",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the async crates, their Cargo.toml files, the runtime entrypoints, and the task, channel and lock sites under review; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, async_runtime, concurrency_model, msrv, verification_plan); the concrete question, for example whether every await point is cancellation-safe, whether each channel is bounded, and whether any lock guard crosses an await; the read-only scope, and the commands the node may run (cargo check, cargo clippy with the await_holding_lock lint, a loom model when one exists) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted) and without writing shared caches outside the workspace. Load the rust-async-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome: its status stays closed over pass, fail or needs-user-input while the settled outcome id is submitted separately. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome and nothing else settles it; only an accepted decision, verdict committed or replayed with no refusals, settles this node, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the async crates, their Cargo.toml files, the runtime entrypoints, and the task, channel and lock sites under review; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, async_runtime, concurrency_model, msrv, verification_plan); the concrete question, for example whether every await point is cancellation-safe, whether each channel is bounded, and whether any lock guard crosses an await; the read-only scope, and the commands the node may run (cargo check, cargo clippy with the await_holding_lock lint, a loom model when one exists) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted). Load the rust-async-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Return the schema_version 1 gate report from references/schemas.md; its status is pass, fail or needs-user-input, and outcome_id records the corresponding pass, revise or escalate decision.",
       "completion": {
         "mode": "explicit"
       },
@@ -143,7 +125,7 @@ stays empty.
     {
       "id": "api",
       "agent": "rust-engineer--api-reviewer",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the published crate lib.rs and module roots, its Cargo.toml features and rust-version, and the rustdoc output for the changed items; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, public_api_changes, msrv, dependencies_affected, verification_plan); the concrete question, for example whether each new pub item is documented, whether the error enums are non_exhaustive, and what semver impact the changed signatures carry; the read-only scope, and the commands the node may run (cargo semver-checks, cargo doc --no-deps with warnings denied, cargo tree -e features) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted) and without writing shared caches outside the workspace. Load the rust-api-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome: its status stays closed over pass, fail or needs-user-input while the settled outcome id is submitted separately. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome and nothing else settles it; only an accepted decision, verdict committed or replayed with no refusals, settles this node, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the published crate lib.rs and module roots, its Cargo.toml features and rust-version, and the rustdoc output for the changed items; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, public_api_changes, msrv, dependencies_affected, verification_plan); the concrete question, for example whether each new pub item is documented, whether the error enums are non_exhaustive, and what semver impact the changed signatures carry; the read-only scope, and the commands the node may run (cargo semver-checks, cargo doc --no-deps with warnings denied, cargo tree -e features) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted). Load the rust-api-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Return the schema_version 1 gate report from references/schemas.md; its status is pass, fail or needs-user-input, and outcome_id records the corresponding pass, revise or escalate decision.",
       "completion": {
         "mode": "explicit"
       },
@@ -165,7 +147,7 @@ stays empty.
     {
       "id": "performance",
       "agent": "rust-engineer--perf-profiler",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the hot-path modules and their callers, the benchmark harness, the workspace profile settings in Cargo.toml, and any captured criterion, cargo bloat or dhat output; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, performance_context, dependencies_affected, verification_plan); the concrete question, for example whether a new allocation or clone sits in a measured hot loop and whether the benchmark methodology supports the claimed comparison; the read-only scope, and the commands the node may run (cargo criterion against a named baseline, cargo bloat, an allocation profile) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted) and without writing shared caches outside the workspace. Load the rust-perf-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome: its status stays closed over pass, fail or needs-user-input while the settled outcome id is submitted separately. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome and nothing else settles it; only an accepted decision, verdict committed or replayed with no refusals, settles this node, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - the hot-path modules and their callers, the benchmark harness, the workspace profile settings in Cargo.toml, and any captured criterion, cargo bloat or dhat output; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, performance_context, dependencies_affected, verification_plan); the concrete question, for example whether a new allocation or clone sits in a measured hot loop and whether the benchmark methodology supports the claimed comparison; the read-only scope, and the commands the node may run (cargo criterion against a named baseline, cargo bloat, an allocation profile) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted). Load the rust-perf-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Return the schema_version 1 gate report from references/schemas.md; its status is pass, fail or needs-user-input, and outcome_id records the corresponding pass, revise or escalate decision.",
       "completion": {
         "mode": "explicit"
       },
@@ -187,7 +169,7 @@ stays empty.
     {
       "id": "cross-platform",
       "agent": "rust-engineer--cross-platform-checker",
-      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - every module carrying a cfg attribute, the target-conditioned dependency tables in Cargo.toml, build.rs, and the CI target matrix; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, cross_platform_context, msrv, dependencies_affected, verification_plan); the concrete question, for example whether every cfg-gated path still compiles on its declared target, whether endian-sensitive parsing uses the to_le and to_be conversions, and whether a pointer-width assumption truncates on a 32-bit target; the read-only scope, and the commands the node may run (cargo check --target for each declared triple, cargo tree -e features per target, clippy) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted) and without writing shared caches outside the workspace. Load the rust-platform-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Carry the gate report of references/schemas.md as the schema_version 1 data argument of graph_submit_outcome: its status stays closed over pass, fail or needs-user-input while the settled outcome id is submitted separately. Submit with the attempt credential this dispatch carried, never print that credential and never reuse it in another node. This node stays unsettled until you submit through graph_submit_outcome and nothing else settles it; only an accepted decision, verdict committed or replayed with no refusals, settles this node, and a refusal writes nothing, so repair the payload or the missing evidence and resubmit. Use graph_worker_exec for every read and check and never create child graphs.",
+      "prompt": "Template placeholder - replace with the real review brief for this node: the reviewed snapshot or diff with commit and uncommitted changes, and the readable source roots the reviewer may open - every module carrying a cfg attribute, the target-conditioned dependency tables in Cargo.toml, build.rs, and the CI target matrix; the prompt-embedded Engineering brief fields that pin the review (cargo_workspace, edition, cross_platform_context, msrv, dependencies_affected, verification_plan); the concrete question, for example whether every cfg-gated path still compiles on its declared target, whether endian-sensitive parsing uses the to_le and to_be conversions, and whether a pointer-width assumption truncates on a 32-bit target; the read-only scope, and the commands the node may run (cargo check --target for each declared triple, cargo tree -e features per target, clippy) without editing source, manifests, lockfiles or git state (build artifacts under `target/` are permitted). Load the rust-platform-gate skill and inspect only. The declared outcomes are pass, revise and escalate: submit pass when no supported blocking issue exists in the assigned scope, revise for concrete blocking issues with stable required_revisions, and escalate when essential evidence or user intent is unavailable. Return the schema_version 1 gate report from references/schemas.md; its status is pass, fail or needs-user-input, and outcome_id records the corresponding pass, revise or escalate decision.",
       "completion": {
         "mode": "explicit"
       },
@@ -255,14 +237,8 @@ Every node prompt carries enough context to act without the lead's conversation:
 - Read-only scope: the readable source roots, manifest paths and versions, and the
   commands the node may run. Reviewers MUST NOT edit source, manifests, lockfiles,
   fixtures or git state; the build artifacts those checks write under `target/` are
-  permitted, and shared caches outside the workspace are not. That read-only
-  guarantee is agent discipline plus whatever the host sandbox enforces — in an
-  unconfined session it is discipline alone — and never a property of the
-  declaration: `graph_worker_exec` runs with the session's resolved sandbox mode,
-  which rolebox never narrows.
-- The declared outcome ids the node may submit, the gate report shape from
-  `references/schemas.md`, the attempt credential carried by the dispatch, and the
-  submission discipline below.
+  permitted. Include the gate report shape from `references/schemas.md` and the
+  domain criteria for pass, revise and escalate.
 - For a consumer, the declared inputs it reads. Dispatch inputs are authoritative
   over the prompt snapshot. If a declared input is missing or incomplete, settle
   `escalate` with the exact missing evidence instead of inventing a predecessor
@@ -272,27 +248,13 @@ Node sessions do not share conversation history. Declared inputs and the shared
 workspace carry upstream results and artifacts; do not claim a file is
 inaccessible merely because the session differs.
 
-## Worker submission
+## Gate result mapping
 
-Submitting an outcome is the only way a node settles:
-
-1. Finish the read-only assessment and write the gate report first.
-2. Call `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`
-   with the node's declared `outcome_id`, the attempt credential this dispatch
-   carried, and the schema_version 1 gate report as `data`. Use only your own
-   attempt credential: never print it, never write it into a file or report, and
-   never use another attempt's credential.
-3. Never supply attempt, submission or compiled-revision identity; the host derives
-   them from its own state.
-4. The report status stays closed over `pass`, `fail` and `needs-user-input`, while
-   the settled outcome id is `pass`, `revise` or `escalate` — the two are separate
-   fields and must agree with the mapping in `references/schemas.md`.
-5. The only settling decision is `accepted` with verdict `committed` or `replayed`
-   and no refusals. A rejection or refusal writes nothing and leaves the attempt
-   open: read the refusal diagnostics, repair the payload or the missing evidence,
-   and resubmit. An identical retry after an uncertain delivery is idempotent; a
-   conflicting submission cannot overwrite a settled attempt. Once accepted, stop
-   work on that attempt.
+The gate report uses `schema_version: 1`. Its status stays closed over `pass`,
+`fail` and `needs-user-input`, while `outcome_id` records `pass`, `revise` or
+`escalate`; the two must agree with the mapping in `references/schemas.md`.
+The runtime supplies declared outcome ids, data-schema references and handoff
+mechanics. Node briefs supply review criteria and evidence requirements.
 
 ## Recovery
 

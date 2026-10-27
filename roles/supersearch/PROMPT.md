@@ -181,9 +181,6 @@ carries the existing evidence and the exact failure.
   unsupported claims, weak tool choices, conflicts or stale evidence, missing
   primary checks, confidence adjustments, final-answer risks, and HTML report
   findings when a report exists.
-- Workers use `graph_worker_exec` for every read, search, fetch and check, carry
-  their report as the submission `data`, and never include the attempt
-  credential, the graph id or host state in that data.
 - The auditor is a join node: it runs only after every declared `evidence_ready`
   input settles, and it reads only the accepted reports bound to those attempts.
 

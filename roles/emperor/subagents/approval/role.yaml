@@ -15,11 +15,10 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: false
   Edit: false
   Bash: false
 permission:
-  allow: [Read, graph_submit_outcome, graph_worker_exec]
+  allow: [Read, graph_submit_outcome]
 
 disable_functions: [plan, execute, loop]

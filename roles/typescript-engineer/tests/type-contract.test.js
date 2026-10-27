@@ -1,5 +1,5 @@
 // Run with an installed TypeScript >=5.4 compiler. Override TS_COMPILER_BIN if needed.
-import { test, expect } from "bun:test";
+import { test, expect } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -18,13 +18,12 @@ prompt: |
   construction step and no separate run step.
 
   Choose the target host before generating tool permissions or orchestration.
-  OpenCode/Pi workers use native workspace tools; only dsh provides
-  graph_worker_exec. Codex has no rolebox graph execution: generate a non-graph
+  OpenCode/Pi/dsh workers use authorized native workspace tools and rolebox
+  capabilities. Codex has no rolebox graph execution: generate a non-graph
   role there and use the host's own collaboration tools if needed.
   Graph declarers enable graph_declare/control/status/audit and disable
-  graph_submit_outcome. Graph workers use the inverse split. Omit the dsh-only
-  graph_worker_exec marker in portable manifests. Simple roles need no graph
-  tool markers. Use actual host tool names for native permissions.
+  graph_submit_outcome. Graph workers use the inverse split. Simple roles need
+  no graph tool markers. Use actual host tool names for native permissions.
   Workspace-only graph nodes omit tools and toolPresentation to retain their
   host baseline; extra grants must match registered tools on the chosen host.
   A file-edit denial plus an enabled shell does not enforce a read-only sandbox.
@@ -33,9 +32,11 @@ prompt: |
   and every edge binds exactly one declared outcome of its source node. Bound a
   revise/review cycle with a `loop_groups` entry carrying `max_traversals`, a
   `continuation_outcome` and an `exit_outcome` — never with an orchestration key in
-  `role.yaml`. A worker settles its own attempt by submitting the declared outcome
-  through `graph_submit_outcome` with the attempt credential its dispatch carried;
-  only an accepted decision with no refusals settles the node.
+  `role.yaml`. Put outcomes, data contracts, acceptance requirements and completion
+  policy in the declaration. The runtime injects those contracts and the attempt
+  handoff. Worker prompts and skills keep domain responsibilities, outcome meanings,
+  evidence and acceptance criteria; omit
+  duplicated credential, settlement, JSON fallback and graph-access instructions.
 
   Template rules (4 templates):
   - **Simple**: Flat directory, inline prompt, no subagents, no orchestration
@@ -56,15 +57,13 @@ prompt: |
 
   Load the `role-creator-conventions` and `role-creator-schema` skills for conventions and field guidance. For graph-orchestrated roles, read `references/graph-protocol.md` and `references/conventions/graph-orchestrated.md` for the canonical v3 authoring recipe and the full declaration grammar.
 
-  Submission and repair:
-  - Read references/schemas.md and submit its authoring-report as data through
-    graph_submit_outcome when running as a graph worker.
+  Report and repair:
+  - Read references/schemas.md and produce its authoring-report.
   - On a revise attempt, read the delivered validator input and apply its
     required_revisions. Missing or malformed feedback is blocked, not permission
     to repeat the original generation or infer an unreported defect.
   - For every generated feedback loop, declare a triggered revise input on its
     repair node; edges schedule execution but do not deliver accepted reports.
-  - Use graph_worker_exec only on dsh; use native workspace tools on OpenCode/Pi.
 
   Naming conventions:
   - Role ID = directory name (lowercase, hyphens, no --)

@@ -423,11 +423,15 @@ Retired v2 graph-authoring family (replaced by the Graph v3 declaration path):
 - `graph_approve`
 - `graph_cancel`
 
+Retired worker execution entry (all graph hosts now use authorized native tools):
+
+- `graph_worker_exec`
+
 `signal` remains a live session-evidence tool. It does not settle Graph v3 attempts; only accepted outcomes do.
 
 These names are removed and are not part of the live contract. Granting any of them is a hard configuration error. This enumeration is the executable mirror's denied list: `scripts/validate_role.py` names these literals — `graph_add_loop` included — because the mirror must name what it denies.
 
-**Violation:** `permission.allow` or a `tools:` key contains `Dispatch`, `dispatch_output`, `dispatch_cancel`, `graph_create`, `graph_add_node`, `graph_add_edge`, `graph_add_loop`, `graph_run`, `graph_approve`, or `graph_cancel` (including the v1 case variants of the dispatch family).
+**Violation:** `permission.allow` or a `tools:` key contains `Dispatch`, `dispatch_output`, `dispatch_cancel`, `graph_create`, `graph_add_node`, `graph_add_edge`, `graph_add_loop`, `graph_run`, `graph_approve`, `graph_cancel`, or `graph_worker_exec` (including the v1 case variants of the dispatch family).
 
 **Severity:** ERROR — the role is rejected at validation.
 
@@ -447,13 +451,37 @@ with `max_traversals`; do not confuse those cycle bounds with a function name.
 - A **declaring role** (primary) that declares any `graph_*` tool MUST hold `graph_declare`, `graph_control`, `graph_status` and `graph_audit` `true`, and `graph_submit_outcome` `false`.
 - A **worker subagent** that declares any `graph_*` tool MUST hold the exact inverse: those four declarer tools `false`, and `graph_submit_outcome` `true`.
 
-`graph_worker_exec` is optional and dsh-specific; if present it is false for a declarer and true for a worker. OpenCode/Pi use native worker tools; Codex has no graph backend.
+OpenCode/Pi/dsh use authorized native worker tools and rolebox capabilities.
+The retired worker execution tool is rejected by Rule 4. Codex has no graph backend.
 
 **Violation:** A manifest declares a `graph_*` tool while missing one of the five universal split keys or holding a value that contradicts its side of the split.
 
 **Severity:** ERROR — the role is rejected at validation.
 
 **Enforcement note:** `scripts/validate_role.py` never imports rolebox. It checks the split statically from the manifest alone. A shipped v3 declaration — the compiled plan, the node grants and the accepted-outcome transport — is checked by `tests/graph-contract.test.js`, not by the Python script.
+
+---
+
+
+### Rule 7: Worker prompt duplicates the runtime handoff (WARN)
+
+The runtime injects the current node's declared outcome IDs, data schema identities
+and versions, acceptance requirements, completion policy and attempt handoff.
+Author structured outcome/data/acceptance/completion fields once in the declaration.
+Worker prompts and skills retain domain responsibilities, outcome meanings, readable
+report-field documentation, evidence requirements and acceptance criteria.
+
+The local lint checks effective prompts of subagents with an explicit
+`tools.graph_submit_outcome: true`, honoring `prompt_file` precedence and nested
+prompt paths. It warns on recognizable credential-passing, settlement, graph-access
+or JSON fallback boilerplate. It does not scan parent/director explanations, reference
+manuals or arbitrary prose for these patterns, and is not an exhaustive semantic check.
+The shipped template regression tests separately check node briefs and example workers.
+
+Schema names are capability identities, not field-level JSON Schema. Preserve report
+field documentation and install any schema validators the declaration requires.
+
+**Severity:** WARN — remove duplicated mechanics without deleting business criteria.
 
 ---
 

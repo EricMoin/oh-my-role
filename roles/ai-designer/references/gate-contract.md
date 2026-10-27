@@ -1,10 +1,10 @@
-# Gate Runtime Contract
+# Design Gate Contract
 
-The director includes this contract in every node prompt. Each specialist loads its own declared gate skill, reads the supplied principle-card path, and uses only relevant theory references. Do not assume parent skills or conversation history are inherited. Do not delegate, create graphs, or wait for the graph containing yourself.
+Each specialist loads its declared gate skill, reads the supplied principle-card path, and uses the relevant design references. This contract defines Design State transport, evidence, and visual acceptance.
 
 ## Current state
 
-Start from the supplied full Design State. Accepted upstream results arrive as declared inputs with your dispatch and are authoritative. When a required input is absent or incomplete, read it with `graph_status({graph_id, scope: "all", format: "json", include_output: true, include_history: true})`, bounded to the intended producer node by `run_id`/`node_id`: read `attempts[].accepted` for the outcome identity and `attempts[].result` for the accepted data. The producer's accepted result is authoritative over the original prompt snapshot. Never invent a missing predecessor result.
+Start from the supplied full Design State and the delivered upstream result manifest. Prefer the latest delivered state over the original prompt snapshot, and verify producer claims against the cited evidence. When a required input is absent or incomplete, return `escalate` with the missing evidence and the smallest recovery action. Never invent a missing predecessor result.
 
 Apply your patch and carry forward a compact **full** Design State in the result so a downstream consumer does not lose earlier constraints. Preserve source locations and distinguish observed facts, assumptions, and unknowns. On revision, read the actual latest artifact and Review feedback before editing. Reference paths are resolved by the director; `references/...` in a gate skill means the supplied parent-role reference, not a path relative to the user's project.
 
@@ -34,7 +34,7 @@ Required Revisions:
 Next Gate: Context | Design | Review | Done | Director
 ```
 
-Finish artifact writes and verification first, then submit the gate result object as the `data` payload of your declared outcome: `graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})`. The director supplies the graph id, your node id, your declared outcome ids, and the attempt credential your dispatch carried; use only your own attempt credential. Only the decision `accepted` (verdict committed or replayed, with no refusals) settles the attempt. A rejection or refusal writes nothing and leaves the attempt open, so repair the payload or the missing evidence and resubmit. Never print the credential, never declare, control or query graphs, never fabricate an outcome, and never rely on a prose “pass” or inferred completion. After an accepted outcome, stop; downstream work may start immediately.
+Finish artifact writes and verification before returning this gate result:
 
 ```json
 {

@@ -68,7 +68,7 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(report['verdict'], 'FAIL')
         self.assertIn("worker/leaf", '\n'.join(report['errors']))
         self.assertFalse(self.check(report, 'permission_legacy_tools')['passed'])
-        leaf['tools'] = {k: v for k, v in GRAPH_WORKER_SPLIT.items() if k != 'graph_worker_exec'}
+        leaf['tools'] = dict(GRAPH_WORKER_SPLIT)
         self.manifest(subagents=[{'name': 'Worker', 'prompt': 'Work', 'subagents': [leaf]}])
         self.assertEqual(validate_role(self.role)['verdict'], 'PASS')
         leaf['tools']['graph_worker_exec'] = False
@@ -150,9 +150,50 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(functions['enabled'], ['plan', 'execute'])
         self.assertTrue(self.check(report, 'loop_function')['passed'])
 
-    def test_signal_and_optional_worker_exec_are_not_retired(self):
+    def test_signal_is_not_retired(self):
         self.manifest(tools={'signal': True}, permission={'allow': ['signal']})
         self.assertEqual(validate_role(self.role)['verdict'], 'PASS')
+
+    def test_retired_worker_tool_is_rejected_in_grants_and_denials(self):
+        for value in (True, False):
+            with self.subTest(value=value):
+                self.manifest(tools={'graph_worker_exec': value})
+                report = validate_role(self.role)
+                self.assertFalse(self.check(report, 'permission_legacy_tools')['passed'])
+                self.assertIn("retired live-contract tool 'graph_worker_exec'", '\n'.join(report['errors']))
+        self.manifest(subagents=[{'name': 'Worker', 'prompt': 'Work',
+                                  'tools': GRAPH_WORKER_SPLIT,
+                                  'permission': {'allow': ['graph_worker_exec']}}])
+        self.assertEqual(validate_role(self.role)['verdict'], 'FAIL')
+
+    def test_worker_handoff_lint_warns_without_rejecting_domain_role(self):
+        self.manifest(subagents=[{'name': 'Worker', 'tools': GRAPH_WORKER_SPLIT,
+            'prompt': 'Review architecture. Submit the outcome with your own credential. '
+                      'Only an accepted decision settles this attempt. '
+                      'Never delegate. End with exactly one fenced json block.'}])
+        report = validate_role(self.role)
+        self.assertEqual(report['verdict'], 'PASS')
+        self.assertFalse(self.check(report, 'worker_runtime_handoff')['passed'])
+        for label in ('credential-passing', 'settlement', 'graph/dispatch', 'JSON fallback'):
+            self.assertIn(label, '\n'.join(report['warnings']))
+
+    def test_worker_handoff_lint_preserves_domain_criteria_and_parent_explanations(self):
+        self.manifest(prompt='Only an accepted decision settles a node. Never delegate.',
+            subagents=[{'name': 'Worker', 'tools': GRAPH_WORKER_SPLIT,
+                'prompt': 'Use pass when architecture and lifecycle checks pass; revise for '
+                          'a reproducible defect. Return ReviewReport with file, evidence, '
+                          'impact and acceptance criteria. Do not modify source files. '
+                          'Never delegate approval decisions to an automated score.'}])
+        self.assertTrue(self.check(validate_role(self.role), 'worker_runtime_handoff')['passed'])
+
+    def test_worker_handoff_lint_uses_effective_nested_prompt_file(self):
+        child = self.role / 'subagents/worker'
+        self.manifest(child, name='Worker', tools=GRAPH_WORKER_SPLIT,
+                      prompt='Never delegate.', prompt_file='prompts/review.md')
+        self.write(child / 'prompts/review.md', 'Read-only review; report evidence for each defect.')
+        self.assertTrue(self.check(validate_role(self.role), 'worker_runtime_handoff')['passed'])
+        self.write(child / 'prompts/review.md', 'Never create child graphs.')
+        self.assertFalse(self.check(validate_role(self.role), 'worker_runtime_handoff')['passed'])
 
     def test_external_assets_are_explicitly_unverified(self):
         self.manifest(skills=['shared'], functions=['shared-function'])

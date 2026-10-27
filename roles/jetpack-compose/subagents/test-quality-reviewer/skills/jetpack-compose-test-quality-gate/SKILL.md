@@ -40,16 +40,11 @@ Cite the file/test, failure mechanism, and required outcome. Improvements withou
 material failure remain advisory. During consultation, evaluate the strategy without
 claiming unwritten tests pass.
 
-## Submission
+## Report and judgment
 
-Submit this gate report as the node's outcome, not as prose. Read and check only through
-`graph_worker_exec`, stay read-only, finish the report, then settle the node by submitting
-the declared outcome id the dispatch names through `graph_submit_outcome` with only the
-attempt credential that dispatch carried. Carry the report as `schema_version: 1` data
-following `references/schemas.md`. Only an accepted decision (verdict committed or replayed,
-with no refusals) settles the node; a refusal writes nothing, so repair the payload or the
-missing evidence and resubmit. Never declare, control, query or audit graphs and never create
-child graphs: the declaring lead session owns orchestration, synthesis, repair and acceptance.
+Stay within the assigned read-only review scope. Use the gate report in
+`references/schemas.md` and cite the evidence supporting each finding.
+
 This gate settles `pass`, `revise` or `escalate` — `escalate` when essential evidence or user
 intent is unavailable, never a fabricated pass. The gate report carries
 `status: pass | fail | needs-user-input` per `references/schemas.md`; the settled outcome id is

@@ -17,12 +17,9 @@ observe:
 continue_until: evidence_met()
 ---
 
-
 Reconcile the supplied Strategy and review findings using references/schemas.md.
 Preserve all accepted requirements, dependencies, verification and authorization.
 Do not add scope or claim unavailable review passed. Surface unresolved vetoes in
 notes and risk: high.
 
-Submit strategy through graph_submit_outcome with the complete contract as data.
-Use your own handoff credential and check the accepted receipt. Follow the worker
-result rules in graph-protocol.md; a signal or artifact does not settle the node.
+Return strategy with the complete business report.

@@ -44,14 +44,7 @@ id, and the declaring lead owns any escalation the finding implies.
 
 ## Output Format
 
-Finish the gate report before submitting. Settle the node by submitting the declared outcome id
-the dispatch names through `graph_submit_outcome`, with only the attempt credential that
-dispatch carried and this report as `schema_version: 1` data following
-`references/schemas.md`. Only an accepted decision (verdict committed or replayed, with no
-refusals) settles the node; a refusal writes nothing, so repair the payload or the missing
-evidence and resubmit. Read and check only through `graph_worker_exec`, stay read-only, and
-never declare, control, query or audit graphs or create child graphs. The report carries the
-fields below, with `status` reporting `pass`, `fail` or `needs-user-input` per
+Stay read-only and use the `schema_version: 1` gate report fields below, with `status` reporting `pass`, `fail` or `needs-user-input` per
 `references/schemas.md`; the settled outcome id is submitted separately and is always the
 declared `report`, whatever the status and for any finding this node reports — the review-gate
 outcome ids that other gates settle do not apply here, and the declaring lead owns any escalation:

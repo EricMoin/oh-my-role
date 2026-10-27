@@ -9,7 +9,7 @@
       {
         "id": "intake-strategist",
         "agent": "ai-designer--intake-strategist",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },
@@ -38,7 +38,7 @@
       {
         "id": "design",
         "agent": "ai-designer--design",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },
@@ -57,7 +57,7 @@
       {
         "id": "review",
         "agent": "ai-designer--review",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },
@@ -118,7 +118,7 @@
       {
         "id": "context-researcher",
         "agent": "ai-designer--context-researcher",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },
@@ -137,7 +137,7 @@
       {
         "id": "design",
         "agent": "ai-designer--design",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },
@@ -162,7 +162,7 @@
       {
         "id": "review",
         "agent": "ai-designer--review",
-        "prompt": "Placeholder: the director replaces this prompt with the full gate contract, the current Design State, the authorized scope, the reference paths, and this node's graph id, node id and attempt identity.",
+        "prompt": "Placeholder: the director replaces this prompt with the current Design State, authorized scope, gate-specific acceptance criteria, artifact paths, and resolved gate-contract and principle-card reference paths.",
         "completion": {
           "mode": "explicit"
         },

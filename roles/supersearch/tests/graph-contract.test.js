@@ -1,4 +1,4 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/supersearch/tests/graph-contract.test.js
+// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/supersearch/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
 // and the real host drive the real role files on disk. The search declarations are read
 // out of references/graph-protocol.md and references/graph-examples.json, so the
@@ -7,7 +7,7 @@
 // worker executes and nothing is published. afterEach deletes every temp dir, which is
 // where each declared graph's persisted plan lives, so no declared graph outlives its
 // test.
-import { test, expect, afterEach } from "bun:test";
+import { test, expect, afterEach } from "vitest";
 import {
   mkdtempSync,
   cpSync,
@@ -22,7 +22,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 if (!process.env.ROLEBOX_ROOT) {
   throw new Error(
     "Set ROLEBOX_ROOT to the rolebox checkout to validate, for example " +
-      "ROLEBOX_ROOT=/path/to/rolebox bun test --isolate " +
+      "ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs " +
       "roles/supersearch/tests/graph-contract.test.js",
   );
 }
@@ -96,7 +96,6 @@ const V3_DECLARER_TOOLS = {
   graph_status: true,
   graph_audit: true,
   graph_submit_outcome: false,
-  graph_worker_exec: false,
   Write: true,
   Edit: true,
   Bash: true,
@@ -107,7 +106,6 @@ const V3_WORKER_TOOLS = {
   graph_status: false,
   graph_audit: false,
   graph_submit_outcome: true,
-  graph_worker_exec: true,
   Write: false,
   Edit: false,
   Bash: true,
@@ -401,18 +399,15 @@ test("rolebox loads the lead, its four read-only workers and every declared skil
     }
     // Read-only workers settle their own node and never write the workspace.
     const allow = [...(child.permission?.allow ?? [])];
-    expect(allow.slice(0, 2)).toEqual([
-      "graph_submit_outcome",
-      "graph_worker_exec",
-    ]);
+    expect(allow).toContain("graph_submit_outcome");
+    expect(allow).not.toContain("graph_worker_exec");
     expect(allow).not.toContain("Write");
     expect(allow).not.toContain("Edit");
     // Each worker names the declared outcome ids it may submit.
     for (const outcome of WORKER_OUTCOMES[slug]) {
       expect(child.prompt).toContain(outcome);
     }
-    expect(child.prompt).toContain("graph_submit_outcome");
-    expect(child.prompt).toContain("credential");
+    expect(child.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
     expect(child.prompt).toContain("schema_version");
   }
 

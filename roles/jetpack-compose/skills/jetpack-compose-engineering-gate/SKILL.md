@@ -24,9 +24,7 @@ remove obsolete mechanisms after replacing a design.
 An early consultation resolves a named uncertainty. Acceptance review requires an actual
 diff and recorded check results. Declare one review batch per stable snapshot: the lead
 declares the graph and remains the sole production-code writer, while the specialists are
-read-only evidence nodes on that snapshot. Each worker settles its own node by submitting
-the declared outcome its dispatch names with the attempt credential it carried, and only
-an accepted decision settles a node. Read the accepted results before integrating
+read-only evidence nodes on that snapshot. Read the accepted results before integrating
 findings; repairs stay parent-owned and bounded, and the lead owns the final decision.
 Require concrete failure mechanisms for blocking findings; do not obey unsupported
 pattern prescriptions.

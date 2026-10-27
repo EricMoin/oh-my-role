@@ -1,4 +1,4 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox bun test --isolate roles/jetpack-compose/tests/graph-contract.test.js
+// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/jetpack-compose/tests/graph-contract.test.js
 // The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
 // and the real host drive the real role files on disk. Review and recording declarations
 // are read from the shipped references, so the documented and tested contracts are the
@@ -6,7 +6,7 @@
 // engine hands it: no model runs, no worker executes and nothing is published. afterEach
 // deletes every temp dir, which is where each declared graph's persisted plan lives, so no
 // declared graph outlives its test.
-import { test, expect, afterEach } from "bun:test";
+import { test, expect, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 if (!process.env.ROLEBOX_ROOT) {
   throw new Error(
     "Set ROLEBOX_ROOT to the rolebox checkout to validate, for example " +
-      "ROLEBOX_ROOT=/path/to/rolebox bun test --isolate " +
+      "ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs " +
       "roles/jetpack-compose/tests/graph-contract.test.js",
   );
 }
@@ -51,8 +51,9 @@ const { SqliteAcceptanceLedger } = await engine(
 
 // The v3 surface this role is written against: one declaring session that owns
 // graph_declare/control/status/audit, and workers that only submit their declared
-// outcome. None of the retired graph v2 entry points may reappear.
-const RETIRED_V2_TOOLS = [
+// outcome. Retired graph entry points and the removed worker command must stay absent.
+const RETIRED_TOOLS = [
+  "graph_worker_exec",
   "graph_create",
   "graph_add_node",
   "graph_add_edge",
@@ -74,7 +75,6 @@ const V3_DECLARER_TOOLS = {
   graph_status: true,
   graph_audit: true,
   graph_submit_outcome: false,
-  graph_worker_exec: false,
   Write: true,
   Edit: true,
   Bash: true,
@@ -85,7 +85,6 @@ const V3_WORKER_TOOLS = {
   graph_status: false,
   graph_audit: false,
   graph_submit_outcome: true,
-  graph_worker_exec: true,
   Write: false,
   Edit: false,
   Bash: true,
@@ -96,7 +95,6 @@ const WORKER_ALLOW = [
   "Grep",
   "Read",
   "graph_submit_outcome",
-  "graph_worker_exec",
 ];
 const SOURCE_TRACER = "source-tracer";
 const SUBAGENT_SLUGS = [
@@ -185,7 +183,7 @@ test("rolebox loads the lead, six review specialists, the journey recorder and e
   // declaring session holds the orchestration tools and workers only submit.
   expect(role.graph).toBeUndefined();
   expect(role.tools).toMatchObject(V3_DECLARER_TOOLS);
-  for (const retired of RETIRED_V2_TOOLS) {
+  for (const retired of RETIRED_TOOLS) {
     expect(role.tools[retired]).toBeUndefined();
   }
 
@@ -193,11 +191,13 @@ test("rolebox loads the lead, six review specialists, the journey recorder and e
   for (const child of role.subagents) {
     const slug = childSlug(child);
     expect(child.tools).toMatchObject(V3_WORKER_TOOLS);
-    for (const retired of RETIRED_V2_TOOLS) {
+    expect(child.prompt).not.toMatch(/attempt credential|graph_submit_outcome|graph_worker_exec/);
+    expect(child.prompt).toContain("references/schemas.md");
+    for (const retired of RETIRED_TOOLS) {
       expect(child.tools[retired]).toBeUndefined();
     }
     // No direct Write/Edit tools; orchestration stays with the declaring lead.
-    // The recorder's scoped writes use graph_worker_exec under its node contract,
+    // The recorder's scoped writes use authorized host commands under its node contract,
     // which does not imply a per-directory boundary enforced by the graph engine.
     const allow = [...(child.permission?.allow ?? [])];
     const expected = slug === SOURCE_TRACER ? [...WORKER_ALLOW, "WebFetch"] : WORKER_ALLOW;
@@ -233,14 +233,14 @@ test("rolebox loads the lead, six review specialists, the journey recorder and e
   }
 });
 
-test("the shipped toolset exposes the v3 surface and no retired v2 entry point", () => {
+test("the shipped toolset exposes the v3 surface and no retired graph entry point", () => {
   const tools = createGraphToolSet({
     stateDir: tempDir("compose-graph-tools-"),
   });
   for (const name of V3_TOOLS) {
     expect(typeof tools[name]).toBe("function");
   }
-  for (const retired of RETIRED_V2_TOOLS) {
+  for (const retired of RETIRED_TOOLS) {
     expect(tools[retired]).toBeUndefined();
   }
 });
@@ -337,6 +337,18 @@ test("the optional recorder compiles as a bounded graph without acceptance depen
   ]);
   expect(compiled.plan.terminalOutcomes).toHaveLength(2);
   expect(declaration.nodes.some((reviewNode) => reviewNode.agent === node.agent)).toBe(false);
+});
+
+test("worker briefs preserve domain evidence without duplicating runtime mechanics", () => {
+  for (const node of declaration.nodes) {
+    expect(node.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|credential|no refusals/);
+    expect(node.prompt).toContain("references/schemas.md");
+    expect(node.prompt).toContain("read-only");
+  }
+  const schemas = readFileSync(join(roleDir, "references", "schemas.md"), "utf8");
+  expect(schemas).toContain("required_revisions");
+  expect(schemas).toContain("evidence");
+  expect(schemas).toContain("needs-user-input");
 });
 
 // ── (c) The real declare/dispatch/settle path, in process ───────────────────

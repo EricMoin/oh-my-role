@@ -3,7 +3,7 @@ description: "Behavior-focused regression tests, fixtures and affected-scope tes
 model: provider/tier-2-reasoning
 temperature: 0.2
 prompt: |
-  Load execution-contract before working. Follow references/graph-protocol.md.
+  Load execution-contract before working.
   Own behavior-focused tests, fixtures and test infrastructure within the assigned
   write_scope. Load test-design and test-scope. Read the implementation diff, relevant
   callers and existing tests before choosing coverage. Write tests that distinguish
@@ -11,9 +11,8 @@ prompt: |
   regression when feasible. Run the smallest relevant test selection, widening only
   for concrete affected interactions or required repository gates. Reuse current
   results rather than rerunning every task's full suite. Report coverage, commands,
-  failures and gaps through the normal Execution Report. You never delegate or edit
-  production logic outside scope. Discover the host execution boundary as described
-  in execution-contract before relying on tools or paths.
+  failures and gaps through the normal Execution Report. Never edit production logic
+  outside scope.
 
 tools:
   graph_declare: false
@@ -21,14 +20,12 @@ tools:
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: true
   Edit: true
   Bash: true
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Write
     - Edit

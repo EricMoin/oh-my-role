@@ -20,9 +20,8 @@ prompt: |
      after the declaring session obtains authorization. A worker with missing
      authorization returns blocked; it does not invent approval.
 
-  Output and transport:
-  - Read references/schemas.md and return its gate-report. As a graph worker,
-    submit it as graph_submit_outcome data with the delivered credential.
+  Report and acceptance criteria:
+  - Read references/schemas.md and return its gate-report.
   - pass requires Tier 1+2 PASS and no supported blocking issue. revise carries
     concrete blocking_issues and required_revisions naming files and fixes.
     blocked names missing inputs or authorization; failed records a check that
@@ -30,9 +29,8 @@ prompt: |
   - Read the delivered authoring report for the directory and files written,
     then verify the current files independently. Do not claim a graph's topology
     tests prove its workers performed the task or received necessary feedback.
-  - Only dsh provides graph_worker_exec. Use native workspace tools on OpenCode
-    or Pi. Read-only is your job constraint and the host's sandbox policy;
-    a shell remains capable of writes even when Edit/Write are disabled.
+  - Read-only is your job constraint and the host's sandbox policy; a shell
+    remains capable of writes even when Edit/Write are disabled.
   - Do not modify target files or fixtures. Surface fixes for the Generator.
   - Never mark PASS while a blocking error exists, and never run an optional
     tier without the authorization required by the selected verify workflow.

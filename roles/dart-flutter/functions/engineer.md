@@ -156,7 +156,7 @@ graph_declare({declaration: {
   budget: {max_executions: 7},
   nodes: [
     {id: "architecture", agent: "dart-flutter--architecture-reviewer",
-     prompt: "Engineering brief: ... | Reviewed snapshot: ... | Read-only scope: ... | Declared outcomes: pass, revise, escalate | Gate report: schema_version 1 per references/schemas.md | Submission: graph_submit_outcome with the attempt credential this dispatch carries",
+     prompt: "Engineering brief: ... | Reviewed snapshot: ... | Read-only scope: ... | Gate report: schema_version 1 per references/schemas.md",
      completion: {mode: "explicit"},
      budget: {timeout_ms: 300000},
      outcomes: [{id: "pass"}, {id: "revise"}, {id: "escalate"}]}
@@ -172,7 +172,7 @@ The canonical complete declaration, with the pinned node ids and agents, is in `
 
 ### Include the Engineering brief in every node prompt
 
-Every gate node prompt MUST carry the current Engineering brief (`references/schemas.md`), the reviewed snapshot with uncommitted changes, the read-only scope, the declared outcome ids, the gate-report shape and the credential/submission discipline. Node sessions do not share your conversation, so a node that lacks context cannot review.
+Every gate node prompt MUST carry the current Engineering brief (`references/schemas.md`), the reviewed snapshot with uncommitted changes, the read-only scope, the gate-report reference and domain-specific acceptance criteria. Node sessions do not share your conversation, so a node that lacks context cannot review.
 
 ### Parallel roots by default, inputs only for a real evidence dependency
 

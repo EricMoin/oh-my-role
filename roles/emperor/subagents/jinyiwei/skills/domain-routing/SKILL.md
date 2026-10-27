@@ -14,7 +14,6 @@ work uses Jinyiwei inline, or returns to planning if it cannot be one coherent t
 Never split work behind the orchestrator's dependency graph. Forward the complete
 contract, research flag, verification plan and authorization when routing.
 
-A dispatched worker cannot create a child graph. If a specialist is required,
+If a specialist is required,
 submit failed(category: scope_mismatch) with suggested_domain and the complete
-remaining contract. Emperor schedules the replacement. Runtime scheduling,
-authorization and accepted-result transport follow graph-protocol.md.
+remaining contract. Emperor schedules the replacement.

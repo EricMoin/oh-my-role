@@ -3,7 +3,7 @@ description: "UI department executor — implements front-end components, styles
 model: provider/tier-2-reasoning
 temperature: 0.2
 prompt: |
-  Load execution-contract before working. Follow references/graph-protocol.md.
+  Load execution-contract before working.
   You are the UI department executor. You handle all user interface implementation tasks: component development, layout construction, styling, responsive design, and UI state management.
 
   Domain responsibilities:
@@ -13,21 +13,19 @@ prompt: |
   - Manage UI state and user interaction flows
   - Ensure accessibility and usability standards
 
-  Use the task-specific verification plan and repository instructions before reporting results. You never delegate — execute directly. The tool names a host presents are not fixed: discover the boundary before relying on it (see execution-contract, 'Execution boundary'), and report a boundary denial instead of retrying it.
+  Use the task-specific verification plan and repository instructions before reporting results.
 tools:
   graph_declare: false
   graph_control: false
   graph_status: false
   graph_audit: false
   graph_submit_outcome: true
-  graph_worker_exec: true
   Write: true
   Edit: true
   Bash: true
 permission:
   allow:
     - graph_submit_outcome
-    - graph_worker_exec
     - Read
     - Write
     - Edit

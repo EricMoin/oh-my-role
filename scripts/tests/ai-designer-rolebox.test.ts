@@ -1,12 +1,12 @@
 /** Offline contracts against the sibling rolebox checkout's graph v3 outcome protocol; scripted dispatch, no model calls. */
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, expect, test } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { dirname, join, resolve, sep } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const root = resolve(import.meta.dir, '../..');
-const rolebox = resolve(process.env.ROLEBOX_DIR ?? resolve(root, '../rolebox'));
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const rolebox = resolve(process.env.ROLEBOX_ROOT ?? process.env.ROLEBOX_DIR ?? resolve(root, '../rolebox'));
 const load = (path: string) => import(pathToFileURL(resolve(rolebox, path)).href);
 const { discoverRoles } = await load('src/loader/role-loader.ts');
 const { resolveSkills } = await load('src/resolver/skill-resolver.ts');
@@ -116,13 +116,16 @@ test('the shipped role resolves from roles/ with four specialists and each resol
 test('the declaring session owns graphs while every specialist only submits and works', () => {
   expect(aiDesigner.config.tools).toMatchObject({
     graph_declare: true, graph_control: true, graph_status: true, graph_audit: true,
-    graph_submit_outcome: false, graph_worker_exec: false,
+    graph_submit_outcome: false,
     Write: true, Edit: true, Bash: true,
   });
+  expect(aiDesigner.config.tools.graph_worker_exec).toBeUndefined();
   for (const agent of specialists) {
+    expect(agent.config.tools.graph_worker_exec).toBeUndefined();
+    expect(agent.config.prompt).not.toMatch(/graph_submit_outcome|attempt credential|Never declare/);
     expect(agent.config.tools).toMatchObject({
       graph_declare: false, graph_control: false, graph_status: false, graph_audit: false,
-      graph_submit_outcome: true, graph_worker_exec: true, Bash: true,
+      graph_submit_outcome: true, Bash: true,
     });
   }
   const design = specialists.find(agent => agent.id === 'ai-designer--design')!;
@@ -133,6 +136,16 @@ test('the declaring session owns graphs while every specialist only submits and 
   }
 });
 
+test('design gates retain visual acceptance and escalate missing delivered evidence', () => {
+  const contract = readFileSync(resolve(root, 'roles/ai-designer/references/gate-contract.md'), 'utf8');
+  expect(contract).toContain('delivered upstream result manifest');
+  expect(contract).toContain('return `escalate` with the missing evidence');
+  expect(contract).not.toMatch(/graph_status|graph_submit_outcome|attempt credential/);
+  expect(contract).toContain('Visual Checks');
+  expect(contract).toContain('Preservation Check');
+  expect(contract).toContain('stable ID, severity, location, evidence, fix target, and acceptance check');
+});
+
 test('every shipped declaration compiles, names registered agents and carries the declared loop and inputs', () => {
   expect(Object.keys(examples).sort()).toEqual(['full', 'intake', 'standard']);
   for (const declaration of Object.values(examples) as any[]) {
@@ -141,6 +154,8 @@ test('every shipped declaration compiles, names registered agents and carries th
     for (const node of declaration.nodes) {
       expect(agentIds).toContain(node.agent);
       expect(node.completion).toEqual({ mode: 'explicit' });
+      expect(node.prompt).not.toMatch(/attempt identity|credential|graph_submit_outcome/);
+      expect(node.prompt).toContain('gate-specific acceptance criteria');
     }
     for (const edge of declaration.edges) expect(Object.keys(edge).sort()).toEqual(['from', 'outcome', 'to']);
   }

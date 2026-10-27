@@ -37,4 +37,3 @@ Each gate settles a declared outcome id — `pass`, `revise` or `escalate` — a
 - `pass`: no supported blocking issue in the assigned scope; implementation can proceed or the final answer can ship.
 - `revise`: a correctness, maintainability, platform, accessibility, or verification issue must be fixed first.
 - `escalate`: product intent or platform/release facts are missing and cannot be discovered locally.
-- Only an accepted decision (verdict committed or replayed, with no refusals) settles a node; a refusal writes nothing, so repair the payload or the missing evidence and resubmit.

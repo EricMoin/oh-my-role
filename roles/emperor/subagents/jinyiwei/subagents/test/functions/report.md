@@ -28,9 +28,3 @@ nested partial report. Never release done-only consumers with unfinished work.
 For missing authorization, prerequisites or user choices, use approval_required,
 blocked or clarification_required with the corresponding contract, preserving
 completed and remaining work. Do not submit done after one of these settles.
-
-Call graph_submit_outcome using the host handoff's graph_id, node_id and credential,
-the declared outcome_id and the full object as data. Check decision: accepted,
-verdict: committed/replayed and empty refusals before finishing. A rejected/refused
-proposal needs diagnostic recovery; a tool call, signal or result fence alone is
-not completion. Optional result JSON mirrors data and never includes credentials.

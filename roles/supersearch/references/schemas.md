@@ -1,19 +1,12 @@
 # Inter-agent contracts (schema_version: 1)
 
-Every SuperSearch business payload is a JSON object with `schema_version: 1`. A
-worker submits it as the `data` argument of
-`graph_submit_outcome({graph_id, node_id, outcome_id, credential, data})` for the
-outcome id its dispatch names. Accepted attempt results are the transport
-authority: the lead reads them from `attempts[].result` with `graph_status`. A
-prose message, a chat update or an inferred completion is not transport and
-releases no consumer.
+Every SuperSearch business payload is a JSON object with `schema_version: 1`.
 
-This host registers no validators and no business JSON schemas, so these payload
-shapes are a prompt contract, not an engine gate: the declaration carries no
+These templates reference no registered validators or business JSON schemas, so
+these payload shapes are a prompt contract, not an engine gate: the declaration carries no
 `data` schema and no `acceptance`, and the fields below are inert data the engine
 never inspects. Reject unknown schema versions, missing required fields and
-unknown ids during synthesis. Never put the attempt credential, the graph id or
-host state into business data.
+unknown ids during synthesis.
 
 ## scout-report (submitted by local, web and source scouts)
 
