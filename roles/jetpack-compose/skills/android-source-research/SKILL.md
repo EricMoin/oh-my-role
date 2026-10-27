@@ -1,80 +1,42 @@
 ---
 name: android-source-research
-description: Establishes an evidence-first workflow for uncertain Android and Jetpack Compose behavior using official docs, AndroidX/AOSP source, release notes, issue trackers, local dependency source, and reproducible experiments. Use when Compose, AndroidX, or platform behavior is version-specific, undocumented, or surprising — trace to source before guessing.
+description: Verify uncertain, version-specific Android and Jetpack Compose behavior using current official docs, resolved dependency source, and focused experiments. Use when APIs, implementation details, migration behavior, or platform differences need evidence.
 ---
 # Android Source Research
 
-When Android or Compose behavior is version-specific, surprising, or undocumented, do not guess. Build an evidence trail from docs, source, release notes, and reproduction.
+Own the investigation workflow here. Use `references/evidence-first-research.md` for
+citation policy and `references/source-research.md` for source navigation and commands.
+Read those references only when their detail is needed.
 
-## When To Use
+## Workflow
 
-Use this skill when:
+1. Define one falsifiable question and the smallest observation that would answer it.
+2. Inspect project files and, when resolution matters, the relevant Gradle dependency
+   configuration. Record Kotlin/compiler plugin, AndroidX artifact versions, SDK levels,
+   build variant and device facts relevant to the question. A BOM declaration alone
+   does not prove the resolved version of each artifact.
+3. For library/API documentation, use Context7: resolve the actual library name, choose
+   the relevant authoritative result, then query one concept with its returned ID.
+   If Context7 lacks coverage, open official docs or release notes directly. Do not
+   invent a library ID or treat a search result as verified source.
+4. If documentation answers the question for this version, stop researching. Otherwise
+   inspect the matching published source artifact or a verified repository revision.
+   Prefer exact local dependency sources to unrelated development-branch code.
+5. Trace the relevant overload, defaults, implementation and platform/version guards.
+   Compare versions only when the question depends on a difference.
+6. If behavior remains ambiguous, run a focused reproduction when feasible. Record its
+   build/device conditions and observed result; a proposed experiment is not executed
+   evidence. If execution is unavailable, state the remaining uncertainty.
+7. Report the conclusion, version scope, evidence and smallest justified action. Mark
+   assumptions explicitly and avoid extending a finding beyond the inspected version.
 
-- A behavior depends on Android API level, target SDK, OEM behavior, or AndroidX version.
-- Compose runtime, compiler, lifecycle, navigation, or Material behavior is uncertain.
-- A fix depends on internal implementation details.
-- Documentation and observed behavior appear to conflict.
-- You need to justify a recommendation that affects architecture, migration, or performance.
+## Scope and Stop Conditions
 
-## Evidence Hierarchy
+Use source tracing for undocumented internals, contradictory evidence or version bugs;
+ordinary documented API use does not require reading an entire call graph. Community
+articles can locate a lead but cannot establish the final behavior claim. Reuse evidence
+within its verified scope instead of retrieving the same fact for each consumer.
 
-Prefer evidence in this order:
-
-1. Local project source and dependency versions.
-2. Official Android and AndroidX documentation.
-3. AndroidX source for Jetpack libraries.
-4. AOSP source for platform behavior.
-5. Official release notes, migration guides, and issue tracker comments.
-6. Reproducible local experiment or minimal sample.
-7. Community posts only as hints, never as the final authority.
-
-## Research Workflow
-
-1. Pin the exact versions: Android Gradle Plugin, Kotlin, Compose compiler/plugin, Compose BOM or individual artifacts, lifecycle/navigation/material libraries, min/target SDK.
-2. Reproduce or describe the observed behavior precisely.
-3. Search local dependency source first when available in IDE caches or Gradle sources.
-4. Check official docs and release notes for the relevant version.
-5. Trace AndroidX or AOSP source for the implementation path.
-6. Run a minimal experiment if source/docs are ambiguous.
-7. Report the answer with evidence, version scope, and confidence level.
-
-## Source Tracing Tips
-
-- Start from the public API used by the app.
-- Follow overloads and default parameters to the actual implementation.
-- Check annotations, API-level guards, and compatibility shims.
-- For Compose, inspect runtime/material/foundation versions that match the app, not latest main branch by default.
-- For platform behavior, distinguish framework API behavior from AndroidX compatibility wrappers.
-- Record file/class/method names and version/source branch when citing source.
-
-## Local Commands
-
-Adapt commands to the project:
-
-```bash
-./gradlew :app:dependencies
-./gradlew :app:androidDependencies
-./gradlew :app:dependencyInsight --dependency androidx.compose.runtime
-./gradlew :app:dependencyInsight --dependency androidx.lifecycle
-```
-
-Use existing version catalogs or Gradle convention plugins as the source of truth when present.
-
-## Reporting Format
-
-When presenting researched findings, include:
-
-- **Observed behavior**: what happens and where.
-- **Version scope**: library/API versions involved.
-- **Evidence**: docs/source/release notes/experiment used.
-- **Conclusion**: what is true for this project.
-- **Action**: the smallest recommended implementation or mitigation.
-- **Unknowns**: any remaining uncertainty, especially OEM or API-level variation.
-
-## Validation Checklist
-
-- [ ] Exact dependency and SDK versions are known.
-- [ ] Claims are grounded in official docs, AndroidX/AOSP source, release notes, or a reproducible experiment.
-- [ ] Version-specific conclusions are not generalized beyond the evidence.
-- [ ] Community sources are treated as secondary hints.
-- [ ] The final recommendation includes confidence and implementation impact.
+Keep investigation bounded by the lead's hypothesis and diagnostic budget. Escalate only
+missing intent or essential evidence that cannot be obtained; lack of a convenient tag is
+not itself a reason to stop when the published sources are available.

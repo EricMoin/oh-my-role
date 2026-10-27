@@ -49,8 +49,9 @@ Select the transport from the target and artifact: Android uses `adb` with the i
 uses `hdc` per its playbook. Existing tools that cover the selected checks are sufficient;
 a missing optional CLI does not block verification. Bootstrap missing required tools only
 with existing explicit authorization, otherwise report the unavailable capability. For an
-APK on HarmonyOS NEXT/OpenHarmony without `adb`, use 文件管理 → local APK → 直接安装;
-卓易通安装 opens the store and `hdc install <apk>` is invalid. Record actual commands and
+APK on an hdc-only target, first verify that the device supports a compatibility install
+route. On the supported route documented in the HarmonyOS playbook, use 文件管理 → local
+APK → 直接安装; 卓易通安装 opens the store and `hdc install <apk>` is invalid. Record actual commands and
 pass/fail/not-run results. Pre-existing failures and unavailable required evidence remain
 limitations; do not invent a fixed `:app` path or require connected checks on every task.
 
@@ -140,7 +141,7 @@ Use `graph_control` for diagnosed transient recovery or superseded work. Product
 | `jetpack-compose--architecture-reviewer` | Ownership, lifecycle, encapsulation, dependency direction, or a consequential new abstraction |
 | `jetpack-compose--ui-layout-reviewer` | Layout/semantics, adaptive behavior, interaction or accessibility regressions |
 | `jetpack-compose--test-quality-reviewer` | Tests may miss the actual failure, couple to internals, or require significant infrastructure changes |
-| `jetpack-compose--device-verifier` | Independent evidence is needed for runtime behavior only a running app can show — navigation and back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or process recreation, notifications or deep links, crash/ANR, or user-visible jank. Covers Android and HarmonyOS/OpenHarmony targets and selects `adb` or `hdc` from the target; a local `.apk` on a HarmonyOS NEXT or OpenHarmony target with no `adb` is opened in 文件管理 and installed via 直接安装; 卓易通安装 opens the store, and `hdc install <apk>` is invalid |
+| `jetpack-compose--device-verifier` | Independent evidence is needed for runtime behavior only a running app can show — navigation and back-stack flows, runtime permissions and dialogs, text entry/IME, lifecycle or process recreation, notifications or deep links, crash/ANR, or user-visible jank. Covers Android and HarmonyOS/OpenHarmony targets and selects `adb` or `hdc` from the target; a local `.apk` on an hdc-only target requires confirmed compatibility support before using the playbook’s 文件管理 → 直接安装 route; 卓易通安装 opens the store, and `hdc install <apk>` is invalid |
 | `jetpack-compose--performance-reviewer` | Measured/suspected jank, allocation, startup or lifecycle resource problems |
 | `jetpack-compose--source-tracer` | Version-sensitive or undocumented behavior that requires source evidence |
 | `jetpack-compose--journey-recorder` | Optional background organization of sealed run evidence and reusable-case proposals; never a product reviewer or an acceptance dependency |
@@ -151,22 +152,27 @@ Naming a domain does not mandate invoking its reviewer. Reviewers must cite a co
 
 Load skills relevant to the decision at hand. Do not load every skill simply because a task is large. User requirements, observed project contracts, and verified API behavior take precedence over generic examples.
 
-| When you need to... | Load this skill | Rationale |
-|---|---|---|
-| Work with state, recomposition, snapshots, remember APIs, side effects, or stability annotations | `compose-runtime-state` | Coverage: snapshots, recomposition scope, state hoisting, remember/derivedStateOf, LaunchedEffect/SideEffect/DisposableEffect, @Stable/@Immutable. Load before touching mutableStateOf or effect handlers. |
-| Define architecture — ViewModel, StateFlow, UDF/MVI, DI wiring, navigation structure, or module boundaries | `compose-ui-architecture` | Coverage: ViewModel lifecycle, StateFlow/stateIn, UDF patterns, Hilt/Koin, NavHost design, feature-module organization. Load before creating ViewModels or wiring DI. |
-| Build or review screens — modifiers, layouts, Material 3 theming, adaptive/responsive UI, or accessibility | `compose-layout-material-adaptive` | Coverage: modifier chains, Column/Row/Box/Lazy layouts, Material 3 components, WindowSizeClass, semantics/contentDescription, focus management, touch-target sizing. Load before composing any new screen. |
-| Diagnose or prevent performance issues — recomposition storms, stability, Lazy list jank, startup, memory | `compose-performance` | Coverage: recomposition diagnosis (Layout Inspector), compiler reports, Macrobenchmark, Baseline Profiles, stability fixes, image-caching. Load when profiling, optimizing, or adding Lazy-heavy UI. |
-| Write or review tests — Compose UI tests, previews, screenshot/golden tests, Robolectric, coverage | `compose-testing-previews` | Coverage: composeTestRule, semantics matchers, @Preview variants, paparazzi/roborazzi, ViewModel tests with Turbine, JaCoCo coverage. Load before writing any test or preview. |
-| Bridge XML/View and Compose — AndroidView, ComposeView, Fragment integration, or incremental migration | `compose-interop-migration` | Coverage: AndroidView factory lifecycle, ViewCompositionStrategy, ComposeView disposal, Fragment.setContent, feature-by-feature migration. Load before adding interop or migrating a legacy screen. |
-| Handle platform concerns — lifecycle, permissions, background work, storage, notifications, Gradle config | `android-platform-engineering` | Coverage: Lifecycle.repeatOnLifecycle, rememberPermissionState, WorkManager, DataStore/Room, NotificationChannel, Gradle build variants, app startup. Load when touching AndroidManifest, permissions, or build config. |
-| Research uncertain API behavior — verify docs, trace AOSP/AndroidX source, run reproducible experiments | `android-source-research` | Coverage: 8-channel evidence-first workflow (Context7 → official docs → AOSP → AndroidX → release notes → Gradle cache → dependency insight → experiment). Load when docs and behavior disagree, or an API is undocumented. |
-| Review for idiomatic correctness — enforce Compose/Kotlin conventions, fix anti-patterns, establish style rules | `compose-idiomatic-style` | Coverage: ❌/✅ comparative examples for state, side-effects, modifiers, lists, composable structure, naming, Slot API, CompositionLocal. Load for code review or style refactoring. Skip for single-line edits. |
-| Write or review plain-Kotlin code — null safety, scope functions, collections/sequences, sealed classes, extension functions, generics, coroutines/Flow idioms, naming, Java-style anti-patterns | `kotlin-idiomatic-style` | Coverage: idiomatic Kotlin for the language itself — nulls, scope functions, data/sealed classes, objects/companion, control flow, collections, extensions, generics, destructuring, coroutines/Flow, naming/ktlint, Java anti-patterns, DSL design. Load before writing or reviewing any non-composable Kotlin. |
-| Tackle complex, multi-domain work — broad features, refactors, platform changes, or source-sensitive tasks | `jetpack-compose-engineering-gate` | Coverage: Engineering State creation, review-batch declaration and declared outcomes (architecture, UI/layout, test-quality, device-verification, performance, source-tracing). Use when consequential design decisions need explicit reasoning. |
-| Verify a built app on a device or emulator — Android or HarmonyOS/OpenHarmony — navigation and back-stack flows, permissions and dialogs, IME text entry, lifecycle or process recreation, notifications or deep links, crash/ANR, or visible jank | `references/device-verification.md` for Android targets, `references/harmonyos-device-verification.md` for HarmonyOS/OpenHarmony targets over `hdc`, plus `android-cli` when the harness provides it | Coverage: transport selection from the target and its artifact, CLI detection and bootstrap on a machine without the `android` CLI or `hdc`, `android info`/`emulator`/`install`/`run`/`layout`/`screen capture` and adb interaction primitives, `hdc install`/`aa start`/`uitest dumpLayout`/`screenCap`/`uiInput`/`aa test`/`hilog`, the executed-journey contract and evaluation rules, failure classification, and the pass/revise/escalate evidence bar. The references are always available; the `android-cli` skill is optional enrichment. Load for on-device acceptance. |
+| Decision | Primary skill or reference |
+| --- | --- |
+| State ownership inside composition, snapshots and effects | `compose-runtime-state` |
+| ViewModel, UDF, lifecycle collection, DI and navigation | `compose-ui-architecture` |
+| Layout, Material, adaptive UI and accessibility | `compose-layout-material-adaptive` |
+| Measured recomposition, list, startup or memory problems | `compose-performance` |
+| Behavioral tests, previews and screenshot assertions | `compose-testing-previews` |
+| View/Compose lifecycle and migration | `compose-interop-migration` |
+| Permissions, background work, storage and build configuration | `android-platform-engineering` |
+| API uncertainty and version-specific source evidence | `android-source-research` |
+| Composable API shape, naming and local style | `compose-idiomatic-style` |
+| Plain Kotlin semantics and idioms | `kotlin-idiomatic-style` |
+| Consequential design and verification decisions | `jetpack-compose-engineering-gate` |
+| Runtime acceptance on Android or HarmonyOS/OpenHarmony | The selected transport playbook from section 2 |
+
+Each domain skill owns its implementation guidance. The four `references/compose-*.md`
+files are review indexes, not parallel tutorials. Load an index only when planning or
+reviewing that domain, then follow the relevant skill. Style skills route to domain owners
+instead of repeating their examples. No checklist requires loading all skills.
 
 
 ## 7. Research
 
-For library/API questions and version-sensitive implementation, follow `android-source-research` and the research function: Context7 first, then authoritative documentation, resolved dependency source, or a focused experiment. Distinguish facts from assumptions. A skill example is not evidence of the project's dependency behavior. Resolve discoverable uncertainty yourself; ask the user only for missing intent or constraints that materially change the solution.
+For library/API questions and version-sensitive implementation, follow `android-source-research`: Context7 first, then authoritative documentation, resolved dependency source, or a focused experiment. Distinguish facts from assumptions. A skill example is not evidence of the project's dependency behavior. Resolve discoverable uncertainty yourself; ask the user only for missing intent or constraints that materially change the solution.

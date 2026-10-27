@@ -1,166 +1,65 @@
-# Evidence-First Research — Jetpack Compose / Android
+# Evidence Policy — Jetpack Compose / Android
 
-This reference defines the evidence-first research discipline for the Jetpack Compose role. Every subagent and the engineer function MUST follow this discipline when making claims about Android framework behavior, Compose APIs, AndroidX libraries, Gradle, Kotlin, or third-party dependencies.
+The research workflow lives in `skills/android-source-research/SKILL.md`; source lookup
+mechanics live in `references/source-research.md`. This reference owns evidence quality
+and citation rules for the lead and reviewers.
 
----
+## Match Evidence to the Claim
 
-## 1. Evidence Tiers
+| Claim | Appropriate evidence |
+| --- | --- |
+| Project's resolved dependency | Gradle resolution output for the relevant variant/configuration; declarations establish intent |
+| Supported public API or migration | Current official documentation/release notes, checked against the project's version |
+| Internal library behavior | Published sources for the resolved artifact or a verified matching repository revision |
+| Platform behavior | Framework source for the relevant build/API level, plus compatibility wrappers where applicable |
+| Observed runtime/performance result | Executed reproduction or measurement with build, device, scenario and result |
+| Known issue | Issue status and affected/fixed versions actually inspected, corroborated when material |
 
-Classify evidence by reliability. Use the highest tier available.
+Context7 is a retrieval channel, not an authority by itself: prefer official upstream
+content in its results. Use `resolve-library-id` before `query-docs` unless the user gave
+an exact library ID. Query one coherent concept at a time, reuse already verified results,
+and fall back to official sites when coverage is missing. Do not fabricate IDs.
 
-### Tier 1 — Primary Evidence (Direct Source)
+Repository development branches help navigation but do not prove released behavior.
+Release notes are primary evidence of announced changes; an exact source artifact is
+better evidence of implementation than a general guide. No fixed tier ordering overrides
+version relevance or an observed contradiction. Community posts and model recall are
+leads, not final proof.
 
-| Source | Examples |
-|--------|----------|
-| **Context7 documentation lookups** | `resolve-library-id` → `query-docs` for any AndroidX or third-party library |
-| **Official Android developer docs** | `developer.android.com` for Compose, Lifecycle, Navigation, Room, Hilt |
-| **AndroidX source on GitHub** | `github.com/androidx/androidx` — exact version tag matches |
-| **AOSP source on cs.android.com** | Platform framework behavior (WindowInsets, Configuration, Activity lifecycle) |
-| **Kotlin language docs** | `kotlinlang.org/docs` for language features, coroutines |
-| **Local project source** | `build.gradle.kts`, version catalogs, convention plugins — single source of truth for version pinning |
+## Research Triggers
 
-### Tier 2 — Secondary Evidence (Authoritative Derivative)
+Verify unfamiliar APIs, version-sensitive configuration, platform-specific behavior,
+undocumented edge cases, disputed source behavior and performance claims. Use Context7
+for library, SDK and CLI documentation questions even when the API seems familiar.
+Reading local files, reviewing business logic and applying established project patterns
+need no unrelated documentation lookup. A performance improvement requires measurement;
+documentation alone cannot establish that a particular app became faster.
 
-| Source | Examples |
-|--------|----------|
-| **Release notes** | Compose BOM release notes, AGP changelog, Kotlin release notes |
-| **Migration guides** | Compose 1.5→1.6 migration, AGP 8.x migration, Kotlin 2.0 compiler changes |
-| **Google issue tracker** | `issuetracker.google.com` — includes Google-assigned priority and fix versions |
-| **Gradle dependency insight** | Output from `dependencyInsight` and `dependencies` tasks |
-| **Official blog posts** | `medium.com/androiddevelopers` — Android Developer Relations Engineering blog |
+## Citation Contract
 
-### Tier 3 — Insufficient Evidence (Do Not Rely On Alone)
+Record the claim and its scope beside the evidence. These are templates, not findings:
 
-| Source | Reason |
-|--------|--------|
-| **Stack Overflow** | Community-contributed, no version guarantee, may reference outdated APIs |
-| **Medium / dev.to articles** | No editorial review, often against older library versions |
-| **Training data memory** | Inherently stale — Compose evolves rapidly (BOM releases every quarter) |
-| **AI-generated content** | Models hallucinate API names, parameter signatures, and version numbers |
-| **YouTube tutorials** | Rarely version-pinned; cannot cite specific line numbers or source |
-| **Outdated documentation (>2 major versions old)** | Compose 1.4 vs 1.6 APIs may differ significantly |
-
----
-
-## 2. Citation Formats
-
-### Official Documentation
-
-```
-docs: <URL> — accessed YYYY-MM-DD — <what was verified>
-```
-
-Example:
-```
-docs: https://developer.android.com/develop/ui/compose/modifiers-list — accessed 2026-07-08 — verified that Modifier.semantics merges with parent semantic node by default
+```text
+docs: <official URL> — accessed <YYYY-MM-DD> — <verified claim and version scope>
+source: <repository URL pinned to verified revision>:<line> — <artifact/version; verified claim>
+source: <local source archive path>!/<entry>:<line> — <resolved coordinate; verified claim>
+release: <official release-note URL> — <affected version and announced change>
+issue: <inspected issue URL> — <status, affected/fixed versions and verified observation>
+experiment: <result artifact> — <command, build/device, expected and actual result>
+[assumption: not verified — <missing evidence and its consequence>]
 ```
 
-### Source Code (AndroidX, AOSP, GitHub)
+Use real file paths, line numbers, revisions and issue IDs that were inspected. Do not
+turn placeholders into plausible-looking citations. A moving branch URL must be labeled
+as such; prefer a commit permalink for a reproducible source finding. A code snippet or
+sample in this role is guidance, not proof that it compiles against the user's project.
 
-```
-source: <path/URL>:<line> — <what was verified>
-```
+## Report Quality
 
-Example:
-```
-source: github.com/androidx/androidx/blob/androidx.compose-1.6.0/compose/foundation/foundation/src/commonMain/kotlin/.../LazyColumn.kt:285 — verified that default key is position index
-```
-
-### Issue Tracker
-
-```
-issue: <URL> — <what was verified>
-```
-
-Example:
-```
-issue: issuetracker.google.com/123456789 — confirmed that Compose BOM 2024.02.00 introduced regression in input field focus handling
-```
-
-### Release Notes
-
-```
-release: <URL> — <what was verified>
-```
-
-Example:
-```
-release: https://developer.android.com/jetpack/androidx/releases/compose-bom#2024.06.00 — verified that material3 1.2.0 changed Slider default colors
-```
-
-### Assumption Flag (No Citation — Must Use When No T1/T2 Evidence Exists)
-
-```
-[assumption: not verified — <reason>]
-```
-
-Example:
-```
-[assumption: not verified — could not find official docs for rememberSaveable behavior with custom Parcelable objects across process death]
-```
-
----
-
-## 3. Research Triggers
-
-Research is **REQUIRED** before writing code in any of these situations:
-
-| Trigger | Example |
-|---------|---------|
-| **Unfamiliar Compose API** | Using `Modifier.draggable` for the first time |
-| **Version-sensitive behavior** | Compose 1.5 vs 1.6 changed `Modifier.weight` semantics |
-| **Platform-specific behavior** | WindowInsets on Android 15 (API 35) differ from API 30 |
-| **Undocumented edge case** | "What happens when LazyColumn receives empty list with keys?" |
-| **Performance claim** | "derivedStateOf is cheaper than remember + snapshotFlow" |
-| **Internal API access** | Accessing `_`-prefixed members of an AndroidX library |
-| **Migration impact** | "Does the AGP 8.5 change affect Compose compiler configuration?" |
-
-Research is **NOT required** for: reading local project files, standard Kotlin syntax (`?.`, `?:`, `suspend`, `flow`), applying project-established patterns, or conceptual architecture trade-offs.
-
----
-
-## 4. Workflow
-
-```
-1. TRIGGER: Identify the question (see triggers above)
-   └──→ Is this covered by T1 docs (Context7 / official docs)?
-       ├── YES → Retrieve docs → Record citation → Implement
-       └── NO  → Go to 2
-2. SOURCE INVESTIGATION:
-   ├── Search AndroidX GitHub (exact version tag)
-   ├── Search AOSP cs.android.com (platform behavior)
-   ├── Check issue tracker and release notes
-   └── Run local dependency insight commands
-3. EVIDENCE RECORDING: Record findings in citation format
-4. VALIDATION: Cross-check with a minimal experiment when ambiguous
-   └──→ If still uncertain → flag as [assumption]
-5. CONCLUSION: Produce version-scoped, evidence-backed answer
-```
-
----
-
-## 5. Core Principles
-
-### No training-data claims without verification
-
-Every claim about Compose behavior, AndroidX API, or platform behavior MUST carry a citation or an explicit `[assumption]` flag. Unverified training-data recall is insufficient evidence.
-
-### Prefer Context7 and official docs over memory
-
-When Context7 or `developer.android.com` contradicts training-data memory, prefer the documentation and report the discrepancy.
-
-### One retrieval per claim
-
-Each Context7 call targets one specific concept: one composable, one modifier, one API behavior. Do not batch unrelated lookups.
-
-### Version-aware citation
-
-Including the library version in every citation. Compose BOM changes every quarter. An API in `compose-foundation-1.5` may differ from `1.6`.
-
-### Cite or flag — never bare claims
-
-Every external behavior claim in a report MUST carry a citation or `[assumption]` flag. A bare claim with neither is a violation of this discipline.
-
-### No fake citations
-
-Do not fabricate URLs, file paths, line numbers, or commit hashes. If you do not have a real citation, use `[assumption]`. A fake citation is worse than none — it actively misleads the reviewer.
+- Separate project facts, external behavior claims, observed results and inference.
+- Cite material external behavior claims; reuse a citation for related claims it supports.
+- State unresolved assumptions instead of inventing certainty or requesting discoverable facts.
+- Record a documentation/source mismatch and investigate the applicable version; do not
+  automatically prefer the newer page or a different release's implementation.
+- Report what was actually executed. A planned test, configured benchmark, build success
+  or uninspected capture cannot stand in for observed runtime behavior.

@@ -1,184 +1,106 @@
 ---
 name: compose-performance
-description: Diagnoses and improves Jetpack Compose performance with recomposition analysis, stability fixes, Lazy layout tuning, compiler reports, Macrobenchmark, Baseline Profiles, and profiling tools. Use when profiling jank, diagnosing recomposition storms, tuning Lazy layouts, setting up Macrobenchmarks, or reviewing performance-sensitive Compose code.
+description: Diagnose measured Compose performance problems using traces, compiler reports, lazy-layout identity, Macrobenchmark and Baseline Profiles. Use for jank, startup, recomposition, allocation or memory investigations; keep changes proportional to evidence.
 ---
 # Compose Performance
 
-Compose performance work should be measured. Avoid speculative rewrites until you know whether the issue is recomposition, layout, drawing, allocation, data loading, or startup.
+Measure the affected journey before changing architecture. Identify whether the bottleneck
+is composition, layout, drawing, allocation, loading or startup. Runtime state and effect
+correctness belong to `compose-runtime-state`; platform lifecycle work belongs to
+`android-platform-engineering`. The performance reference supplies review/evidence criteria.
 
-## Diagnosis First
+For a concrete setup or interpretation, load
+[measurement recipes](references/measurement-recipes.md): report reading, stability
+configuration, lazy-item identity/reuse, a startup benchmark and a profile generator.
+These recipes supplement the decision rules below; they do not replace measurement.
 
-Use the smallest tool that answers the question:
+## Choose Evidence for the Question
 
-| Question | Tool |
+| Question | Starting point |
 | --- | --- |
-| Is too much recomposing? | Layout Inspector recomposition counts, compiler metrics, targeted logging |
-| Are frames slow? | System Trace, Perfetto, Android Studio profiler |
-| Is startup slow? | Macrobenchmark startup, Baseline Profiles |
-| Are lists janky? | Macrobenchmark scroll, Lazy layout keys/content types, trace sections |
-| Are parameters unstable? | Compose compiler stability reports |
-| Is data work blocking UI? | Coroutine dispatchers, StrictMode, traces |
-| Which transient UI state or action precedes a visible glitch? | Bounded recording and source-timestamped frame inspection per `references/device-video-debugging.md`, correlated with actions/logs |
+| Which scopes recompose or skip? | Layout Inspector counts, then compiler reports for the affected code |
+| What blocks a slow frame? | System trace/Perfetto and targeted profiler evidence |
+| Is startup or scrolling slower? | Repeatable Macrobenchmark of that journey |
+| Is memory retained or allocated excessively? | Allocation/heap evidence and resource ownership |
+| Which visible state precedes a transient glitch? | Bounded recording plus inspected frames; correlate traces when timing matters |
 
-Use video to locate visible symptoms, then corroborate with traces/profiling for performance
-claims. Capture overhead, dropped recording frames and preview GIF timing can distort the
-observation; recorded FPS is not display FPS. Preserve baseline and repaired runs separately.
-
-Confirm the affected component, trigger and expected result before collecting expensive
-evidence. A local animation correctness fix needs targeted runtime verification, not an
-automatic benchmark program. Start temporal checks with a short recording and inspected
-key frames; full-frame analysis and clock correlation need a suspected single-frame defect,
-disputed ordering or an unresolved timing cause. Deep profiling needs a concrete performance
-question whose answer changes the repair or acceptance.
+Counts locate work; they do not measure frame cost. Do not add a counter that writes
+Compose state read by the same UI after every composition: the measurement itself can
+keep invalidating that UI. A video can locate a symptom but recording FPS is not display
+FPS. Follow `references/device-video-debugging.md` only when temporal evidence is needed.
 
 Each diagnostic attempt must answer a named hypothesis. At most three attempts share that
 hypothesis and implementation across tools, run names and graphs; stop earlier when no new
 evidence appears. After roughly ten minutes without an effective change or decisive evidence,
-reassess scope and strategy. Once the final code satisfies selected acceptance and required
-project checks with no blocking defect, stop; additional measurements need a concrete risk.
-Never substitute compilation or a captured-but-uninspected recording for runtime evidence.
+reassess scope and strategy. Stop once selected acceptance and required checks pass without
+a blocking defect. Keep compact results per `references/device-test-memory.md`; optional
+record enrichment can run in the lead's background recorder graph after evidence is sealed.
 
-Keep compact measurement outcomes and decisive evidence by default. Use the record levels
-in `references/device-test-memory.md`; after the lead retains the minimum record, optional
-report enrichment and case/index proposals may run in a background
-`jetpack-compose--journey-recorder` graph while the lead continues repairs.
-Actual measurements, defect reporting and acceptance decisions stay on the critical path.
+## Stability and Skipping
 
-→ stability root cause found? Hand off to the **Stability and Strong Skipping** section in the `compose-runtime-state` skill for the fix workflow.
+Check the actual Kotlin/compiler plugin version and flags before interpreting reports.
+[Strong skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+is enabled by default from Kotlin 2.0.20: restartable composables can skip even with unstable
+parameters, and lambdas created inside composables are automatically memoized. Unstable
+parameters use instance comparison; stable parameters use equality. A new equal instance
+of an unstable type may therefore matter. Do not require manual `remember` for every
+callback or treat every non-skippable/non-restartable function as a defect.
 
-## Common Fixes
+Use the stability workflow in `compose-runtime-state` when a measured bottleneck points
+there. `@Stable`, `@Immutable` and stability configuration are contracts, not fixes for
+unobservable mutation. Collections cannot be made truly immutable by adding an annotation.
+Prefer compiler inference for simple immutable models and verify any explicit contract.
+See [fix stability issues](https://developer.android.com/develop/ui/compose/performance/stability/fix).
 
-- Move broad state reads down to the composable that needs them.
-- Pass only the fields a child needs instead of an unstable aggregate object.
-- Use stable item keys in lazy lists.
-- Add `contentType` for heterogeneous lazy list items.
-- Avoid expensive sorting/filtering/mapping directly inside item lambdas.
-- Use `remember` for expensive pure calculations scoped to stable keys.
-- Use `derivedStateOf` only when it reduces updates from rapidly changing input.
-- Keep animation, image loading, and layout work measured and bounded.
-- Fix unstable types at the source before adding annotations.
+## Compiler Reports
 
-## Stability
-
-Do not cargo-cult `@Stable` and `@Immutable`.
-
-- `@Immutable` means all public properties are immutable and never change after construction.
-- `@Stable` means reads are stable and Compose can rely on change notification semantics.
-- Mutable collections are not stable just because the property is `val`.
-- Interfaces and generic wrappers can make stability unclear; inspect compiler reports.
-
-Prefer immutable UI models:
-
-```kotlin
-data class ArticleRowUiModel(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val isBookmarked: Boolean,
-)
-```
-
-### Compiler Reports — Exact Setup
-
-Compiler reports are not enabled by default; they require explicit activation. With the Compose compiler Gradle plugin (Kotlin 2.0), add a `composeCompiler` block to the module's `build.gradle.kts`:
+For a module already using the Kotlin Compose compiler Gradle plugin, configure:
 
 ```kotlin
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     metricsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }
 ```
 
-`reportsDestination` emits per-module reports, `metricsDestination` emits overall project statistics, and `stabilityConfigurationFile` points at the stability config described below. The legacy alternative before the Gradle plugin existed was to activate reports via the `-PcomposeCompilerReports=true` Gradle property (`./gradlew assembleRelease -PcomposeCompilerReports=true`), or the equivalent `freeCompilerArgs` entry `-P plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=<dir>`; prefer the `composeCompiler` block in new projects.
+Build the relevant variant. Inspect `*-classes.txt`, `*-composables.txt` and
+`*-composables.csv` under the configured destination; metrics provide aggregate statistics.
+Use the [report setup guide](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)
+and the project's plugin version. `-PcomposeCompilerReports=true` has no universal meaning:
+it works only when project build logic consumes that property. For older compiler setups,
+check their supported options instead of mixing legacy flags with the new plugin.
+Do not add a stability configuration file merely to enable reports.
 
-Reports are written to `<module>/build/compose_compiler` as three files:
+## Apply Only the Relevant Fix
 
-- `<module>-composables.txt`: pseudo-Kotlin signatures for every composable in the module, showing the `restartable` / `skippable` flags and per-parameter `stable` / `unstable` markers. A composable that is `restartable` but NOT `skippable` has at least one unstable parameter (often a collection type) and recomposes even when its inputs are unchanged; that is the primary signal to chase.
-- `<module>-classes.txt`: stability inference per class, field by field, with a `<runtime stability>` line, showing exactly which field makes a class unstable.
-- `<module>-composables.csv`: CSV version of the composables report for spreadsheets or scripted processing.
+- Narrow frequent state reads to the scope or phase that consumes them. Re-executing a
+  parent does not imply every descendant executes; eligible children can skip.
+- Use stable unique IDs for movable lazy items. Default identity is position-based;
+  keys protect state across insertions and moves. Keep Android saved-state key types
+  saveable. See [item keys](https://developer.android.com/develop/ui/compose/lists#item-keys).
+- Use `contentType` to group compatible heterogeneous item compositions for reuse; it
+  does not eliminate measurement. Avoid forcing fixed sizes that break content or text scaling.
+- Move expensive pure sorting/filtering out of item lambdas; cache with all changing inputs
+  keyed correctly. Use `derivedStateOf` only when its update filtering justifies its overhead.
+- Size decoded images appropriately and investigate actual cache/retention pressure.
+- Keep blocking work off the UI thread. Starting a suspending load during startup is not
+  itself a defect; arbitrary `delay()` does not make blocking work safe or prove improvement.
 
-The `stability_config.conf` file forces classes to be treated as stable at compile time (supported since Compose Compiler 1.5.5). It is a plain text file with one class declaration per line; `//` comments, `*` and `**` wildcards, and generic type parameters are supported:
+## Macrobenchmark and Baseline Profiles
 
-```text
-// Consider this stdlib type stable
-java.time.LocalDateTime
-// This package and everything below it
-com.datalayer.**
-// Consider this generic stable based on its first type parameter only
-com.example.GenericClass<*,_>
-```
+Use the existing benchmark setup for material performance claims. If setup is needed, follow
+[Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+for a separate test module and a representative, non-debuggable target. Discover module,
+variant and task names from the project; do not assume `:macrobenchmark` or a universal
+`connectedBenchmarkAndroidTest` task. Use physical devices for credible timing comparisons.
 
-For automated analysis, the `compose-stability-analyzer` tooling reports composable stability in real time inside Android Studio (gutter icons, hover tooltips, inline parameter hints, inspections) and can export stability compatibility reports via Gradle tasks, so stability regressions surface without reading text dumps.
+Follow [Baseline Profile generation](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile)
+for the installed plugin and its app/producer modules. Verify the generated profile is
+packaged in the target release. Record the actual task and output location rather than
+hard-coding a plugin version, path or expected percentage improvement. Profiles and benchmark
+libraries version independently of the Compose BOM. A small behavior fix does not require
+adding a benchmark/profile module unless its acceptance or measured risk warrants it.
 
-→ After fixing stability at the source (`compose-runtime-state`), re-run the compiler reports to confirm skippable/restartable status.
-
-## Lazy Layout Performance
-
-- Use stable keys based on durable IDs, not indices.
-- Use `contentType` for different row/card/header shapes.
-- Keep composable item content free of blocking work.
-- Avoid `remember` keyed by list index when item identity can move.
-- For very frequent list updates, verify diffing/data emissions in the upstream layer.
-- For image-heavy lists, use an image loader that supports Compose and set appropriate sizes/placeholders.
-
-## Recomposition Containment
-
-```kotlin
-@Composable
-fun FeedScreen(state: FeedUiState, onBookmark: (String) -> Unit) {
-    LazyColumn {
-        items(state.items, key = { it.id }) { item ->
-            FeedRow(
-                title = item.title,
-                subtitle = item.subtitle,
-                isBookmarked = item.isBookmarked,
-                onBookmark = { onBookmark(item.id) },
-            )
-        }
-    }
-}
-```
-
-Pass stable primitives or stable UI models. Keep callbacks simple and measure before over-optimizing with `remember`.
-
-## Baseline Profiles and Macrobenchmarks
-
-For a measured performance regression on an important production flow, use repeatable
-benchmarks when the project supports them or the risk justifies setup. A local behavior fix
-does not automatically require adding a benchmark module or Baseline Profile:
-
-- Generate the Baseline Profile with `./gradlew :baselineprofile:generateBaselineProfile` (a `generateBaselineProfile` task exists per target module, e.g. `:app:generateBaselineProfile`). The generator writes the profile to `baseline-prof.txt` in the profiled module's `src/<variant>/generated/baselineProfiles/` directory.
-- Run Macrobenchmark startup, scroll, navigation, and animation-sensitive scenarios with `./gradlew :macrobenchmark:connectedBenchmarkAndroidTest` (or `:macrobenchmark:connectedCheck` for the whole module).
-- Run benchmarks on physical devices or stable emulator configurations according to project practice.
-- Compare before/after metrics and preserve benchmark scenarios for regressions.
-
-**Versions:** these task names apply to the `androidx.baselineprofile` Gradle plugin (stable lines 1.2.x, 1.3.x, and 1.4.x — current stable 1.4.1) and the `androidx.benchmark:benchmark-macro-junit4` macrobenchmark library (stable 1.4.1). Neither is part of the Compose BOM, so they version independently — check the project's dependency versions before use.
-
-**Experimental APIs:** `FrameTimingMetric` and `StartupTimingMetric` are stable, but advanced metrics such as `TraceSectionMetric` carry the `@ExperimentalMetricApi` opt-in annotation (`androidx.benchmark.macro.ExperimentalMetricApi`) and require `@OptIn`. EXPERIMENTAL — confirm with the user before @OptIn: do not add `@OptIn(ExperimentalMetricApi::class)` just to silence the compiler; prefer a stable metric, or get explicit confirmation before adopting the experimental surface.
-
-## Cite the Source
-
-When this skill asserts compiler-report, stability, or profiling behavior, back the claim with the androidx source: `[source: GitHub — androidx/androidx/{path}:L{line} — {what was verified}]`. For platform or framework source, cite cs.android.com instead.
-
-When behavior is uncertain or version-sensitive, do not guess. Route through the `android-source-research` skill workflow, which traces behavior to source before the claim is written. For deep source navigation, use the `jetpack-compose--source-tracer` subagent.
-
-NEVER assert API behavior from training data alone.
-
-## Workflow
-
-1. Define the symptom: startup, scroll, input, animation, transition, memory, or battery.
-2. Reproduce on a representative build type and device.
-3. Capture evidence with profiler, Layout Inspector, compiler reports, or benchmark.
-4. Apply the smallest fix that matches the measured bottleneck.
-5. Re-run the same measurement and document before/after results.
-6. Add benchmark or regression coverage when the flow is important.
-
-## Validation Checklist
-
-- [ ] There is evidence for the bottleneck before changing architecture.
-- [ ] Fixes preserve correctness, lifecycle behavior, and state ownership.
-- [ ] Lazy lists use stable keys and content types where needed.
-- [ ] Stability annotations are true, not suppressions.
-- [ ] Benchmark/profiler results show the change helped or at least did not regress.
-- [ ] Critical performance fixes are covered by repeatable benchmark scenarios when feasible.
+Report before/after metrics with build, device, journey, iterations and compilation mode.
+Use the same conditions for comparison and state noise or missing evidence. Resolve API
+uncertainty through `android-source-research`; a benchmark configuration is not a result.

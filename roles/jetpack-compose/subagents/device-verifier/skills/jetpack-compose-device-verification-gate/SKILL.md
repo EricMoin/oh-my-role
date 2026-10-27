@@ -1,286 +1,71 @@
 ---
 name: jetpack-compose-device-verification-gate
-description: Decide when device or emulator verification is warranted and execute it over the selected transport — the `android` CLI and `adb`, or `hdc` — with layout, screenshot and command evidence.
+description: Verify a built app's declared runtime acceptance on Android or HarmonyOS/OpenHarmony, using observed journey evidence and distinguishing app defects from unavailable prerequisites.
 ---
 # Device verification gate
 
-Verify a built app on a real device or emulator when acceptance depends on runtime behavior
-that a JVM or Robolectric test cannot show. Select the transport from the target first, then
-load its playbook: `references/device-verification.md` for an Android target over `adb`,
-`references/harmonyos-device-verification.md` for a HarmonyOS or OpenHarmony target over
-`hdc`; `references/schemas.md` holds the gate report contract. Prefer the installed tool's own `--help` output
-over remembered flags.
+Use this gate when independent evidence must come from a running app: navigation/back,
+permissions, IME/focus, recreation, platform integration, crashes or visible jank. Logic
+already established by a cheaper check does not need another device journey. Documentation
+alone is not a runnable artifact.
 
-Use `references/device-test-memory.md` for record levels and consult relevant dispatched
-history only. Use supplied case IDs/revisions and the frozen journey selected by the lead;
-a reusable case is optional. Reuse known setup
-only after checking current conditions. Keep actual install prompts, manual actions,
-failed recovery attempts and app-step outcomes in the run report, including blocked and
-not-run results. Return `device_test_record` with scoped pitfall observations and temporary
-evidence paths per `references/schemas.md`. Return the minimal complete evidence needed for
-the declared checks. The lead retains the minimum record and essential evidence; a separate
-authorized `jetpack-compose--journey-recorder` background graph may enrich reports and
-propose shared-memory changes. Do not write project memory through worker commands.
-Report defects promptly so repairs need not wait for report formatting or archival.
+## Required inputs and authoritative procedures
 
-When static evidence cannot establish temporal acceptance, use
-`references/device-video-debugging.md`: capture a short recording around the trigger and
-inspect key frames first. Full-frame inspection and source-PTS/action/log correlation require
-a suspected single-frame defect, disputed ordering or unresolved timing cause. Keep temporary evidence outside the repository. Report decisive observations and any capture limitations; include frame indexes,
-clock uncertainty and detailed analysis when the claim depends on them. A GIF is a
-preview; captured-only media is not verification. Preserve failures and request lead-planned
-diagnostic attempts within the existing three-attempt budget, never retry until green.
+The dispatch supplies target, trigger, expected behavior, artifact/build identity, selected
+device requirements and a frozen journey. Return material ambiguity before expensive
+reproduction. A short journey needs no reusable-case dossier.
 
-Before heavy reproduction, confirm the dispatch identifies the target, trigger and expected
-result. Escalate material ambiguity early instead of investigating every possible target.
-Focused local checks are the lead's default; targeted runtime checks stay within the changed
-behavior. Deep/formal coverage needs a concrete high risk, unresolved evidence gap or
-user/project requirement. A frozen journey is required for this dispatched verifier, but
-neither reusable cases nor full archives are mandatory for a short journey.
+| Need | Read |
+| --- | --- |
+| Android preflight, optional setup, build/deploy, commands and journey evaluation | `references/device-verification.md` |
+| HarmonyOS/OpenHarmony transport, HAP and supported local APK installation | `references/harmonyos-device-verification.md` |
+| Report and device_test_record fields | `references/schemas.md` |
+| Minimal evidence retention and relevant device pitfalls | `references/device-test-memory.md` |
+| Transient behavior that stills cannot establish | `references/device-video-debugging.md` |
 
-Use at most three attempts per hypothesis and implementation, shared across initial
-reproduction, setup recovery, flaky checks, tools and graph/run names. Stop earlier when no
-new evidence appears and report the limitation or a materially different next hypothesis.
-After roughly ten minutes without decisive new evidence, reassess the strategy. Submit when
-the declared acceptance checks are adjudicated, with unexecuted checks explicitly unverified;
-do not add speculative checks or wait for archival.
+Read the selected transport playbook before preflight; it contains the executable command
+examples and full journey rules. This gate supplies decision criteria, not a replacement
+for that procedure. Prefer installed help over remembered flags. The external `android-cli`
+skill is optional. Missing it alone is not a capability failure.
 
-## When device verification is warranted
+## Acceptance checks
 
-Verify on a device or emulator when the acceptance criterion is about behavior that only a
-running app produces:
+1. Select the actual target and transport. Android uses adb; hdc targets use their own
+   playbook. An APK on an hdc-only target requires a supported on-device compatibility
+   route; `hdc install` does not accept APKs. Do not assume that route exists on every device.
+2. Confirm the required capability and built artifact. Escalate missing prerequisites
+   with the exact failed command and proposed setup action; the lead handles authority.
+   Inspect pending installation prompts before retrying and verify the intended installed
+   build and launch before app assertions.
+3. Execute the frozen actions in order, independently and exactly as specified. A
+   check/verify action observes the current state; do not scroll or otherwise manipulate
+   the app to satisfy it. Preserve failures; never rewrite the journey to obtain a pass.
+4. Capture decisive commands, layout state and visually inspected screenshots. For a
+   temporal claim, inspect adequate video evidence. Captured-only media is unverified.
+5. Record setup blockers, failed attempts and not-run actions as well as passes. Apply the
+   shared attempt budget from PROMPT.md and the playbook, not a fresh budget per tool or run.
+   Report a concrete defect promptly; optional evidence formatting never delays repair.
 
-- navigation, back-stack and deep-link routing between screens;
-- runtime permissions, system dialogs, notification permission and settings round-trips;
-- IME and real text entry, focus order, keyboard-driven submission;
-- lifecycle and process recreation: rotation, backgrounding, restore after kill;
-- notifications, foreground services, alarms and app-visible system integration;
-- crash, ANR or freeze behavior on a real execution path;
-- user-visible jank, slow first frame, or scrolling that a benchmark cannot classify.
+## Outcome
 
-Do not open this gate for pure logic, parsing, formatting or state math that a JVM test
-covers; for layout correctness already covered by a Compose UI test or a screenshot test;
-for work with nothing runnable (no artifact, no app module, documentation only); or to
-re-prove behavior a cheaper test already establishes. Say so in the report instead of
-running a device, and never treat a device run as a substitute for a missing unit test.
+Return `schema_version: 1`, `gate: device-verification` and `device_test_record` as defined
+in `references/schemas.md`. Use this mapping without treating a prerequisite as an app bug:
 
-## Preflight and device choice
-
-Step 0: identify the transport before touching a device. An `.apk` on an Android device or
-emulator, reachable with `adb`, is the Android branch and follows
-`references/device-verification.md`. A `.hap`, `.hsp` or `.app` artifact, or a target that answers
-`hdc list targets` with a serial, is a HarmonyOS or OpenHarmony target: switch to
-`references/harmonyos-device-verification.md` for the full playbook and do not continue with `adb`.
-When the artifact and the device disagree, stop and escalate — a transport mismatch is an
-environment finding, not an app defect.
-
-An `.apk` on a HarmonyOS NEXT or OpenHarmony target that answers `hdc list targets` and has no `adb`
-is neither the Android branch nor the legacy adb-compatible build: it is an `hdc`-transport target
-whose local APK is opened in 文件管理 and installed with **直接安装**. **Never run `hdc install <apk>`** — `hdc install`
-and the device `bm install` accept a HAP, an in-app HSP and an APP package only and reject any other
-package-name suffix with `9568270`, so attempting it is a harness or environment finding, never an app
-defect. Follow section 5 of `references/harmonyos-device-verification.md`: build the debug APK with the
-project's own Gradle wrapper or select the existing APK supplied for installation, transfer it with
-`hdc file send`, open 文件管理 and tap that file, then choose **直接安装**. **卓易通安装** opens the
-卓易通 application store instead of installing the selected local file; 文件互传 is not the installation
-entry point. If the store opens, return to 文件管理 and reopen the same APK. A missing store listing
-does not establish a local-install limitation. Simulated taps use coordinates from a fresh
-`hdc shell uitest dumpLayout`; capture the selected control's text and bounds, the install result,
-and the launch from the app's own output. A missing or disabled 卓易通, or an absent or blocked
-direct-install path confirmed on screen, is `escalate`.
-
-On Android, detect the required capabilities. Prefer an installed `android` CLI; an existing
-`adb`, project Gradle wrapper and supported capture/input tools suffice when they cover the
-declared checks. Missing CLI alone is not an escalation. Follow installed help for that route,
-record the actual target and versions, and apply the same evidence rules. If a required
-capability is absent, name it and the proposed setup action from
-`references/device-verification.md` section 2. Do not silently install a CLI or SDK package,
-accept licenses, create AVDs or authenticate; the lead handles existing authorization.
-
-With the CLI present, use the relevant preflight commands and record their output; inventory
-AVDs or remote devices only when a suitable target is not already connected:
-
-- `android info` — SDK location, version, connected devices and configuration.
-- `android emulator list` (add `--long` for detail) — available AVDs.
-- `android emulator start <avd>` — starts an AVD and returns when it is fully booted and
-  ready; `--headless` runs it without a window, `--cold` skips the snapshot.
-- `android emulator stop [<avd>]` — stops the named AVD, or the only running emulator.
-- `android device remote models`, `android device remote create <codename>/<api> [--connect]`,
-  `android device remote connect <reservation-id>`, `android device remote list` — physical
-  devices; authenticate first with `android auth login`.
-
-Rules:
-
-- Use a device that is already connected or the AVD the dispatch names. Never start a second
-  device while one is connected, and never start an emulator for a criterion that needs
-  physical hardware (camera, cellular, sensors).
-- If `android info` reports no device and no AVD can be started, stop and escalate; do not
-  install onto an unknown target and do not report a pass from a host-side check. The same holds
-  for a missing SDK package, system image or AVD: report the prerequisite and the bootstrap command
-  that would satisfy it, and never install it silently.
-- Verify the SDK the CLI actually resolved. A redirected `HOME` moves the SDK and AVD home
-  with it, so an empty `android emulator list` means "no AVDs visible here", not "no AVDs
-  exist"; re-check before concluding that the environment is unavailable.
-
-## Build and launch
-
-1. Locate the artifact from project build configuration/output metadata or, when installed,
-   `android describe --project_dir <dir>`; never guess its path.
-2. Build the debug variant with the project's own Gradle wrapper, for example
-   `./gradlew :app:assembleDebug` — use the module names the project actually declares, and
-   record the exit code.
-3. Deploy: `android install --apks=<apk> --device=<serial>` installs without launching;
-   `--apks` takes a comma-separated list. `android run --activity=<component>
-   --device=<serial>` builds, deploys and launches in one step. Without the CLI use the
-   existing `adb`/project route, recording the selected serial, artifact and actual commands.
-4. Confirm the launch from the app's own output: a layout dump or screenshot of the expected
-   start screen, not from the exit code alone.
-5. An artifact that does not build or does not install is `escalate` with the failing
-   command and its output; it is not an app defect and not a pass.
-
-For a pending install, inspect the installer screen before another attempt. An on-device
-confirmation (for example “同意并安装”) is setup, not an app assertion. Record the exact
-prompt and who confirmed it; confirm command completion and the intended installed build
-before launch checks. Follow `references/device-test-memory.md` for bounded recovery and
-human-action blockers; never assume an older installed app proves the new install succeeded.
-
-## HarmonyOS/OpenHarmony command surface (`hdc`)
-
-A HarmonyOS or OpenHarmony target is a different transport with different tooling: follow
-`references/harmonyos-device-verification.md` for the full playbook, including transport
-selection, `hdc` bootstrap, the debug-signature requirement and the `aa` error codes. The
-shapes, not just the binary, differ:
-
-- install a package: `hdc install <src>` (a `.hap`, `.hsp` or `.app`);
-- launch: `hdc shell aa start -b <bundleName> -a <abilityName>`;
-- inspect: `hdc shell uitest dumpLayout -p /data/local/tmp/<name>.json` and
-  `hdc shell uitest screenCap -p /data/local/tmp/<name>.png`, then bring the artifact
-  host-side with `hdc file recv /data/local/tmp/<name>.json <hostTempDir>/<name>.json`;
-- interact: `hdc shell uitest uiInput click <x> <y>` — the reference lists the other
-  `uiInput` subcommands (`doubleClick`, `longClick`, `swipe`, `drag`, `fling`,
-  `dircFling`, `inputText`, `keyEvent`);
-- run automated tests: `hdc shell aa test -b <bundleName> -m <moduleName> -s unittest
-  <testRunner>`;
-- logs: `hdc hilog`.
-
-An `.apk` on this transport is not installed with `hdc install`: send it with `hdc file send` and
-open it in 文件管理 and choose 直接安装 with simulated taps, never the 卓易通安装 store button.
-Section 5 of the reference is the procedure, and it also lists the run-time reads for the bundle
-names, the visible transfer destination and the current controls; locate them on the actual screen.
-
-The reference is the authority for each form, and the target's own help output
-(`hdc shell uitest help`) wins when it disagrees with any of them.
-
-## Interaction and evidence
-
-Inspect with `android layout` (add `--flat` for the flat element list, `--full` to include
-non-interactive and hidden elements, `--no-idle` to skip the idle wait, `-o <file>` to write
-the dump outside the repository). The installed CLI documents `-d/--diff` as a deprecated
-no-op, so take full dumps and compare them; do not rely on `--diff` to list changed elements.
-
-Capture with `android screen capture -o <png> [--device=<serial>]`, and
-`android screen capture --annotate -o <png>` to label elements with `#1`, `#2`, and so on.
-Resolve a label to coordinates with
-`android screen resolve --screenshot <png> --string "tap #3"`, which substitutes the center
-coordinates of that region. Always examine the PNG visually, including the annotated one.
-
-Interact with `adb shell`:
-
-- `adb shell input tap <x> <y>` — tap the element `center`.
-- `adb shell input swipe <x1> <y1> <x2> <y2> <duration-ms>` — scroll or drag; the fifth
-  argument is the duration.
-- `adb shell input text "<text>"` — type into a focused field; `adb shell input keyevent 66`
-  submits.
-- `adb shell input keyevent <code>` — back (4), home (3), enter (66).
-
-Interaction rules:
-
-1. A text field must list `focused` in its `state` before you type into it; focus it first.
-2. Replace spaces with `%s` — Android ignores text after a raw space: `Hello%sworld`.
-   Escape shell metacharacters (`&`, `$`, `(`, `)`, `!`) or quote them.
-3. Scroll slowly; a short duration turns a scroll into a fling and loses the target.
-4. If a dump looks incomplete after an action, wait a few seconds and dump again.
-5. When `layout` fails or omits content — WebView, animation, custom drawing — fall back to
-   `android screen capture --annotate` and visual inspection, and say so in the evidence.
-
-## Journey evaluation
-
-Evaluate the declared actions in order, each one independently and exactly as written:
-
-- Perform the interaction an action specifies and confirm only that the app did not crash or
-  behave unexpectedly. A missing element or an unperformable interaction fails that step.
-- A `check`/`verify` action inspects the current screen without interacting; it fails if any
-  of its expectations is false. Scrolling is not allowed to satisfy it.
-- If an action names several steps, split and evaluate them individually.
-- An action that is not a UI interaction specification makes the journey malformed: stop
-  and escalate rather than interpreting it.
-- An app exit, crash or freeze stops evaluation and fails the journey.
-- Report failures rather than working around them; do not edit the journey to make it pass.
-
-## Evidence and report
-
-Every step carries: the action text with a ✅ (passed) or ❌ (failed) marker, the commands
-actually executed, the screenshot link when a visual check was needed, and a comment with the
-observed state. Produce the journey report as markdown outside the repository, with one
-section per action. Label unexecuted steps `not-run` with reasons and installation blockers
-`blocked`; include supplied case IDs/revisions when available and preserve the exact executed
-journey snapshot.
-The lead retains the minimum record and decisive evidence, and may delegate optional enrichment to a background
-`jetpack-compose--journey-recorder` following `references/device-test-memory.md`; that work
-does not block repairs or the verifier outcome:
-
-```markdown
-# Journey: <name>
-
-## Results
-
-### Action: <action text> ✅
-- **Commands**:
-  - `adb shell input tap 540 1180`
-- **Comment**: <observed state, or why the step failed>
-
-### Action: <check/verify action text> ✅
-- **Screenshot**: [step.png](<temp path>/step.png)
-- **Comment**: Confirmed in the layout dump and visually
-```
-
-Map the finished report to exactly one outcome and carry it in the gate report as
-`schema_version: 1` data with `gate: device-verification`:
-
-| Finding | Gate report status | Settled outcome |
+| Finding | Report status | Outcome |
 | --- | --- | --- |
-| Every declared step verified with cited evidence | `pass` | `pass` |
-| Supported app defect at a named step, with observed state and evidence | `fail` | `revise`, with stable `required_revisions` |
-| Missing required tool capability, no device, no AVD, missing SDK package or system image, unbuildable artifact, malformed journey, missing user intent | `needs-user-input` | `escalate` |
+| All declared acceptance verified on the intended build with cited evidence | `pass` | `pass` |
+| Supported app defect, including observed intermittent failure | `fail` | `revise` with stable `required_revisions` |
+| Missing required capability/device, build/install blocker, malformed journey or essential intent | `needs-user-input` | `escalate` |
 
-## Failure classification
+Name the failed step, observed state and evidence. Record intermittent failures as failures
+with failures/attempts; a later success does not erase them. Distinguish an app defect from
+an input/harness mistake; any corrective retry remains within the existing attempt budget.
 
-Classify each failure before reporting it:
+## Boundary and cleanup
 
-- **app_defect** — the journey step that failed, the observed state, and the evidence
-  (dump element, screenshot, command output). Settles `revise`. One reproduced blocking
-  failure is enough; a cosmetic observation stays advisory.
-- **harness or environment defect** — the journey is malformed, the wrong device profile was
-  used, the CLI or SDK is missing a flag or package, or the deploy targeted the wrong serial.
-  Fix what is yours to fix (re-target the named device, re-issue a correct input) and re-run
-  once; anything that requires rewriting the journey or changing the agreed device settles
-  `escalate` with the exact defect.
-- **environment_unavailable** — no required tool capability, no device, no bootable AVD, no SDK package, no system
-  image, no network for a remote reservation. Settles `escalate`; record what was attempted, what
-  is missing and the bootstrap command that would resolve it.
-- **flaky behavior** — use at most three total attempts shared with diagnostic reproduction,
-  including the initial attempt, then record the observed failure
-  rate (failures over attempts) and the exact command. Flakiness settles `revise` with that
-  rate; never repeat until green and never convert a flaky step into a pass.
-
-## Cleanup and boundary
-
-- Stop the emulator you started (`android emulator stop <avd>`) and release any remote
-  reservation you created; leave pre-existing devices untouched.
-- Keep screenshots, layout dumps, journey reports and copied APKs in a temporary directory
-  outside the repository. Build output may only land in the project's normal build
-  directories; never edit sources, resources, manifests, Gradle files or test code. Keep
-  needed temporary evidence available until the lead completes the retention handoff;
-  never update durable memory yourself.
-- Report only what the commands and captures show. An unverified step is `needs-user-input`
-  or a failing step, never an assumed pass.
+No production, test, manifest or Gradle edits. Build output may use normal build directories;
+reports, screenshots, layout dumps and copied artifacts stay in external temporary storage.
+Preserve required evidence until the lead retains it. The lead owns durable memory and
+shared-record merges; optional journey-recorder work is separate from acceptance. Stop only
+devices/reservations you created and leave pre-existing ones untouched. Finish when the
+selected checks are adjudicated, with unavailable required evidence explicitly unverified.

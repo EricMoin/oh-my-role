@@ -1,158 +1,102 @@
 ---
 name: compose-testing-previews
-description: Adds and reviews Compose previews, UI tests, semantics assertions, screenshot strategy, Robolectric/device test split, ViewModel tests, and Android test coverage. Use when writing Compose UI tests, adding multi-state previews, setting up screenshot tests, organizing Robolectric vs. instrumented tests, or reviewing test coverage for Compose features.
+description: Guides Compose previews, behavior and semantics tests, screenshot assertions, ViewModel tests, and selection of JVM versus device verification. Use when adding or reviewing Compose test coverage.
 ---
 # Compose Testing and Previews
 
-Compose testing should verify behavior through state, semantics, and user actions. Previews should make important UI states easy to inspect without running the full app.
+Choose checks from plausible failure modes and existing project requirements. Previews,
+compilation, coverage and screenshots without assertions do not establish behavioral acceptance.
+Do not introduce a new framework, test ratio or per-composable quota for a small change.
 
-## Preserve production boundaries
+## Load a worked recipe when implementing
 
-Keep private helpers private. Do not widen to internal/public, add test-only accessors,
-use reflection, or add `@VisibleForTesting` solely to call implementation details. Exercise
-existing production entry points and observable state, outputs, semantics or effects.
-If testing is awkward, distinguish implementation-coupled tests from misplaced
-responsibility. Extract only a cohesive production responsibility with its own meaningful
-contract; record why it belongs there and keep the narrowest production visibility.
-Do not create wrappers or interfaces that exist only to let a test reach a helper.
+- [Behavior testing](references/testing-recipes.md): a callback assertion, semantics selectors,
+  clock/idling decisions, subscriber-driven StateFlow test shape and screenshot/CI evidence.
+- [Preview fixtures](references/preview-recipes.md): sample providers, theme/width/font-scale
+  variants and diagnosing previews without a live DI graph.
 
-Select checks by plausible regressions. No mandatory test ratios, per-composable quotas,
-screenshot tooling, or Flow assertion library. Respect actual project requirements.
+The rules below choose the check; these references show how to carry it out. They are
+part of the skill and should be read when the corresponding implementation is needed.
 
-## Test Pyramid
+## Production boundaries
 
-- Unit tests: reducers, mappers, validators, use cases, repositories with fakes, ViewModel state transitions.
-- Compose UI tests: semantics, interactions, navigation callbacks, accessibility-relevant behavior.
-- Screenshot tests: visual regressions for design-system components and important screen states when the project supports them.
-- Instrumented/device tests: real framework behavior, permissions, IME, navigation, rendering, and integration with Android services.
-- Macrobenchmarks: performance-sensitive flows.
+Test through production entry points and observable state, outputs, semantics or effects.
+Keep private helpers private. Do not widen visibility, add test-only accessors, reflect into
+internals or add `@VisibleForTesting` solely to reach implementation details. Extract only
+a cohesive production responsibility, with visibility determined by real consumers.
 
-Follow the project's existing test stack before adding new frameworks.
+## Choose the check
 
-Confirm the affected component and expected behavior before expensive reproduction; resolve
-material ambiguity early. Default to focused local checks. Use targeted device verification
-only for acceptance that needs a running app; use deep/formal journeys for a concrete high
-risk, an unresolved evidence gap or a user/project requirement. Select additions by risk:
-small reversible changes do not automatically need new previews, tests or test tooling.
+| Risk | Suitable check |
+| --- | --- |
+| Mapping, validation, reducers, repository/ViewModel transitions | Unit test with deterministic fakes |
+| User actions, callbacks, semantics, navigation UI | Compose UI test |
+| Meaningful rendering regression | Screenshot comparison using the configured tool |
+| IME, permissions, system integration, device rendering | Instrumented/device verification |
+| Startup, frame time, performance regression | Benchmark for the relevant scenario |
 
-For device sessions, follow the record levels in `references/device-test-memory.md`. Read
-only applicable known cases or pitfalls; inline checks need no complete history search, XML
-or new reusable case. Keep a compact outcome with decisive evidence, and distinguish a new
-run from a reusable case. A dispatched verifier still executes a frozen journey. The lead
-retains the minimum record, then may delegate optional report enrichment and case/index
-proposals to `jetpack-compose--journey-recorder` in a background graph and continue fixes
-without waiting. Shared-memory merges stay lead-owned. Old results never prove current code.
+`createComposeRule()` supplies a Compose test host; it is not automatically a pure JVM test.
+Use the project's supported instrumented or Robolectric environment and host dependencies.
+`createAndroidComposeRule<Activity>()` adds explicit Activity access. Do not call `setContent`
+on an Activity that already owns the screen unless that test host is designed for it.
 
-For temporal behavior, start with short video and inspected key frames per
-`references/device-video-debugging.md`; inspect an interval frame by frame and correlate
-clocks only when a single-frame defect, disputed ordering or unresolved timing cause needs
-it. Keep original and decisive evidence for the repaired-build comparison.
+## Compose UI tests
 
-Stop after final-code acceptance and required project checks pass with no blocking defect.
-Broaden testing only for a concrete new risk. Share a maximum of three diagnostic attempts
-per hypothesis/implementation across tools and run names; stop earlier when no new evidence
-is added, and reassess after roughly ten minutes without an effective change or decisive
-evidence. Report required checks that could not run as unverified, never passed.
+Prefer meaningful text, content descriptions, roles and state assertions. Use stable test
+tags when user-facing semantics cannot identify the target reliably; tags do not replace
+accessibility. Inspect merged/unmerged trees deliberately. A click alone does not prove
+that its outcome happened: assert the resulting state, visible result or boundary callback.
 
-## Previews
+Use the test rule receiver for selectors (`composeRule.onNodeWithText(...)`). Synchronize
+with Compose and explicit idling/wait conditions for external work; do not use fixed sleeps.
+For animation tests, distinguish the Compose test clock from unrelated coroutine schedulers.
 
-Preview stateless content composables, not route composables that require DI or live ViewModels.
+## ViewModel and Flow tests
 
-```kotlin
-@Preview(showBackground = true)
-@Composable
-private fun ProfileScreenPreview() {
-    AppTheme {
-        ProfileScreen(
-            state = ProfileUiState.Content(
-                name = "Ada Lovelace",
-                subtitle = "Compose engineer",
-            ),
-            onAction = {},
-            onBack = {},
-        )
-    }
-}
-```
+- Replace `Dispatchers.Main` when the tested code uses it; restore it after the test.
+  Keep test dispatchers on the same scheduler and inject dispatchers where production does.
+- Subscribe before triggering work when the contract requires observing a transition.
+  `stateIn(WhileSubscribed(...))` needs a subscriber to activate its upstream.
+- Assert current state or required transitions. StateFlow conflates values; do not require
+  every transient intermediate value unless the production contract guarantees observation.
+- Cover relevant failure, cancellation, retry and stale-result races. Do not assume the first
+  emitted value after a method call is already the completed result.
+- Use Turbine only if present or justified; an assertion library is not an architecture requirement.
 
-Include previews for loading, empty, content, error, long text, dark theme, and expanded layout when those states matter.
+## Previews and screenshots
 
-## Compose UI Tests
+Preview content with deterministic sample data, without DI or live ViewModels when possible.
+Choose meaningful loading/empty/content/error, theme, width and font-scale cases for the change.
+A fixed 1.0 font scale may stabilize one baseline; it does not cover accessibility scaling.
 
-Test through semantics, not implementation details.
+A screenshot regression test must compare against an approved baseline and fail on a
+meaningful mismatch. `captureToImage()` only captures pixels. Fix locale, fonts, clock,
+image data, theme, size and animation state; add distinct variants for relevant configurations.
+Never invent universal screenshot Gradle tasks: identify the installed plugin and inspect
+its documented tasks before updating or verifying baselines. Review baseline diffs before
+accepting them.
 
-```kotlin
-@get:Rule
-val composeRule = createComposeRule()
+## Runtime checks and completion
 
-@Test
-fun clickingRetryInvokesAction() {
-    var retried = false
+Confirm the component, trigger and expected behavior before expensive reproduction.
+Use local checks by default, and a device when acceptance depends on runtime behavior.
+The execution and evidence contracts live in
+[device-verification](../../references/device-verification.md),
+[device-test-memory](../../references/device-test-memory.md), and
+[device-video-debugging](../../references/device-video-debugging.md). Read only the relevant
+sections. Optional archival can use the journey recorder after minimum evidence is retained;
+it cannot defer acceptance checks or turn an old build's result into evidence for current code.
 
-    composeRule.setContent {
-        AppTheme {
-            ErrorPanel(onRetry = { retried = true })
-        }
-    }
+Run the narrowest relevant tasks using actual project/module/variant names. Finish when
+selected final-code acceptance and required project checks pass with no blocking defect.
+Broaden only for a concrete new risk. Required checks that cannot run remain unverified.
+Diagnostic retries share at most three attempts per hypothesis/implementation across tools
+and run names; stop earlier without new evidence and reassess after roughly ten minutes
+without an effective change or decisive evidence.
 
-    composeRule
-        .onNodeWithText("Retry")
-        .performClick()
+## Sources
 
-    assertThat(retried).isTrue()
-}
-```
-
-Prefer content descriptions, text, roles, state descriptions, and test tags only where user-facing semantics are insufficient or unstable.
-
-## Semantics
-
-- Make custom controls expose role, state, and action semantics.
-- Do not add test tags as a substitute for accessibility semantics.
-- Use merged/unmerged tree intentionally.
-- Verify important content is discoverable with TalkBack-relevant labels.
-
-## ViewModel Tests
-
-- Use coroutine test dispatchers and deterministic fake repositories.
-- Assert observable state/effects. Assert sequences only when ordering is part of the contract; avoid timing-dependent implementation details.
-- Cover loading, success, failure, cancellation, retry, and stale data cases.
-- Keep Android framework dependencies out of ViewModel tests when possible.
-
-## Robolectric vs Instrumented Tests
-
-Use Robolectric for fast JVM tests when framework behavior is adequately represented and project already supports it. Use instrumented tests for:
-
-- Compose rendering differences that matter.
-- IME and focus behavior.
-- Permissions and system services.
-- Navigation/activity/fragment integration.
-- Accessibility checks needing platform behavior.
-
-## Screenshot Strategy
-
-If the project has screenshot tooling:
-
-- Snapshot design-system primitives and high-value screens.
-- Use deterministic fonts, clock, locale, and image data.
-- Cover light/dark and key width classes.
-- Keep screenshots stable by avoiding live network and animation state.
-
-If the project does not have screenshot tooling, do not introduce it for a small change unless visual regression risk justifies the setup cost.
-
-## Workflow
-
-1. Inspect existing test frameworks, rules, fake patterns, and naming.
-2. Use the existing production boundary; split route/content only when it improves responsibility separation, not merely test access.
-3. Add previews for relevant UI states when they improve inspection of this change.
-4. Add unit or Compose UI tests where they protect a plausible regression through behavior.
-5. Use instrumented or screenshot tests only where they answer a risk that unit/UI tests cannot.
-6. Run the narrowest relevant test command, then broader checks if the change affects shared UI or architecture.
-
-## Validation Checklist
-
-- [ ] Relevant UI states are inspectable; previews are added when useful for this change.
-- [ ] Tests use semantics/user actions rather than private implementation details.
-- [ ] ViewModel tests use deterministic fakes and coroutine test utilities.
-- [ ] Device/instrumented tests are used for real platform behavior when needed.
-- [ ] New test tooling is justified by risk and follows existing project conventions.
+- [Compose test setup](https://developer.android.com/develop/ui/compose/testing)
+- [Synchronization and test clocks](https://developer.android.com/develop/ui/compose/testing/synchronization)
+- [Testing Kotlin flows](https://developer.android.com/kotlin/flow/test)
+- [Screenshot testing](https://developer.android.com/studio/preview/compose-screenshot-testing)

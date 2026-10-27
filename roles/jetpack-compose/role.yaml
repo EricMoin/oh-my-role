@@ -13,7 +13,7 @@ description: >-
   emulator when acceptance depends on what only a running app can show — an
   Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
   target over `hdc`.
-version: "4.6.0"
+version: "4.6.1"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.
 
@@ -57,18 +57,18 @@ references:
   compose-architecture:
     path: references/compose-architecture.md
     description: >-
-      MVVM, MVI, UDF patterns, ViewModel state ownership, Hilt/Koin DI,
-      Navigation Compose, module organization, and Compose antipatterns
+      Architecture review index: ownership, UDF, lifecycle, navigation and
+      dependency boundaries; implementation guidance lives in the domain skills
   compose-ui-and-accessibility:
     path: references/compose-ui-and-accessibility.md
     description: >-
-      Modifier composition, layout constraints, Material 3, adaptive layouts,
-      accessibility (Semantics, focus, TalkBack), and form patterns
+      UI review index: constraints, insets, adaptive behavior, accessibility
+      and interaction evidence; implementation guidance lives in the layout skill
   compose-testing-and-quality:
     path: references/compose-testing-and-quality.md
     description: >-
-      Test pyramid, composeTestRule, Compose UI test matchers, screenshot
-      tests, Robolectric, ViewModel testing, coverage
+      Test review index: observable behavior, semantics, time control and
+      screenshot assertions; examples live in the testing skill
   device-verification:
     path: references/device-verification.md
     description: >-
@@ -100,8 +100,8 @@ references:
   compose-performance-and-platform:
     path: references/compose-performance-and-platform.md
     description: >-
-      Recomposition diagnosis, stability, compiler reports, Macrobenchmark,
-      Baseline Profiles, startup optimization, Gradle build optimization
+      Performance review index: measurement, recomposition, startup and
+      platform risks; implementation guidance lives in the performance skill
   source-research:
     path: references/source-research.md
     description: >-

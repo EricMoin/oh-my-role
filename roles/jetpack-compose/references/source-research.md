@@ -1,189 +1,120 @@
-# Android Source Research — AOSP, AndroidX, and Third-Party Tracing
+# Android Source Lookup
 
-This reference defines the source-level investigation workflow for verifying Android platform, AndroidX library, and third-party dependency behavior. Use it when official docs are insufficient, ambiguous, or missing.
+Use `skills/android-source-research/SKILL.md` for the investigation workflow and
+`references/evidence-first-research.md` for citations. This reference owns the mechanics
+of finding source that matches a dependency or platform build.
 
----
+## Resolve Before Tracing
 
-## 1. When to Invoke Source Research
-
-Do NOT guess Android or Compose API behavior. Escalate to source research when:
-
-| Trigger | Example |
-|---------|---------|
-| **API behavior uncertainty** | "Does `Modifier.semantics` merge with parent semantics by default?" |
-| **Undocumented behavior** | "What happens if `LazyColumn` receives a `null` key?" |
-| **Version-specific bugs** | "Compose BOM 2024.02 introduced a change in `rememberScrollState` — what changed?" |
-| **Internal implementation needed** | "Does `SnackbarHostState.showSnackbar` cancel the previous snackbar?" |
-| **Docs vs observed behavior conflict** | "Docs say X but Layout Inspector shows Y" |
-| **Migration impact unclear** | "What concrete class changed between Compose 1.5 and 1.6 for `Modifier.weight`?" |
-
----
-
-## 2. Evidence Hierarchy
-
-Prefer higher tiers. Only descend when higher tiers are exhausted.
-
-| Tier | Source | Authority |
-|------|--------|-----------|
-| **T1** | Local project source (version catalogs, build.gradle.kts) | Exact — pinned to project |
-| **T2** | Official Android docs (developer.android.com) | High — maintained by Google |
-| **T3** | AndroidX source on GitHub (github.com/androidx/androidx) | High — canonical implementation |
-| **T4** | AOSP source (cs.android.com / android.googlesource.com) | High — platform canonical |
-| **T5** | Issue tracker comments (issuetracker.google.com) | Medium — may include workarounds |
-| **T6** | Release notes and migration guides | Medium — summary of changes |
-| **T7** | Local Gradle dependency source (`~/.gradle/caches/`) | Exact — matches project version |
-| **T8** | Reproducible minimal experiment | High (for this project) — definitive but expensive |
-
----
-
-## 3. cs.android.com — AOSP Navigation Guide
-
-cs.android.com is the primary portal for browsing AOSP source.
-
-### Search Patterns
-
-| What to Search | Query Format | Example |
-|----------------|-------------|---------|
-| Framework class | `class:ClassName` | `class:Activity` |
-| Framework method | `class:Class methodName` | `class:WindowInsetsController show` |
-| AndroidX class | Use GitHub (see next section) | — |
-| API level guard | `Build.VERSION_CODES.` | `VERSION_CODES.TIRAMISU` |
-
-### Reading AOSP Source
-
-- Platform source lives under `frameworks/base/core/java/android/`
-- Compose runtime is part of AndroidX, not AOSP — use GitHub
-- API-level differences appear in `compat/` packages — trace version checks carefully
-- Distinguish between framework API behavior and AndroidX compatibility wrappers
-
----
-
-## 4. AndroidX Source on GitHub
-
-The AndroidX monorepo lives at `github.com/androidx/androidx`.
-
-### Repo Structure
-
-```
-androidx/
-  compose/
-    runtime/
-    foundation/
-    material3/
-    ui/
-  lifecycle/
-  navigation/
-  room/
-```
-
-### Branch Conventions
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Active development — reflects unreleased changes |
-| `androidx-main` | Primary development branch |
-| `*-release` | Release branches (e.g., `compose-2024.06-release`) |
-
-### Tag Convention
-
-```
-androidx.compose-1.6.0    # Compose 1.6.0 release
-androidx.lifecycle-2.8.0  # Lifecycle 2.8.0 release
-```
-
-### Tracing the Implementation
-
-```kotlin
-// Starting from the app's imports:
-import androidx.compose.foundation.lazy.LazyColumn
-
-// GitHub path (match the version your app uses):
-// github.com/androidx/androidx/tree/androidx.compose-1.6.0/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyColumn.kt
-```
-
----
-
-## 5. Third-Party Library Source from Maven Coordinates
-
-Given a dependency like `"com.squareup.retrofit2:retrofit:2.9.0"`:
-
-1. Convert to GitHub: `github.com/square/retrofit`
-2. Find the tag: `parent-pom-2.9.0` or similar
-3. Navigate to the module: `retrofit/src/main/java/retrofit2/`
-
-For libraries hosted on JitPack or custom registries, the pom file contains the SCM tag. Extract with:
+Read the project's version catalog and convention plugins, then inspect the configuration
+used by the affected variant. Adapt module and configuration names to the project:
 
 ```bash
-./gradlew :app:dependencyInsight --dependency retrofit2
-```
-
----
-
-## 6. Local Gradle Dependency Source Inspection
-
-```bash
-# Show full dependency tree
 ./gradlew :app:dependencies --configuration debugRuntimeClasspath
-
-# Inspect a specific dependency
 ./gradlew :app:dependencyInsight \
-    --dependency androidx.compose.runtime \
+    --dependency androidx.compose.foundation \
     --configuration debugRuntimeClasspath
-
-# Find local cached sources
-find ~/.gradle/caches/ -name "compose-runtime-*.jar" | head -5
 ```
 
-Gradle does NOT include sources by default. Add to `build.gradle.kts`:
+`dependencyInsight` explains selected versions and their resolution; it does not download
+source JARs or extract a POM's SCM tag. Ask the IDE/dependency tooling for the published
+`-sources.jar`, or retrieve it from the artifact's declared Maven repository using the
+resolved group, artifact and version. Inspect the corresponding POM for SCM metadata.
+Neither `buildFeatures.buildConfig` nor an empty report-task configuration enables source
+downloads. Existing cached source archives can be located with:
 
-```kotlin
-android {
-    buildFeatures { buildConfig = true }
-}
-// Or fetch sources explicitly
-tasks.withType<DependencyInsightReportTask> { }
+```bash
+rg --files --hidden --no-ignore ~/.gradle/caches/modules-2/files-2.1 \
+    -g '*-sources.jar'
 ```
 
-For IDE source attachment, open the module settings in Android Studio and attach `-sources.jar` files.
+Search inside the selected archive for the symbol, then record the archive coordinate,
+entry and actual line range. An absent cached archive is not evidence that source is
+unpublished. Multiplatform artifacts may publish platform-specific source variants;
+confirm the source set used by the resolved Android target.
 
----
+## AndroidX and AOSP
 
-## 7. Citation Format
+The [AndroidX GitHub mirror](https://github.com/androidx/androidx) is synchronized with
+[the framework support repository](https://android.googlesource.com/platform/frameworks/support/).
+`androidx-main` is development code, not a release pin. Discover actual refs or use
+published sources; do not derive a tag or release-branch name from an artifact/BOM version.
+If an exact mapping cannot be established, label development-source findings as provisional.
 
-Every source finding must be recorded in traceable format:
+| Area | Search starting point |
+| --- | --- |
+| Compose runtime, foundation, UI, Material | `compose/` in AndroidX |
+| Lifecycle, Navigation, Room | Their module directories in AndroidX |
+| Android framework | `frameworks/base/` via cs.android.com or android.googlesource.com |
+| Third-party dependency | Published source artifact, then POM SCM repository/revision |
 
+Search by imported symbol instead of assuming class and file names coincide. For example,
+`LazyColumn` is declared in `LazyDsl.kt` in the currently inspected AndroidX development
+source, not a presumed `LazyColumn.kt`. Verify paths again for the target artifact.
+
+Trace public entrypoint → overload/defaults → relevant implementation → platform guards.
+Inspect AndroidX wrappers separately from framework code. Follow actual API checks rather
+than assuming all compatibility behavior lives in a directory named `compat`.
+
+## Navigate a specific source question
+
+Start at the imported package and public symbol. For AndroidX, search the relevant module
+in Android Code Search or the GitHub mirror; Compose is also indexed in the AndroidX
+support repository, not restricted to one browsing site. For framework behavior, search
+`frameworks/base` for the public class or method, then follow service/implementation
+calls as needed. A method name plus an adjacent distinctive parameter is often more
+selective than a broad class name. Do not rely on undocumented search-operator syntax.
+
+1. Read the selected overload and its default arguments, not just a similarly named method.
+2. Follow delegation until the disputed behavior is implemented; note which state or owner
+   controls it and any cleanup/cancellation path.
+3. Inspect `Build.VERSION.SDK_INT`, target-SDK checks, feature flags and AndroidX wrappers
+   where present. They need not live in a directory named `compat`.
+4. Bind the conclusion to the actual artifact/platform build. For a version difference,
+   compare the same symbol across verified revisions rather than guessing release tags.
+5. Keep a short chain such as `entrypoint → overload → delegate → guard → effect` with
+   a citation at the decisive step. Stop once the named question is answered.
+
+### Inspect a published source archive
+
+The following read-only Python recipe lists candidate entries in an existing source JAR.
+Replace the path and symbol; it neither downloads sources nor modifies the Gradle cache.
+
+```python
+from pathlib import Path
+from zipfile import ZipFile
+
+archive = Path("/absolute/path/to/resolved-artifact-sources.jar")
+symbol = "LazyColumn"
+with ZipFile(archive) as source:
+    for entry in source.namelist():
+        if not entry.endswith((".kt", ".java")):
+            continue
+        text = source.read(entry).decode("utf-8")
+        for line, content in enumerate(text.splitlines(), 1):
+            if symbol in content:
+                print(f"{entry}:{line}: {content.strip()}")
 ```
-source: <path/URL>[:<line>] — <what was verified>
-```
 
-### Examples
+Open the relevant entry with surrounding context after finding it. Record the Maven
+coordinate and archive/entry alongside the line; a filename alone does not establish
+version provenance. For third-party artifacts, use the published POM's real SCM metadata
+when available and verify that its revision maps to the artifact. Missing SCM metadata is
+not permission to derive a GitHub owner or tag from the Maven group name.
 
-```
-source: cs.android.com/platform/frameworks/base/core/java/android/view/WindowInsetsController.java:412 — confirmed that show() is a no-op when the app is not in immersive mode
+## Worked Documentation Check
 
-source: github.com/androidx/androidx/blob/androidx.compose-1.6.0/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyColumn.kt:285 — verified that LazyColumn defaults to defaultLazyListKeys for key generation
+The [official lazy-list documentation](https://developer.android.com/develop/ui/compose/lists#item-keys)
+(accessed 2026-10-27) specifies position-based default item keys. Stable, unique keys preserve
+item identity when data moves. Do not reverse that claim or fabricate a source line to
+support it. A project-specific implementation claim still needs the resolved source.
 
-source: ~/.gradle/caches/modules-2/files-2.1/.../androidx-lifecycle-2.8.0-sources.jar/androidx/lifecycle/ViewModel.kt:177 — confirmed that viewModelScope is associated with the clear() callback
+The [AndroidX Lazy DSL source](https://github.com/androidx/androidx/blob/androidx-main/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyDsl.kt)
+was inspected for navigation on 2026-10-27. This moving link is not a release-specific citation.
 
-issue: issuetracker.google.com/123456789 — confirmed that Compose BOM 2024.02.00 regressed in HorizontalPager scroll behavior
+## Deliverable
 
-source: github.com/square/retrofit/tree/parent-pom-2.9.0/retrofit/src/main/java/retrofit2/Retrofit.java:187 — verified that baseUrl must end with '/'
-```
-
-### Unconfirmed Finding
-
-```
-[assumption: not verified — could not locate the source for this internal Compose behavior in any public repository]
-```
-
----
-
-## 8. Research Workflow Summary
-
-1. **Pin versions**: Identify exact AGP, Kotlin, Compose BOM, and library versions from project source.
-2. **Define the question**: One specific behavioral question. Narrow until the answer is binary or parametric.
-3. **Search T1-T2**: Check project source and official Android docs.
-4. **Search T3-T4**: Trace AndroidX source on GitHub matching the project's exact version.
-5. **Search T5-T7**: Check issue tracker, release notes, then local Gradle cache.
-6. **Run experiment**: If source is still ambiguous, write a minimal test project.
-7. **Report**: Include version scope, evidence chain, conclusion, and any remaining unknowns.
+Return the question, resolved version/build, inspected evidence, conclusion, action and
+remaining uncertainty. When source and docs disagree, test the smallest case that would
+resolve it. If unable to execute, report that limitation and the proposed experiment
+separately; do not claim a reproduced or verified result.

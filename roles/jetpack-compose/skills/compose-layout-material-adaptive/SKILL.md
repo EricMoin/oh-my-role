@@ -1,230 +1,111 @@
 ---
 name: compose-layout-material-adaptive
-description: Builds and reviews Compose layouts with modifiers, constraints, Lazy layouts, Material 3, theming, adaptive layouts, window size classes, and accessibility. Use when creating or reviewing Compose UI layouts, applying Material 3 theming, building responsive/adaptive screens, or fixing layout overflow and sizing issues.
+description: Guides Compose constraints, modifiers, lazy layouts, Material themes, adaptive sizing, insets, semantics and focus. Use when building screens or fixing sizing, accessibility and layout-state problems.
 ---
 # Compose Layout, Material, and Adaptive UI
 
-Compose layout work is constraint-driven. Build from stable primitives, use modifiers deliberately, and make adaptive behavior explicit rather than relying on accidental screen sizes.
+Inspect the existing design system, available constraints and target configurations first.
+Use standard layouts before custom `Layout` or subcomposition. Preserve content, state and
+interaction while changing size; smaller proportional columns alone do not make a screen usable.
 
-## Layout Principles
+## Worked patterns
 
-- Modifiers are ordered. Changing order changes measurement, drawing, input, semantics, and placement.
-- Constraints flow down and sizes flow up. If a layout is surprising, inspect constraints first.
-- Prefer standard layouts (`Column`, `Row`, `Box`, `LazyColumn`, `LazyVerticalGrid`, `Scaffold`) before custom layout.
-- Use custom `Layout`, `SubcomposeLayout`, or `LookaheadScope` only when standard primitives cannot express the behavior cleanly.
-- Avoid hard-coded dimensions for complete screens. Use spacing tokens, adaptive constraints, and content-driven sizing.
+- [Layout and theme recipes](references/layout-recipes.md): dynamic-color fallback, theme
+  tokens, lazy keys/content types with Scaffold insets, and local adaptive layout policy.
+- [Accessibility and forms](references/accessibility-recipes.md): a labeled single-action
+  toggle, custom progress semantics, validation/focus and checks that need a real device.
 
-## Modifier Order
+Load the applicable recipe when implementing these patterns; use the rules below for review.
 
-Common order:
+## Constraints, modifiers and scrolling
 
-```kotlin
-Modifier
-    .fillMaxWidth()
-    .padding(horizontal = 16.dp)
-    .clip(shape)
-    .background(color)
-    .clickable(onClick = onClick)
-    .padding(16.dp)
-```
+- Constraints flow down; measured sizes flow up. Inspect the parent before adding fixed
+  dimensions, `fillMaxSize`, `weight` or intrinsic queries. `weight` is scope-specific.
+- Modifier order changes bounds, drawing and interaction. `clickable().padding(...)` makes
+  that padding part of the clickable area; `padding(...).clickable()` puts it outside.
+  Compose may expand small touch targets, so validate actual hit regions and overlaps.
+- Intrinsic queries obtain sizing information before measurement; they do **not** measure
+  children twice. `height(IntrinsicSize.Min)` can correctly constrain a divider to sibling
+  text height. Removing it changes behavior; use it deliberately and measure cost if relevant.
+- Same-axis nested scrollers need bounded constraints. Flatten sectioned content into one
+  lazy container when appropriate; do not prohibit intentional bounded nested scrolling.
+- Lazy item keys default to position. Use unique stable IDs when insertion/reordering must
+  preserve item identity and state. For Android saved state, keys must be Bundle-compatible.
+  Use `contentType` for reusable item shapes, not a distinct type for every item ID.
+- Keep expensive mapping outside item rendering; use the project's paging/data boundary.
 
-This creates outer spacing, clips/backgrounds the visual surface, makes that surface clickable, then adds inner content padding. Reorder intentionally when the hit target, background, or clipping should differ.
+## Theme and insets
 
-## Lazy Layouts
+Use the project's theme and component family consistently. Prefer Material 3 for a new
+Material 3 surface; do not mix Material 2 and 3 imports or force a whole-app migration.
+Material 3 uses `MaterialTheme.colorScheme`; typography and shapes remain theme properties.
+Define custom semantic tokens in the theme instead of scattering screen color literals.
 
-- Provide stable keys for reorderable or changing data.
-- Use `contentType` when rows have different layout types and the list is large.
-- Avoid nested same-direction scroll containers unless one has a bounded size.
-- Keep item lambdas light; move expensive mapping outside or memoize where appropriate.
-- Use paging/lazy APIs according to the project's data layer, not ad hoc manual pagination in item content.
+Dynamic color uses `dynamicDarkColorScheme(context)` or `dynamicLightColorScheme(context)`
+on Android 12/API 31 and later, selected by the active theme. Supply a normal dark/light
+scheme below that API level or when the product disables dynamic color.
 
-```kotlin
-LazyColumn {
-    items(
-        items = messages,
-        key = { it.id },
-        contentType = { it.type },
-    ) { message ->
-        MessageRow(message = message)
-    }
-}
-```
+Apply `Scaffold`'s content padding to the content root or the appropriate lazy content
+padding. Coordinate consumed insets to avoid double application. Check system bars, cutouts
+and IME against the project's target SDK and edge-to-edge setup; do not hard-code bar heights.
 
-## Material 3 and Design Systems
+## Adaptive sizing and state
 
-**NEVER** use Material 2 `MaterialTheme.colors.*` (colors / typography / shapes properties) in new code — Material 3 exposes `colorScheme` / `typography` / `shapes`.
+Use window-level size/posture information for screen navigation and pane policy. Use
+`BoxWithConstraints` when a component needs its own allocated constraints, which may differ
+from the window. Subcomposition has a cost, but a constraint change does not inherently
+forget remembered state. State loss depends on identity, keys and leaving/moving composition
+locations. Preserve shared state above changing branches or use the project's supported
+state-preserving layout facilities.
 
-- Use Material 3 components and tokens unless the app has a custom design system.
-- Centralize colors, typography, shapes, elevation, spacing, and iconography.
-- Prefer semantic tokens (`colorScheme.primary`, app design tokens) over one-off colors.
-- Keep screen code focused on composition, not raw styling decisions.
-- Use `Scaffold` for top bars, bottom bars, FABs, snackbars, and content insets when it matches the screen.
+- Choose usable compact/medium/expanded layouts from content needs, not device names.
+  Hide or stack secondary panes when proportional widths would make them unusable.
+- Recompute policy when the window changes; it must not be calculated only once.
+- Keep business state/navigation consistent through resize, rotation and fold changes.
+- Keep reusable leaves parameter-based; pass resolved layout choices when the leaf does
+  not need to observe its own constraints.
+- Inspect resolved adaptive/window artifacts and imports before writing code. Legacy
+  Material 3 window-size classes and AndroidX Window/adaptive types are different APIs.
+  Do not mix their constants, invent `currentWindowSizeClass()`, copy unverified BOM maps,
+  or add opt-ins merely to suppress errors. Check current docs for the project's version.
 
-## Insets
+## Accessibility, forms and focus
 
-- Handle system bars, IME, and display cutouts explicitly.
-- Prefer Compose insets APIs and `Scaffold` padding over manual status-bar constants.
-- Test IME behavior with text fields on real devices or emulator.
-- Be careful with nested padding from `Scaffold`, navigation hosts, and child screens.
+Prefer standard controls, whose semantics and interaction are already implemented.
+For custom controls expose the meaningful action, role, value and state; a semantics-only
+click action does not implement touch/keyboard interaction. Use `clickable`, `toggleable`
+or the appropriate control for those inputs.
 
-## Adaptive Layouts
+- Labels should describe meaning without redundant prefixes such as “Button:”. Visible
+  text often supplies the label already. Informative icons/images need a description;
+  decorative or already-described imagery uses `contentDescription = null`.
+- Merge descendants only for a logical accessibility unit; preserve independently
+  actionable children. Use `clearAndSetSemantics` only when replacement semantics are complete.
+- Progress uses `progressBarRangeInfo`; do not invent `Role.ProgressBar`. Use live regions
+  for relevant announcements, not continuously changing timers.
+- Provide at least a 48 dp interactive target under Android guidance, adequate contrast,
+  and a non-color state/error cue. Do not equate dp directly with web CSS-pixel standards.
+- `sp` respects font scale when converted with the current density/font scaling. Custom
+  drawing must use the current conversion and expose semantics; `sp` itself does not
+  disable scaling. Verify long text, large font settings and RTL without hiding essential text.
+- Forms need labels, visible recovery messages and a discoverable validation path. Request
+  focus from an event/effect after the field exists, not during composition.
+- Prefer natural keyboard traversal. When overriding it, use `FocusRequester` with
+  `focusProperties { next = ...; previous = ... }`; `focusOrder(1)` is not an ordering API.
+  Keyboard focus and accessibility traversal are distinct; check both when affected.
 
-Use adaptive UI when the screen appears on phones, foldables, tablets, ChromeOS, or desktop-class windows.
+## Verification and sources
 
-- Use window size classes or explicit constraints from `BoxWithConstraints`.
-- Switch navigation patterns intentionally: bottom navigation, navigation rail, permanent drawer, two-pane layouts.
-- Keep state and navigation consistent when layout changes.
-- Avoid separate codepaths that duplicate business logic.
+Exercise the affected dimensions: narrow/resized window, font scale, long/RTL content,
+IME, scrolling, keyboard and TalkBack where applicable. Use existing previews/UI tests
+and a device for platform-dependent acceptance; no fixed matrix is required for every edit.
 
-**Versions and experimental APIs:** the window size class types used in the examples (`WindowWidthSizeClass`, `WindowSizeClass`) come from `androidx.compose.material3:material3-window-size-class`, which tracks the material3 line of the Compose BOM (e.g. BOM 2025.06.00 ships 1.3.2; BOM 2026.06.01 ships 1.4.0) — check the project's Compose BOM before use. The successor library `androidx.compose.material3.adaptive:adaptive` (BOM 2025.06.00 ships 1.1.0; BOM 2026.06.01 ships 1.2.0) provides `currentWindowAdaptiveInfo()` and `WindowAdaptiveInfo`; its window-size and posture APIs are marked `@ExperimentalMaterial3AdaptiveApi` since 1.2.0-beta01 (e.g. `currentWindowDpSize`), and `currentWindowAdaptiveInfo()` is deprecated in the 1.3.0 line in favor of `currentWindowAdaptiveInfoV2()` — verify the status for the project's exact adaptive version. In `material3-window-size-class`, `calculateWindowSizeClass()` requires `@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)`. EXPERIMENTAL — confirm with the user before @OptIn: never add these opt-in annotations just to silence the compiler; confirm the experimental/deprecated status for the project's exact version first.
+Checked 2026-10-27:
 
-## Accessibility
-
-- Preserve minimum touch targets, usually 48 dp.
-- Provide meaningful semantics for icons, custom controls, and image content.
-- Use `contentDescription = null` for purely decorative images/icons.
-- Respect font scale and dynamic type. Check long labels, error text, and high font scale.
-- Ensure color is not the only signal for state.
-- Prefer real Material controls over custom clickable boxes when semantics matter.
-
-## Workflow
-
-1. Inspect the existing theme/design system and screen structure.
-2. Define the layout behavior for compact, medium, and expanded widths when relevant.
-3. Build with standard layouts and design tokens first.
-4. Add stable keys/content types for lazy content.
-5. Verify insets, IME, font scale, orientation, and accessibility semantics.
-6. Reach for custom layout only after a standard-layout attempt is clearly insufficient.
-
-## Common Mistakes (❌/✅)
-
-### 1. Unnecessary `IntrinsicSize` measurement
-
-❌ **Wrong** — applying `IntrinsicSize` when a standard layout naturally sizes to its tallest child:
-```kotlin
-Row(Modifier.height(IntrinsicSize.Min)) {
-    Image(modifier = Modifier.fillMaxHeight(), ...)
-    Column { Text("Title"); Text("Subtitle") }
-}
-// Forces a double measurement pass on the entire Row subtree
-```
-✅ **Correct** — structure the layout so the Row defaults to the maximum child height without intrinsics:
-```kotlin
-Row {
-    Image(...) // sized by its own content
-    Column { Text("Title"); Text("Subtitle") }
-}
-// Row height defaults to tallest child — no intrinsics needed
-```
-`IntrinsicSize` forces two measurement passes: the framework measures each child's intrinsic size first, then performs the real measurement. For long lists or deeply nested trees this is expensive. Reshape the layout hierarchy or pass explicit constraints before reaching for intrinsics.
-
----
-
-### 2. Nesting same-direction scroll containers
-
-❌ **Wrong** — placing a vertically scrolling child inside a vertically scrolling parent:
-```kotlin
-LazyColumn {
-    items(sections) { section ->
-        LazyColumn {  // illegal: inner child receives unbounded vertical constraints
-            items(section.items) { item -> SectionItem(item) }
-        }
-    }
-}
-```
-✅ **Correct** — flatten the hierarchy so a single scroll container manages all content:
-```kotlin
-LazyColumn {
-    sections.forEach { section ->
-        stickyHeader { SectionHeader(section.title) }
-        items(section.items) { item -> SectionItem(item) }
-    }
-}
-```
-Two nested same-direction scrollers give the inner child unbounded constraints — it wants to be infinitely tall. The framework either throws `IllegalStateException` or clips content. Flatten into one list, use `stickyHeader`, or give the inner container a fixed height.
-
----
-
-### 3. Fixed `dp` sizes where `weight` or adaptive constraints belong
-
-❌ **Wrong** — hard-coded dimensions that ignore the available viewport width:
-```kotlin
-Row {
-    Card(Modifier.width(300.dp)) { /* sidebar */ }
-    LazyColumn(Modifier.fillMaxWidth()) { /* content */ }
-}
-// On a 320dp-wide phone, content gets 20dp — unusable
-```
-✅ **Correct** — use `weight` to distribute space proportionally, or `widthIn` with max bounds:
-```kotlin
-Row {
-    Card(Modifier.weight(0.3f)) { /* sidebar */ }
-    LazyColumn(Modifier.weight(0.7f)) { /* content */ }
-}
-```
-Fixed `dp` dimensions are blind to the actual viewport. A 300 dp sidebar on a compact phone starves content. Use `Modifier.weight`, `fillMaxWidth(fraction)`, or `widthIn(max = ...)` so the layout responds to real available space.
-
----
-
-### 4. Hard-coded colors bypassing `MaterialTheme`
-
-❌ **Wrong** — raw hex color literals scattered through composable code:
-```kotlin
-Text("Error", color = Color(0xFFB00020))
-Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBFE)))
-```
-✅ **Correct** — route all colors through `MaterialTheme.colorScheme` so dark mode and dynamic color apply automatically:
-```kotlin
-Text("Error", color = MaterialTheme.colorScheme.error)
-Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant))
-```
-**NEVER** hardcode colors as literals in composable code — route everything through `MaterialTheme.colorScheme`. Hard-coded colors ignore the active `ColorScheme`, breaking dark mode, Material You dynamic color, and any project-level theme customization. If a custom color is genuinely outside the token set, define it in the theme as a semantic extension — never as a literal in screen code.
-
----
-
-### 5. `BoxWithConstraints` for simple responsive branching
-
-❌ **Wrong** — using `BoxWithConstraints` when the only need is adaptive layout switching:
-```kotlin
-BoxWithConstraints {
-    if (maxWidth < 600.dp) PhoneLayout() else TabletLayout()
-    // subtree re-creates on every constraint change (IME open/close, split-screen, fold)
-}
-```
-✅ **Correct** — compute the layout strategy once at the screen level and branch outside measurement:
-```kotlin
-val windowSizeClass = currentWindowSizeClass()
-val useCompactLayout = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
-Scaffold {
-    if (useCompactLayout) PhoneLayout() else TabletLayout()
-    // layout direction decided once; composables survive IME and resize events
-}
-```
-`BoxWithConstraints` adds a subcomposition boundary and recomposes its subtree on *every* constraint change — including IME appearance, split-screen resize, and fold/unfold transitions. This resets internal state. Prefer `WindowSizeClass` or a computed size-class flag at the top of the screen where the branch is stable.
-
----
-
-### 6. `WindowSizeClass` branching in leaf composables
-
-❌ **Wrong** — a low-level component queries the window size class internally, coupling it to the composition environment:
-```kotlin
-@Composable
-fun ProfileAvatar(photoUrl: String) {
-    val widthClass = currentWindowSizeClass().widthSizeClass
-    val size = if (widthClass == WindowWidthSizeClass.Compact) 48.dp else 80.dp
-    AsyncImage(modifier = Modifier.size(size), model = photoUrl, ...)
-}
-// Untestable without a WindowSizeClass provider in the composition
-```
-✅ **Correct** — pass adaptive values down as parameters; decide size at the screen/route level:
-```kotlin
-@Composable
-fun ProfileAvatar(photoUrl: String, modifier: Modifier = Modifier) {
-    AsyncImage(modifier = modifier, model = photoUrl, ...)
-}
-
-// At screen level:
-val avatarSize = if (compact) 48.dp else 80.dp
-ProfileAvatar(photoUrl, modifier = Modifier.size(avatarSize))
-```
-Leaf composables that call `currentWindowSizeClass()` become coupled to the composition environment, making previews and unit tests fragile. Push adaptive decisions to the route/screen composable and pass resolved values down. This keeps shared components reusable and testable in isolation.
+- [Intrinsic measurement](https://developer.android.com/develop/ui/compose/layouts/intrinsic-measurements)
+- [Adaptive state lifespans](https://developer.android.com/develop/ui/compose/state-lifespans)
+- [Local sizing and subcomposition](https://developer.android.com/develop/ui/compose/performance/backwards-write)
+- [Material 3 theme and dynamic colors](https://developer.android.com/codelabs/jetpack-compose-theming)
+- [Scaffold padding](https://developer.android.com/develop/ui/compose/components/scaffold)
+- [Semantics](https://developer.android.com/develop/ui/compose/accessibility/semantics)
+- [Focus traversal](https://developer.android.com/develop/ui/compose/touch-input/focus/focus-traversal)

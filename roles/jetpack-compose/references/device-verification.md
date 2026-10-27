@@ -273,21 +273,28 @@ temporal evidence is never a pass.
 
 ### 6.4 Interaction rules
 
-Quoted from `references/interact.md` of the android-cli skill:
+Check focus before text entry and confirm the text actually inserted. Host-shell and
+device-shell quoting both matter; use a tool's supported text-input facility for content
+that cannot be represented safely by the available shell command. Do not treat a sample
+escape sequence as a guarantee for arbitrary text.
 
-> 1. Always ensure text input fields have `"focused"` in their `"state"` list before entering text.
-> 2. If an element has `"scrollable"` in its `"interactions"` list, try scrolling it when looking for missing UI elements.
-> 3. Always scroll slowly when executing scroll inputs. The 5th argument to `adb shell input swipe` controls scroll duration.
-> 4. Content may take time to load; if a `layout` is missing information after you take an action, wait a few seconds, then perform `layout --diff` to see if anything changes.
+For a simple ASCII phrase, after selecting the device and setting `device_serial` to its
+actual serial, this example enters `Hello world` into the already focused field:
 
-Text entry specifics from the same reference:
+```bash
+adb -s "$device_serial" shell input text 'Hello%sworld'
+```
 
-> - **Spaces (`%s`):** Replace spaces with `%s` (Android ignores text after raw spaces): `adb shell input text "Hello%sworld"` (enters `"Hello world"`).
-> - **Special characters:** Escape shell metacharacters (`&`, `$`, `(`, `)`, `!`): `adb shell input text "AT\&T"` or `adb shell input text 'Price:\$10'`
-> - **Submit / Enter:** `adb shell input keyevent 66`
+The inspected [AOSP input implementation](https://android.googlesource.com/platform/frameworks/base/+/a41d75968d7d5b0468cb01276d108b73823d7cb3/services/core/java/com/android/server/input/InputShellCommand.java)
+converts `%s` to a space before generating virtual-keyboard events. This is not a universal
+Unicode/paste facility or arbitrary shell-escaping recipe. Confirm the resulting text;
+use the available IME/automation input route when the required characters are unsupported.
 
-Because `--diff` is a no-op in the installed build (section 3), read rule 4 as "wait, then
-take another full dump".
+Scroll only when the journey calls for interaction; a check/verify action must observe the
+current screen without scrolling (section 7). Use an appropriate swipe duration and inspect
+the result. When content is still loading, take another full layout dump after a bounded
+wait. Compare the dumps directly; do not rely on the deprecated `layout --diff` flag.
+
 
 ---
 

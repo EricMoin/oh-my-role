@@ -6,6 +6,10 @@ description: Applies senior Android platform engineering practices covering life
 
 Compose does not remove Android platform constraints. Lifecycle, process death, resources, permissions, background execution, storage, and build configuration still define whether an app behaves correctly.
 
+For concrete integration examples, read
+[platform recipes](references/platform-recipes.md): WorkManager Flow observation with
+honest request-state semantics, build variants and the Compose compiler version boundary.
+
 ## Lifecycle and Process
 
 - Treat process death as normal. Recreate screens from saved state, navigation arguments, and repositories.
@@ -35,13 +39,13 @@ Choose background execution based on requirements:
 
 | Need | Tool |
 | --- | --- |
-| Deferrable guaranteed work | WorkManager |
+| Deferrable persistent work | WorkManager, subject to constraints and platform scheduling |
 | User-visible ongoing work | Foreground service |
 | Exact user-visible alarm | Exact alarm APIs, with policy constraints |
 | Short lifecycle-bound work | Coroutine in lifecycle/ViewModel scope |
 | Push-driven wakeup | FCM or platform push path |
 
-Respect Android background execution limits and battery policies. Do not use foreground services as a generic escape hatch.
+Respect Android background execution limits and battery policies. Persistent scheduling is not a guarantee of an exact start time or successful work completion. Check current API/target-SDK requirements before selecting foreground services or exact alarms; do not use them as generic escape hatches.
 
 ## Storage and Data Access
 

@@ -1,73 +1,65 @@
 # Jetpack Compose role design
 
-The lead owns design and production edits. Six read-only specialists supply targeted
-evidence through the rolebox graph v3 outcome protocol: the five review and evidence
-gates plus the `device-verifier`, which exercises a built app on a real device or an
-emulator over the target's own transport — the `android` CLI and `adb` for an Android
-target, `hdc` for HarmonyOS/OpenHarmony — following
-`references/device-verification.md` or `references/harmonyos-device-verification.md`
-when acceptance depends on runtime behavior only a running app can show. An `.apk` on a
-HarmonyOS NEXT or OpenHarmony target with no `adb` is such an `hdc` target: the APK is
-opened in 文件管理 and installed with 直接安装. 卓易通安装 opens the 卓易通 application store
-instead of installing that local file; never use `hdc install <apk>`. Ordinary bounded
-work stays inline. Significant work starts with
-invariants, ownership, lifetime and a minimal coherent boundary; reviews inspect an
-actual stable implementation snapshot. Early consultations resolve specific
-uncertainties and do not approve unwritten code.
+The lead owns design, production edits and acceptance. Six read-only specialists provide
+selected evidence; the seventh child, journey-recorder, can organize sealed evidence in a
+separate optional graph. Ordinary bounded work stays inline. A completed graph confirms
+delivery of reports, not correctness of the app.
 
-The lead confirms the target before expensive investigation, asking early only when
-different interpretations change the fix. A bounded local task starts with a short
-target/behavior/mechanism/change/check contract. Verification is focused by default,
-adds runtime evidence when the behavior requires it, and expands only for a named risk.
-Source evidence plus adequate observation can justify implementation without exhaustive
-research. Three attempts per unchanged hypothesis include exploration and capture retries;
-ten minutes without diagnosis or implementation progress triggers reassessment, not an
-automatic permission request. Final-code evidence covering the selected acceptance criteria
-and no remaining blocking defect is the completion condition.
+## Content ownership and loading
 
-The previous workflow duplicated mandatory phases across the parent prompt, auto-injected
-engineer function and gate skills. Tests were judged by ratios, per-component coverage
-and framework prescriptions; architecture checks prescribed layers irrespective of need.
-This encouraged mechanical compliance and provided no explicit protection against
-visibility changes made solely for tests. The revised role tests production behavior,
-preserves private details, and permits extraction only for a meaningful responsibility.
+| Owner | Responsibility |
+| --- | --- |
+| `PROMPT.md` | Design judgment, encapsulation, investigation limits, verification tiers, completion and specialist/skill selection |
+| `functions/engineer.md` | Short continuation reminder; no independent phase machine |
+| `functions/research.md` | Entry into `android-source-research`, without a second research protocol |
+| `references/schemas.md` | Brief, gate report and recording payload contracts |
+| `references/graph-protocol.md` | Executable graph declarations, outcomes and bounded recovery |
+| Domain skills | Implementation guidance for state, architecture, layout, performance, testing, interop and platform integration |
+| Four `references/compose-*.md` indexes | Review questions and links to domain owners, without duplicate code tutorials |
+| Style skills | Composable API shape or plain Kotlin idioms; detailed examples in skill-local references |
+| Reviewer manifests | Identity, tools, scope and gate routing |
+| Gate skills | Domain decision criteria and report mapping, not copies of implementation tutorials |
+| Device transport playbooks | Command procedures and journey evaluation for the selected Android or HarmonyOS/OpenHarmony target |
+| Device memory/video references | Retention and temporal evidence only when the task needs them |
+| `references/background-recording.md` | Sealed inputs, exclusive output ownership and optional recording lifecycle |
 
-Independent reviews run concurrently as root nodes. Edges route on accepted outcomes and
-declared consumer inputs express real evidence dependencies; accepted results are data,
-not automatic shared-state patches. The lead synthesizes findings and performs bounded
-repairs between review batches. There is no imaginary writer in a cycle of read-only
-reviewers. A completed graph is not an accepted change.
+Keep skill names and role-relative reference paths stable for callers. Load only the
+material needed for the current decision. A source belongs in the primary guidance that
+uses it; a style or review document should link there rather than copy the same example.
+Keep entry points selective, but keep unique decision rules, constraints and working patterns
+in reachable references. A short rule does not replace an example that explains essential
+wiring, ownership, cancellation, restoration or an assertion. Moving useful depth out of the
+entry point is preferable to deleting it. Do not create a second copy of the same tutorial.
 
-Sources of truth:
+## Review and evidence boundaries
 
-- `PROMPT.md`: design judgment, encapsulation, workflow and specialist selection.
-- `functions/engineer.md`: short per-message reminder, including continuation behavior.
-- `references/schemas.md`: concise brief and evidence report.
-- `references/graph-protocol.md`: engine semantics and recovery.
-- `references/background-recording.md`: separate optional recorder graph, sealed inputs,
-  exclusive output ownership, accepted recording outcomes and actual host lifecycle limits.
-- `references/device-test-memory.md`: project-local device pitfalls, reusable cases,
-  compact per-run evidence and optional reusable records under `.rolebox/jetpack-compose/device-testing/`.
-- `references/device-video-debugging.md`: when transient paths need recording, how to
-  inspect source-timestamped frames and correlate actions/logs, and how to compare repairs.
-- Domain skills: contextual guidance loaded for the current decision.
+Independent questions can run concurrently over a stable snapshot. Consumer inputs express
+real dependencies; reports are evidence, not automatic state patches. The lead integrates
+findings, makes bounded repairs and verifies the changed risk. Pattern preferences without
+a concrete failure mechanism stay advisory. Tests exercise production contracts and do not
+justify visibility widening or a test-only abstraction.
 
-Device verification consults relevant history and retains minimum durable facts/evidence,
-including setup failures and unexecuted steps. Cases, profiles and indexes are maintained
-when reuse warrants them; full dossiers are not a default completion requirement. Start
-temporal checks with short captures and decisive frames; full-frame/clock analysis is for
-remaining timing questions. Historical evidence never certifies a changed build/environment.
+Runtime acceptance uses the actual target and artifact with its matching transport. Keep
+minimal build/device/action/outcome evidence, including blockers and not-run steps. Old
+passes cannot certify a new build. Device verifiers return temporary evidence; the lead
+retains it and alone merges shared records. Optional recording does not block repair or
+acceptance, and no worker lifetime beyond the host is promised.
 
-The seventh child, `journey-recorder`, handles optional evidence organization in a separate
-one-node graph. Dispatch it as soon as useful inputs are sealed, then continue foreground
-repairs. It cannot inspect changing production code, drive devices, run checks or decide
-acceptance. Only its assigned disjoint output directory is writable by contract; the lead
-alone merges shared index/profile/case proposals. Graph v3 does not enforce this subtree
-as a per-node filesystem sandbox. Optional archive state is separate from product status,
-and no promise is made that a worker survives host exit. Minimal evidence is retained before
-handoff; required independent review still blocks acceptance when its result is necessary.
+## Maintaining examples
 
-Validation should distinguish loader/protocol compatibility from model behavior. Real
-rolebox loader and graph-engine tests can establish the former; realistic task trials
-are needed to establish whether code quality improves. Do not claim a prompt change
-proves that future generated code is correct.
+Use current official documentation and the project's resolved artifacts for API claims.
+Never invent a source tag, line number, issue, method or successful command result. Identify
+version boundaries and omitted application types in snippets. A short example illustrates
+one decision; it is not a complete app, dependency catalogue or universal architecture.
+Repair a stale example when its underlying pattern remains useful. Remove it only when
+the pattern is wrong, duplicated at a named destination, or adds no decision/wiring detail.
+For substantial condensation, compare original sections and record each unique capability's
+new location or explicit removal rationale. Check that linked resources are discoverable
+through the real skill resolver. Reduced line count is a size measurement, not acceptance.
+
+Validation distinguishes loader/protocol compatibility from generated app behavior. Run
+the registry validator and the role's existing runtime contract suite after structural
+changes; compile self-contained Kotlin examples when changed. These checks do not establish
+content completeness: review the original-to-current coverage map separately. An Android snippet needs
+its imports, resolved dependencies and host project before a build can verify it. Model
+trials and device execution are separate evidence, never implied by documentation checks.

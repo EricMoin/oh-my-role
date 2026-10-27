@@ -1,29 +1,23 @@
 ---
 name: compose-interop-migration
-description: Guides XML/View and Compose interoperability, Activity/Fragment integration, navigation boundaries, AndroidView usage, ComposeView disposal, and incremental migration from legacy Android UI. Use when embedding Compose in existing Views, wrapping Views in Compose, planning incremental migration from XML to Compose, or debugging interop lifecycle and disposal bugs.
+description: Guides incremental View/Compose migration, ComposeView disposal, AndroidView creation and reuse, lifecycle ownership, saved state, and navigation boundaries. Use for embedding either UI system in the other or debugging interop lifetime bugs.
 ---
 # Compose Interop and Migration
 
-Most Android apps migrate incrementally. Interop code must make lifecycle, state ownership, and disposal explicit so Compose and View systems do not fight each other.
+Migrate at a clear component, screen or flow boundary. Preserve state ownership, navigation,
+analytics, accessibility and restoration while changing the rendering implementation.
+Use the existing DI/theme conventions and keep one source of truth across the boundary.
 
-## Migration Strategy
+## Compose inside Views
 
-- Migrate feature by feature or screen by screen, not by rewriting the whole app.
-- Keep architecture boundaries stable while UI implementation changes.
-- Start with leaf components or isolated screens when risk is high.
-- Preserve analytics, accessibility, saved state, navigation, and test coverage.
-- Use adapters at boundaries instead of mixing View and Compose assumptions everywhere.
+Use `ComposeView` and choose `ViewCompositionStrategy` for its host. In a Fragment's view,
+`DisposeOnViewTreeLifecycleDestroyed` ties composition to that view's lifecycle rather than
+the Fragment object's lifetime. Pooling containers have different disposal/reuse semantics;
+do not mechanically apply one strategy everywhere. Multiple ComposeViews in the same layout
+need unique stable IDs for saved state.
 
-## Compose in View Hierarchies
-
-Use `ComposeView` when embedding Compose in XML, Fragment, or legacy View screens.
-
-Key rules:
-
-- Set an appropriate `ViewCompositionStrategy`.
-- Dispose composition with the view lifecycle in Fragments.
-- Pass state and callbacks from the existing owner rather than resolving new dependencies inside the composable.
-- Keep theming consistent with the app.
+Illustrative Fragment binding setup; the project supplies `AppTheme`, `AccountCard` and
+`viewModel.accountState: StateFlow<AccountUiState>`. Imports are omitted.
 
 ```kotlin
 binding.composeContainer.apply {
@@ -31,76 +25,68 @@ binding.composeContainer.apply {
         ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
     )
     setContent {
+        val account by viewModel.accountState.collectAsStateWithLifecycle()
         AppTheme {
-            AccountCard(
-                state = viewModel.accountState,
-                onClick = viewModel::onAccountClick,
-            )
+            AccountCard(state = account, onClick = viewModel::onAccountClick)
         }
     }
 }
 ```
 
-## Views in Compose
+Release Fragment view bindings when the view is destroyed. View-side Flow collectors use
+`viewLifecycleOwner` and the appropriate lifecycle boundary; Compose-side collection follows
+its provided lifecycle owner. Check that both refer to the intended host.
 
-Use `AndroidView` for platform/custom views that do not yet have a Compose equivalent.
+## Views inside Compose
+
+Construct the View in `AndroidView.factory`, not in an outer `remember`. Use `update` for
+current state and listeners that need fresh callbacks. It also runs after initial creation.
+This small bridge uses a standard Android `TextView`; imports are omitted.
 
 ```kotlin
-AndroidView(
-    factory = { context ->
-        MapView(context).apply {
-            // one-time view setup
-        }
-    },
-    update = { mapView ->
-        // update from Compose state
-    },
-)
+@Composable
+fun LegacyLabel(text: String, modifier: Modifier = Modifier) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context -> TextView(context) },
+        update = { view -> view.text = text },
+    )
+}
 ```
 
-Rules:
+Views with lifecycle/resource requirements (maps, video, camera, WebView) need their own
+API-specific start/stop/release integration; this label example is not a lifecycle template.
+When supported by the resolved Compose UI version, `onRelease` handles final release and
+non-null `onReset` enables compatible reuse, including lazy containers. Reset transient
+state/listeners before reuse. Do not assume `onReset` is immediately followed by `update`.
+Pair other registrations with cleanup and do not retain an old Activity across recreation.
 
-- Put one-time setup in `factory`; update state in `update`.
-- Remember or manage lifecycle-sensitive Views according to their API.
-- Clean up listeners/resources with `DisposableEffect` when needed.
-- Do not recreate expensive Views on every recomposition.
+## Migration sequence
 
-## Navigation Boundaries
+1. Inventory the current state/lifecycle owners, saved-state keys, navigation and back/deep
+   links, theme, analytics callbacks and boundary tests before replacing rendering.
+2. Start with a leaf or isolated screen when the larger flow is risky. Choose ComposeView
+   or AndroidView from the existing host; keep the surrounding ownership contract stable.
+3. Put translation in one boundary adapter. Avoid resolving a second ViewModel or copying
+   widget values into a competing state holder inside that adapter.
+4. Verify old/new behavior through the same observable journey: recreation, input, back,
+   accessibility and analytics timing where relevant. Compile the affected host/test variant.
+5. Keep the migration increment reversible at the selected feature boundary. Remove the old
+   rendering path only once parity and required checks support the replacement.
 
-- Avoid mixing multiple navigation stacks unless the app already does so intentionally.
-- Prefer one owner for back stack state per app area.
-- When using Navigation Compose inside a Fragment app, define the boundary clearly.
-- Pass IDs/routes, not heavy mutable objects.
-- Preserve deep links and saved state behavior during migration.
+## Boundary checklist
 
-## State and Lifecycle
+- One owner for each state value; bridge updates through observable state and callbacks.
+- One deliberate navigation/back-stack owner per area; preserve back, deep links and saved state.
+- Existing theme tokens bridge legacy attributes without scattered hard-coded matching colors.
+- Build IDs and small arguments into restoration, rather than relying on retained View objects.
+- Verify mount/unmount, Fragment view recreation, reuse, listener freshness and final release.
+- Verify relevant accessibility, focus/IME and visual parity through the real boundary.
 
-- Do not duplicate state between View widgets and Compose state.
-- Choose one source of truth and bridge changes through callbacks or observable state.
-- Use `collectAsStateWithLifecycle` in Compose route layers.
-- In Fragments, tie collection to `viewLifecycleOwner`.
-- Verify process death and configuration changes for migrated screens.
+## Sources
 
-## Theming
+Checked 2026-10-27; confirm the exact overloads against the project's resolved versions.
 
-- Bridge legacy theme attributes to Compose tokens when the app still uses XML themes.
-- Keep typography, color, shapes, and elevation visually consistent during partial migration.
-- **NEVER** hard-code colors to match legacy XML screens; map them into theme/design tokens.
-
-## Workflow
-
-1. Identify the migration boundary: component, screen, flow, or navigation graph.
-2. Inventory state owners, lifecycle owners, navigation events, analytics, and tests.
-3. Choose direction: Compose in Views with `ComposeView`, Views in Compose with `AndroidView`, or full screen conversion.
-4. Implement the boundary adapter and keep source of truth singular.
-5. Verify lifecycle disposal, saved state, accessibility, visual parity, and navigation/back behavior.
-6. Add tests around the migrated boundary and keep rollback small.
-
-## Validation Checklist
-
-- [ ] Composition disposal matches the lifecycle owner.
-- [ ] State has one source of truth across View and Compose layers.
-- [ ] Expensive Android Views are not recreated during recomposition.
-- [ ] Navigation/back/deep-link behavior is preserved.
-- [ ] Theming is bridged through tokens or theme adapters.
-- [ ] Migration is incremental and reversible at the feature boundary.
+- [ComposeView strategies and Fragment integration](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
+- [AndroidView creation and reuse](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)
+- [AndroidView release contract](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)

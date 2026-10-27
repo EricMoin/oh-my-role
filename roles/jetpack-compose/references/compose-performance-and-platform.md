@@ -1,192 +1,49 @@
-# Compose Performance and Platform Reference
+# Performance Review Reference
 
-Diagnostics, optimization patterns, stability tooling, Macrobenchmark, Baseline Profiles, and Android platform integration for Jetpack Compose.
+Implementation and diagnostics belong to `skills/compose-performance/SKILL.md`; state
+contracts to `skills/compose-runtime-state/SKILL.md`; lifecycle, WorkManager and build
+integration to `skills/android-platform-engineering/SKILL.md`. Load the relevant skill
+instead of maintaining parallel examples here.
 
----
+For worked diagnostic and benchmark procedures, follow
+[measurement recipes](../skills/compose-performance/references/measurement-recipes.md).
+For WorkManager status and variant setup, use the platform owner's
+[recipes](../skills/android-platform-engineering/references/platform-recipes.md).
+The lifecycle-observer pattern lives with
+[state/effect cleanup](../skills/compose-runtime-state/references/state-and-effect-recipes.md).
 
-## 1. Recomposition Diagnosis
+## Review Questions
 
-### Layout Inspector
+| Area | Evidence to examine |
+| --- | --- |
+| Recomposition | Actual state-read scope and measured cost; child skipping and current compiler mode |
+| Stability | Truth of mutation/equality contracts; meaningful report changes, not annotation count |
+| Lazy layouts | Unique durable identity for moving items, compatible content types, realistic item sizes |
+| Startup | Trace of blocking work; target build and compilation/profile state |
+| Images/resources | Decode size, allocation/retention evidence, correct listener/resource release |
+| Lifecycle | Ownership and collection policy appropriate to UI versus background work |
 
-Attach from Android Studio while running on device. Shows component tree, rebuild counts per node, and frame timing.
+A missing annotation, unremembered callback, non-restartable composable or absent benchmark
+module is not independently a blocker. Block on a demonstrated correctness problem,
+credible regression mechanism in the changed path, unmet acceptance or unsupported material
+performance claim. Keep speculative optimization opportunities advisory.
 
-### Recomposition Counter (debug)
+## Measurement Record
 
-```kotlin
-@Composable
-fun DebugCounter(name: String) {
-    var count by remember { mutableIntStateOf(0) }
-    SideEffect { count++ }
-    Text("$name recomposed $count times")
-}
-```
+Record the revision, dependency/compiler versions, build variant, target device/API,
+scenario, warmup/iterations, compilation mode, metric units and output artifacts. Compare
+baseline and repaired runs under equivalent conditions. Preserve both outcomes and report
+noise or unavailable evidence. Use the benchmark's actual emitted metric names and units;
+do not reinterpret frame duration as a universal jank percentage or process memory as heap.
 
-### Key Signals
+A successful build, Layout Inspector count, configured profile or recording alone cannot
+prove a timing improvement. Inspect captures and use traces/benchmarks for the claimed cost.
+See `references/device-verification.md` for runtime acceptance and
+`references/device-video-debugging.md` for transient visual evidence.
 
-| Signal | Likely Cause |
-|--------|-------------|
-| Entire tree recomposes on scroll | State read too high, missing `key` in lazy list |
-| One composable recomposes with stable inputs | Lambda instability — wrap in `remember` |
-| Animation causes whole-screen recompose | State read inside overly broad composable scope |
+## Completion
 
----
-
-## 2. Stability and Immutability
-
-```kotlin
-@Immutable
-data class UserUiState(val name: String, val isOnline: Boolean)
-
-@Stable
-class ObservableName(private val name: MutableStateFlow<String>) {
-    val value: String by name.collectAsState()
-}
-```
-
-Compose compiler checks stability: a class is stable only if all properties are stable. Collections (`List`, `Map`, `Set`) are NOT stable by default — annotate with `@Immutable`.
-
-### Compiler Reports
-
-```bash
-./gradlew :app:assembleDebug -PcomposeCompilerReports=true
-```
-
-Reports in `build/compose_compiler/` show composable stability (restartable, skippable) and class stability (stable, unstable) with reasons.
-
----
-
-## 3. Lazy Layout Optimization
-
-### Keys and Content Type
-
-```kotlin
-LazyColumn {
-    items(users, key = { it.id }) { user -> UserRow(user) }
-    items(mixedItems, key = { it.id }, contentType = { it.type }) { item ->
-        when (item.type) { "header" -> HeaderRow(item) else -> ContentRow(item) }
-    }
-}
-```
-
-### derivedStateOf
-
-```kotlin
-val visibleCount by remember {
-    derivedStateOf { items.count { it.isVisible } }
-}
-```
-
-Prevents recomposition when the list changes but the derived value does not.
-
----
-
-## 4. Macrobenchmark
-
-### Setup
-
-```kotlin
-// :macrobenchmark/build.gradle.kts
-dependencies {
-    implementation("androidx.benchmark:benchmark-macro-junit4:1.2.0")
-}
-
-@RunWith(AndroidJUnit4::class)
-class StartupBenchmark {
-    @get:Rule val benchmarkRule = MacrobenchmarkRule()
-
-    @Test
-    fun startupCold() {
-        benchmarkRule.measureRepeated(
-            packageName = "com.example.app",
-            metrics = listOf(StartupTimingMetric()),
-            iterations = 10, startupMode = StartupMode.COLD
-        ) { startActivityAndWait() }
-    }
-}
-```
-
-### Metrics
-
-| Metric | What It Measures |
-|--------|-----------------|
-| `StartupTimingMetric` | Time to first frame (cold/warm/hot) |
-| `FrameTimingMetric` | Frame rendering time, jank percentage |
-| `MemoryUsageMetric` | Peak heap, retained memory |
-
-Run: `./gradlew :macrobenchmark:connectedBenchmarkAndroidTest`
-
----
-
-## 5. Baseline Profiles
-
-### Generation
-
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class BaselineProfileGenerator {
-    @get:Rule val rule = BaselineProfileRule()
-
-    @Test
-    fun generate() {
-        rule.collectBaselineProfile(packageName = "com.example.app", maxIterations = 10) {
-            pressHome(); startActivityAndWait()
-        }
-    }
-}
-```
-
-`./gradlew :baselineprofile:generateBaselineProfile` saves to `src/main/baseline-prof.txt`. Expect 15-30% cold start improvement.
-
----
-
-## 6. Android Platform Integration
-
-### Lifecycle
-
-```kotlin
-@Composable
-fun LifecycleAwareScreen() {
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> { /* track view */ }
-                Lifecycle.Event.ON_PAUSE -> { /* pause work */ }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-}
-```
-
-### WorkManager
-
-```kotlin
-@Composable
-fun SyncStatusCard() {
-    val workInfos by WorkManager.getInstance(LocalContext.current)
-        .getWorkInfersByTagFlow("sync").collectAsState(initial = emptyList())
-    val isSyncing = workInfos.any { it.state == WorkInfo.State.RUNNING }
-    Text(if (isSyncing) "Syncing..." else "Synced")
-}
-```
-
-### Gradle Build Variants
-
-```kotlin
-android {
-    buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
-    buildTypes {
-        debug { isMinifyEnabled = false; applicationIdSuffix = ".debug" }
-        release { isMinifyEnabled = true; isShrinkResources = true }
-    }
-    flavorDimensions += "environment"
-    productFlavors {
-        create("staging") { dimension = "environment" }
-        create("production") { dimension = "environment" }
-    }
-}
-```
+The smallest measurement that resolves the hypothesis is sufficient. Re-run the affected
+journey after the repair and check for lifecycle/state regressions. Add durable benchmarks
+when the risk and project practice justify them; avoid making setup a gate for unrelated
+local fixes. The review report uses `references/schemas.md` and cites actual evidence.
