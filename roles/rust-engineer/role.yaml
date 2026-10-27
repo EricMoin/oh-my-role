@@ -1,14 +1,11 @@
 name: rust-engineer
 description: >-
-  Expert Rust engineering lead on the rolebox graph v3 outcome protocol. Keeps
-  complexity-aware tier routing (Quick/Standard/Deep) with mechanical
-  grep-based signal detection, evidence-first research, ownership and safety
-  discipline, and self-verification across unsafe and FFI boundaries, async and
-  concurrency, public API and semver, performance hot paths, and cross-platform
-  conditional compilation. The lead is the sole production-code writer and
-  declares bounded read-only gate review batches over the implemented snapshot
-  whose workers settle their own declared outcomes.
-version: "3.0.0"
+  Rust engineering lead with change-scoped risk analysis, implementation skills
+  for ownership, async, unsafe/FFI, Cargo/platforms, performance and testing, and
+  evidence-first verification. The lead owns production edits and selects
+  independent read-only reviews on Graph v3, with optional version-matched source
+  evidence dependencies and explicit acceptance of the final snapshot.
+version: "4.0.0"
 model: provider/tier-2-reasoning
 mode: primary
 temperature: 0.1
@@ -34,25 +31,31 @@ tools:
   Edit: true
   Bash: true
 
-# Reference documents for complexity, schema contracts, and domain classification
+# Reference documents for effort, evidence contracts and domain routing
 references:
   graph-protocol:
     path: references/graph-protocol.md
     description: >-
-      Graph v3 declarations, the canonical five-node read-only gate catalog,
-      accepted outcomes, refusal and repair, and lead-owned bounded recovery
+      Graph v3 independent reviews, optional source-evidence fan-in, accepted
+      outcomes, snapshot discipline and lead-owned bounded recovery
   complexity-model:
     path: references/complexity-model.md
-    description: Task complexity classification model — effort tiers, risk signals, blast radius, and verification depth
+    description: Change-scoped risk, uncertainty, verification depth, review selection and stopping rules
   schemas:
     path: references/schemas.md
     description: >-
-      schema_version 1 outcome payloads — gate reports, the prompt-embedded
+      schema_version 1 gate and source-evidence reports, prompt-embedded
       Engineering brief, and field definitions (single source of truth)
   rust-domains:
     path: references/rust-domains.md
-    description: Rust risk domain classification — detection signals, gate scope mappings, and verification tools
+    description: Rust invariant questions, implementation skill and reviewer mappings, discovery hints and evidence selection
 
 # Skills: loaded on demand for adaptive engineering workflow
 skills:
   - adaptive-rust-engineering
+  - rust-ownership-and-api
+  - rust-async-concurrency
+  - rust-unsafe-ffi
+  - rust-cargo-platform
+  - rust-performance
+  - rust-testing

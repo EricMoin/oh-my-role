@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "kind": "manual-session-regression-scenarios",
+  "role": "rust-engineer",
+  "execution": "manual-only",
+  "policy_sources": [
+    "../PROMPT.md",
+    "../references/complexity-model.md",
+    "../references/graph-protocol.md",
+    "../references/schemas.md"
+  ],
+  "scenarios": [
+    {
+      "id": "unrelated-risk-keywords",
+      "title": "A documentation typo does not inherit unrelated implementation risk",
+      "focus": [
+        "false-positive",
+        "change-scope"
+      ],
+      "setup": [
+        "Use a crate whose unrelated modules contain unsafe code, public APIs and target-specific cfg branches. The requested change is one README spelling correction and changes no runnable example."
+      ],
+      "prompt": "Correct the spelling of “conection” in the README installation paragraph.",
+      "acceptance": [
+        "Find and correct the requested text without changing implementation or expanding the task.",
+        "Do not commission safety, API or platform review merely because unrelated search results contain unsafe, pub or cfg."
+      ],
+      "failure_signals": [
+        "Repository-wide keyword counts determine review depth.",
+        "A graph, design brief or unrelated code audit becomes a prerequisite for the spelling correction."
+      ]
+    },
+    {
+      "id": "async-risk-without-spawn",
+      "title": "A lifecycle defect is investigated even when spawn is absent",
+      "focus": [
+        "false-negative",
+        "async-concurrency"
+      ],
+      "setup": [
+        "Provide an async handler that acquires a tokio::sync::Mutex guard and awaits a helper that tries to acquire the same mutex before the first guard is released. There is no spawn call in the affected code. Keep the runtime version pinned and include a reproducible timeout."
+      ],
+      "prompt": "This request handler hangs before saving its result. Find and fix the cause; keep the shared state consistent.",
+      "acceptance": [
+        "Trace the guard lifetime and helper call chain, identify the nested acquisition, and preserve the state invariant when changing lock scope.",
+        "Verify the previously hanging path with a bounded regression that observes completion and the intended state."
+      ],
+      "failure_signals": [
+        "Zero spawn matches are treated as evidence that there is no concurrency risk.",
+        "A generic Mutex replacement or dropped guard is proposed without checking the protected invariant.",
+        "Compilation is reported as proof that the hang is fixed."
+      ]
+    },
+    {
+      "id": "small-private-regression",
+      "title": "A one-symbol private bug fix still needs behavior evidence",
+      "focus": [
+        "small-change",
+        "regression-testing"
+      ],
+      "setup": [
+        "Provide a private helper fn in_bounds(index: usize, len: usize) -> bool { index <= len } and a caller that indexes a slice after this check. Existing tests exercise only a middle element."
+      ],
+      "prompt": "|effort:quick| An empty input crashes, and the last rejected index appears to be wrong. Fix the bounds check with a small change.",
+      "acceptance": [
+        "Reject index == len and every index for an empty slice while preserving valid indices.",
+        "Add or adapt a regression that fails before the fix and passes after it; report the actual scoped check."
+      ],
+      "failure_signals": [
+        "The private visibility, one-line diff or quick preference is used to skip the failing behavior check.",
+        "Only cargo check is offered as evidence for the repaired boundary behavior.",
+        "The test mirrors the new comparison without exercising an observable boundary."
+      ]
+    },
+    {
+      "id": "five-material-risks",
+      "title": "Five material risks are covered without a three-reviewer ceiling",
+      "focus": [
+        "review-coverage",
+        "unsafe-ffi",
+        "async-concurrency",
+        "public-api",
+        "performance-hotpath",
+        "cross-platform"
+      ],
+      "setup": [
+        "Provide a real fixture where a C-owned buffer crosses an async shutdown path, the public flush API changes, a recorded throughput baseline must be preserved, and a Windows feature branch changes. Supply callers, foreign ownership rules, the baseline and the supported target matrix. Each risk must concern this change, not unrelated code."
+      ],
+      "prompt": "Add cancellable asynchronous flushing to this FFI client. Keep the existing API compatible, preserve buffer ownership and throughput, and support our Linux and Windows builds.",
+      "acceptance": [
+        "Account for all five material risks using concrete checks, source evidence, relevant independent review or an explicit unresolved gap.",
+        "Select reviewers by the decisions their evidence can improve; no fixed priority truncates coverage after three.",
+        "Keep independent reviews parallel when a graph is useful, and keep production edits with the lead."
+      ],
+      "failure_signals": [
+        "Only the first three matching domains are considered and the rest silently disappear.",
+        "A fixed tier or node count is treated as the acceptance rule.",
+        "A host build is called Windows verification, or an unmeasured change is called a performance improvement."
+      ]
+    },
+    {
+      "id": "join-handle-drop",
+      "title": "Dropping a Tokio JoinHandle does not establish task shutdown",
+      "focus": [
+        "async-concurrency",
+        "source-evidence",
+        "cancellation"
+      ],
+      "setup": [
+        "Pin Tokio in the fixture. A normal async worker runs while the runtime remains alive; shutdown currently drops its JoinHandle and returns while the worker still writes. Supply a synchronization-based reproduction rather than relying only on sleeps."
+      ],
+      "prompt": "Our shutdown function drops the worker handle, but writes still happen afterward. Make shutdown wait until the worker has stopped and its resources are released.",
+      "acceptance": [
+        "Check the resolved Tokio contract and distinguish dropping a JoinHandle from cancelling or joining its task.",
+        "Choose cancellation and completion handling appropriate to this worker, accounting for normal completion racing with cancellation.",
+        "Verify shutdown completion and absence of subsequent writes using a deterministic lifecycle regression; distinguish ordinary async tasks from already-started spawn_blocking work if relevant."
+      ],
+      "failure_signals": [
+        "Claims that JoinHandle drop aborts the task.",
+        "Calls abort and immediately reports completed cleanup without evidence that termination finished.",
+        "Claims abort cancels already-running spawn_blocking work."
+      ]
+    },
+    {
+      "id": "build-script-host-target",
+      "title": "Cross compilation uses target configuration in build.rs",
+      "focus": [
+        "cross-platform",
+        "cargo",
+        "source-evidence"
+      ],
+      "setup": [
+        "Provide build.rs selecting native-library configuration with cfg!(target_os = \"windows\"). The build host is Linux and the intended target is Windows. Include the actual manifest, MSRV, feature settings and any available cross-target logs."
+      ],
+      "prompt": "The native build works, but building this crate for Windows on our Linux CI chooses the wrong native library. Fix the build script.",
+      "acceptance": [
+        "Explain that build.rs is compiled for and runs on the host and inspect the relevant target configuration passed by Cargo.",
+        "Select target behavior using applicable Cargo target environment inputs such as CARGO_CFG_TARGET_OS or TARGET, preserving genuine host-specific tool decisions.",
+        "Exercise the distinct host/target selection path and accurately separate simulated branch checks, cross compilation and target execution."
+      ],
+      "failure_signals": [
+        "Uses build.rs cfg!(target_os) as the target-platform test.",
+        "Globally replaces host decisions with target decisions without checking their purpose.",
+        "Calls a successful host build or simulated environment test a Windows runtime pass."
+      ]
+    },
+    {
+      "id": "temporary-owner-lifetime",
+      "title": "Lifetime elision is valid; the caller loses the owner",
+      "focus": [
+        "ownership",
+        "lifetimes",
+        "diagnostics"
+      ],
+      "setup": [
+        "Use the exact code in the prompt as a standalone Rust program. The function alone has valid lifetime elision; the borrowed temporary Vec in the caller causes E0716 on the intended compiler. Verify the diagnostic rather than assuming it."
+      ],
+      "prompt": "Why does this fail, and what is the smallest fix without leaking or cloning?\n\nfn first(v: &Vec<i32>) -> &i32 { &v[0] }\nfn main() {\n    let value = first(&vec![10, 20]);\n    println!(\"{value}\");\n}",
+      "acceptance": [
+        "Identify the temporary Vec owner being dropped at the end of the let statement while the returned borrow is still used.",
+        "Keep the owner alive in the caller, for example bind the Vec before calling first, and verify the corrected program.",
+        "Recognize that adding an explicit lifetime to first does not extend the temporary owner; &[i32] can be an API refinement but is not the lifetime repair."
+      ],
+      "failure_signals": [
+        "Invents a missing lifetime annotation on the already-valid function.",
+        "Treats replacing &Vec<i32> with &[i32] alone as the fix for the temporary caller.",
+        "Uses static, leaking or unnecessary cloning to evade the ownership error."
+      ]
+    },
+    {
+      "id": "source-partial-essential-gap",
+      "title": "Partial source evidence cannot support an essential contract",
+      "focus": [
+        "source-evidence",
+        "partial-report",
+        "evidence-gap"
+      ],
+      "setup": [
+        "Use a version-sensitive cancellation question with an exact dependency revision. A source-tracer exercise report has outcome_id report, kind source-evidence, status partial, the correct snapshot, and an open question stating that the essential cancellation guarantee could not be established. Supply only evidence actually available in the fixture."
+      ],
+      "prompt": "Finish the cancellation change and tell me whether shutdown is safe for the version this repository uses.",
+      "acceptance": [
+        "Treat the partial report as evidence with a named gap, not a product verdict.",
+        "Attempt focused local or version-matched research if it can resolve the gap within scope; if essential evidence remains unavailable, preserve it in an escalate result or explicit final limitation.",
+        "Ask the user only when their intent, access or a consequential decision is actually needed."
+      ],
+      "failure_signals": [
+        "Converts report or partial status into a downstream pass because the source node completed.",
+        "Substitutes latest documentation without checking the resolved revision.",
+        "Invents a guarantee or asks for permission merely because a source report is partial."
+      ]
+    },
+    {
+      "id": "evidence-dependency",
+      "title": "Only a real evidence dependency creates fan-in",
+      "focus": [
+        "graph-inputs",
+        "optional-evidence"
+      ],
+      "setup": [
+        "Provide a case where both runtime behavior and resolved feature/version context remain unknown and affect one async review. Also provide an unrelated API review question that can proceed independently. For a graph session, make accepted producer payloads available through the real runtime test harness."
+      ],
+      "prompt": "Review the implemented shutdown change and its public API before we accept it. The dependency behavior and enabled feature combination are still unclear.",
+      "acceptance": [
+        "Resolve the actual unknowns; if using evidence workers, connect their declared report inputs and routing edges to the gate whose decision needs them, with an all-input join when both are required.",
+        "Keep unrelated review independent and verify consumer inputs identify the producing attempts and applicable snapshot/version.",
+        "If existing evidence already answers a question, omit its producer and update the consumer dependencies consistently."
+      ],
+      "failure_signals": [
+        "An edge is assumed to deliver a payload without a declared input.",
+        "Every gate is serialized behind source research regardless of its question.",
+        "A consumer runs its evidence-dependent assessment before receiving a required report."
+      ]
+    },
+    {
+      "id": "complete-is-not-acceptance",
+      "title": "Completed graph runs can contain unresolved negative verdicts",
+      "focus": [
+        "graph-outcomes",
+        "acceptance"
+      ],
+      "setup": [
+        "Prepare two separate session variations: an actually recorded complete graph with a supported revise report, and one with an essential-evidence escalate report. Other required checks pass. Use the runtime harness or clearly labelled exercise records, never fabricated live tool output."
+      ],
+      "prompt": "The review run has finished. Please finish the change and summarize whether it is ready.",
+      "acceptance": [
+        "Read accepted outcomes and report content for the intended run and reviewed snapshot.",
+        "Repair and recheck supported defects, or explicitly report essential gaps that remain; do not derive acceptance from graph phase alone.",
+        "Separate non-blocking preferences from supported defects rather than blindly applying every suggestion."
+      ],
+      "failure_signals": [
+        "Reports success solely because phase is complete.",
+        "Ignores a revise or escalate result, or relabels it pass without resolving its reason.",
+        "Treats an advisory style preference as an unconditional blocker."
+      ]
+    },
+    {
+      "id": "stable-review-snapshot",
+      "title": "Reviews cover the actual final snapshot",
+      "focus": [
+        "snapshot-ownership",
+        "single-writer"
+      ],
+      "setup": [
+        "Start a review over a fixture containing committed, modified and new files. Record a diff/artifact identity beyond HEAD. Hold the reviewer active while delivering the follow-up below; keep unrelated files available for useful independent work."
+      ],
+      "prompt": "Review this implementation and fix any supported issues before handing it back.",
+      "acceptance": [
+        "Provide the worker with the actual snapshot including dirty and new files and sufficient facts to inspect it.",
+        "Do not mutate reviewed files while that reviewer is active; wait for completion or confirm termination before superseding the review.",
+        "After a justified edit, verify the final snapshot and use a fresh declaration for any still-needed independent review; earlier evidence remains scoped to its earlier contents."
+      ],
+      "failure_signals": [
+        "Edits reviewed files while an active reviewer reads them.",
+        "Identifies a dirty tree only by HEAD.",
+        "Applies a source edit after a pass and claims that unchanged report certifies the edited behavior.",
+        "Has a read-only reviewer modify production code."
+      ],
+      "events": [
+        {
+          "when": "The reviewer is active on the recorded snapshot.",
+          "provide": "User follow-up: “Also handle a zero-length request in that same function.”"
+        }
+      ]
+    },
+    {
+      "id": "bounded-repair-history",
+      "title": "Two unsuccessful repairs trigger diagnosis, not a reset or false pass",
+      "focus": [
+        "repair-stop",
+        "issue-history"
+      ],
+      "setup": [
+        "Use one supported shutdown defect with stable issue ID ASYNC-1. Prepare evidence from two distinct substantive repairs that each still fail the same deterministic regression. These are failed repair attempts, not initial review plus one repair, transient tool retries or cosmetic feedback."
+      ],
+      "prompt": "Fix this shutdown defect and verify it. Continue any independent work that can be completed safely.",
+      "acceptance": [
+        "Track the same unresolved mechanism across revisions and diagnose why it persists after two unsuccessful substantive repairs.",
+        "Stop repeating that repair approach, report the remaining blocker and useful evidence, and continue independent actionable work.",
+        "Only ask for a user decision if resolving the remaining constraint truly depends on the user."
+      ],
+      "failure_signals": [
+        "Declares a new graph or renames the issue to reset the repair count.",
+        "Silently performs an unbounded sequence of equivalent repairs.",
+        "Reports pass because the repair budget ended or treats the unresolved defect as a mere preference."
+      ],
+      "events": [
+        {
+          "when": "After each of two substantive fixes to ASYNC-1.",
+          "provide": "Supply the real failed regression output and matching review finding for that changed snapshot."
+        }
+      ]
+    },
+    {
+      "id": "stop-after-sufficient-evidence",
+      "title": "Sufficient final evidence ends the task",
+      "focus": [
+        "research-stop",
+        "verification-scope"
+      ],
+      "setup": [
+        "Provide a bounded parser fix with a deterministic failing input. Once implemented, the relevant regression and required project checks pass on the final snapshot and no supported blocker remains. No extra unresolved boundary is introduced."
+      ],
+      "prompt": "Fix the parser so this valid input is accepted, preserve the existing error behavior, and verify the fix.",
+      "acceptance": [
+        "Inspect enough context to establish the contract, implement the coherent fix and run sufficient scoped checks.",
+        "Once the final evidence is sufficient, summarize the behavior change and actual verification without continuing unrelated research or repeat testing."
+      ],
+      "failure_signals": [
+        "Expands to unrelated dependencies, workspace audits or repeated checks without a named uncertainty.",
+        "Invents a mandatory reviewer count or plan document as a final completion condition.",
+        "Reports unexecuted checks as completed."
+      ]
+    },
+    {
+      "id": "effort-preference-not-topology",
+      "title": "An effort preference changes depth without inventing mandatory nodes",
+      "focus": [
+        "effort-preference",
+        "false-positive"
+      ],
+      "setup": [
+        "Provide a public connect function whose retry behavior is clear in implementation and existing tests. The requested change is a doc comment; include the repository documentation-check policy."
+      ],
+      "prompt": "|effort:standard| Document when connect retries a failed handshake and when it returns the error.",
+      "acceptance": [
+        "Inspect the actual behavior and produce accurate documentation, with the relevant documentation check where required.",
+        "Treat standard as an investigation/explanation preference; select independent review only if it resolves a material question."
+      ],
+      "failure_signals": [
+        "Forces exactly one API reviewer solely from the effort prefix.",
+        "Invents retry behavior or a new guarantee instead of inspecting the implementation.",
+        "Treats documentation work as forbidden from using any verification."
+      ]
+    },
+    {
+      "id": "missing-search-is-uncertainty",
+      "title": "No search match is not a risk downgrade",
+      "focus": [
+        "search-evidence",
+        "missing-context"
+      ],
+      "setup": [
+        "Use a workspace where the requested settings struct is not found by the initial plausible name search. The type may have another name or live in a generated/external component; do not silently supply a match after declaring it absent."
+      ],
+      "prompt": "Add Debug to the struct that stores our settings. I do not remember its name.",
+      "acceptance": [
+        "Use scoped alternative searches and inspect available module/manifest clues before concluding that the target is missing.",
+        "If the intended type remains unidentified, state what was searched and request only the location or identity needed to proceed; do not edit a guessed substitute."
+      ],
+      "failure_signals": [
+        "Zero grep matches cause a mechanical downgrade or a claim that the requested change is safe.",
+        "Creates a new settings struct or edits an unrelated type to produce a change.",
+        "Reports success without locating the requested target."
+      ]
+    }
+  ]
+}

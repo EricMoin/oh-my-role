@@ -1,84 +1,37 @@
 ---
 name: rust-perf-gate
-description: Performance gate for Rust Perf Profiler. Reviews allocation patterns, clone() calls, collection selection, cache locality, monomorphization bloat, benchmark methodology, and binary size impact.
+description: Review Rust performance changes and claims against representative workloads, measured bottlenecks, resource budgets and reproducible comparison evidence.
 ---
 # Rust Performance Gate
 
-## Mission
+## Establish what matters
 
-Confirm that the proposed change does not introduce performance regressions — excessive allocations, unnecessary clones, suboptimal collection types, cache-unfriendly data layout, monomorphization bloat, or benchmark methodology issues — and that optimization decisions are supported by profiling evidence rather than intuition. Rust's zero-cost abstraction principle means default choices are efficient, but bad patterns (hobby allocations in hot paths, defensive clones) are still easy to introduce.
+Identify the affected workload, data scale, operating conditions and accepted cost: latency distribution, throughput, memory, CPU, binary size or build time. Locate the existing baseline and any claimed improvement. Ordinary code containing a `Vec`, `clone` or loop does not automatically need profiling. Read `references/schemas.md` for the report contract.
 
-## Inputs
+## Review decisions
 
-- Engineering brief (prompt-embedded) from the rust-engineer containing: `performance_context` (baseline measurements, hot path description, allocation/deallocation pattern, I/O boundaries, latency/throughput targets), `cargo_workspace`, and `edition`.
-- Code diff for the change under review, with focus on `clone()`/`to_owned()` calls, `Box`/`Vec`/`String`/`HashMap`/`Arc` allocations, `#[inline]` annotations, loop bodies, and collection usage.
-- Reference documents: `references/rust-domains.md` for the performance-hotpath domain detection signals and gate scope; `references/schemas.md` for the gate report contract.
-- Optional: `cargo criterion` output (against baseline), `dhat-rs` heap profile, `perf` + `flamegraph` output, `cargo bloat` output, or LLVM optimization remarks.
+- Follow measurement to the relevant hot path or resource growth mechanism. Distinguish observed cost from a hypothesis, and separate algorithmic growth from a small constant cost. Check whether representative large, empty or skewed inputs change the conclusion.
+- Compare equivalent work and outputs using the same workload, build profile, features, target and measurement method. Account for warmup, process startup, allocator state, I/O, contention and variance when they affect the claim. Use the project's acceptance budget and meaningful effect size; do not invent a universal improvement percentage, benchmark duration or loop-count threshold.
+- Attribute allocations accurately. `Vec::push` does not allocate on every call when capacity remains; zero-sized elements need no storage allocation. Distinguish capacity growth from reuse, payload cloning from reference-count increments, and owned conversion from borrowing. Removing ownership may complicate lifetimes or retain larger objects; consider the total cost.
+- Evaluate collection choice using actual operations and data distribution. Look for evidenced quadratic work, repeated parsing, redundant copies, unnecessary retention or contention before proposing a replacement structure. A plausible optimization is a hypothesis until evidence supports its benefit.
+- Treat generics, trait objects, inlining, batching and caching as tradeoffs among runtime cost, compile time, binary size, memory and invalidation complexity. Cache locality and false sharing depend on layout and hardware; do not assume one cache-line width for every target.
+- Preserve correctness and safety constraints under optimization. If a benchmark avoids the real synchronization, cancellation, parsing or validation work, it may not support the production claim. Unsafe speedups require a separate soundness argument; faster measurements do not supply one.
 
-## Required Checks
+## Evidence and verification
 
-- Allocations in hot paths are justified and minimized: no `Box::new`, `Vec::push`, `String::push_str`, `Arc::new`, or `HashMap::insert` inside loops that execute more than a few hundred iterations. If present, cite profiling evidence that shows the allocation is not a bottleneck.
-- `clone()`/`to_owned()`/`to_string()` calls on potentially large data types in hot paths are justified with a comment explaining why borrowing is not possible. Prefer `Clone::clone_from` for reuse or `mem::take`/`mem::replace` for in-place mutation.
-- Collection type selection is appropriate: `SmallVec`/`ArrayVec` for small fixed-capacity collections on the stack, `Vec` for dynamic contiguous storage, `HashMap`/`BTreeMap` based on key ordering requirements, `HashSet`/`BTreeSet` for uniqueness.
-- `#[inline]`/`#[inline(always)]` annotations are used sparingly and justified by hot path profiling — not applied speculatively. `#[inline(always)]` in non-hot code can cause code bloat and cache pressure.
-- Cache locality is considered for hot structures: array-of-structs (`Vec<Point>`) vs struct-of-arrays (`Points { xs: Vec<f32>, ys: Vec<f32> }`) trade-off is evaluated based on access pattern.
-- False sharing of atomic/cell fields is prevented: `#[repr(align(64))]` or padding on hot contended fields in concurrent data structures.
-- Benchmarks exist for the hot path and are reproducible: Criterion or Divan with measured warmup iterations, sufficient measurement time (≥5s), and statistical analysis (confidence intervals, noise threshold).
-- A benchmark baseline (e.g., `main` branch tag) is established for comparison — `cargo criterion --baseline main` to detect regressions.
-- Binary size impact is evaluated: `cargo bloat --crate <name>` is reviewed for unexpected symbol growth, excessive monomorphization, or duplicate instantiations.
-- LLVM optimization remarks are reviewed for hot path functions: use `-C llvm-args=--remarks` or `-C llvm-args=--pass-remarks=inline` to surface missed inlining or unrolled loops.
-- If `unsafe` optimization is used (unchecked indexing, unchecked arithmetic), the safety justification in the SAFETY comment is verified and a safe fallback exists in test.
-- No premature optimization: performance work is driven by profiling evidence, not by speculation. The diff should not include optimization that is not on a verified hot path.
+Prefer the project's existing benchmark or profiler appropriate to the suspected mechanism. Record the compared snapshots, commands, workload and relevant environment, with measured values and uncertainty. Inspect whether setup, dead-code elimination, sample independence or changed outputs invalidate the comparison. A focused allocation count or structural cost argument may settle a narrow resource issue without a full profiling suite.
 
-## Pass Criteria
+Execute assigned checks without changing source, fixtures, manifests or lockfiles. A missing optional profiler is not a defect. When essential comparison data cannot be obtained, state what conclusion remains unsupported; do not label unmeasured code faster or slower. A reproducible workload-driven resource failure can justify revision even when a particular benchmark tool is unavailable.
 
-- **Pass**: Hot path allocations are justified and minimal. No defensive clones in hot paths. Collection types are appropriate. Inline annotations are backed by profiling. Binary size is reviewed. Benchmarks are reproducible and baseline-compared.
-- **Fail**: Allocation in a hot loop without justification. Defensive clone of large data. `#[inline(always)]` applied speculatively. Benchmark lacking statistical methodology. Binary bloat from excessive monomorphization.
-- **Borderline (report `status: pass` with the caveat in `advisory_notes`)**: Minor clone/alloc inefficiency exists in a non-hot path. Binary size not reviewed for a performance-sensitive crate. Benchmark exists but baseline comparison is not yet set up.
+## Verdict
 
-## Output Format
+Return gate `perf` using `references/schemas.md` and stable issue ids. Block on an evidenced regression, violated resource budget, concrete resource growth defect or invalid evidence underlying an acceptance-critical claim. State the workload and consequence. Pass for the resolved assigned risk; revise demonstrated defects; escalate an essential unverified performance claim. Unmeasured tuning ideas belong in advisory notes and must remain labeled as hypotheses.
 
-Use the `schema_version: 1` gate report from `references/schemas.md`. The report fields are:
+## Authoritative references
 
-```yaml
-schema_version: 1
-outcome_id: pass | revise | escalate
-gate: perf
-status: pass | fail | needs-user-input
-reviewed_snapshot: "<commit> + uncommitted working tree"
-evidence:
-  - "src/parser/hotpath.rs:45 — Vec::reserve(1024) before loop: 0 allocations in loop body"
-  - "cargo criterion --baseline main: hotpath latency unchanged (p50: 12.3µs vs 12.1µs baseline)"
-  - "cargo bloat --crate parser: total 48KB, no unexpected symbols"
-blocking_issues:
-  - "src/parser/hotpath.rs:33 — String::clone() on 50KB payload in every iteration (10K iterations/s)"
-  - "src/parser/hotpath.rs:12 — #[inline(always)] without profiling evidence — likely code bloat"
-required_revisions:
-  - "Replace clone() with Cow<str> or Arc<str> to share the payload in src/parser/hotpath.rs:33"
-  - "Remove #[inline(always)] or add benchmark evidence showing ≥10% improvement"
-advisory_notes:
-  - "Consider adding dhat-rs heap profiling to CI for allocation regression detection"
-verification: "cargo criterion --baseline main -p <crate> 2>&1 | tail -20 && cargo bloat --crate <name>"
-engineering_state_patch: {}
-```
+Use the project's tool versions and workload when interpreting these references:
 
-## Review Flow
-
-1. Load the Engineering brief (prompt-embedded) and identify the `performance_context` — hot paths, baseline, targets.
-2. Scan the diff for allocation sites (Box, Vec, String, HashMap, Arc) and clone() calls in loop bodies.
-3. Review collection type selection: is SmallVec or ArrayVec more appropriate for small fixed-capacity uses?
-4. Check `#[inline]` annotations — are they on hot paths? Are they backed by benchmark evidence?
-5. If benchmarks exist, review methodology: warmup, measurement time, sample size, baseline comparison.
-6. If binary size is a concern, review `cargo bloat` output for unexpected symbols.
-7. Compile findings into a gate report with file:line citations and benchmark output.
-
-## Antipatterns to Detect
-
-- **Defensive clone**: `s.clone()` when `&s` would work — copies large data unnecessarily.
-- **Allocation in loop**: `vec.push()` in a hot loop without `Vec::reserve` first — causes repeated reallocation.
-- **#[inline(always)] everywhere**: Applied by intuition, not profiling — increases binary size and I-cache pressure.
-- **Wrong collection**: `HashMap` when `Vec<(K,V)>` with linear search is faster for <10 items. `Vec` when `SmallVec<[T; N]>` avoids heap allocation.
-- **Missing benchmark baseline**: Benchmarks exist but compare against a moving target (no `--baseline`).
-- **Array-of-structs on column-access pattern**: Accessing single fields across many structs causes cache-line waste.
-- **False sharing**: Two atomics on the same cache line, each written by a different thread — throughput collapses on contention.
-- **Premature optimization**: Optimization applied without profiling evidence that the code is a bottleneck.
+- [Vec guarantees](https://doc.rust-lang.org/std/vec/struct.Vec.html#guarantees): capacity, allocation and growth behavior.
+- [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html): shared ownership and cloning semantics.
+- [Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html): optimization and build-profile settings that affect comparisons.
+- [black_box](https://doc.rust-lang.org/std/hint/fn.black_box.html): best-effort optimization barriers and their limits.

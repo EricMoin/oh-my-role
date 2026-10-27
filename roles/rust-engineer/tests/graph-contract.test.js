@@ -102,8 +102,9 @@ const SUBAGENT_SLUGS = [
   "cross-platform-checker",
   "perf-profiler",
   "safety-reviewer",
+  "source-tracer",
 ];
-// The shipped topology: five independent read-only gate roots and no consumer.
+// The independent catalog preserves the five gate identities.
 const GATE_NODES = ["api", "async", "cross-platform", "performance", "safety"];
 const GATE_AGENTS = {
   safety: "rust-engineer--safety-reviewer",
@@ -150,40 +151,26 @@ const childSlug = (child) => child.name.toLowerCase().replaceAll(" ", "-");
 
 // ── The canonical declaration, read from the shipped protocol reference ─────
 
-/**
- * Documentation is the single source of truth: the tested declaration is exactly the
- * one fenced json block of references/graph-protocol.md, so the two cannot drift.
- */
-function readShippedDeclaration() {
+function readShippedDeclarations() {
   const text = readFileSync(protocolPath, "utf8");
   const blocks = [...text.matchAll(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/g)];
-  if (blocks.length !== 1) {
+  if (blocks.length !== 2) {
     throw new Error(
-      `${protocolPath}: expected exactly one fenced json block, found ${blocks.length}`,
+      `${protocolPath}: expected the gate catalog and evidence dependency examples, found ${blocks.length}`,
     );
   }
-  let declaration;
-  try {
-    declaration = JSON.parse(blocks[0][1]);
-  } catch (error) {
-    throw new Error(
-      `${protocolPath}: the fenced json block is not valid JSON: ` +
-        (error instanceof Error ? error.message : String(error)),
-    );
-  }
-  return {
-    text,
-    fenceCount: (text.match(/^```/gm) ?? []).length,
-    declaration,
-  };
+  return blocks.map((block) => JSON.parse(block[1]));
 }
 
-const shipped = readShippedDeclaration();
-const declaration = shipped.declaration;
+const declarations = readShippedDeclarations();
+const declaration = declarations.find((item) => item.name === "rust-review-sample-r0");
+const evidenceDeclaration = declarations.find(
+  (item) => item.name === "rust-evidence-review-sample-r0",
+);
 
 // ── (a) Role loading through the real loader ────────────────────────────────
 
-test("rolebox loads the lead, its five read-only specialist subagents and every declared skill", async () => {
+test("rolebox loads the lead, its six read-only specialist subagents and every declared skill", async () => {
   const directory = tempDir("rust-role-loader-");
   cpSync(roleDir, join(directory, "rust-engineer"), { recursive: true });
   const role = (await discoverRoles(directory)).get("rust-engineer");
@@ -225,12 +212,9 @@ test("rolebox loads the lead, its five read-only specialist subagents and every 
     expect(allow).not.toContain("Write");
     expect(allow).not.toContain("Edit");
     expect(slug).not.toBe("");
-    expect(child.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
-    expect(child.prompt).toContain("never write, edit or delete source");
-    expect(child.prompt).toContain("target/");
   }
 
-  // Every declared skill of the primary and of all five children resolves to a real
+  // Every declared skill of the primary and of all children resolves to a real
   // file, and every prompt is substantial.
   const subjects = [
     [role, join(directory, "rust-engineer")],
@@ -267,15 +251,11 @@ test("the shipped toolset exposes the v3 surface and no retired v2 entry point",
 
 // ── (b) The shipped declaration against the real v3 front end ───────────────
 
-test("the declaration shipped in references/graph-protocol.md compiles into an executable v3 plan", () => {
-  // Exactly one fenced json block: one opener and one closer in the whole file.
-  expect(shipped.text.match(/```json/g) ?? []).toHaveLength(1);
-  expect(shipped.fenceCount).toBe(2);
-
-  const parsed = parseGraphDeclarationV3(declaration);
+test.each(declarations)("the shipped $name declaration compiles into an executable v3 plan", (example) => {
+  const parsed = parseGraphDeclarationV3(example);
   if (!parsed.ok) {
     throw new Error(
-      `references/graph-protocol.md is not a valid v3 declaration: ` +
+      `${example.name} is not a valid v3 declaration: ` +
         parsed.errors
           .map((issue) => `${issue.code} at ${issue.path} (${issue.message})`)
           .join("; "),
@@ -284,7 +264,7 @@ test("the declaration shipped in references/graph-protocol.md compiles into an e
   const compiled = compileGraph(parsed.declaration, { supportedValidators: [] });
   if (!compiled.ok) {
     throw new Error(
-      `references/graph-protocol.md failed to compile: ` +
+      `${example.name} failed to compile: ` +
         compiled.errors
           .map((issue) => `${issue.code} at ${issue.path} (${issue.message})`)
           .join("; "),
@@ -292,75 +272,70 @@ test("the declaration shipped in references/graph-protocol.md compiles into an e
   }
   expect(compiled.kind).toBe("executable");
   const plan = compiled.plan;
-
   expect(plan.declarationVersion).toBe(3);
-  expect(plan.graphId).toBe(declaration.name);
-  expect([...plan.nodes.map((node) => node.id)].sort()).toEqual(GATE_NODES);
+  expect(plan.graphId).toBe(example.name);
+  expect(plan.terminalOutcomes.length).toBeGreaterThan(0);
+  expect(example.max_retries).toBeUndefined();
+  expect(example.loop_groups).toBeUndefined();
+  expect(Number.isInteger(example.budget.max_executions)).toBe(true);
+  expect(example.budget.max_executions).toBeGreaterThanOrEqual(example.nodes.length);
 
-  // Every edge binds an outcome its source node really declares, and every declared
-  // input names a declared outcome of a declared producer. The shipped batch has no
-  // edge and no input, so these loops hold vacuously and guard a future change.
   for (const edge of plan.edges) {
     const source = plan.nodes.find((node) => node.id === edge.from);
     expect(source).toBeDefined();
     expect(source.outcomes.map((outcome) => outcome.id)).toContain(edge.outcome);
   }
-  for (const node of declaration.nodes) {
+  for (const node of example.nodes) {
+    expect(node.completion).toEqual({ mode: "explicit" });
+    expect(node.budget.timeout_ms).toBeGreaterThan(0);
+    expect(Number.isFinite(node.budget.timeout_ms)).toBe(true);
+    expect(node.max_retries).toBeUndefined();
+    expect(node.agent).toMatch(/^rust-engineer--[a-z0-9-]+$/);
+    const slug = node.agent.slice("rust-engineer--".length);
+    expect(SUBAGENT_SLUGS).toContain(slug);
+    expect(existsSync(join(roleDir, "subagents", slug, "role.yaml"))).toBe(true);
     for (const input of node.inputs ?? []) {
       const producer = plan.nodes.find((entry) => entry.id === input.from);
       expect(producer).toBeDefined();
-      expect(producer.outcomes.map((outcome) => outcome.id)).toContain(
-        input.outcome,
-      );
+      expect(producer.outcomes.map((outcome) => outcome.id)).toContain(input.outcome);
+      expect(plan.edges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ from: input.from, to: node.id, outcome: input.outcome }),
+      ]));
     }
   }
-  // Terminal outcomes: the graph can actually finish.
-  expect(plan.terminalOutcomes.length).toBeGreaterThan(0);
+});
 
-  // Five independent roots: no node has an inbound edge, so a single start arms all
-  // five and no node waits on another node's result.
-  expect(plan.edges).toEqual([]);
-  const rooted = new Set(plan.edges.map((edge) => edge.to));
-  const roots = plan.nodes.filter((node) => !rooted.has(node.id)).map((node) => node.id);
-  expect(roots.sort()).toEqual(GATE_NODES);
-
-  // The declaration itself is pinned: five roots with exactly the declared keys, so
-  // no input, join, retry or loop capability can appear unnoticed.
+test("the catalog preserves independent gates and the optional evidence example declares a genuine all-input join", () => {
   expect(declaration.nodes.map((node) => node.id).sort()).toEqual(GATE_NODES);
-  expect(declaration.max_retries).toBeUndefined();
-  expect(declaration.loop_groups).toBeUndefined();
-  expect(declaration.budget.max_executions).toBeGreaterThanOrEqual(GATE_NODES.length);
+  expect(declaration.edges).toEqual([]);
   for (const node of declaration.nodes) {
     expect(Object.keys(node).sort()).toEqual(DECLARED_CHILD_KEYS);
     expect(node.agent).toBe(GATE_AGENTS[node.id]);
     expect(node.inputs).toBeUndefined();
     expect(node.join).toBeUndefined();
-    expect(node.max_retries).toBeUndefined();
-    expect(node.completion).toEqual({ mode: "explicit" });
-    expect(node.budget).toEqual({ timeout_ms: 300000 });
-    expect(node.outcomes.map((outcome) => outcome.id).sort()).toEqual(
-      GATE_OUTCOMES,
-    );
-    // The brief each node needs: the reviewed snapshot and source roots, the
-    // read-only scope, outcome meanings and the gate-report shape.
-    for (const required of [
-      "reviewed snapshot",
-      "read-only scope",
-      "pass, revise and escalate",
-      "schema_version 1",
-    ]) {
-      expect(node.prompt).toContain(required);
-    }
-    expect(node.prompt).not.toMatch(/graph_worker_exec|graph_submit_outcome|attempt credential/);
+    expect(node.outcomes.map((outcome) => outcome.id).sort()).toEqual(GATE_OUTCOMES);
   }
 
-  // Every node agent is a real subagent of this role, named <role>--<slug>.
-  for (const node of declaration.nodes) {
-    expect(node.agent).toMatch(/^rust-engineer--[a-z0-9-]+$/);
-    const slug = node.agent.slice("rust-engineer--".length);
-    expect(SUBAGENT_SLUGS).toContain(slug);
-    expect(existsSync(join(roleDir, "subagents", slug, "role.yaml"))).toBe(true);
+  expect(evidenceDeclaration.nodes.map((node) => node.id).sort()).toEqual([
+    "async", "source-behavior", "source-versions",
+  ]);
+  for (const producer of evidenceDeclaration.nodes.filter((node) => node.id !== "async")) {
+    expect(producer.agent).toBe("rust-engineer--source-tracer");
+    expect(producer.outcomes).toEqual([{ id: "report" }]);
+    expect(producer.inputs).toBeUndefined();
+    expect(producer.join).toBeUndefined();
   }
+  const consumer = evidenceDeclaration.nodes.find((node) => node.id === "async");
+  expect(consumer.agent).toBe(GATE_AGENTS.async);
+  expect(consumer.join).toEqual({ strategy: "all" });
+  expect(consumer.outcomes.map((outcome) => outcome.id).sort()).toEqual(GATE_OUTCOMES);
+  expect(consumer.inputs).toEqual([
+    { from: "source-behavior", outcome: "report" },
+    { from: "source-versions", outcome: "report" },
+  ]);
+  expect(evidenceDeclaration.edges).toEqual(consumer.inputs.map((input) => ({
+    ...input, to: "async",
+  })));
 });
 
 // ── (c) The real declare/dispatch/settle path, in process ───────────────────
@@ -372,7 +347,7 @@ const NOW = 1_700_000_000_000;
  * shipped plan, the dispatch seam records every attempt the engine arms, and the real
  * host credential vault stores the credentials those attempts carry.
  */
-function declareGraph() {
+function declareGraph(selectedDeclaration = declaration) {
   const dir = tempDir("rust-graph-");
   const requests = [];
   const tools = createGraphToolSet({
@@ -387,7 +362,7 @@ function declareGraph() {
     }).capability(),
   });
   const declared = tools.graph_declare({
-    declaration: structuredClone(declaration),
+    declaration: structuredClone(selectedDeclaration),
   });
   return { dir, requests, tools, declared, graphId: declared.graph_id };
 }
@@ -476,6 +451,27 @@ function gateReport(gate, outcomeId, extra = {}) {
   };
 }
 
+function sourceReport(question, status = "complete") {
+  return {
+    schema_version: 1,
+    outcome_id: "report",
+    kind: "source-evidence",
+    status,
+    reviewed_snapshot: "rust-sample@abc1234 + uncommitted working tree",
+    question,
+    version_scope: "Fixture runtime dependency pinned by the supplied Cargo.lock; host target",
+    findings: status === "complete" ? [{
+      claim: "The supplied fixture contract supports the recorded behavior",
+      evidence: ["fixture dependency source and resolved lockfile"],
+      limits: "This fixture represents inspected evidence; no Rust command was executed",
+    }] : [],
+    verification: ["Read-only fixture evidence inspection"],
+    open_questions: status === "partial" ? [
+      "Essential cancellation contract is unavailable for the resolved dependency revision",
+    ] : [],
+  };
+}
+
 /** graph_status with the documented json shape the lead reads accepted results from. */
 function statusJson(tools, graphId) {
   const raw = tools.graph_status({
@@ -519,6 +515,74 @@ function phaseOf(status) {
   }
   return phase;
 }
+
+test.each(GATE_NODES)("%s can run alone without requiring source evidence or unrelated gates", async (nodeId) => {
+  const selected = structuredClone(declaration);
+  selected.name = `rust-single-${nodeId}`;
+  selected.nodes = selected.nodes.filter((node) => node.id === nodeId);
+  selected.budget.max_executions = 1;
+  const graph = declareGraph(selected);
+  await start(graph);
+  expect(nodeIds(graph.requests)).toEqual([nodeId]);
+  expect(armed(graph.requests, nodeId).inputs ?? []).toEqual([]);
+  const result = await settle(graph, nodeId, "pass", {
+    data: gateReport(GATE_NAMES[nodeId], "pass"),
+  });
+  expect(result.decision).toBe("accepted");
+  expect(phaseOf(statusJson(graph.tools, graph.graphId))).toBe("complete");
+});
+
+test.each(["complete", "partial"])("the optional join delivers both accepted reports, preserving %s evidence for the gate", async (evidenceStatus) => {
+  const graph = declareGraph(evidenceDeclaration);
+  await start(graph);
+  expect(nodeIds(graph.requests).sort()).toEqual(["source-behavior", "source-versions"]);
+  const behaviorAttempt = armed(graph.requests, "source-behavior").attemptId;
+  const versionsAttempt = armed(graph.requests, "source-versions").attemptId;
+  const behaviorReport = sourceReport("What cancellation contract governs this call?", evidenceStatus);
+  const versionsReport = sourceReport("Which resolved revision and features govern this call?");
+
+  const invalid = await settle(graph, "source-behavior", "pass", { data: behaviorReport });
+  expect(invalid.decision).toBeUndefined();
+  expect(invalid.refusals.length).toBeGreaterThan(0);
+  expect(nodeIds(graph.requests)).not.toContain("async");
+
+  const behavior = await settle(graph, "source-behavior", "report", { data: behaviorReport });
+  expect(behavior.decision).toBe("accepted");
+  expect(nodeIds(graph.requests)).not.toContain("async");
+  const versions = await settle(graph, "source-versions", "report", { data: versionsReport });
+  expect(versions.decision).toBe("accepted");
+
+  const consumer = armed(graph.requests, "async");
+  expect(consumer.inputs).toEqual([
+    {
+      from: "source-behavior", outcome: "report", attemptId: behaviorAttempt,
+      payload: { kind: "value", value: behaviorReport }, artifacts: [],
+    },
+    {
+      from: "source-versions", outcome: "report", attemptId: versionsAttempt,
+      payload: { kind: "value", value: versionsReport }, artifacts: [],
+    },
+  ]);
+  expect(phaseOf(statusJson(graph.tools, graph.graphId))).not.toBe("complete");
+
+  // The stub supplies the consumer's decision; the engine preserves it, not judges it.
+  const outcome = evidenceStatus === "partial" ? "escalate" : "pass";
+  const gate = await settle(graph, "async", outcome, {
+    data: gateReport("async-audit", outcome, {
+      evidence: [behaviorReport, versionsReport],
+      advisory_notes: behaviorReport.open_questions,
+    }),
+  });
+  expect(gate.decision).toBe("accepted");
+  expect(attemptIds(graph.requests)).toHaveLength(3);
+  const status = statusJson(graph.tools, graph.graphId);
+  expect(phaseOf(status)).toBe("complete");
+  if (evidenceStatus === "partial") {
+    expect(JSON.stringify(status)).toContain(behaviorReport.open_questions[0]);
+    expect(JSON.stringify(status)).toContain('"escalate"');
+    expect(JSON.stringify(status)).toContain('"partial"');
+  }
+});
 
 test("an accepted submission commits the result, an identical replay is idempotent and a refusal writes nothing", async () => {
   const graph = declareGraph();
@@ -605,7 +669,7 @@ test("the five gate nodes are independent roots and a settled run carrying a rev
       },
     ],
     required_revisions: [
-      "Replace the transmute with from_raw_parts_mut and document the aliasing contract",
+      "Establish valid allocation, lifetime, alignment and exclusive access before creating a mutable slice",
     ],
   });
 

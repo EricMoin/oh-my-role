@@ -111,13 +111,12 @@ roles:
       undo, cherry-pick, remotes, submodules, worktrees, and conflict resolution
     tags: [git, version-control, vcs, branches, merging, rebasing, stash]
   rust-engineer:
-    version: "3.0.0"
-    description: Adaptive Rust engineering lead with 3-tier complexity grading,
-      specialist gate reviews (safety, async, API, perf, platform), and
-      token/delay budget awareness — fast for simple tasks, thorough for complex
-      ones, running its reviews on the rolebox graph v3 outcome protocol by
-      declaring bounded read-only gate review batches over the implemented
-      snapshot whose five specialist workers settle their own declared outcomes
+    version: "4.0.0"
+    description: Rust engineering lead with change-scoped risk analysis, six
+      implementation skills, evidence-first verification, and five specialist
+      reviewers on Graph v3. Keeps independent reviews parallel and supports
+      optional version-matched source evidence dependencies with lead-owned
+      implementation, repair and final acceptance.
     tags: [rust, cargo, async, systems, unsafe, performance, testing, adaptive,
         gates, subagents]
   comment-writer:
