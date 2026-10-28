@@ -4,6 +4,15 @@ description: Review Rust performance changes and claims against representative w
 ---
 # Rust Performance Gate
 
+This skill belongs to the dedicated read-only performance-reviewer. Follow the
+[node contract](../../../../references/node-contract.md) and
+[report contract](../../../../references/schemas.md). Review mode returns a gate
+verdict; evidence mode returns complete/partial findings without repair routing
+and does not issue a gate verdict.
+Never implement or repair code under review. Read
+[rust-testing](../../../../skills/rust-testing/SKILL.md) when judging regression
+coverage, and derive expectations independently from requirements and actual code.
+
 ## Establish what matters
 
 Identify the affected workload, data scale, operating conditions and accepted cost: latency distribution, throughput, memory, CPU, binary size or build time. Locate the existing baseline and any claimed improvement. Ordinary code containing a `Vec`, `clone` or loop does not automatically need profiling. Read `references/schemas.md` for the report contract.
@@ -25,7 +34,7 @@ Execute assigned checks without changing source, fixtures, manifests or lockfile
 
 ## Verdict
 
-Return gate `performance` using `references/schemas.md` and stable issue ids. Block on an evidenced regression, violated resource budget, concrete resource growth defect or invalid evidence underlying an acceptance-critical claim. State the workload and consequence. Pass for the resolved assigned risk; revise demonstrated defects; escalate an essential unverified performance claim. Unmeasured tuning ideas belong in advisory notes and must remain labeled as hypotheses.
+In review mode, return gate `performance` using `references/schemas.md` and stable issue ids. Block on an evidenced regression, violated resource budget, concrete resource growth defect or invalid evidence underlying an acceptance-critical claim. State the workload and consequence. Pass for the resolved assigned risk; revise demonstrated defects; escalate an essential unverified performance claim. Unmeasured tuning ideas belong in advisory notes and must remain labeled as hypotheses.
 
 ## Authoritative references
 

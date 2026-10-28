@@ -4,6 +4,15 @@ description: Review changed Rust unsafe operations, safe wrappers and FFI contra
 ---
 # Rust Safety Gate
 
+This skill belongs to the dedicated read-only unsafe-ffi-reviewer. Follow the
+[node contract](../../../../references/node-contract.md) and
+[report contract](../../../../references/schemas.md). Review mode returns a gate
+verdict; evidence mode returns complete/partial findings without repair routing
+and does not issue a gate verdict.
+Never implement or repair code under review. Read
+[rust-testing](../../../../skills/rust-testing/SKILL.md) when judging regression
+coverage, and derive expectations independently from requirements and actual code.
+
 ## Establish the soundness argument
 
 Locate the unsafe operation and its reachable callers, including safe methods that can invalidate its assumptions. Record the Rust version, target, representation, panic strategy and foreign contract when they affect the argument. Review the affected invariant, not just the presence of `unsafe` or a safety comment. Read `references/schemas.md` for the report contract.
@@ -26,7 +35,7 @@ Preserve source, manifests, lockfiles and fixtures while reviewing. If an essent
 
 ## Verdict
 
-Return gate `unsafe-ffi` using `references/schemas.md` with stable issue ids. Each blocker states the operation, violated invariant, reachable trigger and evidence. Pass for the resolved assigned soundness obligation; revise a demonstrated violation; escalate missing essential contract evidence. Optional cleanup and preferences about conversion helpers belong in advisory notes unless they resolve a concrete failure.
+In review mode, return gate `unsafe-ffi` using `references/schemas.md` with stable issue ids. Each blocker states the operation, violated invariant, reachable trigger and evidence. Pass for the resolved assigned soundness obligation; revise a demonstrated violation; escalate missing essential contract evidence. Optional cleanup and preferences about conversion helpers belong in advisory notes unless they resolve a concrete failure.
 
 ## Authoritative references
 

@@ -374,8 +374,8 @@
       "prompt": "Change this client so callers retain the input buffer on failure and shutdown waits for queued writes. Preserve existing error distinctions and verify both behaviors.",
       "acceptance": [
         "The parent researches caller ownership and lifecycle before declaring implementation stages, choosing experts and dependency order from actual responsibilities.",
-        "Domain nodes load their entry and implementation skills before editing; reports and the transcript identify actual reads, not only declared skill names.",
-        "Shared contracts/writers are sequenced or exclusive scopes are justified; independent verification inspects the integrated final source and regression scenarios."
+        "Implementation nodes load implementation-only entry/domain skills before edits; distinct dedicated reviewer roles load their own gate skills. The transcript records actual reads rather than only declared names.",
+        "Shared contracts/writers are sequenced or exclusive scopes are justified; a separate read-only role/session independently derives expectations and verifies the integrated source and regression scenarios."
       ],
       "failure_signals": [
         "The parent performs production edits while experts only review afterward.",
@@ -398,7 +398,8 @@
       "acceptance": [
         "The initial implementation can start without a review report; on revise the repair node consumes the exact accepted triggering report with stable issue ids.",
         "Affected evidence branches rerun after the repair and final verification consumes current attempts. Serial experts receive forwarded feedback with source-attempt provenance.",
-        "Only one convergence reviewer routes repairs; exhaustion remains a stopped/partial result and is not reset by graph renaming."
+        "Only one convergence reviewer routes repairs; exhaustion remains a stopped/partial result and is not reset by graph renaming.",
+        "The implementation role only writes and repairs; the separate read-only reviewer retains its review duty throughout every loop traversal. No node/session changes from author to reviewer."
       ],
       "failure_signals": [
         "An unconditional review input prevents initial execution.",
@@ -424,6 +425,31 @@
       "failure_signals": [
         "The parent writes production source through Bash or another direct tool as a fallback.",
         "Describes a text plan as a real executed graph or claims the requested fix is complete."
+      ]
+    },
+    {
+      "id": "no-author-review-role",
+      "title": "Independent review never reuses an implementation node, role or session",
+      "focus": [
+        "review-independence",
+        "role-separation",
+        "repair-routing"
+      ],
+      "setup": [
+        "Provide a Rust async shutdown fixture with a deterministic lifecycle defect and enough source/test context for implementation and review. Retain the actual role assignments, session identities, skill reads, accepted outcomes and diff across a revision."
+      ],
+      "prompt": "Fix the shutdown bug and have it independently reviewed before accepting it.",
+      "acceptance": [
+        "The implementation expert loads implementation guidance, edits only its scope and returns an Implementation report without a product-acceptance verdict.",
+        "Review uses a distinct node ID, a dedicated source-read-only reviewer role and a session that never implemented the change. The reviewer derives expectations from requirements, source and tests rather than inheriting the author conversation.",
+        "A supported revise routes back to the implementation expert; the reviewer never repairs findings, and the implementer never switches into review or independent evidence mode.",
+        "The final reviewer inspects the repaired snapshot and the parent reconciles its actual accepted verdict."
+      ],
+      "failure_signals": [
+        "A writing role is dispatched as the independent reviewer or evidence producer, even under a new mode or node ID.",
+        "The authoring node/session switches into review after completing implementation.",
+        "The reviewer edits source/tests to fix its own findings or endorses the author rationale without independent inspection.",
+        "The implementation done outcome is treated as independent approval."
       ]
     }
   ]

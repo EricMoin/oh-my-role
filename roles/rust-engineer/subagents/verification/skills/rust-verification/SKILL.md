@@ -11,6 +11,10 @@ Read the [node contract](../../../../references/node-contract.md),
 Use [ownership guidance](../../../../skills/rust-ownership-and-api/SKILL.md) when
 boundaries, errors, encapsulation or consumer contracts need examination.
 
+Use a reviewer session separate from implementation. Derive expected behavior from
+requirements and source, without inheriting the implementation conversation or adopting
+the author's conclusions. Never switch this role into implementation or repair.
+
 Inspect the actual diff, callers and tests, including dirty and new files. Check
 whether the chosen design preserves invariants, responsibilities and compatibility
 without unrelated abstractions or weakened visibility. Follow the changed behavior

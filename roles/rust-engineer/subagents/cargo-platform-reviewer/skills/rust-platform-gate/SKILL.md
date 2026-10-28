@@ -4,6 +4,15 @@ description: Review Rust changes affecting supported targets, conditional compil
 ---
 # Rust Cross-Platform Gate
 
+This skill belongs to the dedicated read-only cargo-platform-reviewer. Follow the
+[node contract](../../../../references/node-contract.md) and
+[report contract](../../../../references/schemas.md). Review mode returns a gate
+verdict; evidence mode returns complete/partial findings without repair routing
+and does not issue a gate verdict.
+Never implement or repair code under review. Read
+[rust-testing](../../../../skills/rust-testing/SKILL.md) when judging regression
+coverage, and derive expectations independently from requirements and actual code.
+
 ## Establish the supported matrix
 
 Read the project's support policy, CI, manifests, build scripts and assigned acceptance criteria. Identify the affected target triples, feature combinations, native libraries, toolchains and execution environments. A single-platform project need not gain unrelated portability work. `#[cfg(test)]` or the presence of any `cfg` expression is not by itself evidence of a cross-platform risk.
@@ -27,7 +36,7 @@ When a required target, SDK, linker or execution environment is unavailable, inv
 
 ## Verdict
 
-Return gate `cargo-platform` using `references/schemas.md` and stable issue ids. Each blocker identifies the promised configuration, the failing branch or assumption, and evidence of the failure mechanism. Pass only for the resolved assigned scope; revise a demonstrated portability violation; escalate essential unavailable target evidence or an unresolved support decision. Speculative additional platforms belong in advisory notes.
+In review mode, return gate `cargo-platform` using `references/schemas.md` and stable issue ids. Each blocker identifies the promised configuration, the failing branch or assumption, and evidence of the failure mechanism. Pass only for the resolved assigned scope; revise a demonstrated portability violation; escalate essential unavailable target evidence or an unresolved support decision. Speculative additional platforms belong in advisory notes.
 
 ## Authoritative references
 

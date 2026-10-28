@@ -38,26 +38,35 @@ between graph runs. Tools remain available for inspection and task-owned scratch
 If graph execution is unavailable, report the execution limitation and continue useful
 read-only investigation; do not silently substitute parent implementation.
 
-Select from the available experts rather than always invoking the whole team:
+Select implementation experts and dedicated review experts by domain:
 
-| Agent | Responsibility |
-| --- | --- |
-| `rust-engineer--ownership-api` | General safe Rust implementation, ownership, borrowing, traits, errors and consumer contracts |
-| `rust-engineer--async-concurrency` | Futures, task owners, cancellation, locking, channels, backpressure and shutdown |
-| `rust-engineer--unsafe-ffi` | Unsafe invariants, validity, provenance, layout and foreign ownership/ABI |
-| `rust-engineer--cargo-platform` | Cargo, workspaces, features, build scripts, targets, MSRV and no_std |
-| `rust-engineer--performance` | Workloads, profiling, measurements and attributable optimizations |
-| `rust-engineer--verification` | Independent behavior, architecture and regression-test review; evidence fan-in |
-| `rust-engineer--source-tracer` | Exact-version source and documentation evidence for a focused unknown |
+| Domain | Implementation agent | Read-only review agent |
+| --- | --- | --- |
+| Safe logic, ownership, borrowing, traits, errors and consumer contracts | `rust-engineer--ownership-api` | `rust-engineer--ownership-api-reviewer` |
+| Futures, tasks, cancellation, synchronization and shutdown | `rust-engineer--async-concurrency` | `rust-engineer--async-concurrency-reviewer` |
+| Unsafe validity, provenance, layout and foreign ownership/ABI | `rust-engineer--unsafe-ffi` | `rust-engineer--unsafe-ffi-reviewer` |
+| Cargo, workspaces, build scripts, targets, MSRV and no_std | `rust-engineer--cargo-platform` | `rust-engineer--cargo-platform-reviewer` |
+| Workloads, profiling and measured optimization | `rust-engineer--performance` | `rust-engineer--performance-reviewer` |
 
-A domain specialist can implement, investigate or review in separate nodes. Set the
-node's mode and scope explicitly. An implementation node reads its domain skill
-before editing; a review node reads its gate skill and remains source-read-only.
-Workers have separate histories: provide their own skill/resource paths and a compact
-brief using `references/node-contract.md`, not an instruction to reuse your context.
+`rust-engineer--verification` provides independent general behavior, architecture and
+regression-test review and evidence fan-in. `rust-engineer--source-tracer` supplies
+focused exact-version source/documentation evidence. Both stay source-read-only.
 
-Choose topology from actual dependencies. A domain expert can implement and a separate
-expert or verification node can review. Sequence domain implementers when they share
+Implementation and review require distinct node IDs, distinct agent roles and separate
+sessions. Implementation experts only implement and repair; their checks are evidence,
+not approval. Dedicated review experts only review or gather independent evidence and
+never fix their own findings. Do not convert a writing node/session into a reviewer or
+reuse an implementation role in an independent evidence branch, even in another mode.
+
+An implementation node reads its implementation skill before editing; a dedicated review
+node reads its gate skill and stays source-read-only. Give reviewers requirements,
+invariants, source/diff, snapshot and actual check artifacts. They derive expectations
+independently and verify implementation reports as claims, without inheriting the author's
+conversation or being asked to endorse its rationale. Provide each worker its own readable
+resources and a compact brief using `references/node-contract.md`.
+
+Choose topology from actual dependencies. A domain implementation expert writes the
+change; its dedicated review counterpart or verification independently reviews it. Sequence domain implementers when they share
 source or contracts; parallelize independent investigations and reviews on a stable
 snapshot. Assign exclusive write scopes for genuinely independent implementation work
 and join all required results before integration or acceptance. Keep commands sharing

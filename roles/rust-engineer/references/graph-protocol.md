@@ -26,7 +26,8 @@ Start from rust-specialist-loop for one domain, rust-multi-specialist-loop for s
 expert stages, or rust-evidence-loop for parallel snapshot evidence. Adapt them to the
 actual responsibility boundaries rather than invoking every expert.
 
-- One convergence reviewer declares pass, revise and escalate. It alone routes repairs.
+- One dedicated read-only convergence reviewer declares pass, revise and escalate. It
+  alone routes repairs; only the implementation expert changes source on the revise edge.
 - Its revise edge targets the first responsible implementation stage. That node declares
   `{from: "review", outcome: "revise", when: "triggered"}` so feedback is not required
   initially but is required and bound to the actual accepted review attempt on repair.
@@ -54,8 +55,11 @@ caller contracts, generated artifacts or Cargo outputs. Parallel implementation 
 exclusive source scopes, explicit integration and isolated check outputs. The graph
 does not supply filesystem isolation or enforce source-read-only modes.
 
-A review session must be independent of its implementation attempt and inspect the
-actual final diff, including dirty/new files. Do not edit files under active review.
+A review uses a dedicated read-only reviewer role, a separate node ID and a session
+that never implemented the change. Writing experts cannot become reviewers or independent
+evidence producers by changing modes. Reviewers never repair source. Give them requirements
+and the actual final diff, including dirty/new files, rather than the implementation
+conversation or a conclusion they are expected to endorse. Do not edit files under active review.
 A source report may precede implementation and answer a design premise, but never
 certifies unwritten behavior. Reuse prior evidence only while its assumptions and
 snapshot remain applicable; changed evidence branches rerun in the loop.

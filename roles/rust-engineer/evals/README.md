@@ -32,6 +32,10 @@ implementation, independent verification and bounded repair loop. Expert choice 
 parallelism follow actual responsibilities and dependencies, not fixed domain quotas or
 keywords. General safe Rust and regression quality remain covered. Check that workers
 read their own implementation/review guidance, since parent skills do not inherit.
+Implementation and review use distinct node IDs, distinct role IDs and separate sessions.
+Domain reviewers own gate skills and never repair findings; implementers never serve as
+independent evidence producers or reviewers. Review does not inherit the author's
+conversation or an expected verdict.
 
 Graph scenarios require real runtime evidence for start, input delivery, fresh attempts,
 loop caps and accepted outcomes. Essential partial evidence never approves behavior.
@@ -51,7 +55,7 @@ From the repository root:
 ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/rust-engineer/tests/graph-contract.test.js
 ```
 
-These tests load the actual seven expert roles and their assets, compile every shipped
+These tests load the actual twelve expert roles and their assets, compile every shipped
 graph shape and exercise scheduling, serial expert handoff, accepted feedback, evidence
 fan-in, fresh post-repair reports, negative terminal outcomes and loop exhaustion. The
 worker dispatch is stubbed. Passing establishes protocol compatibility with the tested

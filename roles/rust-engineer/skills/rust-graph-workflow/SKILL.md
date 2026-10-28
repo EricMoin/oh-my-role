@@ -34,8 +34,8 @@ readable skills, required evidence and declared inputs. Select the domain specia
 whose implementation skill addresses the change; safe private logic belongs to the
 ownership/API expert too. Generic verification covers behavior, architecture and tests.
 
-Each implementation node loads its domain implementation skill before editing. Each
-review node loads its review criteria; verification loads rust-testing. Root skills do
+Each implementation node loads its domain implementation skill before editing. Dedicated
+read-only review roles own gate skills; verification loads rust-testing. Root skills do
 not automatically become worker instructions. Pass explicit resource paths or their
 content; workers may read the linked shared guidance in this role tree.
 
@@ -59,8 +59,12 @@ negative findings, and never trigger simultaneous writers. Recheck every evidenc
 whose snapshot or premise changed. In multi-writer stages, serialize shared-source edits
 and forward the accepted revision context through implementation reports to later stages.
 Parallel writers require exclusive source scopes and isolated check outputs; the graph
-does not supply isolation. Independent review must use another node session and inspect
-the final snapshot, even when its agent has the same domain expertise as the implementer.
+does not supply isolation. Implementation and independent review must use distinct node
+IDs, distinct agent roles and separate sessions. Implementation experts never produce
+independent evidence or acceptance verdicts, even when given another mode label. Dedicated
+reviewers never implement repairs. Before declaring, check that every writing node has
+implementation outcomes only and every review/evidence node uses a read-only role.
+Reviewers inspect the final snapshot against requirements, not the author's confidence.
 
 ## Reconcile the run
 

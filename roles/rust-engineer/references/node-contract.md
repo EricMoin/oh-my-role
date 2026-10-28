@@ -3,54 +3,64 @@
 Every node prompt identifies the following facts. Keep it concise and task-specific;
 unknown facts remain explicit rather than being guessed.
 
-- Mode: implement, review or evidence; source-tracer uses investigation and verification
-  also supports synthesis. Bind the mode to the outcomes declared for this node.
+- Role and duty: an implementation expert implements/repairs; a dedicated reviewer
+  reviews or gathers evidence; source-tracer investigates; verification also synthesizes.
+  Modes select work within that role's duty and never change its authority.
 - Goal, expected behavior, compatibility constraints and existing user authorization.
 - Workspace, affected source/callers, write or read-only scope and allowed scratch outputs.
 - Snapshot including dirty and new files; baseline observations when available. HEAD alone
   does not identify an uncommitted implementation.
 - Ownership/lifecycle invariants, actual dependency versions, targets and features as needed.
-- Relevant implementation/review skill paths and required checks or criteria for deriving them.
+- The assigned role's readable skills and required checks or criteria for deriving them.
 - Declared upstream inputs, prior issue ids and repair context where applicable.
 
-## Modes and ownership
+## Separate implementation from review
 
-| Mode | Writes | Outcome / report |
+| Role class | Duty and writes | Outcome / report |
 | --- | --- | --- |
-| implement | Only assigned source/test/config scope and permitted check outputs | done, failed, blocked or clarification_required / Implementation report |
-| review | Source, tests, manifests, lockfiles and git state stay read-only | pass, revise or escalate / Gate report |
-| evidence / investigation | Source stays read-only; assigned scratch probes and check artifacts permitted | report / Domain evidence or Source evidence report |
-| synthesis | Inspect all declared evidence and the actual final source without editing | pass, revise or escalate for implementation acceptance; report for an investigation |
+| Domain implementation expert | Implement/repair only inside assigned source/test/config scope | done, failed, blocked or clarification_required / Implementation report |
+| Dedicated domain reviewer | Review or gather evidence; source and git state stay read-only | pass, revise or escalate / Gate report; report / Domain evidence |
+| Verification | Independent general review or synthesis; source and git state stay read-only | pass, revise or escalate for acceptance; report for investigation synthesis |
+| Source tracer | Exact-version investigation; source and git state stay read-only | report / Source evidence |
 
-Domain experts have write tools so implementation nodes can work. Their review/evidence
-modes are operating contracts, not a graph-enforced sandbox. The parent must assign
-exclusive write scopes, sequence dependent writers and freeze the snapshot for review.
-The verification and source-tracer roles are always source-read-only.
+Implementation and review must use distinct node IDs, distinct agent roles and separate
+sessions. Never convert a writing node/session into a reviewer, give a reviewer a repair
+step, or substitute an implementation expert as an independent evidence producer. An
+implementer's self-checks belong in its Implementation report and never approve the change.
+An out-of-role assignment is invalid even if its prompt asks for another mode.
 
-Serial implementation reports identify intermediate snapshots. The final reviewer
-checks that their scoped contracts and evidence still hold after later stages;
-intermediate snapshots need not equal the integrated snapshot. Final acceptance
-must cover the integrated source, and invalidated checks must be rerun.
+A review brief supplies requirements, invariants, actual source/diff, snapshot and check
+artifacts. It does not inherit the implementation conversation or require agreement with
+the author's design rationale. Implementation reports are inspectable claims, not verdicts.
+Reviewers establish expectations independently and report findings for implementers to fix.
+
+The parent assigns exclusive write scopes, sequences dependent writers and freezes source
+for review. Source-read-only roles disable Write/Edit and prohibit source changes through
+Bash. Assigned scratch/check outputs are permitted. Tool policy is not filesystem isolation;
+the host supplies actual enforcement. No node-mode label grants implementation authority.
+
+Serial implementation reports identify intermediate snapshots. The final reviewer checks
+that scoped contracts/evidence still hold after later stages. Intermediate snapshots need
+not equal the integrated snapshot; final acceptance must cover integrated source, with
+invalidated checks rerun.
 
 ## Skill loading
 
-The specialist's entry skill links to shared implementation guidance and its own review
-criteria. Read the implementation skill before changing that domain; read gate criteria
-before reviewing it. In evidence mode, load whichever guidance is needed to answer the
-assigned question. Read only applicable sections, and record the actual guidance used
-in the report's `loaded_skills`. A missing required resource is a gap to resolve, never
-permission to claim that the guidance was read. Catalog visibility is not skill loading.
+Implementation entry skills link to domain implementation guidance; dedicated reviewers
+own gate skills. Read the assigned role's relevant instructions before acting and record
+actual reads in loaded_skills. Verification reads rust-testing. Reading a skill does not
+grant another role's duty. Missing required guidance remains a gap to resolve rather than
+permission to claim it was read. Catalog visibility is not skill loading.
 
 ## Repairs and checks
 
-Consume the exact accepted revision input before repairing. Retain stable issue ids and
-report resolved and unresolved items. In serial specialist stages, the first stage carries
-the full accepted review feedback forward in `revision_context`, with its source attempt
-and each issue's current state, so later owners can address their items without guessing.
-Do not edit unrelated stages solely because the loop revisits them.
+Only implementation nodes consume the accepted revise feedback to change source. Retain
+stable issue ids and report resolved/unresolved items. In serial stages, carry the full
+accepted feedback in revision_context with source-attempt provenance and current owners.
+The reviewer stays in its review role on every loop traversal and inspects the new snapshot.
 
-Derive checks from repository policy and affected failure modes. Preserve existing user
-changes. Review/evidence commands must preserve lockfiles and source; use locked Cargo
-resolution where applicable and isolate shared build outputs. Required missing evidence
-cannot become a pass, while optional unavailable tools do not automatically block a
-narrower supported claim. Distinguish observed results, proposed checks and inference.
+Derive checks from repository policy and affected failure modes. Preserve user changes.
+Review/evidence commands preserve lockfiles and source; use locked Cargo resolution where
+applicable and isolate shared build outputs. Required missing evidence cannot become pass,
+while optional unavailable tools do not automatically block a narrower supported claim.
+Distinguish actual results, proposed checks and inference.

@@ -1,10 +1,10 @@
 name: Rust Engineer
 description: >-
   Rust engineering lead that investigates the repository, selects domain experts,
-  and declares Graph v3 execution plans. Specialists implement, investigate and
-  review within scoped nodes; independent verification and bounded repair loops
-  cover ownership, async, unsafe/FFI, Cargo/platforms, performance and testing.
-version: "5.0.0"
+  and declares Graph v3 execution plans. Separate implementation experts and
+  read-only review experts cover ownership, async, unsafe/FFI, Cargo/platforms
+  and performance, with independent verification and bounded repair loops.
+version: "5.1.0"
 mode: primary
 temperature: 0.1
 prompt_file: PROMPT.md
@@ -28,7 +28,7 @@ references:
     description: Graph v3 execution, accepted inputs, bounded loops, fan-in and recovery
   node-contract:
     path: references/node-contract.md
-    description: Specialist modes, write ownership, skill loading and node briefs
+    description: Separate implementation/review duties, session boundaries, skills and node briefs
   complexity-model:
     path: references/complexity-model.md
     description: Investigation depth, expert selection, evidence coverage and stopping rules

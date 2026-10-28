@@ -4,8 +4,9 @@
 
 The primary investigates repository facts, loads the graph workflow, chooses design and
 acceptance criteria, and composes experts according to actual dependencies. Production
-implementation and repairs belong to graph nodes. Five domain experts support implement,
-evidence and review modes; verification and source-tracing experts remain source-read-only.
+implementation and repairs belong to five domain implementation roles. Five separate
+source-read-only domain reviewer roles own review/evidence, alongside read-only verification
+and source tracing. Node IDs, agent roles and sessions stay separate across those duties.
 Ordinary safe Rust belongs to ownership-api, so general logic does not fall through a gap
 between unsafe, async, API, performance and platform reviews.
 
@@ -17,14 +18,15 @@ between unsafe, async, API, performance and platform reviews.
 | rust-domains | Expert, implementation skill and review-criteria routing |
 | node-contract / schemas | Modes, scopes, skill loading and report fields |
 | graph-protocol / graph-patterns.json | Runtime semantics and executable graph shapes |
-| Domain entry skills | Local specialist context with shared implementation and gate guidance |
+| Domain entry skills | Implementation guidance for writers; separately owned gate guidance for reviewers |
 
 ## Composition and loops
 
 Mechanical work can use one domain node. Behavior changes use independent verification
 and a bounded implementation/review loop. Multi-domain tasks can sequence expert writers
 or fan out read-only evidence; only exclusive source scopes permit parallel writers.
-One convergence reviewer owns repair routing. Accepted revision input is optional on
+One dedicated read-only convergence reviewer owns repair routing. Reviewers never fix
+findings, and implementers never switch into review or independent-evidence duties. Accepted revision input is optional on
 initial entry and required when the repair edge triggers; serial implementers forward
 that feedback with provenance. No parent-side repair bypasses the graph.
 
@@ -32,6 +34,17 @@ The provided patterns cover mechanical work, one-expert loops, multi-expert impl
 parallel evidence loops and joined source investigation. They are examples to adapt, not
 fixed phases or a requirement to invoke every expert. Graph execution does not grant
 filesystem isolation, validate report prose or turn completion into engineering success.
+
+## Version 5.1 responsibility split
+
+The five domain IDs introduced in version 5 remain implementation-only. Independent
+domain review/evidence uses the corresponding ID with -reviewer appended. Gate skills
+move to those reviewer directories; implementation roles no longer declare gate skills.
+Review roles disable Write/Edit and prohibit source changes through Bash. Assign separate
+node IDs and sessions; do not reuse implementation conversations for review. This separation
+is a role contract and tool policy, not a claim of host-provided filesystem isolation.
+Existing authored graphs must move domain evidence/review assignments to the reviewer IDs.
+Report schema_version remains 2.
 
 ## Version 5 migration
 

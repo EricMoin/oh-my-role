@@ -22,7 +22,13 @@ const roleDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const patterns = JSON.parse(readFileSync(join(roleDir,
   "skills/rust-graph-workflow/references/graph-patterns.json"), "utf8"));
 const domains = ["ownership-api", "async-concurrency", "unsafe-ffi", "cargo-platform", "performance"];
-const children = [...domains, "verification", "source-tracer"].sort();
+const reviewers = domains.map((domain) => `${domain}-reviewer`);
+const children = [...domains, ...reviewers, "verification", "source-tracer"].sort();
+const gateSkills = {
+  "ownership-api": "rust-api-gate", "async-concurrency": "rust-async-gate",
+  "unsafe-ffi": "rust-safety-gate", "cargo-platform": "rust-platform-gate",
+  performance: "rust-perf-gate",
+};
 const slug = (child) => child.name.toLowerCase().replaceAll(" ", "-");
 const v3 = ["graph_declare", "graph_control", "graph_status", "graph_audit", "graph_submit_outcome"];
 const retired = ["graph_create", "graph_add_node", "graph_add_edge", "graph_add_loop",
@@ -40,14 +46,29 @@ function patternOf(name) {
   return structuredClone(found);
 }
 
+function assertDutyAssignments(declaration, policies) {
+  for (const node of declaration.nodes) {
+    const policy = policies.get(node.agent);
+    if (!policy) throw new Error(`Unknown role: ${node.agent}`);
+    const outcomes = node.outcomes.map(({ id }) => id);
+    const writes = policy.tools.Write === true || policy.tools.Edit === true;
+    if (writes && outcomes.some((id) => ["pass", "revise", "escalate", "report"].includes(id))) {
+      throw new Error(`implementation role ${node.agent} cannot own review or independent evidence`);
+    }
+    if (!writes && outcomes.some((id) => ["done", "failed", "blocked", "clarification_required"].includes(id))) {
+      throw new Error(`read-only role ${node.agent} cannot own implementation`);
+    }
+  }
+}
+
 // Dispatch is stubbed: these tests prove protocol behavior, not model judgment or filesystem isolation.
-test("the loader resolves seven experts, their entry skills and linked implementation guidance", async () => {
+test("the loader resolves separate implementation and read-only review roles with their own skills", async () => {
   const directory = tempDir();
   const copied = join(directory, "rust-engineer");
   cpSync(roleDir, copied, { recursive: true });
   const role = (await discoverRoles(directory)).get("rust-engineer");
   expect(role.name).toBe("Rust Engineer");
-  expect(role.version).toBe("5.0.0");
+  expect(role.version).toBe("5.1.0");
   expect(role.skills).toContain("rust-graph-workflow");
   expect(role.graph).toBeUndefined();
   expect(role.tools).toMatchObject({ graph_declare: true, graph_submit_outcome: false,
@@ -83,6 +104,24 @@ test("the loader resolves seven experts, their entry skills and linked implement
       Write: canImplement, Edit: canImplement });
     expect((child.permission.allow ?? []).includes("Write")).toBe(canImplement);
   }
+  for (const domain of domains) {
+    const writer = role.subagents.find((child) => slug(child) === domain);
+    const reviewer = role.subagents.find((child) => slug(child) === `${domain}-reviewer`);
+    expect(writer.skills).not.toContain(gateSkills[domain]);
+    expect(reviewer.skills).toContain(gateSkills[domain]);
+    expect(reviewer.permission.allow).not.toContain("Edit");
+  }
+  const policies = new Map(role.subagents.map((child) => [`rust-engineer--${slug(child)}`, child]));
+  for (const pattern of patterns) assertDutyAssignments(pattern, policies);
+  const invalidReview = patternOf("rust-specialist-loop");
+  invalidReview.nodes.find((node) => node.id === "review").agent = "rust-engineer--async-concurrency";
+  expect(() => assertDutyAssignments(invalidReview, policies)).toThrow(/implementation.*review/);
+  const invalidImplementation = patternOf("rust-specialist-loop");
+  invalidImplementation.nodes.find((node) => node.id === "change").agent = "rust-engineer--async-concurrency-reviewer";
+  expect(() => assertDutyAssignments(invalidImplementation, policies)).toThrow(/read-only.*implementation/);
+  const disguisedWriter = patternOf("rust-mechanical");
+  disguisedWriter.nodes[0].outcomes.push({ id: "pass" });
+  expect(() => assertDutyAssignments(disguisedWriter, policies)).toThrow(/implementation.*review/);
   const declaredAgents = new Set(children.map((name) => `rust-engineer--${name}`));
   for (const pattern of patterns) for (const node of pattern.nodes) expect(declaredAgents.has(node.agent)).toBe(true);
 });
@@ -154,11 +193,11 @@ const implementation = (snapshot, revisionContext = null) => ({ schema_version: 
 const evidence = (snapshot, partial = false, kind = "domain-evidence") => ({ schema_version: 2,
   kind, outcome_id: "report", status: partial ? "partial" : "complete", reviewed_snapshot: snapshot,
   question: "Fixture lifecycle contract", version_scope: "Pinned fixture runtime and host target",
-  loaded_skills: [kind === "source-evidence" ? "rust-source-tracing" : "rust-async-specialist"],
+  loaded_skills: [kind === "source-evidence" ? "rust-source-tracing" : "rust-async-gate"],
   findings: [], verification: ["fixture observation; no Rust command executed"],
   open_questions: partial ? ["Essential cancellation evidence is unavailable"] : [] });
-const review = (snapshot, outcome, issues = []) => ({ schema_version: 2, kind: "review",
-  outcome_id: outcome, gate: "verification", reviewed_snapshot: snapshot,
+const review = (snapshot, outcome, issues = [], gate = "verification") => ({ schema_version: 2, kind: "review",
+  outcome_id: outcome, gate, reviewed_snapshot: snapshot,
   loaded_skills: ["rust-verification", "rust-testing"], evidence: ["fixture source and accepted reports"],
   blocking_issues: issues, required_revisions: issues.map(({ id }) => ({ id, required_change: "Repair lifecycle" })),
   advisory_notes: [], verification: ["fixture observation; no Rust command executed"] });
@@ -191,6 +230,44 @@ test.each(domains)("%s resolves as an implementation node without unrelated expe
   await start(graph);
   expect(nodeIds(graph)).toEqual(["change"]);
   expect((await settle(graph, "change", "done", implementation("fixture-r0"))).phase).toBe("complete");
+});
+
+test.each(domains)("%s review is dispatched to its separate read-only role", async (domain) => {
+  const graph = declarePattern("rust-specialist-loop", (declaration) => {
+    declaration.name = `rust-separate-${domain}-review`;
+    declaration.nodes.find((node) => node.id === "change").agent = `rust-engineer--${domain}`;
+    const node = declaration.nodes.find((node) => node.id === "review");
+    node.agent = `rust-engineer--${domain}-reviewer`;
+    node.prompt = `Mode: review. Load ${gateSkills[domain]}. Inspect the assigned snapshot against requirements in a session that never implemented it. Keep source read-only.`;
+  });
+  await start(graph);
+  const writer = armed(graph, "change");
+  await settle(graph, "change", "done", implementation("fixture-r0"));
+  const reviewer = armed(graph, "review");
+  expect(reviewer.attemptId).not.toBe(writer.attemptId);
+  expect(reviewer.credential).not.toBe(writer.credential);
+  const data = { ...review("fixture-r0", "pass", [], domain), loaded_skills: [gateSkills[domain]] };
+  expect((await settle(graph, "review", "pass", data)).phase).toBe("complete");
+});
+
+test("implementation cannot approve itself or submit the separate reviewer's verdict", async () => {
+  const graph = declarePattern("rust-specialist-loop");
+  await start(graph);
+  const writer = armed(graph, "change");
+  const selfApproval = await settle(graph, "change", "pass", review("fixture-r0", "pass"));
+  expect(selfApproval.decision).toBeUndefined();
+  expect(selfApproval.refusals.length).toBeGreaterThan(0);
+  expect(nodeIds(graph)).toEqual(["change"]);
+  await settle(graph, "change", "done", implementation("fixture-r0"));
+  const impersonation = await graph.tools.graph_submit_outcome({ graph_id: graph.graphId,
+    node_id: "review", outcome_id: "pass", credential: writer.credential,
+    data: review("fixture-r0", "pass") });
+  expect(impersonation.decision).toBeUndefined();
+  expect(impersonation.refusals.length).toBeGreaterThan(0);
+  const reviewerRepair = await settle(graph, "review", "done", implementation("fixture-r1"));
+  expect(reviewerRepair.decision).toBeUndefined();
+  expect(reviewerRepair.refusals.length).toBeGreaterThan(0);
+  expect((await settle(graph, "review", "pass", review("fixture-r0", "pass"))).phase).toBe("complete");
 });
 
 test.each(["failed", "blocked", "clarification_required"])("%s implementation never releases the review success dependency", async (outcome) => {

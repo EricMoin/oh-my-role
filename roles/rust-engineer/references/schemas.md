@@ -36,8 +36,8 @@ versions and target scope sufficiently precisely for a consumer to check applica
 | revision_context | null initially; on repair the accepted review's source attempt, full issues/required revisions and each issue's current resolution/owner |
 | open_questions | Missing evidence, blockers or the smallest unresolved user decision; empty when resolved |
 
-`done` means the implementation stage returned its assigned work, not independent
-acceptance of the task. Do not use done when that stage's required behavior/checks
+Implementation experts produce only Implementation reports, never independent evidence
+or gate verdicts. `done` means the stage returned its assigned work, not acceptance. Do not use done when that stage's required behavior/checks
 failed; use failed or blocked with the supported reason. An implementation with
 unavailable optional target evidence can finish its narrower scope with explicit limits.
 Later specialists consume forwarded revision context rather than assuming all prior
@@ -60,6 +60,8 @@ every intermediate report as stale nor treats it as approval of later changes.
 | required_revisions | Required outcome for each blocking issue, retaining its id |
 | advisory_notes | Nonblocking preferences or optional limits, not hidden defects |
 
+Only dedicated source-read-only review roles or verification issue Gate reports. A writing
+expert cannot issue an independent verdict or act as reviewer under a different mode.
 Pass requires supported acceptance criteria and no blocking issues. Revise requires
 concrete fixable issues and their required outcomes. Escalate identifies essential
 unavailable evidence, intent or access and the smallest useful recovery action; it
@@ -80,8 +82,9 @@ repair route. Domain evidence nodes do not emit competing repair decisions.
 | verification | Checks actually executed, with configuration/results and explicit missing checks |
 | open_questions | Remaining uncertainty and the smallest useful next check; empty when answered |
 
-Source-tracer uses source-evidence. Other domain experts and investigation synthesis
-use domain-evidence. Complete means the assigned question was answered, even when
+Source-tracer uses source-evidence. Dedicated domain reviewers and investigation synthesis
+use domain-evidence. Implementation self-checks stay in Implementation reports and never
+substitute for these independent evidence producers. Complete means the assigned question was answered, even when
 the answer is negative. Partial preserves essential unknowns. Both settle report;
 neither means the product passes. A consumer must reconcile negative/partial evidence
 and cannot pass while an essential uncertainty still affects the decision.

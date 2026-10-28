@@ -111,11 +111,11 @@ roles:
       undo, cherry-pick, remotes, submodules, worktrees, and conflict resolution
     tags: [git, version-control, vcs, branches, merging, rebasing, stash]
   rust-engineer:
-    version: "5.0.0"
+    version: "5.1.0"
     description: Rust engineering lead that researches the repository and composes
-      Graph v3 specialist execution. Five domain experts implement, investigate
-      and review in scoped nodes, with independent verification, source tracing,
-      parallel evidence and bounded repair loops.
+      Graph v3 execution with five implementation experts and five separate
+      read-only domain reviewers. Independent verification and source tracing
+      support parallel evidence and bounded implementation/review repair loops.
     tags: [rust, cargo, async, systems, unsafe, performance, testing, graph-engine,
         gates, subagents]
   comment-writer:

@@ -4,6 +4,15 @@ description: Review changed Rust concurrency paths for cancellation, task lifecy
 ---
 # Rust Async Gate
 
+This skill belongs to the dedicated read-only async-concurrency-reviewer. Follow the
+[node contract](../../../../references/node-contract.md) and
+[report contract](../../../../references/schemas.md). Review mode returns a gate
+verdict; evidence mode returns complete/partial findings without repair routing
+and does not issue a gate verdict.
+Never implement or repair code under review. Read
+[rust-testing](../../../../skills/rust-testing/SKILL.md) when judging regression
+coverage, and derive expectations independently from requirements and actual code.
+
 ## Establish the concurrency boundary
 
 Locate the actual runtime and version, task owners, shutdown path, shared state and producer/consumer relationships affected by the change. Follow callers and cancellation points beyond the diff when they determine whether an invariant survives. Read `references/schemas.md` for the report contract; the criteria below apply to the assigned risk, not every async function in the workspace.
@@ -26,7 +35,7 @@ Record the runtime, features, reviewed snapshot and actual check outcomes. Prese
 
 ## Verdict
 
-Return gate `async-concurrency` using `references/schemas.md` with stable issue ids. A blocker needs a concrete loss, inconsistent state, unbounded resource path, deadlock, starvation or broken shutdown mechanism and supporting evidence. State the required behavior without mandating a particular token, lock or channel library. Pass when the assigned risk is resolved; revise demonstrated defects; escalate missing essential evidence. Untested optional alternatives and style preferences are advisory.
+In review mode, return gate `async-concurrency` using `references/schemas.md` with stable issue ids. A blocker needs a concrete loss, inconsistent state, unbounded resource path, deadlock, starvation or broken shutdown mechanism and supporting evidence. State the required behavior without mandating a particular token, lock or channel library. Pass when the assigned risk is resolved; revise demonstrated defects; escalate missing essential evidence. Untested optional alternatives and style preferences are advisory.
 
 ## Authoritative references
 

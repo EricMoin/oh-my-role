@@ -5,25 +5,28 @@ investigates enough to choose experts; every worker loads its own entry skill an
 relevant linked guidance before acting. This map sets neither node quotas nor a
 mandatory repository scan.
 
-| Concern | Agent | Implementation skill | Review criteria |
-| --- | --- | --- | --- |
-| Safe logic, ownership, borrowing, traits, errors and consumer contracts | rust-engineer--ownership-api | rust-ownership-and-api | rust-api-gate for API concerns; independent verification covers general behavior |
-| Futures, tasks, synchronization, cancellation, channels and shutdown | rust-engineer--async-concurrency | rust-async-concurrency | rust-async-gate |
-| Unsafe validity, provenance, initialization, ABI and foreign ownership | rust-engineer--unsafe-ffi | rust-unsafe-ffi | rust-safety-gate |
-| Cargo, features, workspaces, build scripts, MSRV, targets and no_std | rust-engineer--cargo-platform | rust-cargo-platform | rust-platform-gate |
-| Workload costs, profiling and attributable optimization | rust-engineer--performance | rust-performance | rust-perf-gate |
-| Independent behavior, architecture, regression checks and evidence fan-in | rust-engineer--verification | Read-only; rust-testing and relevant ownership guidance | rust-verification |
-| Exact-version dependency, compiler or platform uncertainty | rust-engineer--source-tracer | Read-only; rust-source-tracing | Source evidence report, never product approval |
+| Concern | Implementation agent / skill | Read-only review agent / gate skill |
+| --- | --- | --- |
+| Safe logic, ownership, borrowing, traits, errors and consumer contracts | rust-engineer--ownership-api / rust-ownership-and-api | rust-engineer--ownership-api-reviewer / rust-api-gate |
+| Futures, tasks, cancellation, synchronization and shutdown | rust-engineer--async-concurrency / rust-async-concurrency | rust-engineer--async-concurrency-reviewer / rust-async-gate |
+| Unsafe validity, provenance, initialization, ABI and foreign ownership | rust-engineer--unsafe-ffi / rust-unsafe-ffi | rust-engineer--unsafe-ffi-reviewer / rust-safety-gate |
+| Cargo, features, workspaces, build scripts, MSRV, targets and no_std | rust-engineer--cargo-platform / rust-cargo-platform | rust-engineer--cargo-platform-reviewer / rust-platform-gate |
+| Workload costs, profiling and measured optimization | rust-engineer--performance / rust-performance | rust-engineer--performance-reviewer / rust-perf-gate |
 
-Domain experts support implement, evidence and review in separately scoped nodes.
-Choose a separate review session for independent judgment; one node must not review
-its own implementation. Combine closely related concerns in one expert assignment;
-use multiple experts when their responsibilities or evidence differ. General safe
-Rust does not require a public API or one of the special risk-domain keywords.
+`rust-engineer--verification` supplies independent general behavior, architecture,
+regression review and evidence convergence using rust-verification/rust-testing.
+`rust-engineer--source-tracer` supplies exact-version source evidence using
+rust-source-tracing. Both stay source-read-only.
+
+The implementation roles only implement and repair. Their separate reviewer counterparts
+review or gather independent evidence without changing source. Never assign both duties
+to the same node, agent role or session, including by switching modes after implementation.
+General safe Rust belongs to ownership-api even without public visibility or special risk
+keywords; verification covers general behavior beyond the API-specific gate criteria.
 
 `rust-testing` supports all implementation nodes. For interacting domains, sequence
-shared-source writers, forward accepted revision context, and converge evidence into
-one repair verdict. Independent read-only questions remain parallel.
+shared-source writers, forward accepted revision context, and converge dedicated reviewers'
+evidence into one repair verdict. Independent read-only questions remain parallel.
 
 ## Discovery hints and counterexamples
 

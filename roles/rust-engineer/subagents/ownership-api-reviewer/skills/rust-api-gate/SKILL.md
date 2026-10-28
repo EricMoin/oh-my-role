@@ -4,6 +4,15 @@ description: Review Rust API changes for downstream compatibility, usable contra
 ---
 # Rust API Gate
 
+This skill belongs to the dedicated read-only ownership-api-reviewer. Follow the
+[node contract](../../../../references/node-contract.md) and
+[report contract](../../../../references/schemas.md). Review mode returns a gate
+verdict; evidence mode returns complete/partial findings without repair routing
+and does not issue a gate verdict.
+Never implement or repair code under review. Read
+[rust-testing](../../../../skills/rust-testing/SKILL.md) when judging regression
+coverage, and derive expectations independently from requirements and actual code.
+
 ## Establish the contract
 
 Identify the affected consumers and compatibility promise before reviewing design. A `pub` item in a binary or private module is not automatically a published crate API. Inspect re-exports, callers, the release baseline, `Cargo.toml`, enabled features and the supported Rust version. Distinguish a permitted breaking change from an accidental one.
@@ -27,7 +36,7 @@ Select Cargo package, target and feature flags from project evidence. Preserve m
 
 ## Verdict
 
-Return gate `ownership-api` using `references/schemas.md`; keep stable issue ids when reviewing a revision. Each blocking issue links a file or observed check to a specific broken consumer or contract and states the required result. Pass with scoped evidence when the assigned compatibility risk is resolved; revise for a demonstrated violation. Escalate essential unknowns such as an unavailable release baseline or undecided compatibility promise. Preferences about naming, dispatch style or future extensibility belong in advisory notes unless they cause an evidenced failure.
+In review mode, return gate `ownership-api` using `references/schemas.md`; keep stable issue ids when reviewing a revision. Each blocking issue links a file or observed check to a specific broken consumer or contract and states the required result. Pass with scoped evidence when the assigned compatibility risk is resolved; revise for a demonstrated violation. Escalate essential unknowns such as an unavailable release baseline or undecided compatibility promise. Preferences about naming, dispatch style or future extensibility belong in advisory notes unless they cause an evidenced failure.
 
 ## Authoritative references
 

@@ -30,7 +30,9 @@ production Rust file changes. Public-contract changes require actual downstream 
 ## Coverage and efficiency
 
 Select specialists by a concrete implementation responsibility or evidence question.
-The ownership/API specialist also handles ordinary safe Rust. Verification covers general
+The ownership/API implementation expert also handles ordinary safe Rust. Each domain has
+its own separate source-read-only reviewer. Writing experts never review their own work or
+produce independent evidence; assign those nodes to dedicated reviewers. Verification covers general
 correctness, architecture and regression quality; it is not restricted to the five special
 risk domains. All material risks need evidence or an explicit unresolved gap.
 

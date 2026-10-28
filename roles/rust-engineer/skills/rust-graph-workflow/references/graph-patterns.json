@@ -76,7 +76,7 @@
       {
         "id": "review",
         "agent": "rust-engineer--verification",
-        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -203,7 +203,7 @@
       {
         "id": "review",
         "agent": "rust-engineer--verification",
-        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -308,8 +308,8 @@
       },
       {
         "id": "async-evidence",
-        "agent": "rust-engineer--async-concurrency",
-        "prompt": "Mode: evidence. Load rust-async-specialist. Consume change/done and independently examine the specified cancellation/shutdown property on that snapshot. Inspect the actual operation and deterministic failure paths. Report supported findings and limits, including negative evidence; do not emit a repair verdict or alter source. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "agent": "rust-engineer--async-concurrency-reviewer",
+        "prompt": "Mode: evidence. Load rust-async-gate. Consume change/done and independently examine the specified cancellation/shutdown property on that snapshot. Inspect the actual operation and deterministic failure paths. Report supported findings and limits, including negative evidence; do not emit a repair verdict or alter source. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -330,8 +330,8 @@
       },
       {
         "id": "platform-evidence",
-        "agent": "rust-engineer--cargo-platform",
-        "prompt": "Mode: evidence. Load rust-platform-specialist. Consume change/done and examine the specified affected target/feature and host/build boundary. Use the assigned isolated check output directory. Distinguish host compilation, target linking and target execution; report unavailable essential evidence as partial. Stay source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "agent": "rust-engineer--cargo-platform-reviewer",
+        "prompt": "Mode: evidence. Load rust-platform-gate. Consume change/done and examine the specified affected target/feature and host/build boundary. Use the assigned isolated check output directory. Distinguish host compilation, target linking and target execution; report unavailable essential evidence as partial. Stay source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -353,7 +353,7 @@
       {
         "id": "review",
         "agent": "rust-engineer--verification",
-        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: review. Load rust-verification. Independently verify the implemented contract, architecture and regression quality against the supplied acceptance criteria. Inspect the actual final diff and every required input, including negative or partial evidence. Pass only when supported; revise for concrete fixable issues; escalate for essential unknowns. You own the single repair route and remain source-read-only. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -442,7 +442,7 @@
       {
         "id": "source-behavior",
         "agent": "rust-engineer--source-tracer",
-        "prompt": "Mode: investigation. Load rust-source-tracing. Answer the supplied exact-version runtime behavior question using readable pinned source/doc paths. Return source-evidence, preserving essential unknowns and applicability. This is a pre-implementation investigation. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: investigation. Load rust-source-tracing. Answer the supplied exact-version runtime behavior question using readable pinned source/doc paths. Return source-evidence, preserving essential unknowns and applicability. This is a pre-implementation investigation. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -458,7 +458,7 @@
       {
         "id": "source-versions",
         "agent": "rust-engineer--source-tracer",
-        "prompt": "Mode: investigation. Load rust-source-tracing. Establish the supplied resolved version/features/target context from manifests, lockfile and available source. Return source-evidence and distinguish resolved facts from assumptions. Investigate independently of the behavior question. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: investigation. Load rust-source-tracing. Establish the supplied resolved version/features/target context from manifests, lockfile and available source. Return source-evidence and distinguish resolved facts from assumptions. Investigate independently of the behavior question. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
@@ -474,7 +474,7 @@
       {
         "id": "synthesis",
         "agent": "rust-engineer--verification",
-        "prompt": "Mode: synthesis. Load rust-verification. This is investigation synthesis. Consume both source reports, reconcile applicability and contradictions, and answer the named design premise. Return domain-evidence with complete or partial status and open questions; do not claim product acceptance or approve unwritten code. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot.",
+        "prompt": "Mode: synthesis. Load rust-verification. This is investigation synthesis. Consume both source reports, reconcile applicability and contradictions, and answer the named design premise. Return domain-evidence with complete or partial status and open questions; do not claim product acceptance or approve unwritten code. Use the report contract in references/schemas.md, record actual loaded skills and checks, and preserve the supplied source scope and snapshot. Use a dedicated read-only role and a session that never implemented the change. Establish expectations independently from requirements and source; do not inherit the implementation conversation or repair findings.",
         "completion": {
           "mode": "explicit"
         },
