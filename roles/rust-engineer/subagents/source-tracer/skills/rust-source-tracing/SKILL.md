@@ -47,7 +47,7 @@ Set `outcome_id: report`, `kind: source-evidence` and `status: complete` when th
 question is answered within its stated scope. Use `status: partial` for unresolved evidence,
 and name what is missing and who or what could resolve it. Both statuses settle `report`.
 
-Include the inspected snapshot, question, version scope, findings with evidence and limits,
-checks actually performed, and open questions. A disproven assumption can be a complete
-investigation. It is still not product acceptance. Do not repair production code, select
-downstream gates, or turn unavailable evidence into a pass.
+Include the inspected snapshot, question, version scope, actual loaded_skills, findings
+with evidence and limits, checks actually performed, and open questions. A disproven
+assumption can be a complete investigation. It is still not product acceptance. Do not
+repair production code, select downstream gates, or turn unavailable evidence into a pass.

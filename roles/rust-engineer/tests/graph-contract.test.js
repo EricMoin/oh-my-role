@@ -1,703 +1,316 @@
-// Run: ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/rust-engineer/tests/graph-contract.test.js
-// The real rolebox loader, the real v3 declaration front end, the real graph v3 toolset
-// and the real host drive the real role files on disk. The review declaration is read out
-// of references/graph-protocol.md, so the documented contract and the tested contract are
-// the same object. The only stand-in is the dispatch seam, which records the requests the
-// engine hands it: no model runs, no worker executes and nothing is published. afterEach
-// deletes every temp dir, which is where each declared graph's persisted plan lives, so no
-// declared graph outlives its test.
 import { test, expect, afterEach } from "vitest";
 import { mkdtempSync, cpSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-if (!process.env.ROLEBOX_ROOT) {
-  throw new Error(
-    "Set ROLEBOX_ROOT to the rolebox checkout to validate, for example " +
-      "ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs " +
-      "roles/rust-engineer/tests/graph-contract.test.js",
-  );
-}
+if (!process.env.ROLEBOX_ROOT) throw new Error("Set ROLEBOX_ROOT to the rolebox checkout.");
 const root = resolve(process.env.ROLEBOX_ROOT);
-
-/** Load one real module from the rolebox checkout by absolute path. */
-async function engine(path) {
-  try {
-    return await import(pathToFileURL(join(root, path)).href);
-  } catch (error) {
-    throw new Error(
-      `graph-contract: cannot load ${path} from ROLEBOX_ROOT=${root}: ` +
-        (error instanceof Error ? error.message : String(error)),
-    );
-  }
-}
-
+const engine = (path) => import(pathToFileURL(join(root, path)).href);
 const { createGraphToolSet } = await engine("src/graph/tools/graph-tools.ts");
-const { parseGraphDeclarationV3 } = await engine(
-  "src/graph/compiler/parse-declaration-v3.ts",
-);
+const { parseGraphDeclarationV3 } = await engine("src/graph/compiler/parse-declaration-v3.ts");
 const { compileGraph } = await engine("src/graph/compiler/compile.ts");
 const { discoverRoles } = await engine("src/loader/role-loader.ts");
 const { resolveSkills } = await engine("src/resolver/skill-resolver.ts");
 const { resolveAllRoles } = await engine("src/resolver/orchestrator.ts");
 const { OutcomeHost } = await engine("src/graph/host/outcome-host.ts");
-const { HostCredentialVault } = await engine(
-  "src/graph/host/credential-vault.ts",
-);
+const { HostCredentialVault } = await engine("src/graph/host/credential-vault.ts");
 const { engineStateDir } = await engine("src/graph/persistence/paths.ts");
-const { SqliteAcceptanceLedger } = await engine(
-  "src/graph/ledger/sqlite-ledger.ts",
-);
-
-// The v3 surface this role is written against: one declaring session that owns
-// graph_declare/control/status/audit, and read-only workers that only submit their
-// declared outcome. None of the retired graph v2 entry points may reappear.
-const RETIRED_V2_TOOLS = [
-  "graph_create",
-  "graph_add_node",
-  "graph_add_edge",
-  "graph_add_loop",
-  "graph_run",
-  "graph_approve",
-  "graph_cancel",
-];
-const V3_TOOLS = [
-  "graph_declare",
-  "graph_submit_outcome",
-  "graph_control",
-  "graph_status",
-  "graph_audit",
-];
-const V3_DECLARER_TOOLS = {
-  graph_declare: true,
-  graph_control: true,
-  graph_status: true,
-  graph_audit: true,
-  graph_submit_outcome: false,
-  Write: true,
-  Edit: true,
-  Bash: true,
-};
-const V3_WORKER_TOOLS = {
-  graph_declare: false,
-  graph_control: false,
-  graph_status: false,
-  graph_audit: false,
-  graph_submit_outcome: true,
-  Write: false,
-  Edit: false,
-  Bash: true,
-};
-const WORKER_ALLOW = [
-  "Bash",
-  "Glob",
-  "Grep",
-  "Read",
-  "graph_submit_outcome",
-];
-const SUBAGENT_SLUGS = [
-  "api-reviewer",
-  "async-auditor",
-  "cross-platform-checker",
-  "perf-profiler",
-  "safety-reviewer",
-  "source-tracer",
-];
-// The independent catalog preserves the five gate identities.
-const GATE_NODES = ["api", "async", "cross-platform", "performance", "safety"];
-const GATE_AGENTS = {
-  safety: "rust-engineer--safety-reviewer",
-  async: "rust-engineer--async-auditor",
-  api: "rust-engineer--api-reviewer",
-  performance: "rust-engineer--perf-profiler",
-  "cross-platform": "rust-engineer--cross-platform-checker",
-};
-// The canonical `gate` field value of each node, per references/rust-domains.md.
-const GATE_NAMES = {
-  safety: "safety",
-  async: "async-audit",
-  api: "api",
-  performance: "perf",
-  "cross-platform": "cross-platform",
-};
-const GATE_OUTCOMES = ["escalate", "pass", "revise"];
-const DECLARED_CHILD_KEYS = [
-  "agent",
-  "budget",
-  "completion",
-  "id",
-  "outcomes",
-  "prompt",
-];
+const { SqliteAcceptanceLedger } = await engine("src/graph/ledger/sqlite-ledger.ts");
 
 const roleDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const protocolPath = join(roleDir, "references", "graph-protocol.md");
-
+const patterns = JSON.parse(readFileSync(join(roleDir,
+  "skills/rust-graph-workflow/references/graph-patterns.json"), "utf8"));
+const domains = ["ownership-api", "async-concurrency", "unsafe-ffi", "cargo-platform", "performance"];
+const children = [...domains, "verification", "source-tracer"].sort();
+const slug = (child) => child.name.toLowerCase().replaceAll(" ", "-");
+const v3 = ["graph_declare", "graph_control", "graph_status", "graph_audit", "graph_submit_outcome"];
+const retired = ["graph_create", "graph_add_node", "graph_add_edge", "graph_add_loop",
+  "graph_run", "graph_approve", "graph_cancel", "dispatch", "dispatch_output", "dispatch_cancel"];
 const tempDirs = [];
-afterEach(() => {
-  for (const dir of tempDirs.splice(0)) {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-function tempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+afterEach(() => { for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
+function tempDir() {
+  const dir = mkdtempSync(join(tmpdir(), "rust-role-contract-"));
   tempDirs.push(dir);
   return dir;
 }
-
-/** The loader keeps each manifest's display name; its directory is the slug. */
-const childSlug = (child) => child.name.toLowerCase().replaceAll(" ", "-");
-
-// ── The canonical declaration, read from the shipped protocol reference ─────
-
-function readShippedDeclarations() {
-  const text = readFileSync(protocolPath, "utf8");
-  const blocks = [...text.matchAll(/```json[ \t]*\r?\n([\s\S]*?)\r?\n```/g)];
-  if (blocks.length !== 2) {
-    throw new Error(
-      `${protocolPath}: expected the gate catalog and evidence dependency examples, found ${blocks.length}`,
-    );
-  }
-  return blocks.map((block) => JSON.parse(block[1]));
+function patternOf(name) {
+  const found = patterns.find((pattern) => pattern.name === name);
+  if (!found) throw new Error(`Unknown shipped Rust pattern: ${name}`);
+  return structuredClone(found);
 }
 
-const declarations = readShippedDeclarations();
-const declaration = declarations.find((item) => item.name === "rust-review-sample-r0");
-const evidenceDeclaration = declarations.find(
-  (item) => item.name === "rust-evidence-review-sample-r0",
-);
-
-// ── (a) Role loading through the real loader ────────────────────────────────
-
-test("rolebox loads the lead, its six read-only specialist subagents and every declared skill", async () => {
-  const directory = tempDir("rust-role-loader-");
-  cpSync(roleDir, join(directory, "rust-engineer"), { recursive: true });
+// Dispatch is stubbed: these tests prove protocol behavior, not model judgment or filesystem isolation.
+test("the loader resolves seven experts, their entry skills and linked implementation guidance", async () => {
+  const directory = tempDir();
+  const copied = join(directory, "rust-engineer");
+  cpSync(roleDir, copied, { recursive: true });
   const role = (await discoverRoles(directory)).get("rust-engineer");
-  expect(role).toBeDefined();
-  expect(role.mode).toBe("primary");
+  expect(role.name).toBe("Rust Engineer");
+  expect(role.version).toBe("5.0.0");
+  expect(role.skills).toContain("rust-graph-workflow");
+  expect(role.graph).toBeUndefined();
+  expect(role.tools).toMatchObject({ graph_declare: true, graph_submit_outcome: false,
+    Write: true, Edit: true, Bash: true });
+  expect(role.subagents.map(slug).sort()).toEqual(children);
   const [resolved] = await resolveAllRoles(new Map([["rust-engineer", role]]), {
-    roleboxDir: directory,
-    globalSkillsDir: join(directory, "absent-global-skills"),
-    configDir: join(directory, "absent-global-config"),
-    builtinDir: join(root, "functions"),
+    roleboxDir: directory, globalSkillsDir: join(directory, "absent-skills"),
+    configDir: join(directory, "absent-config"), builtinDir: join(root, "functions"),
     roleFunctionsMap: new Map(),
   });
-  expect(resolved.subagents).toHaveLength(SUBAGENT_SLUGS.length);
   for (const child of resolved.subagents) {
-    expect(child.references.map((reference) => reference.name)).toEqual(
-      expect.arrayContaining(["schemas", "rust-domains"]),
-    );
+    expect(child.references.map((ref) => ref.name)).toEqual(expect.arrayContaining(["schemas", "node-contract"]));
   }
-
-  // The retired v2 orchestration block is gone: under the outcome protocol the
-  // declaring session holds the orchestration tools and workers only submit.
-  expect(role.graph).toBeUndefined();
-  expect(role.tools).toEqual(V3_DECLARER_TOOLS);
-  for (const retired of RETIRED_V2_TOOLS) {
-    expect(role.tools[retired]).toBeUndefined();
-  }
-
-  expect(role.subagents.map(childSlug).sort()).toEqual(SUBAGENT_SLUGS);
-  for (const child of role.subagents) {
-    const slug = childSlug(child);
-    // Each gate worker's tool block is exactly the worker contract, and the
-    // dispatcher tools stay with the declaring lead.
-    expect(child.tools).toEqual(V3_WORKER_TOOLS);
-    for (const retired of RETIRED_V2_TOOLS) {
-      expect(child.tools[retired]).toBeUndefined();
-    }
-    const allow = [...(child.permission?.allow ?? [])];
-    expect(allow.sort()).toEqual([...WORKER_ALLOW].sort());
-    expect(allow).not.toContain("Write");
-    expect(allow).not.toContain("Edit");
-    expect(slug).not.toBe("");
-  }
-
-  // Every declared skill of the primary and of all children resolves to a real
-  // file, and every prompt is substantial.
-  const subjects = [
-    [role, join(directory, "rust-engineer")],
-    ...role.subagents.map((child) => [
-      child,
-      join(directory, "rust-engineer", "subagents", childSlug(child)),
-    ]),
-  ];
+  const subjects = [[role, copied], ...role.subagents.map((child) =>
+    [child, join(copied, "subagents", slug(child))])];
   for (const [config, path] of subjects) {
-    expect(config.prompt.length).toBeGreaterThan(50);
-    expect(config.skills.length).toBeGreaterThan(0);
-    const resolved = await resolveSkills(
-      config.skills,
-      path,
-      join(directory, "absent-global-skills"),
-    );
-    expect(resolved.map((skill) => skill.name).sort()).toEqual(
-      [...config.skills].sort(),
-    );
-  }
-});
-
-test("the shipped toolset exposes the v3 surface and no retired v2 entry point", () => {
-  const tools = createGraphToolSet({
-    stateDir: tempDir("rust-graph-tools-"),
-  });
-  for (const name of V3_TOOLS) {
-    expect(typeof tools[name]).toBe("function");
-  }
-  for (const retired of RETIRED_V2_TOOLS) {
-    expect(tools[retired]).toBeUndefined();
-  }
-});
-
-// ── (b) The shipped declaration against the real v3 front end ───────────────
-
-test.each(declarations)("the shipped $name declaration compiles into an executable v3 plan", (example) => {
-  const parsed = parseGraphDeclarationV3(example);
-  if (!parsed.ok) {
-    throw new Error(
-      `${example.name} is not a valid v3 declaration: ` +
-        parsed.errors
-          .map((issue) => `${issue.code} at ${issue.path} (${issue.message})`)
-          .join("; "),
-    );
-  }
-  const compiled = compileGraph(parsed.declaration, { supportedValidators: [] });
-  if (!compiled.ok) {
-    throw new Error(
-      `${example.name} failed to compile: ` +
-        compiled.errors
-          .map((issue) => `${issue.code} at ${issue.path} (${issue.message})`)
-          .join("; "),
-    );
-  }
-  expect(compiled.kind).toBe("executable");
-  const plan = compiled.plan;
-  expect(plan.declarationVersion).toBe(3);
-  expect(plan.graphId).toBe(example.name);
-  expect(plan.terminalOutcomes.length).toBeGreaterThan(0);
-  expect(example.max_retries).toBeUndefined();
-  expect(example.loop_groups).toBeUndefined();
-  expect(Number.isInteger(example.budget.max_executions)).toBe(true);
-  expect(example.budget.max_executions).toBeGreaterThanOrEqual(example.nodes.length);
-
-  for (const edge of plan.edges) {
-    const source = plan.nodes.find((node) => node.id === edge.from);
-    expect(source).toBeDefined();
-    expect(source.outcomes.map((outcome) => outcome.id)).toContain(edge.outcome);
-  }
-  for (const node of example.nodes) {
-    expect(node.completion).toEqual({ mode: "explicit" });
-    expect(node.budget.timeout_ms).toBeGreaterThan(0);
-    expect(Number.isFinite(node.budget.timeout_ms)).toBe(true);
-    expect(node.max_retries).toBeUndefined();
-    expect(node.agent).toMatch(/^rust-engineer--[a-z0-9-]+$/);
-    const slug = node.agent.slice("rust-engineer--".length);
-    expect(SUBAGENT_SLUGS).toContain(slug);
-    expect(existsSync(join(roleDir, "subagents", slug, "role.yaml"))).toBe(true);
-    for (const input of node.inputs ?? []) {
-      const producer = plan.nodes.find((entry) => entry.id === input.from);
-      expect(producer).toBeDefined();
-      expect(producer.outcomes.map((outcome) => outcome.id)).toContain(input.outcome);
-      expect(plan.edges).toEqual(expect.arrayContaining([
-        expect.objectContaining({ from: input.from, to: node.id, outcome: input.outcome }),
-      ]));
+    const skills = await resolveSkills(config.skills, path, join(directory, "absent-skills"));
+    expect(skills.map((skill) => skill.name).sort()).toEqual([...config.skills].sort());
+    for (const name of config.skills) {
+      const file = join(path, "skills", name, "SKILL.md");
+      const body = readFileSync(file, "utf8");
+      for (const [, target] of body.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+        if (/^https?:/.test(target)) continue;
+        expect(existsSync(resolve(dirname(file), target.split("#")[0])), `${file}: ${target}`).toBe(true);
+      }
     }
+    for (const name of retired) expect(config.tools[name]).toBeUndefined();
   }
+  for (const child of role.subagents) {
+    const canImplement = domains.includes(slug(child));
+    expect(child.tools).toMatchObject({ graph_declare: false, graph_control: false,
+      graph_status: false, graph_audit: false, graph_submit_outcome: true,
+      Write: canImplement, Edit: canImplement });
+    expect((child.permission.allow ?? []).includes("Write")).toBe(canImplement);
+  }
+  const declaredAgents = new Set(children.map((name) => `rust-engineer--${name}`));
+  for (const pattern of patterns) for (const node of pattern.nodes) expect(declaredAgents.has(node.agent)).toBe(true);
 });
 
-test("the catalog preserves independent gates and the optional evidence example declares a genuine all-input join", () => {
-  expect(declaration.nodes.map((node) => node.id).sort()).toEqual(GATE_NODES);
-  expect(declaration.edges).toEqual([]);
-  for (const node of declaration.nodes) {
-    expect(Object.keys(node).sort()).toEqual(DECLARED_CHILD_KEYS);
-    expect(node.agent).toBe(GATE_AGENTS[node.id]);
-    expect(node.inputs).toBeUndefined();
-    expect(node.join).toBeUndefined();
-    expect(node.outcomes.map((outcome) => outcome.id).sort()).toEqual(GATE_OUTCOMES);
-  }
-
-  expect(evidenceDeclaration.nodes.map((node) => node.id).sort()).toEqual([
-    "async", "source-behavior", "source-versions",
-  ]);
-  for (const producer of evidenceDeclaration.nodes.filter((node) => node.id !== "async")) {
-    expect(producer.agent).toBe("rust-engineer--source-tracer");
-    expect(producer.outcomes).toEqual([{ id: "report" }]);
-    expect(producer.inputs).toBeUndefined();
-    expect(producer.join).toBeUndefined();
-  }
-  const consumer = evidenceDeclaration.nodes.find((node) => node.id === "async");
-  expect(consumer.agent).toBe(GATE_AGENTS.async);
-  expect(consumer.join).toEqual({ strategy: "all" });
-  expect(consumer.outcomes.map((outcome) => outcome.id).sort()).toEqual(GATE_OUTCOMES);
-  expect(consumer.inputs).toEqual([
-    { from: "source-behavior", outcome: "report" },
-    { from: "source-versions", outcome: "report" },
-  ]);
-  expect(evidenceDeclaration.edges).toEqual(consumer.inputs.map((input) => ({
-    ...input, to: "async",
-  })));
+test("the runtime exposes the current graph surface", () => {
+  const tools = createGraphToolSet({ stateDir: tempDir() });
+  for (const name of v3) expect(typeof tools[name]).toBe("function");
+  for (const name of retired) expect(tools[name]).toBeUndefined();
 });
 
-// ── (c) The real declare/dispatch/settle path, in process ───────────────────
+for (const pattern of patterns) {
+  test(`${pattern.name} compiles with finite execution and loop budgets`, () => {
+    const parsed = parseGraphDeclarationV3(pattern);
+    expect(parsed.ok, JSON.stringify(parsed.errors)).toBe(true);
+    const compiled = compileGraph(parsed.declaration, { supportedValidators: [] });
+    expect(compiled.ok, JSON.stringify(compiled.errors)).toBe(true);
+    expect(compiled.kind).toBe("executable");
+    expect(compiled.plan.graphId).toBe(pattern.name);
+    expect(pattern.budget.max_executions).toBeGreaterThan(0);
+    expect(compiled.plan.loopGroups).toHaveLength((pattern.loop_groups ?? []).length);
+    for (const node of pattern.nodes) {
+      expect(node.completion.mode).toBe("explicit");
+      expect(node.budget.timeout_ms).toBeGreaterThan(0);
+      expect(node).not.toHaveProperty("max_retries");
+    }
+  });
+}
 
-const NOW = 1_700_000_000_000;
-
-/**
- * One declared graph over one temp workspace: the real toolset persists the real
- * shipped plan, the dispatch seam records every attempt the engine arms, and the real
- * host credential vault stores the credentials those attempts carry.
- */
-function declareGraph(selectedDeclaration = declaration) {
-  const dir = tempDir("rust-graph-");
+function declarePattern(name, mutate = () => {}) {
+  const dir = tempDir();
   const requests = [];
   const tools = createGraphToolSet({
-    stateDir: dir,
-    outcomeNow: NOW,
-    outcomeDispatch: (request) => {
-      requests.push(request);
-    },
-    credentialIsolation: HostCredentialVault.open({
-      root: engineStateDir(dir),
-      id: "rust-engineer-contract:credential-vault",
-    }).capability(),
+    stateDir: dir, outcomeNow: 1_700_000_000_000,
+    outcomeDispatch: (request) => { requests.push(request); },
+    credentialIsolation: HostCredentialVault.open({ root: engineStateDir(dir),
+      id: "rust-role-contract-v5:vault" }).capability(),
   });
-  const declared = tools.graph_declare({
-    declaration: structuredClone(selectedDeclaration),
-  });
+  const declaration = patternOf(name);
+  mutate(declaration);
+  const declared = tools.graph_declare({ declaration });
   return { dir, requests, tools, declared, graphId: declared.graph_id };
 }
-
-/**
- * Give the declared graph its first execution through the host's own boot sweep, the
- * same OutcomeHost.recoverDeclaredGraphs a shipped host calls. The host is closed
- * afterwards; the credentials it minted stay in the vault the toolset reads.
- */
 async function start(graph) {
-  const host = OutcomeHost.open({
-    workspaceDir: graph.dir,
-    storeRoot: engineStateDir(graph.dir),
-    deliver: (request) => {
-      graph.requests.push(request);
-    },
-    durability: "memory",
-  });
-  try {
-    await host.recoverDeclaredGraphs();
-  } finally {
-    host.close();
-  }
+  const host = OutcomeHost.open({ workspaceDir: graph.dir, storeRoot: engineStateDir(graph.dir),
+    deliver: (request) => { graph.requests.push(request); }, durability: "memory" });
+  try { await host.recoverDeclaredGraphs(); } finally { host.close(); }
 }
-
-const attemptIds = (requests) => requests.map((request) => request.attemptId);
-const nodeIds = (requests) => requests.map((request) => request.nodeId);
-
-/** The request that armed one node, failing when the engine never armed it. */
-function armed(requests, nodeId) {
-  const found = requests.filter((request) => request.nodeId === nodeId);
-  if (found.length === 0) {
-    throw new Error(
-      `fixture: node "${nodeId}" was never dispatched (dispatched: ` +
-        requests
-          .map((request) => `${request.nodeId}@${request.attemptId}`)
-          .join(", ") +
-        ")",
-    );
-  }
-  return found[found.length - 1];
+const nodeIds = (graph) => graph.requests.map((request) => request.nodeId);
+function armed(graph, nodeId) {
+  const found = graph.requests.filter((request) => request.nodeId === nodeId).at(-1);
+  if (!found) throw new Error(`${nodeId} was not dispatched: ${nodeIds(graph)}`);
+  return found;
 }
-
-/** Settle the latest attempt of one node through the real submission ingress. */
-function settle(graph, nodeId, outcomeId, extra = {}) {
-  const request = armed(graph.requests, nodeId);
-  return graph.tools.graph_submit_outcome({
-    graph_id: graph.graphId,
-    node_id: nodeId,
-    outcome_id: outcomeId,
-    credential: request.credential,
-    ...extra,
-  });
+function settle(graph, nodeId, outcomeId, data) {
+  return graph.tools.graph_submit_outcome({ graph_id: graph.graphId, node_id: nodeId,
+    outcome_id: outcomeId, credential: armed(graph, nodeId).credential,
+    ...(data === undefined ? {} : { data }) });
 }
-
-async function openLedger(dir) {
-  return SqliteAcceptanceLedger.create(engineStateDir(dir));
+function status(graph) {
+  const raw = graph.tools.graph_status({ graph_id: graph.graphId, scope: "all", format: "json",
+    include_output: true, include_history: true });
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
+const implementation = (snapshot, revisionContext = null) => ({ schema_version: 2,
+  kind: "implementation", outcome_id: "done", snapshot, changed_files: ["src/worker.rs"],
+  summary: "Fixture implementation", loaded_skills: ["rust-async-specialist", "rust-async-concurrency"],
+  evidence: ["fixture source"], verification: ["fixture observation; no Rust command executed"],
+  revision_context: revisionContext, open_questions: [] });
+const evidence = (snapshot, partial = false, kind = "domain-evidence") => ({ schema_version: 2,
+  kind, outcome_id: "report", status: partial ? "partial" : "complete", reviewed_snapshot: snapshot,
+  question: "Fixture lifecycle contract", version_scope: "Pinned fixture runtime and host target",
+  loaded_skills: [kind === "source-evidence" ? "rust-source-tracing" : "rust-async-specialist"],
+  findings: [], verification: ["fixture observation; no Rust command executed"],
+  open_questions: partial ? ["Essential cancellation evidence is unavailable"] : [] });
+const review = (snapshot, outcome, issues = []) => ({ schema_version: 2, kind: "review",
+  outcome_id: outcome, gate: "verification", reviewed_snapshot: snapshot,
+  loaded_skills: ["rust-verification", "rust-testing"], evidence: ["fixture source and accepted reports"],
+  blocking_issues: issues, required_revisions: issues.map(({ id }) => ({ id, required_change: "Repair lifecycle" })),
+  advisory_notes: [], verification: ["fixture observation; no Rust command executed"] });
 
-const acceptedAttempts = (ledger, graphId) =>
-  ledger
-    .acceptedEvents(graphId)
-    .map((event) => event.attemptId)
-    .sort();
-
-/** The gate report contract of references/schemas.md, as schema_version 1 data. */
-const REPORT_STATUS = {
-  pass: "pass",
-  revise: "fail",
-  escalate: "needs-user-input",
-};
-function gateReport(gate, outcomeId, extra = {}) {
-  return {
-    schema_version: 1,
-    outcome_id: outcomeId,
-    gate,
-    status: REPORT_STATUS[outcomeId] ?? "pass",
-    reviewed_snapshot: "rust-sample@abc1234 + uncommitted working tree",
-    evidence: [`${gate}: inspected the reviewed snapshot read-only`],
-    blocking_issues: [],
-    required_revisions: [],
-    advisory_notes: [],
-    verification: ["read-only inspection of the reviewed snapshot"],
-    engineering_state_patch: {},
-    ...extra,
-  };
-}
-
-function sourceReport(question, status = "complete") {
-  return {
-    schema_version: 1,
-    outcome_id: "report",
-    kind: "source-evidence",
-    status,
-    reviewed_snapshot: "rust-sample@abc1234 + uncommitted working tree",
-    question,
-    version_scope: "Fixture runtime dependency pinned by the supplied Cargo.lock; host target",
-    findings: status === "complete" ? [{
-      claim: "The supplied fixture contract supports the recorded behavior",
-      evidence: ["fixture dependency source and resolved lockfile"],
-      limits: "This fixture represents inspected evidence; no Rust command was executed",
-    }] : [],
-    verification: ["Read-only fixture evidence inspection"],
-    open_questions: status === "partial" ? [
-      "Essential cancellation contract is unavailable for the resolved dependency revision",
-    ] : [],
-  };
-}
-
-/** graph_status with the documented json shape the lead reads accepted results from. */
-function statusJson(tools, graphId) {
-  const raw = tools.graph_status({
-    graph_id: graphId,
-    scope: "all",
-    format: "json",
-    include_output: true,
-    include_history: true,
-  });
-  if (typeof raw !== "string") return raw;
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(
-      `graph_status format json returned no JSON document: ${raw.slice(0, 200)} ` +
-        `(${error instanceof Error ? error.message : String(error)})`,
-    );
-  }
-}
-
-/** The run phase, wherever the status document nests it. */
-function phaseOf(status) {
-  const seen = new Set();
-  const walk = (value) => {
-    if (value === null || typeof value !== "object" || seen.has(value)) {
-      return undefined;
-    }
-    seen.add(value);
-    if (typeof value.phase === "string") return value.phase;
-    for (const entry of Object.values(value)) {
-      const found = walk(entry);
-      if (found !== undefined) return found;
-    }
-    return undefined;
-  };
-  const phase = walk(status);
-  if (phase === undefined) {
-    throw new Error(
-      `graph_status json reports no phase: ${JSON.stringify(status).slice(0, 200)}`,
-    );
-  }
-  return phase;
-}
-
-test.each(GATE_NODES)("%s can run alone without requiring source evidence or unrelated gates", async (nodeId) => {
-  const selected = structuredClone(declaration);
-  selected.name = `rust-single-${nodeId}`;
-  selected.nodes = selected.nodes.filter((node) => node.id === nodeId);
-  selected.budget.max_executions = 1;
-  const graph = declareGraph(selected);
+test("a mechanical expert outcome is persisted, replayed idempotently and protected from forged submissions", async () => {
+  const graph = declarePattern("rust-mechanical");
   await start(graph);
-  expect(nodeIds(graph.requests)).toEqual([nodeId]);
-  expect(armed(graph.requests, nodeId).inputs ?? []).toEqual([]);
-  const result = await settle(graph, nodeId, "pass", {
-    data: gateReport(GATE_NAMES[nodeId], "pass"),
-  });
-  expect(result.decision).toBe("accepted");
-  expect(phaseOf(statusJson(graph.tools, graph.graphId))).toBe("complete");
-});
-
-test.each(["complete", "partial"])("the optional join delivers both accepted reports, preserving %s evidence for the gate", async (evidenceStatus) => {
-  const graph = declareGraph(evidenceDeclaration);
-  await start(graph);
-  expect(nodeIds(graph.requests).sort()).toEqual(["source-behavior", "source-versions"]);
-  const behaviorAttempt = armed(graph.requests, "source-behavior").attemptId;
-  const versionsAttempt = armed(graph.requests, "source-versions").attemptId;
-  const behaviorReport = sourceReport("What cancellation contract governs this call?", evidenceStatus);
-  const versionsReport = sourceReport("Which resolved revision and features govern this call?");
-
-  const invalid = await settle(graph, "source-behavior", "pass", { data: behaviorReport });
-  expect(invalid.decision).toBeUndefined();
-  expect(invalid.refusals.length).toBeGreaterThan(0);
-  expect(nodeIds(graph.requests)).not.toContain("async");
-
-  const behavior = await settle(graph, "source-behavior", "report", { data: behaviorReport });
-  expect(behavior.decision).toBe("accepted");
-  expect(nodeIds(graph.requests)).not.toContain("async");
-  const versions = await settle(graph, "source-versions", "report", { data: versionsReport });
-  expect(versions.decision).toBe("accepted");
-
-  const consumer = armed(graph.requests, "async");
-  expect(consumer.inputs).toEqual([
-    {
-      from: "source-behavior", outcome: "report", attemptId: behaviorAttempt,
-      payload: { kind: "value", value: behaviorReport }, artifacts: [],
-    },
-    {
-      from: "source-versions", outcome: "report", attemptId: versionsAttempt,
-      payload: { kind: "value", value: versionsReport }, artifacts: [],
-    },
-  ]);
-  expect(phaseOf(statusJson(graph.tools, graph.graphId))).not.toBe("complete");
-
-  // The stub supplies the consumer's decision; the engine preserves it, not judges it.
-  const outcome = evidenceStatus === "partial" ? "escalate" : "pass";
-  const gate = await settle(graph, "async", outcome, {
-    data: gateReport("async-audit", outcome, {
-      evidence: [behaviorReport, versionsReport],
-      advisory_notes: behaviorReport.open_questions,
-    }),
-  });
-  expect(gate.decision).toBe("accepted");
-  expect(attemptIds(graph.requests)).toHaveLength(3);
-  const status = statusJson(graph.tools, graph.graphId);
-  expect(phaseOf(status)).toBe("complete");
-  if (evidenceStatus === "partial") {
-    expect(JSON.stringify(status)).toContain(behaviorReport.open_questions[0]);
-    expect(JSON.stringify(status)).toContain('"escalate"');
-    expect(JSON.stringify(status)).toContain('"partial"');
-  }
-});
-
-test("an accepted submission commits the result, an identical replay is idempotent and a refusal writes nothing", async () => {
-  const graph = declareGraph();
-  await start(graph);
-
-  // One start arms exactly the five independent read-only roots.
-  expect(nodeIds(graph.requests).sort()).toEqual(GATE_NODES);
-  expect(new Set(attemptIds(graph.requests)).size).toBe(GATE_NODES.length);
-  // A submission settles only its own node, so the run is not complete yet.
-  expect(phaseOf(statusJson(graph.tools, graph.graphId))).not.toBe("complete");
-
-  const ledger = await openLedger(graph.dir);
+  expect(nodeIds(graph)).toEqual(["change"]);
+  const data = implementation("fixture-r0");
+  const result = await settle(graph, "change", "done", data);
+  expect(result).toMatchObject({ decision: "accepted", verdict: "committed", phase: "complete" });
+  expect((await settle(graph, "change", "done", data)).verdict).toBe("replayed");
+  const ledger = await SqliteAcceptanceLedger.create(engineStateDir(graph.dir));
   try {
-    expect(acceptedAttempts(ledger, graph.graphId)).toEqual([]);
-
-    const first = armed(graph.requests, "safety");
-    const submitted = gateReport("safety", "pass");
-    const accepted = await settle(graph, "safety", "pass", {
-      data: submitted,
-    });
-    expect(accepted.decision).toBe("accepted");
-    expect(accepted.verdict).toBe("committed");
-    expect(accepted.plan_revision).toBe(graph.declared.plan_revision);
-    expect(accepted.attempt_id).toBe(first.attemptId);
-    expect(accepted.refusals).toEqual([]);
-    // settled_nodes carries the run's cumulative settled set in no guaranteed
-    // order, not just the node of this submission: compare it order-independently.
-    expect([...accepted.settled_nodes].sort()).toEqual(["safety"]);
-    expect(acceptedAttempts(ledger, graph.graphId)).toEqual([first.attemptId]);
-
-    // The identical submission is idempotent: replayed, not a second acceptance.
-    const replay = await settle(graph, "safety", "pass", { data: submitted });
-    expect(replay.decision).toBe("accepted");
-    expect(replay.verdict).toBe("replayed");
-    expect(replay.refusals).toEqual([]);
-    expect(acceptedAttempts(ledger, graph.graphId)).toEqual([first.attemptId]);
-
-    const dispatched = attemptIds(graph.requests);
-
-    // A forged credential is refused before any decision: nothing is written and no
-    // successor is armed.
-    const forged = await graph.tools.graph_submit_outcome({
-      graph_id: graph.graphId,
-      node_id: "async",
-      outcome_id: "pass",
-      credential: "not-the-credential-this-attempt-was-issued",
-      data: gateReport("async-audit", "pass"),
-    });
+    expect(ledger.acceptedEvents(graph.graphId)).toHaveLength(1);
+    const forged = await graph.tools.graph_submit_outcome({ graph_id: graph.graphId,
+      node_id: "change", outcome_id: "done", credential: "forged", data });
     expect(forged.decision).toBeUndefined();
     expect(forged.refusals.length).toBeGreaterThan(0);
-    expect(acceptedAttempts(ledger, graph.graphId)).toEqual([first.attemptId]);
-    expect(attemptIds(graph.requests)).toEqual(dispatched);
+    expect(ledger.acceptedEvents(graph.graphId)).toHaveLength(1);
+  } finally { ledger.close(); }
+});
 
-    // An outcome the node never declared is refused the same way.
-    const undeclared = await settle(graph, "async", "report");
-    expect(undeclared.decision).toBeUndefined();
-    expect(undeclared.refusals.length).toBeGreaterThan(0);
-    expect(acceptedAttempts(ledger, graph.graphId)).toEqual([first.attemptId]);
-    expect(attemptIds(graph.requests)).toEqual(dispatched);
-  } finally {
-    ledger.close();
+test.each(domains)("%s resolves as an implementation node without unrelated experts", async (domain) => {
+  const graph = declarePattern("rust-mechanical", (declaration) => {
+    declaration.name = `rust-domain-${domain}`;
+    declaration.nodes[0].agent = `rust-engineer--${domain}`;
+    declaration.nodes[0].prompt = `Mode: implement. Load your specialist entry skill and linked implementation guidance. Perform the assigned ${domain} fixture change within its source scope and check the assigned acceptance criteria.`;
+  });
+  await start(graph);
+  expect(nodeIds(graph)).toEqual(["change"]);
+  expect((await settle(graph, "change", "done", implementation("fixture-r0"))).phase).toBe("complete");
+});
+
+test.each(["failed", "blocked", "clarification_required"])("%s implementation never releases the review success dependency", async (outcome) => {
+  const graph = declarePattern("rust-specialist-loop");
+  await start(graph);
+  const result = await settle(graph, "change", outcome, { schema_version: 2, outcome_id: outcome });
+  expect(result.decision).toBe("accepted");
+  expect(nodeIds(graph)).toEqual(["change"]);
+});
+
+test("each repair receives the exact accepted feedback and review sees the new implementation attempt", async () => {
+  const graph = declarePattern("rust-specialist-loop");
+  await start(graph);
+  expect(armed(graph, "change").inputs ?? []).toEqual([]);
+  for (let round = 0; round < 3; round++) {
+    const changeAttempt = armed(graph, "change").attemptId;
+    const changed = implementation(`fixture-r${round}`);
+    expect((await settle(graph, "change", "done", changed)).decision).toBe("accepted");
+    const reviewer = armed(graph, "review");
+    expect(reviewer.inputs).toEqual([{ from: "change", outcome: "done", attemptId: changeAttempt,
+      payload: { kind: "value", value: changed }, artifacts: [] }]);
+    if (round === 2) {
+      expect((await settle(graph, "review", "pass", review(`fixture-r${round}`, "pass"))).phase).toBe("complete");
+      break;
+    }
+    const report = review(`fixture-r${round}`, "revise", [{ id: "ASYNC-1", evidence: "fixture shutdown still writes" }]);
+    expect((await settle(graph, "review", "revise", report)).decision).toBe("accepted");
+    expect(armed(graph, "change").inputs).toEqual([{ from: "review", outcome: "revise",
+      attemptId: reviewer.attemptId, payload: { kind: "value", value: report }, artifacts: [] }]);
+  }
+  expect(graph.requests).toHaveLength(6);
+});
+
+test("serial expert stages hand off accepted changes and preserve repair feedback provenance", async () => {
+  const graph = declarePattern("rust-multi-specialist-loop");
+  await start(graph);
+  expect(nodeIds(graph)).toEqual(["ownership"]);
+  expect((await settle(graph, "ownership", "done", implementation("api-r0"))).decision).toBe("accepted");
+  expect(nodeIds(graph)).toEqual(["ownership", "async"]);
+  expect((await settle(graph, "async", "done", implementation("integrated-r0"))).decision).toBe("accepted");
+  const reviewer = armed(graph, "review");
+  expect(reviewer.inputs.map(({ from }) => from).sort()).toEqual(["async", "ownership"]);
+  const report = review("integrated-r0", "revise", [{ id: "ASYNC-1", evidence: "fixture lifecycle" }]);
+  await settle(graph, "review", "revise", report);
+  const repair = armed(graph, "ownership");
+  expect(repair.inputs[0].attemptId).toBe(reviewer.attemptId);
+  const context = { source_attempt: reviewer.attemptId, report, resolved_issues: [], remaining_owners: { "ASYNC-1": "async" } };
+  const forwarded = implementation("api-r1", context);
+  await settle(graph, "ownership", "done", forwarded);
+  expect(armed(graph, "async").inputs).toEqual([{ from: "ownership", outcome: "done", attemptId: repair.attemptId,
+    payload: { kind: "value", value: forwarded }, artifacts: [] }]);
+  await settle(graph, "async", "done", implementation("integrated-r1", context));
+  expect((await settle(graph, "review", "pass", review("integrated-r1", "pass"))).phase).toBe("complete");
+});
+
+test("parallel evidence joins wait for both reports and rerun against repaired source", async () => {
+  const graph = declarePattern("rust-evidence-loop");
+  await start(graph);
+  for (let round = 0; round < 2; round++) {
+    const priorCount = graph.requests.length;
+    await settle(graph, "change", "done", implementation(`fixture-r${round}`));
+    expect(nodeIds(graph).slice(priorCount).sort()).toEqual(["async-evidence", "platform-evidence"]);
+    const asyncAttempt = armed(graph, "async-evidence").attemptId;
+    const platformAttempt = armed(graph, "platform-evidence").attemptId;
+    const count = graph.requests.length;
+    await settle(graph, "async-evidence", "report", evidence(`fixture-r${round}`));
+    expect(graph.requests).toHaveLength(count);
+    await settle(graph, "platform-evidence", "report", evidence(`fixture-r${round}`));
+    const inputs = armed(graph, "review").inputs;
+    expect(inputs.find(({ from }) => from === "async-evidence").attemptId).toBe(asyncAttempt);
+    expect(inputs.find(({ from }) => from === "platform-evidence").attemptId).toBe(platformAttempt);
+    for (const input of inputs) expect(JSON.stringify(input.payload)).toContain(`fixture-r${round}`);
+    if (round === 0) await settle(graph, "review", "revise", review("fixture-r0", "revise", [{ id: "ASYNC-1" }]));
+    else expect((await settle(graph, "review", "pass", review("fixture-r1", "pass"))).phase).toBe("complete");
   }
 });
 
-test("the five gate nodes are independent roots and a settled run carrying a revise report is still readable", async () => {
-  const graph = declareGraph();
+test("source fan-in preserves partial evidence and cannot settle product approval", async () => {
+  const graph = declarePattern("rust-investigation");
   await start(graph);
+  expect(nodeIds(graph).sort()).toEqual(["source-behavior", "source-versions"]);
+  const partial = evidence("fixture-r0", true, "source-evidence");
+  const refused = await settle(graph, "source-behavior", "pass", partial);
+  expect(refused.decision).toBeUndefined();
+  expect(refused.refusals.length).toBeGreaterThan(0);
+  await settle(graph, "source-behavior", "report", partial);
+  expect(nodeIds(graph)).not.toContain("synthesis");
+  await settle(graph, "source-versions", "report", evidence("fixture-r0", false, "source-evidence"));
+  const input = armed(graph, "synthesis").inputs.find(({ from }) => from === "source-behavior");
+  expect(input.payload.value).toEqual(partial);
+  expect((await settle(graph, "synthesis", "report", evidence("fixture-r0", true))).phase).toBe("complete");
+  expect(JSON.stringify(status(graph))).toContain(partial.open_questions[0]);
+});
 
-  // One start arms all five roots, and no node reads another node's result: the
-  // shipped batch declares neither an input nor a join.
-  expect(nodeIds(graph.requests).sort()).toEqual(GATE_NODES);
-  for (const request of graph.requests) {
-    expect(request.inputs ?? []).toEqual([]);
+test("a complete run preserves an essential-evidence escalation rather than a pass", async () => {
+  const graph = declarePattern("rust-evidence-loop");
+  await start(graph);
+  await settle(graph, "change", "done", implementation("fixture-r0"));
+  await settle(graph, "async-evidence", "report", evidence("fixture-r0", true));
+  await settle(graph, "platform-evidence", "report", evidence("fixture-r0"));
+  const report = review("fixture-r0", "escalate", [{ id: "EVIDENCE-1", evidence: "Essential cancellation contract unavailable" }]);
+  expect((await settle(graph, "review", "escalate", report)).phase).toBe("complete");
+  const persisted = JSON.stringify(status(graph));
+  expect(persisted).toContain('"partial"');
+  expect(persisted).toContain('"escalate"');
+  expect(persisted).toContain("EVIDENCE-1");
+});
+
+test("two exhausted repair traversals stop the run without accepting a later pass", async () => {
+  const graph = declarePattern("rust-specialist-loop");
+  await start(graph);
+  for (let round = 0; round < 3; round++) {
+    await settle(graph, "change", "done", implementation(`fixture-r${round}`));
+    const result = await settle(graph, "review", "revise", review(`fixture-r${round}`, "revise", [{ id: "ASYNC-1" }]));
+    if (round === 2) expect(result).toMatchObject({ decision: "accepted", phase: "stopped", stop: {
+      reason: "loop-exhausted", loop_group_id: "repair", traversals: 2, max_traversals: 2 } });
   }
-
-  const blocking =
-    "src/ffi/bridge.rs:43 transmutes a *const u8 into &mut [u8] without a provenance guarantee from the C allocator";
-  const report = gateReport("safety", "revise", {
-    blocking_issues: [
-      {
-        id: "SAFE-1",
-        issue: blocking,
-        evidence: "src/ffi/bridge.rs:43",
-      },
-    ],
-    required_revisions: [
-      "Establish valid allocation, lifetime, alignment and exclusive access before creating a mutable slice",
-    ],
-  });
-
-  const settled = [];
-  const order = ["safety", "async", "api", "performance", "cross-platform"];
-  for (const node of order) {
-    const outcome = node === "safety" ? "revise" : "pass";
-    const result = await settle(graph, node, outcome, {
-      data: node === "safety" ? report : gateReport(GATE_NAMES[node], "pass"),
-    });
-    expect(result.decision).toBe("accepted");
-    expect(result.verdict).toBe("committed");
-    expect(result.refusals).toEqual([]);
-    settled.push(node);
-    expect([...result.settled_nodes].sort()).toEqual([...settled].sort());
-  }
-
-  // Every node was armed exactly once: the batch never retried or reopened a node.
-  expect([...new Set(nodeIds(graph.requests))].sort()).toEqual(GATE_NODES);
-  expect(attemptIds(graph.requests)).toHaveLength(GATE_NODES.length);
-
-  // Once every declared root has settled, the run reaches phase complete with the
-  // negative gate report on record: a settled graph is still not acceptance.
-  const status = statusJson(graph.tools, graph.graphId);
-  const document = JSON.stringify(status);
-  expect(document).toContain(blocking);
-  expect(document).toContain("blocking_issues");
-  expect(document).toContain("SAFE-1");
-  expect(document).toContain('"revise"');
-  expect(phaseOf(status)).toBe("complete");
+  expect(graph.requests).toHaveLength(6);
+  const refused = await settle(graph, "review", "pass", review("fixture-r2", "pass"));
+  expect(refused.decision).toBeUndefined();
+  expect(refused.refusals.length).toBeGreaterThan(0);
+  expect(graph.requests).toHaveLength(6);
 });

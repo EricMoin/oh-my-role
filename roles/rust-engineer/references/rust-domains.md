@@ -1,24 +1,29 @@
-# Rust domain map
+# Rust expert routing
 
-Use this map to locate expertise for a concrete invariant or uncertainty. Effort
-and review selection are defined only in [complexity-model.md](complexity-model.md).
-This is not a mandatory repository scan, priority order or gate-count policy.
+Route by the actual implementation responsibility or evidence question. The parent
+investigates enough to choose experts; every worker loads its own entry skill and
+relevant linked guidance before acting. This map sets neither node quotas nor a
+mandatory repository scan.
 
-## Questions, implementation guidance and review
-
-| Domain | Question that warrants attention | Implementation skill | Reviewer / report gate |
+| Concern | Agent | Implementation skill | Review criteria |
 | --- | --- | --- | --- |
-| `unsafe-ffi` | Can a safe caller violate validity, aliasing, lifetime, ownership, layout or foreign ABI/unwind obligations? | `rust-unsafe-ffi` | `rust-engineer--safety-reviewer` / `safety` |
-| `async-concurrency` | Can suspension, interleaving, cancellation, overload or shutdown lose work, leak resources, deadlock or violate ordering? | `rust-async-concurrency` | `rust-engineer--async-auditor` / `async-audit` |
-| `public-api` | Does an affected consumer observe a changed signature, bound, error, feature, MSRV or behavioral contract? | `rust-ownership-and-api` | `rust-engineer--api-reviewer` / `api` |
-| `performance-hotpath` | Is there a workload-specific regression or optimization claim with a plausible cost mechanism and baseline? | `rust-performance` | `rust-engineer--perf-profiler` / `perf` |
-| `cross-platform` | Does behavior depend on target, feature selection, host tools, native libraries, pointer width, no_std or compiler support? | `rust-cargo-platform` | `rust-engineer--cross-platform-checker` / `cross-platform` |
+| Safe logic, ownership, borrowing, traits, errors and consumer contracts | rust-engineer--ownership-api | rust-ownership-and-api | rust-api-gate for API concerns; independent verification covers general behavior |
+| Futures, tasks, synchronization, cancellation, channels and shutdown | rust-engineer--async-concurrency | rust-async-concurrency | rust-async-gate |
+| Unsafe validity, provenance, initialization, ABI and foreign ownership | rust-engineer--unsafe-ffi | rust-unsafe-ffi | rust-safety-gate |
+| Cargo, features, workspaces, build scripts, MSRV, targets and no_std | rust-engineer--cargo-platform | rust-cargo-platform | rust-platform-gate |
+| Workload costs, profiling and attributable optimization | rust-engineer--performance | rust-performance | rust-perf-gate |
+| Independent behavior, architecture, regression checks and evidence fan-in | rust-engineer--verification | Read-only; rust-testing and relevant ownership guidance | rust-verification |
+| Exact-version dependency, compiler or platform uncertainty | rust-engineer--source-tracer | Read-only; rust-source-tracing | Source evidence report, never product approval |
 
-`rust-testing` supports every domain. Ownership and error contracts also matter in
-private code; public visibility is not a prerequisite for implementation guidance.
-The source tracer (`rust-engineer--source-tracer`, skill `rust-source-tracing`)
-resolves a specific external behavior question for any domain. It returns evidence,
-not another review verdict.
+Domain experts support implement, evidence and review in separately scoped nodes.
+Choose a separate review session for independent judgment; one node must not review
+its own implementation. Combine closely related concerns in one expert assignment;
+use multiple experts when their responsibilities or evidence differ. General safe
+Rust does not require a public API or one of the special risk-domain keywords.
+
+`rust-testing` supports all implementation nodes. For interacting domains, sequence
+shared-source writers, forward accepted revision context, and converge evidence into
+one repair verdict. Independent read-only questions remain parallel.
 
 ## Discovery hints and counterexamples
 

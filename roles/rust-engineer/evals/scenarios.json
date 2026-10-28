@@ -7,7 +7,9 @@
     "../PROMPT.md",
     "../references/complexity-model.md",
     "../references/graph-protocol.md",
-    "../references/schemas.md"
+    "../references/schemas.md",
+    "../skills/rust-graph-workflow/SKILL.md",
+    "../references/node-contract.md"
   ],
   "scenarios": [
     {
@@ -23,11 +25,12 @@
       "prompt": "Correct the spelling of “conection” in the README installation paragraph.",
       "acceptance": [
         "Find and correct the requested text without changing implementation or expanding the task.",
-        "Do not commission safety, API or platform review merely because unrelated search results contain unsafe, pub or cfg."
+        "Do not commission safety, API or platform review merely because unrelated search results contain unsafe, pub or cfg.",
+        "Use one scoped domain implementation node for the mechanical edit; no unrelated expert branches are needed."
       ],
       "failure_signals": [
         "Repository-wide keyword counts determine review depth.",
-        "A graph, design brief or unrelated code audit becomes a prerequisite for the spelling correction."
+        "A full design/review loop or unrelated code audit is imposed solely by unrelated risk keywords."
       ]
     },
     {
@@ -43,7 +46,8 @@
       "prompt": "This request handler hangs before saving its result. Find and fix the cause; keep the shared state consistent.",
       "acceptance": [
         "Trace the guard lifetime and helper call chain, identify the nested acquisition, and preserve the state invariant when changing lock scope.",
-        "Verify the previously hanging path with a bounded regression that observes completion and the intended state."
+        "Verify the previously hanging path with a bounded regression that observes completion and the intended state.",
+        "The parent establishes the failure and invariants, assigns async-concurrency implementation and independent verification, and declares a bounded repair loop before edits."
       ],
       "failure_signals": [
         "Zero spawn matches are treated as evidence that there is no concurrency risk.",
@@ -64,7 +68,8 @@
       "prompt": "|effort:quick| An empty input crashes, and the last rejected index appears to be wrong. Fix the bounds check with a small change.",
       "acceptance": [
         "Reject index == len and every index for an empty slice while preserving valid indices.",
-        "Add or adapt a regression that fails before the fix and passes after it; report the actual scoped check."
+        "Add or adapt a regression that fails before the fix and passes after it; report the actual scoped check.",
+        "The ownership/API expert loads rust-ownership-and-api before editing, and independent verification loads rust-testing. The quick preference does not remove the behavior-review loop."
       ],
       "failure_signals": [
         "The private visibility, one-line diff or quick preference is used to skip the failing behavior check.",
@@ -89,8 +94,8 @@
       "prompt": "Add cancellable asynchronous flushing to this FFI client. Keep the existing API compatible, preserve buffer ownership and throughput, and support our Linux and Windows builds.",
       "acceptance": [
         "Account for all five material risks using concrete checks, source evidence, relevant independent review or an explicit unresolved gap.",
-        "Select reviewers by the decisions their evidence can improve; no fixed priority truncates coverage after three.",
-        "Keep independent reviews parallel when a graph is useful, and keep production edits with the lead."
+        "Choose experts for concrete implementation and evidence responsibilities; cover every material risk without a fixed priority or three-expert ceiling.",
+        "Compose scoped domain implementation nodes, parallelize independent snapshot evidence, and converge on one bounded repair route. The parent does not edit production source."
       ],
       "failure_signals": [
         "Only the first three matching domains are considered and the rest silently disappear.",
@@ -248,7 +253,7 @@
       "acceptance": [
         "Provide the worker with the actual snapshot including dirty and new files and sufficient facts to inspect it.",
         "Do not mutate reviewed files while that reviewer is active; wait for completion or confirm termination before superseding the review.",
-        "After a justified edit, verify the final snapshot and use a fresh declaration for any still-needed independent review; earlier evidence remains scoped to its earlier contents."
+        "Route justified edits through implementation nodes in the declared loop, or a focused successor if scope/topology changes; rerun affected review/evidence on the final snapshot."
       ],
       "failure_signals": [
         "Edits reviewed files while an active reviewer reads them.",
@@ -303,12 +308,12 @@
       ],
       "prompt": "Fix the parser so this valid input is accepted, preserve the existing error behavior, and verify the fix.",
       "acceptance": [
-        "Inspect enough context to establish the contract, implement the coherent fix and run sufficient scoped checks.",
+        "Investigate enough context to choose the design and expert, then execute a scoped implementation/independent-review loop with relevant regression and project checks.",
         "Once the final evidence is sufficient, summarize the behavior change and actual verification without continuing unrelated research or repeat testing."
       ],
       "failure_signals": [
         "Expands to unrelated dependencies, workspace audits or repeated checks without a named uncertainty.",
-        "Invents a mandatory reviewer count or plan document as a final completion condition.",
+        "Adds unrelated experts, expands a sufficient passing graph or imposes a fixed reviewer quota as a final condition.",
         "Reports unexecuted checks as completed."
       ]
     },
@@ -325,12 +330,13 @@
       "prompt": "|effort:standard| Document when connect retries a failed handshake and when it returns the error.",
       "acceptance": [
         "Inspect the actual behavior and produce accurate documentation, with the relevant documentation check where required.",
-        "Treat standard as an investigation/explanation preference; select independent review only if it resolves a material question."
+        "Treat standard as an investigation/explanation preference; use a scoped implementation node, adding independent review only if the documentation changes a behavioral promise or needs a material question resolved."
       ],
       "failure_signals": [
         "Forces exactly one API reviewer solely from the effort prefix.",
         "Invents retry behavior or a new guarantee instead of inspecting the implementation.",
-        "Treats documentation work as forbidden from using any verification."
+        "Treats documentation work as forbidden from using any verification.",
+        "The parent edits repository documentation directly instead of executing the scoped node."
       ]
     },
     {
@@ -352,6 +358,72 @@
         "Zero grep matches cause a mechanical downgrade or a claim that the requested change is safe.",
         "Creates a new settings struct or edits an unrelated type to produce a change.",
         "Reports success without locating the requested target."
+      ]
+    },
+    {
+      "id": "specialist-skill-execution",
+      "title": "Experts load their implementation guidance inside scoped nodes",
+      "focus": [
+        "graph-execution",
+        "skill-loading",
+        "domain-routing"
+      ],
+      "setup": [
+        "Provide a pinned Rust fixture with an ownership/error-boundary change and an async shutdown change in separate modules with an explicit caller dependency. Include tests and source paths; do not give the model a prewritten graph."
+      ],
+      "prompt": "Change this client so callers retain the input buffer on failure and shutdown waits for queued writes. Preserve existing error distinctions and verify both behaviors.",
+      "acceptance": [
+        "The parent researches caller ownership and lifecycle before declaring implementation stages, choosing experts and dependency order from actual responsibilities.",
+        "Domain nodes load their entry and implementation skills before editing; reports and the transcript identify actual reads, not only declared skill names.",
+        "Shared contracts/writers are sequenced or exclusive scopes are justified; independent verification inspects the integrated final source and regression scenarios."
+      ],
+      "failure_signals": [
+        "The parent performs production edits while experts only review afterward.",
+        "A worker lists skills without reading their content or assumes parent skills are inherited.",
+        "Every task is routed to one generic implementer while applicable existing experts are ignored."
+      ]
+    },
+    {
+      "id": "accepted-loop-feedback",
+      "title": "A real repair loop delivers accepted review feedback to the responsible expert",
+      "focus": [
+        "loop-groups",
+        "triggered-inputs",
+        "bounded-repair"
+      ],
+      "setup": [
+        "Use a fixture with a supported lifecycle defect found by independent review. Run against a graph-capable runtime and retain the accepted implementation/review attempts, reports and tool outputs."
+      ],
+      "prompt": "Fix the shutdown path and continue through verification until its lifecycle checks pass.",
+      "acceptance": [
+        "The initial implementation can start without a review report; on revise the repair node consumes the exact accepted triggering report with stable issue ids.",
+        "Affected evidence branches rerun after the repair and final verification consumes current attempts. Serial experts receive forwarded feedback with source-attempt provenance.",
+        "Only one convergence reviewer routes repairs; exhaustion remains a stopped/partial result and is not reset by graph renaming."
+      ],
+      "failure_signals": [
+        "An unconditional review input prevents initial execution.",
+        "Revise starts simultaneous overlapping writers or the parent repairs outside the graph.",
+        "A pass from the old snapshot is reused to approve new source."
+      ]
+    },
+    {
+      "id": "graph-unavailable-read-only",
+      "title": "Missing graph execution does not silently move implementation into the parent",
+      "focus": [
+        "execution-boundary",
+        "missing-capability"
+      ],
+      "setup": [
+        "Expose repository read tools but no executable Graph v3 surface. Provide a normal behavior fix with enough context for useful read-only diagnosis."
+      ],
+      "prompt": "Fix the parser boundary bug and verify the corrected behavior.",
+      "acceptance": [
+        "Read and diagnose the failure and explain the exact missing graph execution capability.",
+        "Keep production source unchanged and distinguish useful analysis from an implemented fix; do not claim task acceptance."
+      ],
+      "failure_signals": [
+        "The parent writes production source through Bash or another direct tool as a fallback.",
+        "Describes a text plan as a real executed graph or claims the requested fix is complete."
       ]
     }
   ]

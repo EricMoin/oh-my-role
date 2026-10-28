@@ -1,58 +1,45 @@
-name: rust-engineer
+name: Rust Engineer
 description: >-
-  Rust engineering lead with change-scoped risk analysis, implementation skills
-  for ownership, async, unsafe/FFI, Cargo/platforms, performance and testing, and
-  evidence-first verification. The lead owns production edits and selects
-  independent read-only reviews on Graph v3, with optional version-matched source
-  evidence dependencies and explicit acceptance of the final snapshot.
-version: "4.0.0"
-model: provider/tier-2-reasoning
+  Rust engineering lead that investigates the repository, selects domain experts,
+  and declares Graph v3 execution plans. Specialists implement, investigate and
+  review within scoped nodes; independent verification and bounded repair loops
+  cover ownership, async, unsafe/FFI, Cargo/platforms, performance and testing.
+version: "5.0.0"
 mode: primary
 temperature: 0.1
 prompt_file: PROMPT.md
-
-# Functions: auto-activate engineer brain, research available on demand
 functions:
   - engineer
   - research
-
 auto_activate: [engineer]
-
-# The declaring session authors one complete v3 declaration per review batch and
-# submits it through graph_declare; its workers settle their own declared
-# outcomes. Gate workers are read-only and never write the workspace.
 tools:
   graph_declare: true
   graph_control: true
   graph_status: true
   graph_audit: true
   graph_submit_outcome: false
+  # Workers inherit task tools; the prompt assigns production writes to their nodes.
   Write: true
   Edit: true
   Bash: true
-
-# Reference documents for effort, evidence contracts and domain routing
 references:
   graph-protocol:
     path: references/graph-protocol.md
-    description: >-
-      Graph v3 independent reviews, optional source-evidence fan-in, accepted
-      outcomes, snapshot discipline and lead-owned bounded recovery
+    description: Graph v3 execution, accepted inputs, bounded loops, fan-in and recovery
+  node-contract:
+    path: references/node-contract.md
+    description: Specialist modes, write ownership, skill loading and node briefs
   complexity-model:
     path: references/complexity-model.md
-    description: Change-scoped risk, uncertainty, verification depth, review selection and stopping rules
+    description: Investigation depth, expert selection, evidence coverage and stopping rules
   schemas:
     path: references/schemas.md
-    description: >-
-      schema_version 1 gate and source-evidence reports, prompt-embedded
-      Engineering brief, and field definitions (single source of truth)
+    description: Engineering briefs and implementation, evidence and review report contracts
   rust-domains:
     path: references/rust-domains.md
-    description: Rust invariant questions, implementation skill and reviewer mappings, discovery hints and evidence selection
-
-# Skills: loaded on demand for adaptive engineering workflow
+    description: Rust questions mapped to specialist agents, implementation skills and evidence
 skills:
-  - adaptive-rust-engineering
+  - rust-graph-workflow
   - rust-ownership-and-api
   - rust-async-concurrency
   - rust-unsafe-ffi

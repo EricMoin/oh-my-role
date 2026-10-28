@@ -1,67 +1,55 @@
 # Rust Engineer design
 
-## Responsibility boundaries
+## Execution ownership
 
-The lead owns production edits, integration and the final claim of completion.
-Five read-only specialists review named risks on a stable snapshot. An optional
-source tracer supplies version-matched evidence to the lead or a consuming gate.
+The primary investigates repository facts, loads the graph workflow, chooses design and
+acceptance criteria, and composes experts according to actual dependencies. Production
+implementation and repairs belong to graph nodes. Five domain experts support implement,
+evidence and review modes; verification and source-tracing experts remain source-read-only.
+Ordinary safe Rust belongs to ownership-api, so general logic does not fall through a gap
+between unsafe, async, API, performance and platform reviews.
 
 | Asset | Responsibility |
 | --- | --- |
-| `PROMPT.md` | Engineering judgment, ownership, verification and user communication |
-| `functions/engineer.md` | Short reminder that preserves those responsibilities across messages |
-| `functions/research.md` | Question-driven evidence lookup and version applicability |
-| `references/complexity-model.md` | Single effort, review-selection and stopping policy |
-| `references/rust-domains.md` | Domain questions and skill/reviewer routing |
-| `references/schemas.md` | Brief, gate report and source-evidence contracts |
-| `references/graph-protocol.md` | Executable declarations, accepted results, snapshots and recovery |
-| `skills/adaptive-rust-engineering` | Applying effort and evidence decisions to a task |
-| Six domain implementation skills | How to implement and verify Rust behavior |
-| Five reviewer skills | Independent domain judgment and supported findings |
-| `subagents/source-tracer` | Bounded evidence investigation, never product approval |
+| PROMPT.md / engineer function | Parent ownership, research, execution boundary and acceptance |
+| rust-graph-workflow | Task decomposition, specialist choice, loops and evidence fan-in |
+| complexity-model | Investigation depth, coverage and efficiency |
+| rust-domains | Expert, implementation skill and review-criteria routing |
+| node-contract / schemas | Modes, scopes, skill loading and report fields |
+| graph-protocol / graph-patterns.json | Runtime semantics and executable graph shapes |
+| Domain entry skills | Local specialist context with shared implementation and gate guidance |
 
-Keep implementation guidance out of graph mechanics and report definitions out
-of individual checklists. Load domain skills on demand. Shared contracts live in
-references so new skills do not expand the always-active engineer function.
+## Composition and loops
 
-## Graph architecture
+Mechanical work can use one domain node. Behavior changes use independent verification
+and a bounded implementation/review loop. Multi-domain tasks can sequence expert writers
+or fan out read-only evidence; only exclusive source scopes permit parallel writers.
+One convergence reviewer owns repair routing. Accepted revision input is optional on
+initial entry and required when the repair edge triggers; serial implementers forward
+that feedback with provenance. No parent-side repair bypasses the graph.
 
-Independent risks remain independent review roots. A single gate is valid and
-all five can be selected when justified. The evidence example demonstrates two
-source reports joining an async gate through explicit inputs and outcome edges;
-it is optional and adapts to other consumers. Do not manufacture dependencies.
+The provided patterns cover mechanical work, one-expert loops, multi-expert implementation,
+parallel evidence loops and joined source investigation. They are examples to adapt, not
+fixed phases or a requirement to invoke every expert. Graph execution does not grant
+filesystem isolation, validate report prose or turn completion into engineering success.
 
-Workers submit their own outcomes. `pass`, `revise` and `escalate` terminate a
-gate; `report` terminates evidence collection with `complete` or `partial` data.
-Neither graph completion nor a source report approves the implementation. The
-lead checks content and applicability before repairing or accepting the result.
+## Version 5 migration
 
-The runtime enforces declared outcome identity and dependency delivery. Report
-schemas and read-only scope remain role contracts, not automatic JSON validation
-or filesystem isolation. Host permissions provide actual enforcement.
+The display name is Rust Engineer; the directory ID remains rust-engineer. The optional
+adaptive entry skill becomes rust-graph-workflow. Domain agent IDs now describe expertise:
+api-reviewer -> ownership-api, async-auditor -> async-concurrency, safety-reviewer ->
+unsafe-ffi, cross-platform-checker -> cargo-platform, perf-profiler -> performance.
+Update authored graph declarations to these IDs; there are no duplicate compatibility
+agents. Existing domain implementation skills and gate skill names remain available in
+the role tree. Node reports use schema_version 2 with normalized domain names, actual skill-loading
+evidence and separate implementation, review and evidence contracts; version 1 reports
+must not be silently treated as version 2.
 
-## Version 4 changes
+## Verification limits
 
-Version 4 replaces keyword-count tiers and fixed review caps with analysis of the
-actual change and consumers. Effort prefixes remain preferences. Small fixes may
-need tests, documentation may need rustdoc, and missing evidence remains explicit.
-Six implementation skills complement the five existing gates. A source-evidence
-role and contract support real dependencies without serializing ordinary review.
-
-Gate identities and the existing schema version 1 status/outcome mapping remain
-compatible. The source report is a new contract. The old weighted eval rubric is
-replaced by explicit manual/session scenarios; it was not a supported native
-benchmark suite. A repository upgrade does not itself install or publish the role.
-
-## Verification boundaries
-
-`tests/graph-contract.test.js` uses the real rolebox loader, resolver, compiler and
-runtime. It reads the shipped declarations, resolves all children and skills,
-tests each gate independently, and exercises report fan-in, partial evidence,
-outcome refusal and completed runs with non-passing reports. Dispatch decisions
-are stubbed: these tests do not measure model judgment or validate report content.
-
-`evals/README.md` describes behavioral scenarios and their observation limits.
-Use isolated task fixtures and inspect actual artifacts/checks when probing
-implementation behavior. Do not turn static validation or one successful session
-into a benchmark score or a claim about deployment.
+Runtime tests load the actual role/assets and compile and execute the shipped graph
+patterns through rolebox's real graph runtime. Worker decisions are stubbed, so these
+tests establish scheduling, accepted input delivery, re-review and exhaustion behavior,
+not model judgment, actual skill reading, Rust command success or production isolation.
+Manual/session scenarios cover those behavioral decisions; they are not recorded passes
+or an automated model benchmark. Repository changes do not install or publish the role.

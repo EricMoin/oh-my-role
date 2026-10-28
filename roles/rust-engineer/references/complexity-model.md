@@ -1,88 +1,58 @@
-# Change risk and verification depth
+# Investigation depth and graph selection
 
-This is the single source of truth for effort and review selection. The role
-prompt owns implementation; schemas own report fields; the graph protocol owns
-execution. Do not reproduce this policy as another tier machine elsewhere.
+This document governs effort and coverage. Graph execution belongs to the graph skill
+and protocol; report fields belong to schemas. Scope effort to the actual change and
+consumers rather than repository keyword counts, file counts or a fixed reviewer quota.
 
-## Classify the change, not the repository
+## Investigate enough to choose the experts
 
-Start from the requested behavior, the proposed change and its affected callers.
-Include staged, unstaged and new files. Trace across a boundary only as far as
-needed to understand an invariant or consumer. Ask:
+Establish intended behavior, affected callers, ownership and release, failure/cancellation
+paths, compatibility and version/target constraints. Read code, diagnostics and relevant
+skills until the design, responsible experts and meaningful checks can be specified.
+Use focused investigation nodes when unresolved premises need separate expertise or can
+be examined independently. Stop research once another lookup will not change the plan.
 
-- What can become incorrect, incompatible, unsound, unavailable or slower?
-- Who owns the data/resource, and when is it released or observed?
-- Which failure, cancellation, configuration or target paths change?
-- What evidence is missing, and would obtaining it change the design?
+## Choose the execution depth
 
-Searches locate candidate boundaries; they never decide the review depth by
-themselves. Scope a search to relevant files and callers. Explain the connection
-between a match and the change before treating it as risk. `pub` in an unrelated
-module is not API impact; `#[cfg(test)]` alone is not cross-platform risk. An
-absence of `spawn` does not exclude an async lifecycle bug.
+| Work | Execution and acceptance |
+| --- | --- |
+| Direct explanation or initial read-only scoping | Parent may answer from inspected evidence; no production edits |
+| Mechanical repository edit with unchanged behavior/contract | One domain implementation node with the relevant focused/project check |
+| Behavior fix, feature or substantive refactor | Relevant domain implementer, independent verification and a bounded repair loop |
+| Interacting domain boundaries or consumers | Scope the specialist implementation stages; gather independent evidence where needed and converge on one repair verdict |
+| Existing-code investigation or review | Read-only specialist nodes, with fan-in only for real evidence dependencies |
 
-## Select sufficient evidence
+A private parser fix needs a regression input; it does not need an unsafe expert merely
+because the crate contains unsafe code. An async operation can need cancellation expertise
+without spawning a task. Build-script changes require host/target analysis even when no
+production Rust file changes. Public-contract changes require actual downstream analysis.
 
-These descriptions can combine. They are not mutually exclusive tiers, mandatory
-node counts or limits on which checks may run.
+## Coverage and efficiency
 
-| Change characteristics | Useful approach | Evidence before completion |
-| --- | --- | --- |
-| Bounded behavior with understood ownership and consumers | Inspect affected code and implement directly | Relevant regression, documentation, compile-fail, unit or integration check; required project checks |
-| A domain invariant or environmental assumption changes | Write its safety/lifecycle/compatibility/target argument; investigate the unknown; obtain independent review where valuable | The evidence for that invariant, including failure paths and unresolved limits |
-| Multiple consumers or interacting boundaries change | Keep a concise design brief, compare meaningful alternatives, cover interactions and select relevant specialists | Affected consumer/configuration checks and independent findings for material risks |
+Select specialists by a concrete implementation responsibility or evidence question.
+The ownership/API specialist also handles ordinary safe Rust. Verification covers general
+correctness, architecture and regression quality; it is not restricted to the five special
+risk domains. All material risks need evidence or an explicit unresolved gap.
 
-Use package-scoped checks when they cover the behavior. Broaden to workspace,
-feature or target combinations when dependency effects or project policy require
-it. There is no blanket workspace check list for every large change, and no
-`cargo check`-only rule for small changes. Do not skip a regression test because
-the change is private or only one line.
+Parallelize independent research and frozen-snapshot evidence. Sequence shared-source
+writers; use parallel implementation only with exclusive source scopes and isolated
+outputs. A node is a coherent responsibility, not each individual shell command. Reuse
+relevant current evidence and checks rather than rerunning them to fill a report.
 
-Examples:
+Use package-scoped checks when sufficient; broaden to consumers, workspace, features and
+targets when the change or repository policy requires it. No effort preference prohibits
+regression tests, rustdoc or a needed specialist. `|effort:quick|`, `standard` and `deep`
+change investigation breadth and reporting, not whether repository execution uses graphs
+or whether a behavior change needs independent verification.
 
-- A README typo beside an existing unsafe implementation needs no safety graph.
-- A private parser fix needs a regression input that failed before the change.
-- A lock held across an await needs lifecycle/locking analysis even without spawn.
-- One FFI function can require a complete ownership, validity and unwind argument.
-- A build-script change needs the host/target distinction and supported target
-  evidence, even if no production source file changes.
-- A public signature change needs actual consumer and compatibility analysis;
-  neither the `pub` keyword nor an annotation proves compatibility.
+## Budgets and stopping
 
-## Select independent review
+Choose a finite execution budget covering the declared stages and allowed repair traversals.
+Use task-appropriate timeouts; no arbitrary three-expert cap applies. Normally permit two
+repair traversals for the same unresolved mechanism. Exhaustion requires diagnosis and a
+partial/blocked result, never automatic acceptance. A new graph name does not erase effort.
 
-Use the domain map to identify a named decision each reviewer can improve. No
-fixed global priority order or maximum of three reviewers applies. A small change
-may need one specialist; a broad change may need all five. Do not manufacture
-review nodes when existing evidence already settles the issue.
-
-For each material risk, account for an actual check, source evidence, a reviewer
-finding or a clearly stated gap. Independent reviewers are parallel roots. Add
-input dependencies only when downstream judgment needs upstream evidence, such
-as exact-version source behavior. A source report is not product approval.
-
-Use a finite graph execution budget sufficient for the declared nodes. Declare
-timeouts explicitly and adapt them to the task. Budget exhaustion is an execution
-gap, not a passing result. Recovery must follow the graph protocol and retain the
-original scope and issue history.
-
-## Effort preferences and stopping rules
-
-Treat `|effort:quick|`, `|effort:standard|` and `|effort:deep|`, when provided, as
-preferences for investigation breadth and explanation. They do not force node
-counts, forbid verification or authorize a false completion claim. If a requested
-time or scope limit prevents adequate evidence, finish the useful bounded work
-and state the remaining uncertainty.
-
-Investigate until the decision's contract and failure mode are understood, then
-implement. Each new search or tool run should resolve a named uncertainty. Do not
-keep expanding research after sufficient evidence is available. Reassess if the
-implementation introduces a new boundary or a check contradicts the approach.
-
-Allow at most two substantive repair rounds for the same unresolved issue by
-default. If it persists, diagnose the failed approach, report the remaining
-blocker and continue independent work. A new graph name does not reset this
-history; self-review cannot manufacture acceptance. Ask only when the user holds
-missing intent, access or a consequential decision. Final completion requires
-relevant evidence for the final snapshot, with supported blockers resolved or
-explicitly reported.
+Continue independent useful work when one premise is blocked. Involve the user only for
+missing intent, access or a consequential choice. Accept when required checks cover the
+final snapshot, the independent review supports the changed behavior and no supported
+blocking issue remains. Mechanical work can finish from its implementation/check evidence.

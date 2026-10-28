@@ -1,86 +1,58 @@
 # Rust Engineer behavioral regression scenarios
 
-[`scenarios.json`](scenarios.json) contains **manual/session regression scenarios**.
-It is not a native rolebox bench suite, an automated grader, or a record of passing
-model trials. The old weighted `evals.json` was removed because its fixed tier and
-node-count expectations contradicted the role's current policy and its lifetime
-example prescribed a repair for the wrong cause.
+[scenarios.json](scenarios.json) specifies manual/session trials. It is not an automated
+grader or a record of passing model sessions. The graph-contract tests use stubbed
+worker decisions and cannot prove model skill loading, code quality or Rust behavior.
 
-The role-creator [`run_eval.py`](../../role-creator/scripts/run_eval.py) does not
-execute legacy rubrics or translate these scenarios into benchmarks. Do not pass
-this file as `--evals` or `--suite`. This directory configures no model provider,
-paid run, baseline comparison or aggregate score.
+## Exercise a scenario
 
-## Run a manual scenario
+1. Prepare an isolated disposable fixture from setup, including real source, pinned
+   versions and diagnostics. Confirm the motivating failure exists before a repair.
+2. Start a fresh session with the repository's current role definition and the natural
+   prompt. Keep evaluator acceptance/failure signals out of the worker's task context.
+3. For staged events, use actual runtime reports and check outputs. Clearly label any
+   recorded exercise material; never impersonate a live tool result.
+4. Inspect the transcript, skill-content reads, graph declarations and actual starts,
+   accepted attempt inputs/reports, final diff and checks. A report claiming a skill was
+   loaded is insufficient without the actual read. The parent should research and
+   compose the graph; domain workers implement and repair inside their scopes.
+5. Record pass, fail, inconclusive or not-run with evidence. Missing fixtures, runtime
+   capability or transcript makes the relevant behavioral observation inconclusive.
 
-1. Read the scenario's `setup` and prepare an isolated disposable workspace with
-   the described source, pinned versions and diagnostics. Setups are fixture
-   specifications, not bundled executable fixtures. Verify that the intended
-   failure exists before evaluating the repair.
-2. Start a fresh session using the current Rust Engineer role and give it only the
-   natural task in `prompt`, along with ordinary repository access. Keep the
-   acceptance and failure signals with the evaluator; they are not task hints.
-3. For staged cases, deliver `events` only when their `when` condition occurs.
-   Prefer actual runtime reports and command results from the fixture. If using
-   a recorded exercise transcript, label it as exercise evidence; never impersonate
-   a live tool result or claim the simulated graph actually executed.
-4. Inspect the final diff, commands and outputs, review declarations, accepted
-   reports and final answer. Evaluate the observable behavior in `acceptance`
-   and `failure_signals`, not the presence of keywords or a preferred explanation.
-5. Record `pass`, `fail`, `inconclusive` or `not-run` for each scenario, with the
-   evidence and reason. Missing tools, fixtures or records make the relevant
-   observation inconclusive; they are not a pass. Do not average away a concrete
-   safety, evidence or acceptance failure with other successes.
+Record role/fixture revisions and diffs, model/host configuration, tools, dependency
+versions, transcript location, actual commands and results. Setups are fixture
+specifications, not bundled executable Rust projects. No full model trial is run by
+adding or parsing a scenario. Run provider-backed evaluations only within the user's
+authorized scope; this repository change does not deploy the role or launch paid runs.
 
-Record the role revision/diff, fixture revision/diff, model/host configuration,
-tool availability, relevant dependency versions, transcript location, actual
-commands and observed result. Preserve a before/after failure for bug fixes.
-There is no default result: adding a scenario or parsing this JSON does not run it.
+## What to observe
 
-## Coverage and interpretation
+Mechanical edits use a scoped domain node. Behavior changes use the relevant specialist
+implementation, independent verification and bounded repair loop. Expert choice and
+parallelism follow actual responsibilities and dependencies, not fixed domain quotas or
+keywords. General safe Rust and regression quality remain covered. Check that workers
+read their own implementation/review guidance, since parent skills do not inherit.
 
-The scenarios cover unrelated keyword matches, missed async risk without spawn,
-small-change regression evidence, five simultaneous material risks, Tokio handle
-lifecycle, Cargo host/target selection, temporary-owner lifetime errors, partial
-source evidence, real graph input dependencies, negative terminal outcomes,
-stable snapshots, bounded repairs, research stopping and effort preferences.
+Graph scenarios require real runtime evidence for start, input delivery, fresh attempts,
+loop caps and accepted outcomes. Essential partial evidence never approves behavior.
+Only one convergence node routes repairs; the parent does not patch source between runs.
+Missing graph execution permits useful read-only investigation, not parent implementation.
 
-Review selection follows [`complexity-model.md`](../references/complexity-model.md).
-A case can pass with justified inline investigation or relevant specialist review
-when either establishes the required evidence. No scenario demands a fixed tier,
-reviewer count, global domain priority or blanket workspace test command. The
-five-risk case checks coverage of all material risks, not a quota of graph nodes.
-Use of the optional source worker is not a universal requirement.
+The scenarios also retain technical cases for temporary-owner lifetimes, task shutdown,
+Cargo host/target selection, risk false positives/negatives, stable snapshots and research
+stopping. Validate those against pinned fixture versions and actual diagnostics. Tool
+success and source observations cover their tested configuration, not universal soundness.
 
-Graph-specific cases require runtime evidence to assess dispatch, input delivery
-or accepted outcomes. If the host cannot execute graphs, the role should disclose
-that limit and continue useful inline work; graph behavior remains inconclusive.
-For protocol regressions independent of model judgment, the real-runtime tests in
-[`graph-contract.test.js`](../tests/graph-contract.test.js) exercise the shipped
-declarations with stubbed worker decisions:
+## Runtime protocol checks
+
+From the repository root:
 
 ```sh
 ROLEBOX_ROOT=/path/to/rolebox node scripts/test-runtime-contracts.mjs roles/rust-engineer/tests/graph-contract.test.js
 ```
 
-Run that command from the repository root. Passing those tests verifies the
-loader and graph protocol path; it does not prove that a model recognizes a
-partial report or makes a sound review decision.
-
-## Technical oracles
-
-- The lifetime case deliberately retains a valid elided function signature and
-  an invalid caller that borrows a temporary owner. Check the original diagnostic
-  and repaired caller with the fixture's compiler; explicit lifetime annotations
-  cannot keep that temporary owner alive.
-- For the Tokio case, resolve documentation against the fixture's pinned version.
-  The [JoinHandle documentation](https://docs.rs/tokio/latest/tokio/task/struct.JoinHandle.html)
-  distinguishes detaching, cancellation requests and observing completion. Do not
-  assume that the linked latest release matches a fixture's lockfile.
-- The [Cargo build-script inputs documentation](https://doc.rust-lang.org/cargo/reference/build-scripts.html#inputs-to-the-build-script)
-  explains host execution and target configuration inputs. A branch simulation,
-  cross build and target runtime test establish different facts.
-
-These are behavioral oracles, not mandates to add a dependency, install a tool,
-or make an external model call. No full session evaluation has been performed
-merely by maintaining these assets; retain actual trial evidence separately.
+These tests load the actual seven expert roles and their assets, compile every shipped
+graph shape and exercise scheduling, serial expert handoff, accepted feedback, evidence
+fan-in, fresh post-repair reports, negative terminal outcomes and loop exhaustion. The
+worker dispatch is stubbed. Passing establishes protocol compatibility with the tested
+runtime; it does not establish that a model chooses experts well or fixes a Rust fixture.
