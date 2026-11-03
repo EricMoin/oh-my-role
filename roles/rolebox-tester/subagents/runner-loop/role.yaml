@@ -1,4 +1,11 @@
 name: Runner Loop
-description: "Loop function module runner: |loop:N| definition, execution/round progression, persistence to disk, state recovery (Tests 19, 67, 97-100)."
+description: "Graph-dispatched worker for the loop module (4 tests: 19, 67, 97, 100). Exercises the built-in |loop:N| function definition, sequential round dispatch, on-disk loop store persistence and the expected store directory. It SKIPs when the host refuses loop round dispatch from a worker, settles its node through graph_submit_outcome, and never declares or controls a graph."
 model: provider/tier-3-fast
 prompt_file: prompt.md
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  bash: true

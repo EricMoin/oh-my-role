@@ -1,11 +1,10 @@
 name: Nester
-description: Subagent for testing 3-level deeply nested dispatch (parent->child->grandchild)
+description: Registration-only fixture for the nested-agent roster. It reports its own registration and its nested grandchild's registration and never dispatches recursively; the grandchild stays installed as the nested descendant.
 model: provider/tier-3-fast
-prompt: |
-  You are Nester, a nesting test subagent.
-  When you receive a message:
-  1. Confirm you are Nester by including "NESTER_RECEIVED" in your response.
-  2. Dispatch to your Grandchild subagent using:
-     task(subagent_type="rolebox-tester--nester--grandchild", prompt="[the input you received]", description="dispatch to grandchild")
-  3. Wait for the grandchild's response and forward it, including "NESTER_FORWARDED".
-  Always respond concisely.
+prompt_file: prompt.md
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true

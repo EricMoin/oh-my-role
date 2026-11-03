@@ -1,10 +1,33 @@
 name: Rolebox Tester
-description: "User-directed functional tester for rolebox. Run specific test modules on demand (e.g., node dispatch, live-graph visibility, memory, state machine, LSP) or run the full suite. Covers: skills, Graph Engine v2 imperative node dispatch (single-node/chained/parallel runs, node session continuation, node retry, output truncation, cancel), functions (parameterized/state-machine/observe-probe/signal), references, tools (bash/write/read/grep/glob/edit/hashline), permissions, MCP, todo, session tools (info/diff/fork), memory (write/recall/list/update/injection), task management (search/budget/graph/chronology/export), asset management (search/inspect/validate/compose/hot-reload), live-graph visibility (graph_status liveness/metrics, pending_approvals gates), web/search, LSP, nested dispatch, and structured test report generation. Centered on Graph Engine v2 imperative graph_* coverage: graph_create/add_node/add_edge/add_loop/run/status/cancel/approve, on_condition edges, loop mode, node/graph budgets, escalate-retry with backoff_ms, graph-validation rejection, node liveness, the <graph_state> introspection block, signal-emitting subagents (signal-answer / signal-revise / signal-escalate / signal-approve) exercising the signal-bridge terminating and pausing signal vocabulary end to end, plus an interactive_terminal smoke test."
-version: "6.0.0"
+description: >-
+  Host-aware, primary-first functional test suite for rolebox 2.2.0 — 178 tests
+  in 16 modules covering graph v3 outcome-protocol declaration and worker outcome
+  submission, Graph Engine dispatch, functions, references, tools/hashline,
+  permissions, MCP, sessions, memory, task and asset management, LSP, web,
+  hooks/recovery, CLI, DSH role teams, computer use and browsing. Probes the
+  host's capability record before selecting a module and reports PASS/FAIL/SKIP
+  with machine-readable SKIP reasons. The declaring primary holds
+  graph_declare/graph_control/graph_status/graph_audit; fixture nodes act as
+  workers and settle only through graph_submit_outcome, with declared outcomes,
+  schema/artifact acceptance gates, bounded loop groups and durable runs.
+version: "7.0.0"
 model: provider/tier-3-fast
 mode: primary
 prompt_file: PROMPT.md
 
+# Graph v3 declarer face: the primary declares, controls, reads and audits.
+# Worker submission is granted to the fixture subagents, never to the primary.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  bash: true
+  write: true
+  edit: true
+
+# Seven declared test functions; memory is configured below, not added here.
 functions:
   - test-all
   - transform
@@ -17,72 +40,155 @@ functions:
 skills:
   - test-skill
 
+# Twelve declared documents: three suite-level contracts (reference probe,
+# catalog, capability matrix) and nine module-body documents.
 references:
   test-reference:
     path: references/test-reference.md
-    description: A test reference document to verify reference loading works correctly
+    description: Reference-loading probe document carrying the REFERENCE_LOAD_SUCCESS marker
+  test-catalog:
+    path: references/test-catalog.md
+    description: Authoritative suite catalog — 16 modules, 178 test ids, retirement ledger and fixture roster
+  host-capability-matrix:
+    path: references/host-capability-matrix.md
+    description: Mandatory capability probe, five-host matrix, SKIP-versus-FAIL rules, tool-name resolution and executor lanes
+  core-tests:
+    path: references/core-tests.md
+    description: core-prompt module bodies (10 tests) — host-aware loaders, parameterized function, activation and prompt blocks
+  graph-v3-tests:
+    path: references/graph-v3-tests.md
+    description: graph-v3 module bodies (32 tests) — declarations, accepted outcomes, controls, status/audit, loop groups and worker tool face
+  team-tests:
+    path: references/team-tests.md
+    description: DSH role-team module bodies (10 tests) — team lifecycle, events, claims, ownership and turn-budget boundaries
+  runtime-tests:
+    path: references/runtime-tests.md
+    description: runtime-hooks-cli module bodies (7 tests) — interactive terminal, custom hooks, edit-error recovery, CLI, logs and monitor
+  tool-tests:
+    path: references/tool-tests.md
+    description: tools-hashline (15) and permission (2) module bodies — native command/file/todo tools, hashline and permission enforcement
+  session-memory-web-tests:
+    path: references/session-memory-web-tests.md
+    description: session (8), memory (12) and web (4) module bodies — session tools, memory lifecycle and network reads
+  lsp-tests:
+    path: references/lsp-tests.md
+    description: LSP module bodies (32 tests) — one body per registered lsp_* tool
+  asset-task-tests:
+    path: references/asset-task-tests.md
+    description: asset (17) and task (7) module bodies — asset search/inspect/validate/compose and task read models
+  computer-browse-tests:
+    path: references/computer-browse-tests.md
+    description: computer (2) and browse (2) module bodies — read-only desktop capture and browser page reads
 
+# Four inline fixtures. Directory fixtures and the two runner subagents resolve
+# from subagents/. Fixtures are graph nodes and targets, never suite executors:
+# their graph face is graph_submit_outcome only, so they cannot declare or control.
 subagents:
   - name: Echo
-    description: Simple echo subagent for testing dispatch mechanism (sync and async)
+    description: Fast marker fixture that echoes the task and submits the declared outcome
+    tools:
+      graph_declare: false
+      graph_submit_outcome: true
     prompt: |
-      You are Echo, a test subagent. Your job is simple:
-      1. Confirm you received the message by repeating back what was asked.
-      2. Report your agent ID as "rolebox-tester--echo".
-      3. If asked to do a specific task (math, text transform, etc.), do it and return the result.
-      Always respond concisely. Keep responses under 5 sentences.
+      You are Echo, the fast marker fixture for the rolebox-tester graph v3 suite.
+      When dispatched as a graph node:
+      1. Echo the task back and include the marker ECHO_OK, or the exact marker the
+         node prompt names.
+      2. Submit the outcome your dispatch names through graph_submit_outcome, using
+         the attempt handoff credential and the data the node prompt asks for.
+      3. Keep the response under five sentences. Never declare, control, inspect or
+         audit a graph.
+      The node prompt wins when it asks for a different marker or outcome.
   - name: Sleeper
-    description: Slow subagent for testing async dispatch and cancellation
+    description: Delay/slow fixture for in-flight, cancellation, timeout and release-file timing tests
+    tools:
+      graph_declare: false
+      graph_submit_outcome: true
     prompt: |
-      You are Sleeper, a test subagent for async operations.
-      When you receive a message:
-      1. Acknowledge that you are the Sleeper subagent.
-      2. Perform whatever task is requested.
-      3. End your response with "SLEEPER_COMPLETE".
-      Always respond concisely.
+      You are Sleeper, the slow/delay fixture for the rolebox-tester graph v3 suite.
+      When dispatched as a graph node:
+      1. Announce SLEEPER_READY, then work slowly and deliberately. When the node
+         prompt gives a wait instruction — count slowly, sleep, or poll for a release
+         file until it appears — carry it out before settling.
+      2. Submit the outcome your dispatch names through graph_submit_outcome with the
+         data the node prompt asks for (for example SLOW_DONE_OK).
+      3. Do not settle early and never invent completion while a wait is still in
+         progress. Keep the response concise.
+      The node prompt wins when it asks for a different wait, marker or outcome.
   - name: Processor
-    description: First-stage graph agent that processes input and passes to Checker
+    description: First pipeline stage that processes the input, carries its marker and submits the declared outcome
+    tools:
+      graph_declare: false
+      graph_submit_outcome: true
     prompt: |
-      You are Processor, a graph participant agent.
-      When you receive a message:
-      1. Confirm you are Processor by including "PROCESSOR_RECEIVED" in your response.
-      2. Transform the input by appending " [PROCESSED]" to whatever you were given.
-      3. Return the transformed result.
-      Always respond concisely. Keep responses under 3 sentences.
+      You are Processor, the first pipeline stage for the rolebox-tester graph v3 suite.
+      When dispatched as a graph node:
+      1. Announce PROCESSOR_RECEIVED.
+      2. Process the input: append " [PROCESSED]" to the text payload in the
+         dispatch message and carry the processed text in the data you submit.
+      3. Submit the outcome your dispatch names through graph_submit_outcome; do not
+         hardcode an outcome when the dispatch declares another. Include
+         PROCESSOR_RECEIVED and the processed text in your accepted data.
+      4. Keep the response concise. Never declare, control, inspect or audit a graph.
   - name: Checker
-    description: Second-stage graph agent that checks processed output and decides approval
+    description: Second pipeline/review stage that verifies the processed marker and submits the declared outcome
+    tools:
+      graph_declare: false
+      graph_submit_outcome: true
     prompt: |
-      You are Checker, a graph participant agent in a review-loop.
-      When you receive a message:
-      1. Confirm you are Checker by including "CHECKER_RECEIVED" in your response.
-      2. Verify the input contains "[PROCESSED]". If it does, respond with "APPROVED" and "GRAPH_FLOW_OK".
-      3. If it does not contain "[PROCESSED]", respond with "REVISION_NEEDED" and "GRAPH_FLOW_FAIL".
-      Always respond concisely. Keep responses under 3 sentences.
-  - name: Signal Answer
-    description: Signal-emitting graph agent that always terminates via signal(type="answer") with a fixed ANSWER_SIGNAL_OK marker payload
-    prompt_file: subagents/signal-answer/prompt.md
-  - name: Signal Revise
-    description: Signal-emitting graph agent that always terminates via signal(type="revise_needed") with a fixed REVISE_SIGNAL_OK findings payload
-    prompt_file: subagents/signal-revise/prompt.md
-  - name: Signal Escalate
-    description: Signal-emitting graph agent that always terminates via signal(type="escalate") with a fixed ESCALATE_SIGNAL_OK reason payload
-    prompt_file: subagents/signal-escalate/prompt.md
-  - name: Signal Approve
-    description: Signal-emitting graph agent that always terminates via signal(type="need_approval") with a fixed APPROVAL_GATE_OK summary payload
-    prompt_file: subagents/signal-approve/prompt.md
+      You are Checker, the second pipeline/review stage for the rolebox-tester graph v3 suite.
+      When dispatched as a graph node:
+      1. Announce CHECKER_RECEIVED.
+      2. Verify that the materialized upstream input contains the processed marker
+         (whitespace-insensitive) and record the pass or failure in your submitted data.
+      3. Submit the outcome your dispatch names through graph_submit_outcome —
+         approved when the check passes, or the revision outcome the node prompt
+         declares when it does not. Do not hardcode an outcome when the dispatch
+         declares another.
+      4. Keep the response concise. Never declare, control, inspect or audit a graph.
 
 memory:
   inject: true
   max_inject: 10
   min_relevance: medium
   scope: both
+  session_focus: true
+  recall: true
+  # Deterministic recall keeps suite runs off model-cost scout turns.
+  recall_mode: deterministic
 
 dispatch:
   backgroundStaleTimeoutMs: 900000
   syncPromptTimeoutMs: 600000
 
-graph:
-  orchestration: graph_v2
+# Runtime surface: the edit-error recovery reminder chain and the custom hook
+# probe exercised by the runtime-hooks-cli module (tests 235-237).
+hooks:
+  builtin:
+    edit_error: true
+  recovery:
+    enabled: true
+    max_total_attempts: 10
+    persist_state: true
+    collect_metrics: true
+    edit_error:
+      chain:
+        - strategy: remind_and_retry
+          config:
+            max_retries: 2
+            reminder_text: "[EDIT ERROR] STOP and re-read the changed file before retrying."
+  custom:
+    - name: probe
+      description: Injects HOOK_PROBE_FIRED into the next model step when a bash result contains HOOK_PROBE_TRIGGER.
+      events: [tool.execute.after]
+      module: hooks/probe.mjs
+      filter:
+        tools: [bash]
+      priority: 50
+      phase: after
+      config:
+        marker: HOOK_PROBE_TRIGGER
+        inject: HOOK_PROBE_FIRED
 
 auto_activate:
   - test-all

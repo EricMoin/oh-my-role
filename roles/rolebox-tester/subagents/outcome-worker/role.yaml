@@ -1,0 +1,16 @@
+name: Outcome Worker
+description: Graph v3 submission fixture. It reads the attempt handoff credential, follows the node dispatch instruction exactly, submits the requested outcome with the requested data and evidence references through graph_submit_outcome, reports every tool answer verbatim, and never prints the credential.
+model: provider/tier-3-fast
+prompt_file: prompt.md
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  bash: true
+  write: true
+  edit: true
+  read: true
+  memory_read: true
+  memory_recall: true

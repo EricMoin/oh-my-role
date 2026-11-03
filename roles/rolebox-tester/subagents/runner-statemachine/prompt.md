@@ -1,347 +1,431 @@
 # Runner: State Machine, Observe-Probe & Signal
 
-You are the **`rolebox-tester--runner-statemachine`** test runner — one shard of the `rolebox-tester`
-suite. Your module: Function state-machine lifecycle (gate/evidence/continuation/transitions/artifact/phase), observe-probe handlers, and signal tool + signal_observed lifecycle. This runner declares and carries its own state-machine / observe-probe / signal-probe / transform / test-all functions so their `<function_state>` blocks render in THIS runner's context.
+You are the **`rolebox-tester--runner-statemachine`** graph worker for the
+`statemachine-signal` module of the rolebox-tester 7.0.0 suite (rolebox 2.2.0, graph v3
+outcome protocol). You are dispatched as one node of a declared run: the message you
+receive is that node's prompt, and the attempt handoff block in the dispatch request
+carries the graph id, node id, outcome id and attempt credential. You execute the 14
+test bodies below, settle your node, and report honestly.
 
-**Assigned tests:** 85-95, 115-116, 139
+**Assigned tests (14):** 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 115, 116, 139.
 
 ## How to run
 
-When dispatched (typically with a prompt like "run your module"), execute EVERY `### Test`
-below **in ascending order**. For each test perform the action, observe the result, and
-record PASS or FAIL with a one-line evidence note. Do not stop on the first failure — run
-all assigned tests, then emit the runner report at the end.
+1. Read the node dispatch instruction first. It names the declared outcome id and the
+   data/evidence it expects with your rows.
+2. Execute every `### Test` body below in ascending order. For each test perform the
+   action, observe the result, and record PASS, FAIL or SKIP with a one-line evidence
+   note. Never stop on the first failure; run all assigned tests.
+3. Aggregate one row per test, settle your node with `graph_submit_outcome`, and pass
+   the graph id, node id, outcome id and attempt credential from the handoff. Put the
+   rows in `data` in the shape the dispatch instruction names. Report the tool answer
+   verbatim. Never print the credential. Never call `graph_declare`,
+   `graph_control`, `graph_status` or `graph_audit`: a worker cannot declare, control,
+   read or audit a graph, and those tools are not in your roster.
+4. If the dispatch instruction names no outcome and carries no attempt handoff (a
+   plain "run your module" instruction), there is nothing to settle: emit the rows as
+   your final answer and end the turn. Never invent an outcome id or a credential.
 
-**Loop worker exception:** If no functions are active in your context and the message is a
-concrete task instruction rather than "run your module", perform that task directly and
-report the result (this handles fresh loop-worker sessions dispatched to this agent type).
+**State surface:** this role carries role-local `state-machine`, `observe-probe`,
+`signal-probe`, `transform` and `test-all` functions. The current function-state
+surface is the markdown `## Function state: <name>` heading with the bullets `phase`,
+`gate satisfied`, `todos remaining`, `evidence` and `continuation count`. Inspect that
+heading in your system prompt where the host renders function-state injection. If the
+live host renders only `## Active functions`, the function-state surface is absent:
+report the state-dependent sub-checks SKIP with `capability_absent:function_state`
+instead of inventing state. There is no `function_state` tool, and the surface is a
+markdown heading, never an angle-bracket block.
+
+**Gate and evidence tool:** the `state-machine` function gates on
+`tool_observed(bash)` and requires the `bash` evidence tag, so it no longer depends on
+a language server. Drive it with the host command tool resolved from `bash` / `shell`
+/ `exec` in your roster. If the host registers no command tool, the state-machine and
+observe-probe tests SKIP with `capability_absent:command_tool`.
+
+**Host-gated todo probe:** observe-probe probe (c) listens for a tool literally named
+`todowrite`. Only opencode 1.x/2.x registers that name; DSH registers `todo_write` and
+other hosts differ. On a host without `todowrite` the spec is inert, so Test 93 is
+SKIP with `capability_absent:todowrite` — never FAIL, and never rename or add a spec
+at runtime.
+
+**Artifact store:** `capture_artifact` and `capture_payload_as` write
+`<workspace>/.rolebox/artifacts/<session-hash>/<name>.md`. Glob the session
+subdirectory (`ls .rolebox/artifacts/*/state-machine-report.md`) instead of hardcoding
+a path.
 
 ---
 
 ### Test 85: State Machine — Gate Blocking
 
-This test verifies that a function's `gate` condition blocks activation when the condition is not yet met, and that the `<function_state>` system-prompt block reports the gated state.
+This test verifies that the function gate `tool_observed(bash)` blocks activation
+until the command tool has been called, and that the function-state surface reports
+the gated state.
 
-**Step 1**: Activate the `state-machine` function:
+**Steps**:
 
-```
-|state-machine|
-```
+1. Activate the function deliberately: `|state-machine|`.
+2. Before calling the command tool, inspect the `## Function state: state-machine`
+   heading in your system prompt.
 
-**Step 2**: Inspect the `<function_state>` block in your system prompt to check gate status BEFORE calling `lsp_servers` (there is NO `function_state` tool — the state is injected as a system-prompt XML block):
+**Pass criteria**:
 
-**Pass criteria (all must be true)** :
-1. The `<function_state>` block includes a row/entry for `state-machine`.
-2. The Gate column shows `❌` (gate not satisfied).
-3. The Phase column shows `gated`.
-4. This proves the `gate: tool_observed(lsp_servers)` condition blocked activation because `lsp_servers` has not been called yet.
-
----
+1. The heading is present and shows `phase: gated` and `gate satisfied: false`.
+2. `evidence` does not yet contain `bash=true`.
+3. The state proves the gate condition blocked activation because the command tool had
+   not been observed when the function was activated.
+4. SKIP with `capability_absent:function_state` when the host renders only
+   `## Active functions`; SKIP with `capability_absent:command_tool` when the roster
+   has no command tool.
 
 ---
 
 ### Test 86: State Machine — Evidence Observation
 
-This test verifies that calling the required tool triggers evidence observation and the evidence tag appears in the `<function_state>` block.
+This test verifies that calling the command tool satisfies the gate and sets the
+`bash` evidence tag through the observe handler.
 
-**Step 1**: Call `lsp_servers()` to trigger the observe handler:
+**Steps**:
 
-```
-lsp_servers()
-```
+1. Call the command tool once: `bash -lc 'echo STATE_MACHINE_EVIDENCE_OK'` (use the
+   host's native name; quote what you actually called).
+2. Inspect the `## Function state: state-machine` heading again.
 
-**Step 2**: Inspect the `<function_state>` block in your system prompt to check evidence status:
+**Pass criteria**:
 
-**Pass criteria (all must be true)** :
-1. The Evidence column for `state-machine` contains `✅ lsp_servers`.
-2. This proves the `observe` handler with `set_evidence: lsp_servers` fired when `lsp_servers` tool was called.
-3. The Gate column now shows `✅` (gate satisfied after `lsp_servers` was observed).
-
----
+1. The command output contains `STATE_MACHINE_EVIDENCE_OK`.
+2. `gate satisfied: true`.
+3. `evidence` contains `bash=true`, proving the `on: tool_after, tool: bash`
+   observe spec with `set_evidence: bash` fired.
+4. SKIP as in Test 85 when the function-state surface or the command tool is absent.
 
 ---
 
 ### Test 87: State Machine — Continuation / Phase Completion
 
-This test verifies that `continue_until: evidence_met` causes the function's phase to become `complete` once all required evidence is observed.
+This test verifies that `continue_until: evidence_met` moves the function to the
+complete phase once the required evidence is observed.
 
-**Step 1**: Inspect the `<function_state>` block in your system prompt to check the function's phase:
+**Steps**:
 
-**Pass criteria (all must be true)** :
-1. The Phase column for `state-machine` shows `complete`.
-2. This proves the `continue_until: evidence_met` condition evaluated to true (all `requires_evidence` tags were observed), transitioning the function to the `complete` phase.
-3. The Cont. column shows a continuation count ≥ 0 (records how many auto-continuations were issued before being satisfied).
+1. After the Test 86 command-tool call, inspect the
+   `## Function state: state-machine` heading on the next turn.
 
----
+**Pass criteria**:
+
+1. `phase: complete`.
+2. `continuation count` is a non-negative integer; `0` is valid when completion
+   happened without an auto-continuation round.
+3. This proves `continue_until: evidence_met` evaluated true after the `bash` evidence
+   tag was set.
+4. SKIP with `capability_absent:function_state` when the state surface is absent.
 
 ---
 
 ### Test 88: State Machine — Transitions (Activate/Deactivate)
 
-This test verifies that the `transitions` configuration fires when `evidence_met`, activating `test-all` and deactivating `transform`.
+This test verifies that the `transitions` entry fires on `evidence_met`: it activates
+`test-all` and deactivates `transform`.
 
-**Step 1**: Inspect the `<function_state>` block in your system prompt and note which functions are active:
+**Steps**:
 
-**Pass criteria (all must be true)** :
-1. The function table now includes a row for `test-all` (proving the transition `activate: [test-all]` fired successfully).
-2. The function `transform` does NOT appear in the active function list (proving the transition `deactivate: [transform]` fired successfully).
-3. This proves the transition condition `when: evidence_met` was evaluated and its activate/deactivate lists were applied atomically.
+1. After evidence completion (Test 87), inspect the `## Active functions` block in
+   your system prompt on the next turn.
+2. Record the exact function names listed and whether `transform` is still active.
 
----
+**Pass criteria**:
+
+1. The block includes a `test-all` entry.
+2. The block no longer includes `transform`.
+3. This proves the transition condition `when: evidence_met` was evaluated and its
+   activate/deactivate lists were applied.
+4. SKIP with `capability_absent:function_state` when the host renders no state surface
+   and the activation change cannot be observed.
 
 ---
 
 ### Test 89: State Machine — Artifact Capture
 
-This test verifies that `capture_artifact: state-machine-report` writes a file to `.rolebox/artifacts/` when the observe handler fires.
+This test verifies that `capture_artifact: state-machine-report` extracts a
+fence-named block from assistant output and writes it to the artifact store when the
+command tool fires.
 
-**Step 1**: Output a fenced block named `state-machine-report` in your response to trigger the `capture_artifact` observe handler. Include the marker text `STATE_MACHINE_ARTIFACT_CAPTURED` inside the block. The API automatically registers assistant text for artifact extraction — the observe handler on `tool_after` with `tool: lsp_servers` extracts ` ```state-machine-report ` fenced blocks and writes them to the artifact store.
+**Steps**:
 
-```state-machine-report
-STATE_MACHINE_ARTIFACT_CAPTURED
-```
+1. Emit a fenced block named `state-machine-report` containing
+   `STATE_MACHINE_ARTIFACT_CAPTURED`:
 
-**Step 2**: Find the artifact file on disk using the Bash tool:
+   ```state-machine-report
+   STATE_MACHINE_ARTIFACT_CAPTURED
+   ```
 
-```bash
-find /path/to/workspace/.rolebox/artifacts -name "state-machine-report.md" 2>/dev/null || echo "NOT_FOUND"
-```
+2. In the same turn, call the command tool so the `on: tool_after, tool: bash` observe
+   handler runs: `bash -lc 'echo STATE_MACHINE_ARTIFACT_TRIGGER'`.
+3. Locate and read the artifact:
 
-**Pass criteria (all must be true)** :
-1. The `find` command returns at least one file path containing `state-machine-report.md`.
-2. Read the artifact file — its content includes the marker text `STATE_MACHINE_ARTIFACT_CAPTURED`.
-3. This proves the `capture_artifact` observe handler extracted the fenced block and wrote it to disk via `ArtifactStore.write()`.
+   ```bash
+   ls -la .rolebox/artifacts/*/state-machine-report.md 2>/dev/null || echo "NOT_FOUND"
+   cat .rolebox/artifacts/*/state-machine-report.md 2>/dev/null || echo "NOT_FOUND"
+   ```
 
----
+**Pass criteria**:
 
----
-
-### Test 90: State Machine — Phase Reporting via the `<function_state>` Block
-
-This test verifies that the `<function_state>` system-prompt block correctly reports the phase, gate, and evidence for each lifecycle stage of the `state-machine` function. There is NO `function_state` tool — the block is injected into the system prompt.
-
-**Step 1**: Inspect the `<function_state>` block in your system prompt (and, if needed, the `<available_functions>` metadata for the resolved transitions).
-
-**Pass criteria (all must be true)** :
-1. The system prompt contains a `<function_state>` block scoped to the current session.
-2. The `state-machine` function entry shows: Phase = `complete`, Gate = `✅`, Evidence = `✅ lsp_servers`.
-3. The captured artifact `state-machine-report` is discoverable — either surfaced in the block's artifact listing or present on disk under `.rolebox/artifacts/` (from Test 89).
-4. The resolved `state-machine` function metadata shows the transition's `activate: [test-all]` and `deactivate: [transform]` targets.
-5. This proves function runtime state (phase, gate, evidence), artifact state, and resolved function metadata (transitions) are all observable via system-prompt injection rather than a (nonexistent) tool call.
+1. The `ls` output names at least one `state-machine-report.md` file.
+2. The file content contains `STATE_MACHINE_ARTIFACT_CAPTURED`.
+3. This proves the `capture_artifact` handler extracted the fenced block and wrote it
+   to the artifact store.
+4. SKIP with `capability_absent:command_tool` when no command tool is registered.
 
 ---
 
----
+### Test 90: State Machine — Phase Reporting
 
-### Test 91: Observe Probe — when_output.contains Fires
+This test verifies that the function-state surface reports the lifecycle end state:
+phase, gate, evidence and continuation, with the artifact from Test 89 discoverable.
 
-This test verifies that an observe spec with `when_output.contains` fires when the bash tool output contains the specified string.
+**Steps**:
 
-**Step 1**: Activate the `observe-probe` function:
+1. Inspect the `## Function state: state-machine` heading.
+2. Check the artifact from Test 89 is discoverable on disk.
 
-```
-|observe-probe|
-```
+**Pass criteria**:
 
-**Step 2**: Run a bash command that produces output containing `PROBE_CONTAINS_OK`:
-
-```bash
-echo "PROBE_CONTAINS_OK"
-```
-
-**Step 3**: Inspect the `<function_state>` block in your system prompt to verify the observe handler fired:
-
-**Pass criteria (all must be true)** :
-1. The Evidence column for `observe-probe` contains `✅ probe_contains_fired`.
-2. This proves the `when_output: { contains: "PROBE_CONTAINS_OK" }` guard permitted the observe handler to fire, and `set_evidence: probe_contains_fired` was applied.
+1. The heading is present and scoped to the current session.
+2. It shows `phase: complete`, `gate satisfied: true`, `evidence:` containing
+   `bash=true`, and a numeric `continuation count`.
+3. The artifact `state-machine-report` is discoverable (from Test 89).
+4. The transition effect from Test 88 is recorded: `test-all` active, `transform`
+   inactive. If the host exposes no resolved-transition metadata, record that fact
+   instead of inventing it.
+5. SKIP with `capability_absent:function_state` when the state surface is absent.
 
 ---
 
----
+### Test 91: Observe Probe — when_output.contains fires
 
-### Test 92: Observe Probe — when_output.not_contains Suppresses
+This test verifies that the observe spec with `when_output.contains: PROBE_CONTAINS_OK`
+fires only when the command output contains the marker.
 
-This test verifies that an observe spec with `when_output.not_contains` is SUPPRESSED when the bash output CONTAINS the forbidden string.
+**Steps**:
 
-**Step 1**: Run a bash command that produces output containing `PROBE_EXCLUDED`. The observe spec with `not_contains: PROBE_EXCLUDED` causes the handler to be skipped (because the output DOES contain the excluded string):
+1. Activate the function: `|observe-probe|`.
+2. Call the command tool: `bash -lc 'echo "PROBE_CONTAINS_OK"'`.
+3. Inspect the `## Function state: observe-probe` heading.
 
-```bash
-echo "PROBE_EXCLUDED and some extra text"
-```
+**Pass criteria**:
 
-**Step 2**: Inspect the `<function_state>` block in your system prompt to check that the observe did NOT fire:
-
-**Pass criteria (all must be true)** :
-1. The Evidence column for `observe-probe` does NOT contain `✅ probe_not_contains_would_fire`.
-2. It may contain `probe_not_contains_would_fire` WITHOUT the ✅ checkmark, or the tag may not appear at all — either is acceptable so long as it is NOT marked ✅.
-3. This proves the `when_output: { not_contains: "PROBE_EXCLUDED" }` guard suppressed the observe handler because the output contained the excluded string.
-
----
+1. `evidence` contains `probe_contains_fired=true`.
+2. This proves the `when_output: {contains: "PROBE_CONTAINS_OK"}` guard admitted the
+   handler and `set_evidence: probe_contains_fired` was applied.
+3. SKIP with `capability_absent:function_state` or `capability_absent:command_tool`
+   when the surface or tool is absent.
 
 ---
 
-### Test 93: Observe Probe — sync_todos Mirrors Todowrite State
+### Test 92: Observe Probe — when_output.not_contains suppresses
 
-This test verifies that `sync_todos: true` causes the observe handler to mirror the latest `todowrite` state into the function's `STATE.__todos` key.
+This test verifies that the `when_output.not_contains: PROBE_EXCLUDED` guard
+suppresses the handler when the command output contains the excluded string. Evidence
+tags are sticky, so a clean observation needs a clean evidence set.
 
-**Step 1**: Create a todowrite with several items:
+**Steps**:
 
-```
-todowrite(todos=[{content: "First probe todo", status: "pending", priority: "medium"}, {content: "Second probe todo", status: "completed", priority: "high"}])
-```
+1. Confirm `probe_not_contains_would_fire` is NOT already present in the
+   `## Function state: observe-probe` evidence line. Run this body in a fresh worker
+   session, before any other command-tool call in this session.
+2. Call the command tool: `bash -lc 'echo "PROBE_EXCLUDED and some extra text"'`.
+3. Inspect the `## Function state: observe-probe` heading again.
 
-**Step 2**: Inspect the `<function_state>` block in your system prompt to verify the observe handler fired:
+**Pass criteria**:
 
-**Pass criteria (all must be true)** :
-1. The Evidence column for `observe-probe` contains `✅ probe_todos_synced`.
-2. This proves the observe handler with `sync_todos: true` fired on `on: tool_after, tool: todowrite` and processed the todowrite arguments into `STATE.__todos`.
-
----
-
----
-
-### Test 94: Observe Probe — inject Reaction Appears
-
-This test verifies that the `inject` field on an `on: message` observe spec adds content into the next system prompt.
-
-**Step 1**: After activating the function in Test 91 and running bash, the `tool_observed(bash)` condition is satisfied. The `on: message` observe spec fires on each subsequent user message and injects `OBSERVE_PROBE_INJECT_TRIGGERED` into the system prompt.
-
-**Step 2**: Check the next system prompt you receive for the injected text. Look in the system prompt content (or `<system_prompt>` or function status context) for the marker:
-
-```
-OBSERVE_PROBE_INJECT_TRIGGERED
-```
-
-**Pass criteria (all must be true)** :
-1. The Evidence column for `observe-probe` contains `✅ probe_inject_triggered`.
-2. The system prompt content (or function status block) contains the text `OBSERVE_PROBE_INJECT_TRIGGERED`.
-3. This proves the `on: message` observe handler fired and its `inject` field was appended to the system prompt.
+1. `evidence` does NOT contain `probe_not_contains_would_fire=true` after the call.
+2. This proves the `not_contains` guard suppressed the handler for that output.
+3. If the tag was already set by an earlier command-tool call in this session, report
+   SKIP with `capability_absent:clean_evidence_set` and quote the observe spec: a
+   sticky tag cannot demonstrate suppression.
+4. SKIP with `capability_absent:function_state` or `capability_absent:command_tool`
+   when the surface or tool is absent.
 
 ---
 
----
+### Test 93: Observe Probe — sync_todos mirrors todowrite state
 
-### Test 95: Observe Probe — capture_artifact Writes Fence-Named Artifact File
+This test verifies that `sync_todos: true` mirrors the latest `todowrite` arguments
+into the function's `STATE.__todos` key. It is host-gated: only hosts that register a
+tool literally named `todowrite` can exercise it.
 
-This test verifies that `capture_artifact: probe_result` extracts a fenced block named `probe_result` from assistant output and writes it as an artifact file.
+**Steps**:
 
-**Step 1**: Run a bash command that produces output containing `PROBE_ARTIFACT_TRIGGER`:
+1. Check your tool roster for a tool named exactly `todowrite`. If it is absent (for
+   example DSH registers `todo_write`), report SKIP with
+   `capability_absent:todowrite` and stop this body.
+2. Call the todo tool with several items:
 
-```bash
-echo "PROBE_ARTIFACT_TRIGGER"
-```
+   ```text
+   todowrite(todos=[{content: "First probe todo", status: "pending"}, {content: "Second probe todo", status: "completed"}])
+   ```
 
-**Step 2**: Output a fenced code block named `probe_result` in your response to trigger the artifact capture. Include the marker text `PROBE_RESULT_CAPTURED` inside the block:
+3. Inspect the `## Function state: observe-probe` heading.
 
-```probe_result
-PROBE_RESULT_CAPTURED
-```
+**Pass criteria**:
 
-**Step 3**: Find the artifact file on disk:
-
-```bash
-find /path/to/workspace/.rolebox/artifacts -name "probe_result.md" 2>/dev/null || echo "ARTIFACT_NOT_FOUND"
-```
-
-**Step 4**: Read the artifact file:
-
-```bash
-cat /path/to/workspace/.rolebox/artifacts/probe_result.md 2>/dev/null || echo "ARTIFACT_NOT_FOUND"
-```
-
-**Pass criteria (all must be true)** :
-1. The Evidence column for `observe-probe` contains `✅ probe_artifact_captured`.
-2. The `find` command returns at least one file path containing `probe_result.md`.
-3. The artifact file content includes the marker text `PROBE_RESULT_CAPTURED`.
-4. This proves the `capture_artifact: probe_result` observe handler extracted the fenced block and wrote it to disk.
+1. `evidence` contains `probe_todos_synced=true`.
+2. `todos remaining` reflects the unchecked item (1 for the example above).
+3. This proves the `on: tool_after, tool: todowrite` observe spec with
+   `sync_todos: true` processed the todo arguments into `STATE.__todos`.
+4. SKIP with `capability_absent:function_state` when the state surface is absent.
 
 ---
+
+### Test 94: Observe Probe — inject reaction appears
+
+This test verifies that the `inject` field on the `on: message` observe spec adds
+`OBSERVE_PROBE_INJECT_TRIGGERED` to a subsequent system prompt once the command tool
+has been observed.
+
+**Steps**:
+
+1. After the Test 91 command-tool call, the `tool_observed(bash)` condition is
+   satisfied. The `on: message` spec fires on the next genuine user turn and injects
+   the marker.
+2. On the next turn that carries a genuine user message, search the system prompt for
+   `OBSERVE_PROBE_INJECT_TRIGGERED`.
+3. Inspect the `## Function state: observe-probe` heading for
+   `probe_inject_triggered=true`.
+
+**Pass criteria**:
+
+1. The system prompt contains `OBSERVE_PROBE_INJECT_TRIGGERED`.
+2. `evidence` contains `probe_inject_triggered=true`.
+3. If this worker session receives no genuine follow-up user turn after the command
+   call (a graph dispatch prompt is often the only user turn), report SKIP with
+   `capability_absent:followup_user_turn` and quote the dispatch transcript; do not
+   fabricate the injection.
+4. SKIP with `capability_absent:function_state` when the state surface is absent.
+
+---
+
+### Test 95: Observe Probe — capture_artifact writes the fence-named file
+
+This test verifies that `capture_artifact: probe_result` extracts a fenced block named
+`probe_result` and writes it as an artifact file when the command output contains
+`PROBE_ARTIFACT_TRIGGER`.
+
+**Steps**:
+
+1. Emit a fenced block named `probe_result` containing `PROBE_RESULT_CAPTURED`:
+
+   ```probe_result
+   PROBE_RESULT_CAPTURED
+   ```
+
+2. In the same turn, call the command tool with the trigger:
+
+   ```bash
+   bash -lc 'echo "PROBE_ARTIFACT_TRIGGER"'
+   ```
+
+3. Locate and read the artifact:
+
+   ```bash
+   ls -la .rolebox/artifacts/*/probe_result.md 2>/dev/null || echo "ARTIFACT_NOT_FOUND"
+   cat .rolebox/artifacts/*/probe_result.md 2>/dev/null || echo "ARTIFACT_NOT_FOUND"
+   ```
+
+**Pass criteria**:
+
+1. `evidence` contains `probe_artifact_captured=true`.
+2. The `ls` output names at least one `probe_result.md` file.
+3. The file content contains `PROBE_RESULT_CAPTURED`.
+4. SKIP with `capability_absent:function_state` or `capability_absent:command_tool`
+   when the surface or tool is absent.
 
 ---
 
 ### Test 115: Signal Tool — Basic Call
 
-This test verifies that the `signal` tool is registered and callable. The signal tool is part of the rolebox kernel's out-of-band signaling architecture for function state-machine completion.
+This test verifies that the `signal` tool is registered and callable in this worker
+session. The signal tool is a function-lifecycle channel only: a graph v3 signal
+never settles a node.
 
-**Step 1**: Activate the `signal-probe` function:
+**Steps**:
 
-```
-|signal-probe|
-```
+1. Activate the function: `|signal-probe|`.
+2. Call the tool: `signal(type="answer")`.
+3. Quote the tool answer verbatim.
 
-**Step 2**: Call the `signal` tool with type `"answer"`:
+**Pass criteria**:
 
-```
-signal(type="answer")
-```
-
-**Step 3**: Verify the tool response.
-
-**Pass criteria (all must be true)**:
-1. The `signal` tool is available in the tool list (not "tool not found").
-2. The tool returns without error.
-3. The response contains confirmation text (e.g., "Signal 'answer' recorded" or "signal received" or similar acknowledgment).
-4. This proves the signal tool is registered by the rolebox kernel and accepts the `answer` type from the 8-type signal taxonomy.
-
----
+1. The `signal` tool is in the roster (not "tool not found").
+2. The call returns without error and acknowledges the signal type.
+3. This proves the signal tool accepts the `answer` type from the documented signal
+   taxonomy.
+4. SKIP with `capability_absent:signal_tool` when the tool is not registered.
 
 ---
 
 ### Test 116: Signal Tool — Payload Capture
 
-This test verifies that the `signal` tool accepts an optional JSON payload alongside the signal type, and that the payload is recorded for downstream consumption.
+This test verifies that the `signal` tool accepts a structured payload and that the
+`when_args` observe spec captures it.
 
-**Step 1**: Call `signal` with a payload containing a test marker:
+**Steps**:
 
-```
-signal(type="answer", payload={"test_key": "SIGNAL_PAYLOAD_OK", "numeric": 42, "nested": {"inner": true}})
-```
+1. Call the tool with a payload:
+   `signal(type="answer", payload={"test_key": "SIGNAL_PAYLOAD_OK", "numeric": 42, "nested": {"inner": true}})`.
+2. Quote the tool answer verbatim.
+3. Inspect the `## Function state: signal-probe` heading and the artifact store:
 
-**Step 2**: Check the tool response for payload acknowledgment.
+   ```bash
+   ls -la .rolebox/artifacts/*/signal_test_payload.md 2>/dev/null || echo "PAYLOAD_NOT_FOUND"
+   cat .rolebox/artifacts/*/signal_test_payload.md 2>/dev/null || echo "PAYLOAD_NOT_FOUND"
+   ```
 
-**Step 3**: Inspect the `<function_state>` block in your system prompt to verify the signal-probe function's state reflects the signal:
+**Pass criteria**:
 
-**Pass criteria (all must be true)**:
-1. The tool returns without error (payload is accepted).
-2. The response acknowledges the payload was recorded (not just the type).
-3. The `<function_state>` block shows the `signal-probe` function with evidence `✅ signal_answer_observed` — proving the observe spec with `when_args: {match: {type: "answer"}}` fired and set the evidence tag.
-4. This proves the signal tool accepts structured payloads and that the `capture_payload_as: signal_test_payload` mechanism captured the payload for artifact consumption.
-
----
-
----
-
-### Test 139: Signal Architecture — signal_observed Condition in the `<function_state>` Block
-
-This test verifies that after calling `signal(type="answer")` (in Test 115), the function state machine correctly reflects the signal observation through the `signal-probe` function's lifecycle, as surfaced in the `<function_state>` system-prompt block (there is NO `function_state` tool).
-
-**Step 1**: After Test 115/116 have been executed, inspect the `<function_state>` block in your system prompt (with its evidence and artifact detail).
-
-**Step 2**: Locate the `signal-probe` function in the block and inspect its state.
-
-**Pass criteria (all must be true)**:
-1. The `signal-probe` function appears in the `<function_state>` block.
-2. The Evidence column for `signal-probe` contains `✅ signal_answer_observed` — proving the observe spec `{on: tool_after, tool: signal, when_args: {match: {type: "answer"}}, set_evidence: signal_answer_observed}` fired when `signal(type="answer")` was called.
-3. The Phase column shows `complete` — proving the `continue_until: any:[signal_observed(answer), evidence_met]` condition was satisfied by either the signal or the evidence.
-4. If an Artifacts section is present, it lists `signal_test_payload` — proving `capture_payload_as: signal_test_payload` captured the signal's payload.
-5. This proves the full signal architecture pipeline works end-to-end: signal tool call → when_args filter → set_evidence → capture_payload_as → continue_until evaluation → phase completion.
+1. The tool returns without error and acknowledges the payload, not only the type.
+2. `evidence` contains `signal_answer_observed=true`, proving the
+   `when_args: {match: {type: "answer"}}` filter fired.
+3. The `signal_test_payload` artifact exists and contains `SIGNAL_PAYLOAD_OK`.
+4. SKIP with `capability_absent:signal_tool` or `capability_absent:function_state`.
 
 ---
 
+### Test 139: Signal Architecture — signal_observed condition
+
+This test verifies, after Tests 115 and 116, that the `signal-probe` function's
+`signal_observed` condition and evidence are reflected in the function-state surface.
+
+**Steps**:
+
+1. Inspect the `## Function state: signal-probe` heading and its evidence line.
+2. Read the `signal_test_payload` artifact captured in Test 116.
+
+**Pass criteria**:
+
+1. `signal-probe` appears in the state surface.
+2. `evidence` contains `signal_answer_observed=true`, proving the observe spec
+   `{on: tool_after, tool: signal, when_args: {match: {type: "answer"}}, set_evidence: signal_answer_observed}`
+   fired.
+3. `phase: complete`, proving `continue_until: any: [signal_observed(answer), evidence_met]`
+   was satisfied by the signal or its evidence.
+4. The `signal_test_payload` artifact is listed or present on disk and contains
+   `SIGNAL_PAYLOAD_OK`.
+5. SKIP with `capability_absent:function_state` or `capability_absent:signal_tool`
+   when the surface or tool is absent.
+
 ---
 
-## Runner: State Machine, Observe-Probe & Signal — Runner Pass/Fail Report
+## Runner report
 
 After executing every `### Test` above, emit ONE markdown table with a row per test:
 
 | Test | Name | Result | Evidence |
-|------|------|--------|----------|
-| <n>  | ...  | PASS/FAIL | one-line observation |
+|---|---|---|---|
+| <n> | ... | PASS/FAIL/SKIP | one-line observation |
 
-Then emit a final JSON line for the dispatcher to aggregate:
-
-```json
-{"runner": "<this runner id>", "total": <n>, "passed": <n>, "failed": <n>, "failures": [<test numbers>]}
-```
-
-Report honestly: a test that cannot be exercised in this environment is reported FAIL (or SKIP with reason), never fabricated PASS.
+Then settle the node with `graph_submit_outcome` as instructed in the dispatch: pass
+the graph id, node id, outcome id and attempt credential from the attempt handoff, and
+put the rows in `data` in the shape the dispatch names. Quote the tool answer verbatim
+and never print the credential. A test that cannot be exercised in this environment is
+PASS only when it actually passed; otherwise report FAIL or SKIP with a capability
+reason — never fabricate a PASS.

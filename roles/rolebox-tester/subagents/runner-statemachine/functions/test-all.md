@@ -1,42 +1,20 @@
 ---
 name: test-all
-description: Master test function that maps test requests to per-module runner sub-roles and drives dispatch-and-aggregate execution across the sharded suite.
+description: Transition target for the runner-statemachine state-machine probe. It carries the module's aggregate-report instructions and executes no dispatch of its own.
 priority: 10
 ---
 
-# Test All
+# Test All (runner-statemachine transition target)
 
-This function activates the rolebox feature test registry. As of **v6.0** the 167-test
-suite is **sharded across per-module runner sub-roles** and this primary role is a **thin
-dispatcher**. The agent identifies which module(s) the user requested from the Test Module
-Catalog in PROMPT.md, dispatches the matching `rolebox-tester--runner-*` sub-role(s) via the
-Graph Engine v2, collects each runner's per-test results, and assembles ONE consolidated
-v6.0 report. If the user says "test all" or "full suite", dispatch ALL runners (one node per
-runner in a single multi-node graph, run in parallel) and aggregate.
+This function exists so the `state-machine` probe's `transitions` entry has a real
+activation target (`activate: [test-all]`) and a real deactivation target
+(`deactivate: [transform]`). The runner owns the 14 `### Test` bodies in its prompt;
+this function adds no dispatch and no graph work of its own.
 
-## Purpose
+When it becomes active, confirm in the next prompt that `test-all` is listed in the
+`## Active functions` block and that `transform` is no longer listed. That activation
+change is the observable evidence for the transition test.
 
-This function's existence verifies that rolebox's function loading mechanism works:
-- The `functions/` directory is discovered
-- The YAML frontmatter (name, description, priority) is parsed
-- The function content is injected into agent context
-
-## Execution (dispatch-and-aggregate)
-
-Upon activation, check the user's request:
-- If they named a module (e.g., "test dispatch", "test graph", "test memory"), consult the
-  Test Module Catalog in PROMPT.md, look up the module's `rolebox-tester--runner-<x>` sub-role
-  id, and dispatch it as a Graph Engine v2 node:
-  `graph_create` → `graph_add_node(agent="rolebox-tester--runner-<x>", prompt="run your module")`
-  → `graph_run` → (await `[GRAPH COMPLETE]`) → `graph_status(include_output=true)`.
-- If they said "test all", "full suite", or "run everything", add one node per runner sub-role
-  to a single graph (no edges → parallel roots), `graph_run` once, await completion, then read
-  all node outputs and consolidate. This covers all 167 tests (numbered 1–182; the legacy
-  `150–162` loop-tool range was REMOVED in v5.0 — coverage moved to Graph Engine v2 loop
-  groups in Tests 163, 165, 169 — and Tests 73, 96, 101–103, 126, 146 were REMOVED in v6.0,
-  with replacement/added coverage in Tests 173–182).
-- If unclear which module, ask the user which module they want tested.
-
-The runner sub-roles hold the detailed test bodies and emit per-test PASS/FAIL tables plus a
-trailing JSON line; this dispatcher consolidates them into the single v6.0 report table and
-JSON artifact described in PROMPT.md. It does NOT execute test bodies inline.
+This runner never declares, controls, reads or audits a graph: it executes its test
+bodies, settles its declared node outcome through `graph_submit_outcome`, and ends the
+turn. The primary role owns module selection, aggregation and the single v7 report.

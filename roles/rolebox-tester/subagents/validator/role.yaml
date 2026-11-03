@@ -1,4 +1,10 @@
 name: Validator
-description: Third-stage graph agent that validates approved output and completes the flow
+description: Graph validator fixture. It announces VALIDATOR_RECEIVED, validates the accepted input, and settles the node through graph_submit_outcome with the dispatched pass or fail outcome carrying VALIDATED or VALIDATION_FAILED.
 model: provider/tier-3-fast
 prompt_file: prompt.md
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true

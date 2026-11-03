@@ -1,5 +1,5 @@
 name: Restricted
-description: Subagent with denied tool permissions for testing permission enforcement
+description: Permission-enforcement fixture. It attempts the denied native tool named by its dispatch instruction, reports the host refusal verbatim, and settles its declared graph outcome with PERMISSION_DENIED_OK or PERMISSION_GRANTED_UNEXPECTED.
 model: provider/tier-3-fast
 prompt_file: prompt.md
 permission:
@@ -8,6 +8,11 @@ permission:
     - write
     - edit
 tools:
-  Bash: false
-  Write: false
-  Edit: false
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  bash: false
+  write: false
+  edit: false

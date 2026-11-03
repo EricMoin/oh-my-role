@@ -1,42 +1,44 @@
 ---
 name: test-all
-description: Master test function that maps test requests to per-module runner sub-roles and drives dispatch-and-aggregate execution across the sharded suite.
+description: Primary-first entry point for the rolebox-tester 7.0.0 suite — probes host capability, selects catalog modules, runs the 14 primary modules, dispatches the two runner modules through the graph outcome protocol, and produces the single v7 report.
 priority: 10
 ---
 
-# Test All
+# Test All — primary-first catalog dispatch
 
-This function activates the rolebox feature test registry. As of **v6.0** the 167-test
-suite is **sharded across per-module runner sub-roles** and this primary role is a **thin
-dispatcher**. The agent identifies which module(s) the user requested from the Test Module
-Catalog in PROMPT.md, dispatches the matching `rolebox-tester--runner-*` sub-role(s) via the
-Graph Engine v2, collects each runner's per-test results, and assembles ONE consolidated
-v6.0 report. If the user says "test all" or "full suite", dispatch ALL runners (one node per
-runner in a single multi-node graph, run in parallel) and aggregate.
+This function activates the rolebox feature suite. The suite is **version 7.0.0** with
+**178 tests** in **16 modules**. It is a **primary-first** suite: the primary executes
+14 modules directly, while `statemachine-signal` and `loop` are executed by the
+graph-dispatched `runner-statemachine` and `runner-loop` workers.
 
 ## Purpose
 
 This function's existence verifies that rolebox's function loading mechanism works:
 - The `functions/` directory is discovered
 - The YAML frontmatter (name, description, priority) is parsed
-- The function content is injected into agent context
+- The function content is injected into the agent context
 
-## Execution (dispatch-and-aggregate)
+## Execution
 
-Upon activation, check the user's request:
-- If they named a module (e.g., "test dispatch", "test graph", "test memory"), consult the
-  Test Module Catalog in PROMPT.md, look up the module's `rolebox-tester--runner-<x>` sub-role
-  id, and dispatch it as a Graph Engine v2 node:
-  `graph_create` → `graph_add_node(agent="rolebox-tester--runner-<x>", prompt="run your module")`
-  → `graph_run` → (await `[GRAPH COMPLETE]`) → `graph_status(include_output=true)`.
-- If they said "test all", "full suite", or "run everything", add one node per runner sub-role
-  to a single graph (no edges → parallel roots), `graph_run` once, await completion, then read
-  all node outputs and consolidate. This covers all 167 tests (numbered 1–182; the legacy
-  `150–162` loop-tool range was REMOVED in v5.0 — coverage moved to Graph Engine v2 loop
-  groups in Tests 163, 165, 169 — and Tests 73, 96, 101–103, 126, 146 were REMOVED in v6.0,
-  with replacement/added coverage in Tests 173–182).
-- If unclear which module, ask the user which module they want tested.
+1. **Probe capability first.** Load `references/host-capability-matrix.md` with
+   `load_reference` and run its capability probe. Record the environment, the native
+   tool names and each family's status. Absent families are SKIP, never FAIL.
+2. **Select modules.** A named module runs alone; "test all", "full suite" or "run
+   everything" runs all 16. If the request matches no module, ask which one to test.
+3. **Run primary modules inline.** Load each body with `load_reference` by its
+   reference name and execute every `### Test <id>` in ascending order, recording one
+   PASS/FAIL/SKIP row per id. Never stop at the first failure.
+4. **Dispatch runner modules.** Declare one graph v3 document per runner module with
+   `graph_declare` (the runner node, its declared outcome, explicit completion), end
+   the turn, and read `graph_status` once after the completion notification. Do not
+   poll and do not build a graph incrementally; the runner submits its rows through
+   `graph_submit_outcome`.
+5. **Aggregate.** Merge primary and runner rows by module and id, apply the SKIP and
+   failure rules, and write the single v7 artifact pair under
+   `.rolebox/test-reports/` — one JSON report and one Markdown report — then emit the
+   `result` fence with the two workspace-relative paths.
 
-The runner sub-roles hold the detailed test bodies and emit per-test PASS/FAIL tables plus a
-trailing JSON line; this dispatcher consolidates them into the single v6.0 report table and
-JSON artifact described in PROMPT.md. It does NOT execute test bodies inline.
+The runner sub-role prompts own the detailed bodies for `statemachine-signal` and
+`loop`; this primary owns module selection, cross-module retries, aggregation and the
+final report. It never assigns a graph, team or role-level test to a dispatched
+worker.

@@ -1,4 +1,0 @@
-name: Signal Answer
-description: Signal-emitting graph agent that always terminates via signal(type="answer") with a fixed ANSWER_SIGNAL_OK marker payload
-model: provider/tier-3-fast
-prompt_file: prompt.md

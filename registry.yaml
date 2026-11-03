@@ -88,16 +88,16 @@ roles:
       deploy-to-harness capability.
     tags: [meta, role-creation, verification, scaffolding, graph-v3]
   rolebox-tester:
-    version: "6.0.0"
-    description: Comprehensive functional tester for rolebox features. Executes 
-      a full test suite (167 tests, sharded across per-module runner sub-roles) 
-      covering skills, Graph Engine v2 imperative dispatch, functions, 
-      references, tools, hashline, permissions, MCP, sessions, memory, task 
-      management, asset management, live-graph visibility (<graph_state>, 
-      pending_approvals), LSP, nested dispatch, signal architecture, and 
-      structured test report generation.
-    tags: [testing, qa, graph-engine, dispatch, hashline, lsp, sessions, memory, 
-        permissions, signal]
+    version: "7.0.0"
+    description: Host-aware, primary-first functional test suite for rolebox
+      2.2.0 — 178 tests in 16 modules covering the graph v3 outcome protocol
+      (declarations, worker outcome submission, controls, status/audit, loop
+      groups), dispatch, functions, references, tools/hashline, permissions,
+      MCP, sessions, memory, task and asset management, LSP, web,
+      hooks/recovery, CLI, DSH role teams, computer and browse, with
+      capability-probed PASS/FAIL/SKIP reporting.
+    tags: [testing, qa, graph-v3, outcome-protocol, host-aware, dispatch,
+        hashline, lsp, sessions, memory, team, computer, browse]
   teacher:
     version: "1.0.0"
     description: On-demand programming mentor — answers conceptual questions, 

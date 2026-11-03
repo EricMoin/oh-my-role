@@ -1,5 +1,5 @@
 name: Runner Statemachine
-description: "State-machine / observe-probe / signal module runner: function lifecycle (gate/evidence/continuation/transitions/artifact/phase), observe-probe handlers, signal tool and signal_observed lifecycle (Tests 85-95, 115-116, 139)."
+description: "Graph-dispatched worker for the statemachine-signal module (14 tests: 85-95, 115, 116, 139). Exercises the function state machine through the host command tool bash (gate, evidence, continuation, transitions, artifact capture, phase reporting), the five observe probes with the todowrite mirror host-gated, and the signal tool lifecycle. It settles its node through graph_submit_outcome and never declares or controls a graph."
 model: provider/tier-3-fast
 prompt_file: prompt.md
 functions:
@@ -13,3 +13,10 @@ auto_activate:
   - observe-probe
   - signal-probe
 locked: true
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  bash: true
