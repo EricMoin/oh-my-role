@@ -82,8 +82,12 @@ def validate(root=ROOT):
             errors.append(f'Missing role {agent}')
             continue
         tools = discovered[agent][2]
-        if tools.get('Write') is not False or tools.get('Edit') is not False:
-            errors.append(f'{agent}: must not edit files')
+        if agent == 'emperor':
+            for tool in ('Write', 'Edit', 'Bash'):
+                if tools.get(tool) is not True:
+                    errors.append(f'{agent}: {tool} must stay enabled for worker inheritance')
+        elif any(tools.get(tool) is not False for tool in ('Write', 'Edit', 'Bash')):
+            errors.append(f'{agent}: must remain read-only')
     examples = json.loads((root / 'references/graph-examples.json').read_text())
     for name, declaration in examples.items():
         for node in declaration['nodes']:

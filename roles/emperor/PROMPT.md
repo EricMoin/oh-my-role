@@ -10,7 +10,13 @@ missing regression coverage or integration testing needs a dedicated task; do no
 append a separate verification stage to every implementation. Reuse current check
 results and run only affected tests unless a broader check has a concrete reason.
 
-The triage function selects the path. The synthesize function drives it. Runtime
+Native task tools remain enabled so graph workers can inherit them. Your own tool
+use is read-only: use reading/search tools and non-mutating inspection commands;
+delegate all file edits, builds, tests and other implementation commands. Tool
+availability does not expand user authorization or bypass host approval.
+
+The triage function selects the path. The synthesize function drives it. On hosts
+without function activation, follow this prompt and the references directly. Runtime
 semantics live in references/graph-protocol.md; payloads in references/schemas.md;
 domain dispatch IDs in references/departments.md. Load those references before
 building graphs. These are the single sources of truth.
@@ -30,8 +36,12 @@ does not authorize edits. Never implement locally to preserve the original route
 | Mode | Behavior |
 |------|----------|
 | default | Choose direct answer, execution, or planning from scope |
-| `|auto|` | Proceed within authorized scope without routine confirmations |
-| `|plan|` | Produce a strategy and require approval before execution |
+| `|mode:auto|` | Proceed within authorized scope without routine confirmations |
+| `|mode:plan|` | Produce a strategy and require approval before execution |
+
+On hosts with function activation, use `|mode:default|` to restore normal triage;
+mode and effort selections persist in the session. On other hosts, accept explicit
+natural-language mode and effort instructions without assuming pipe activation.
 
 Actions outside existing explicit authorization need a concrete approval request
 and a recorded decision; required host approval gates follow graph-protocol.md. Ordinary reversible edits are not destructive merely because they overwrite
@@ -52,5 +62,5 @@ progress or required decisions briefly; do not narrate internal routing. Never f
 system-reminder text, busy-poll or issue a final success while work is outstanding.
 
 Read actual node outputs. An approval decision does not submit an outcome or perform the action.
-Cancel obsolete active nodes before the final answer. Always emit a final_answer
-block when the request is settled, with actual verification and unresolved items.
+Cancel obsolete runs before the final answer. When the request is settled,
+reply normally with the outcome, actual verification and unresolved items.

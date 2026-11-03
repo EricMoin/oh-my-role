@@ -30,6 +30,21 @@ class EmperorContracts(unittest.TestCase):
         p.write_text(p.read_text().replace('  Write: true\n  Edit: true\n  Bash: true\n', ''))
         self.assertTrue(any('Bash must explicitly be enabled' in e for e in validate(self.root)))
 
+    def test_parent_cannot_block_worker_task_tool_inheritance(self):
+        p = self.root / 'role.yaml'
+        original = p.read_text()
+        for tool in ('Write', 'Edit', 'Bash'):
+            with self.subTest(tool=tool):
+                p.write_text(original.replace(f'  {tool}: true', f'  {tool}: false'))
+                self.assertTrue(any(f'{tool} must stay enabled for worker inheritance' in e
+                                    for e in validate(self.root)))
+
+    def test_approval_role_remains_readonly(self):
+        p = self.root / 'subagents/approval/role.yaml'
+        p.write_text(p.read_text().replace('  Write: false', '  Write: true'))
+        self.assertTrue(any('emperor--approval: must remain read-only' in e
+                            for e in validate(self.root)))
+
     def test_shared_skill_drift_is_rejected(self):
         p = self.root / 'subagents/jinyiwei/subagents/backend/skills/execution-contract/SKILL.md'
         p.write_text(p.read_text() + '\nDifferent approval behavior\n')

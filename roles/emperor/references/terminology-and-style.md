@@ -119,7 +119,7 @@ Address the model with direct commands:
 - "Classify the request."
 - "Dispatch to the planner subtree."
 - "Do NOT narrate routing."
-- "Emit the final_answer fence."
+- "Report the outcome and actual checks."
 
 ### Safety Language
 

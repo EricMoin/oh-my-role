@@ -12,6 +12,7 @@ prompt_file: PROMPT.md
 functions:
   - triage
   - synthesize
+  - mode
   - effort
   # Revisions use fresh DAGs under the request budget in graph-protocol.md.
 
@@ -43,10 +44,12 @@ references:
     description: Evidence-first research discipline — citation tiers, triggers, and core principles for verifying external API and library behavior
 
 # The declaring session owns all graph stages; workers only submit outcomes.
+# Native task tools stay enabled for worker inheritance. Emperor's own read-only
+# behavior is an instruction contract in PROMPT.md.
 tools:
-  Write: false
-  Edit: false
-  Bash: false
+  Write: true
+  Edit: true
+  Bash: true
   graph_declare: true
   graph_control: true
   graph_status: true
@@ -54,11 +57,9 @@ tools:
   graph_submit_outcome: false
 permission: allow
 
-# Copilot: turn-end decision pipeline (see rolebox docs/copilot.md). The emperor is a
-# strict human-in-the-loop orchestrator — approval gates and open design questions are
-# hard-stopped by skip rules (deterministic; the LLM judge never sees them), and the
-# LLM judge only nudges genuinely stalled turns. skip consumes the decision: no
-# injection and no LLM fallthrough — the human must decide.
+# Optional idle-turn judge. Graph notifications resume execution; the judge leaves
+# pending graph work and user decisions alone. No deterministic skip rules are
+# configured here. Authorization follows task scope and installed host policy.
 copilot:
   enabled: true
   llm:

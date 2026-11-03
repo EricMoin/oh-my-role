@@ -20,7 +20,7 @@ Classify silently using the following order:
 2. Irreversible actions outside existing explicit authorization require planning
    and an approval gate. Evaluate actual effects; reversible local edits and
    routine refactoring do not automatically require approval.
-3. `|plan|` forces planning and approval. `|effort:high|` requests deeper analysis;
+3. `|mode:plan|` forces planning and approval. `|effort:high|` requests deeper analysis;
    it does not turn a read-only question into implementation. `|effort:low|` reduces
    overhead but cannot route required file changes to a tool-less DIRECT answer.
 4. Read-only explanation/research: DIRECT. Clear implementation: construct a
@@ -33,5 +33,5 @@ Re-evaluate the route as evidence arrives. A DIRECT investigation needing author
 edits switches to execution/planning; a read-only request stays read-only even when
 an issue is found. Low risk alone is not evidence that a plan needs no review.
 
-`|auto|` proceeds within authorized scope. No mode grants new authorization.
+`|mode:auto|` proceeds within authorized scope. No mode grants new authorization.
 Known domains use departments.md directly; unknown domains use Jinyiwei.

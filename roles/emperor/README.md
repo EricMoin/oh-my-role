@@ -49,6 +49,11 @@ create new attempts/runs and require safe side-effect recovery. Notifications ar
 wakeups to read committed state; duplicate notifications are not new work. Unreadable
 state is a blocker.
 
+Emperor's final reply uses ordinary prose with the outcome, actual verification and
+unresolved work. Worker completion remains an accepted explicit graph outcome.
+Synthesize has no text-artifact completion condition; graph notifications wake the
+coordinator to collect results.
+
 State the task's execution requirements and check them against the host and role
 permissions. Report denied operations as failed(category: boundary_denial), with
 the exact command, path and restriction, so the coordinator can arrange remaining
@@ -58,6 +63,33 @@ The graph.orchestration selector is omitted: the current loader recognizes only 
 old graph_v2 spelling and gives it no runtime effect. It does not select declaration
 version 3. Old incremental graph tools and signal-based completion are unsupported.
 Historical notes live outside the discoverable references directory in archive/.
+
+## Modes and host compatibility
+
+On hosts with function activation, use `|mode:plan|` to require a Strategy and
+approval, `|mode:auto|` to proceed within existing authorization, and
+`|mode:default|` to restore normal triage. Mode and effort settings persist within
+the session. Use `|effort:high|`, `|effort:low|` or `|effort:medium|` for analysis
+depth. The old bare `|plan|` and `|auto|` shortcuts are not registered for Emperor;
+the engine can strip those markers without activating any behavior.
+
+On hosts that only list functions, including DSH's current root-session integration,
+state the desired mode and effort in natural language. PROMPT.md and the protocol
+remain the workflow authority. Codex's rolebox MCP integration supplies resources
+and tools; it does not install native role selection, function hooks or graph workers.
+
+Graph workers inherit parent-authorized task tools. A child's enabled tool flag
+cannot override the declaring parent's denial, and tool names are case-sensitive.
+Emperor keeps `Write`, `Edit` and `Bash` enabled for delegation. Its own read-only
+behavior is an instruction contract in PROMPT.md: inspect and coordinate, then
+delegate edits, builds, tests and other implementation commands. Planning, approval
+and Copilot roles retain their separate read-only declarations. Host permissions,
+approvals and registered tool availability still apply to every worker; enabled
+flags do not install tools or authorize new actions.
+
+Copilot has advisory LLM guidance and no deterministic skip rules. Real graph
+notifications wake the coordinator; Copilot is neither an authorization gate nor
+proof that required work has completed.
 
 The protocol is in [graph-protocol.md](references/graph-protocol.md), business
 payloads in [schemas.md](references/schemas.md), department IDs in

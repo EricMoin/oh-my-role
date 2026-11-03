@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+- Remove the required `<final_answer>` wrapper and synthesize's text-artifact
+  continuation gate. Final replies use ordinary prose after collecting Graph v3
+  outcomes and actual check results.
+- Replace unregistered `|plan|` / `|auto|` shortcuts with the parameterized
+  `|mode:plan|` / `|mode:auto|` function, including `|mode:default|` reset. Forward
+  the selected effort into active instructions and fix its priority metadata.
+- Document current parent-tool inheritance, triggered inputs, accepted payloads,
+  prompt recovery, run-scoped cancellation and host-specific function/fallback
+  behavior. Clarify Copilot's advisory role and assign its lightweight model.
+- Keep the parent's native task tools enabled for graph-worker inheritance.
+  Emperor's own read-only behavior follows explicit prompt instructions; planning,
+  approval and Copilot roles retain separate read-only declarations.
+
 ## [4.0.0]
 
 - Remove the `emperor--validator` dispatch target, mandatory validation graphs,

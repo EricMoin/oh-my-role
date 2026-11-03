@@ -2,13 +2,7 @@
 name: synthesize
 locked: true
 phase: synthesize
-produces: "final_answer"
-observe:
-  - on: tool_after
-    capture_artifact: final_answer
 priority: 20
-continue_until: artifact_exists(final_answer)
-continue_max: 5
 ---
 
 Follow references/graph-protocol.md for staged execution, authorization,
@@ -36,6 +30,6 @@ references/schemas.md is authoritative for all payloads.
    and run once for the relevant workspace state. Approval/clarification continuations
    do not spend repair rounds. Stop on exhausted budget, unchanged failures or an
    unresolved blocker, and report remaining work.
-7. When settled, emit <final_answer> with outcome, actual verification and unresolved
+7. When settled, reply normally with outcome, actual verification and unresolved
    work, then finish the user-facing turn. Do not claim completion while awaiting
    a graph or the user. Never manufacture system-reminder messages.

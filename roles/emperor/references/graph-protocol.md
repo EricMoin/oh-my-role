@@ -43,15 +43,17 @@ Submit the entire object through graph_declare({declaration: {...}}):
 - An edge is {from, to, outcome}; only that accepted outcome activates it.
 - A consumer declares inputs: [{from, outcome}] for each report it reads. Edges
   schedule work; they do not automatically provide every upstream payload.
-- A producer settles on exactly ONE outcome. Declare exactly one input per
-  producer and pin it to that outcome; declaring the same producer under several
-  outcomes (done and failed together) is not a router — EVERY declared input is
-  resolved, and one whose pinned outcome is not the one that settled leaves the
-  consumer un-dispatchable with input-outcome-mismatch. A producer that settles
-  on another outcome produces nothing this consumer may consume; dispatch a fresh
-  graph that consumes the outcome that actually settled, and understand that an
-  existing input entry cannot be edited — a changed input definition is a new
-  graph name.
+- An input without when is required on every dispatch. A producer settles on one
+  outcome, so several required inputs pinning different outcomes from that producer
+  cannot all resolve. Standard execution DAGs consume only done; preserve other
+  reports for a fresh continuation after resolving their blocker.
+- The engine also supports inputs: [{from, outcome, when: "triggered"}]. Such an
+  input applies only when its matching direct incoming edge contributes an arrival
+  to this dispatch. Missing feedback still blocks once triggered. Use this for
+  intentional branch/loop feedback, never to make a required prerequisite optional.
+- Inputs refer to nodes in the same declaration. A new stage carries accepted
+  reports from earlier graphs in its complete prompt; it cannot reference an old
+  graph's node as a declared input. Changed input definitions require a new graph name.
 - join: {strategy: "all"} counts ARRIVED FEEDER SOURCES, not inputs: one producer
   is one feeder however many edges target the consumer. Use {strategy: "any"}
   only when a single settled producer genuinely suffices, and remember that input
@@ -85,6 +87,13 @@ submission for all Emperor templates.
 
 Planning, review and approval workers keep repository content read-only.
 Implementation and Test workers run their assigned checks within scope.
+Workers inherit the declaring session's authorized task tools. Child role flags
+cannot restore a tool excluded by the parent's tools map. Tool names are exact and
+case-sensitive; node.tools is legacy metadata with no grant or restriction effect.
+Check the actual host catalog and worker grant before promising execution capability.
+Emperor keeps its native task-tool flags enabled for delegation. Its own read-only
+behavior follows PROMPT.md: inspect and coordinate, then delegate all implementation
+and checks. Host permission and approval gates still apply to worker execution.
 
 Business data follows schemas.md. Outcome vocabulary:
 - Strategy stages: strategy; independent review: pass or veto.
@@ -98,6 +107,13 @@ Workers supply actual check results; Emperor collects them without a separate
 independent verification stage. If installed host contracts/gates are required,
 reference their exact identities; never invent a schema or policy capability.
 
+Prefer direct graph_submit_outcome submission. Current DSH can also derive an
+explicit outcome from exactly one final fenced JSON block on an eligible normally
+completed worker turn. The host must authenticate the execution and accept that
+result through the same gates. Arbitrary text or a local function artifact does not
+establish acceptance. This worker fallback adds no format requirement to Emperor's
+final reply.
+
 ## Read and wait
 
 After confirmed start, yield for real GRAPH COMPLETE / GRAPH BLOCKED notifications.
@@ -107,9 +123,15 @@ committed state before acting. Status polling is fallback-only, never a busy loo
 
 Read graph_status with graph_id, scope: "all", format: "json", include_output: true
 and include_history: true; use run_id and node_id to select the intended producer.
-Read attempts[].accepted (outcome identity) and attempts[].result (accepted data),
-controls, approvals, budget and unsettled_effects. JSON output is not paginated by offset/max_chars; narrow by run_id/node_id
-if the host display truncates it. Those pagination fields apply to non-JSON output. No signal_stream or stream argument is used.
+Read attempts[].accepted (outcome identity) and attempts[].result.payload. For
+payload.kind: "value", payload.value holds the business report; "absent" is a
+distinct payload form. Also read controls, approvals, budget and unsettled_effects.
+Prompts are omitted by default. Use include_prompt: true when recovering the
+immutable Strategy, scope or counters from node briefs. JSON output is not paginated
+by offset/max_chars; narrow by run_id/node_id if the host display truncates it.
+Those pagination fields apply to non-JSON output. No signal_stream or stream argument
+is used. Every scope remains restricted to the attributed caller's own graphs;
+scope: "all" does not grant access to another session's graphs.
 Never confuse historical attempts with the current result. A complete graph may
 contain a failed/blocked business outcome and may still have unsettled effects.
 Inspect every required report; neither graph phase nor worker exit proves success.
@@ -286,6 +308,7 @@ recorded frequency, the classification and the baseline identity.
 ## Completion
 
 Collect accepted Execution Reports and relevant check results. Settle/cancel obsolete
-work, check unconfirmed external effects, then emit final_answer with completed, excluded
-and unresolved items and actual checks. Do not claim success while required work or
-verification is missing. Approval and graph completion alone are not task completion.
+work, check unconfirmed external effects, then report completed, excluded and
+unresolved items and actual checks in a normal final reply. Do not claim success
+while required work or verification is missing. Approval and graph completion alone
+are not task completion.

@@ -1,6 +1,6 @@
 /** Compatibility with the sibling rolebox source; scripted dispatch, no model calls. */
 import { afterEach, expect, test } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -20,6 +20,12 @@ const { createApprovalPolicy } = await load('src/graph/policy/approval-policy.ts
 const { evaluateCondition } = await load('src/function/conditions.ts');
 const { runToolObserve } = await load('src/function/observe.ts');
 const { functionRuntime } = await load('src/function/runtime-state.ts');
+const { functionSessionState } = await load('src/function/session-state.ts');
+const { HookState } = await load('src/hooks/state.ts');
+const { handleChatMessage } = await load('src/hooks/chat-message.ts');
+const { handleSystemTransform } = await load('src/hooks/system-transform.ts');
+const { evaluateBuiltinContinuation } = await load('src/copilot/sources/builtin.ts');
+const { inheritedWorkerTaskTools } = await load('src/graph/domain/worker-tools.ts');
 const examples = JSON.parse(readFileSync(resolve(root, 'roles/emperor/references/graph-examples.json'), 'utf8'));
 const roles = await discoverRoles(resolve(root, 'roles'));
 const [emperor] = await resolveAllRoles(new Map([['emperor', roles.get('emperor')]]), {
@@ -33,7 +39,69 @@ visit(emperor);
 const cleanups: (() => void)[] = [];
 afterEach(() => { while (cleanups.length) cleanups.pop()!(); });
 
-async function rig(declaration: any, approvalPolicy?: any) {
+function orchestrationSession() {
+  const dir = mkdtempSync(join(tmpdir(), 'emperor-functions-'));
+  const sessionID = dir;
+  const state = new HookState();
+  state.roleAutoActivateMap.set(emperor.id, emperor.config.auto_activate);
+  const injections: any[] = [];
+  const deps = {
+    dir, roleFunctionsMap: new Map([[emperor.id, emperor.functions]]), roleMap: new Map(),
+    session: { async prompt(...args: any[]) { injections.push(args); } },
+    customHooks: { async runHooks() {} },
+  };
+  cleanups.push(() => {
+    functionSessionState.clear(sessionID);
+    functionRuntime.clearSession(sessionID);
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const message = async (text: string) => {
+    const output = { parts: [{ type: 'text', text }] };
+    await handleChatMessage({ sessionID, agent: emperor.id }, output, state, deps);
+    const system = { system: [] as string[] };
+    await handleSystemTransform({ sessionID, agent: emperor.id }, system, state, deps);
+    return { text: output.parts[0].text,
+      instructions: system.system.filter(block => block.startsWith('## Active functions')).join('\n') };
+  };
+  return { dir, sessionID, state, deps, injections, message };
+}
+
+test('mode selection survives message parsing and can switch within a session', async () => {
+  const session = orchestrationSession();
+  for (const mode of ['plan', 'auto', 'default']) {
+    const result = await session.message(`|mode:${mode}| Review the cache change.`);
+    expect(result.text).toBe('Review the cache change.');
+    expect(result.instructions).toContain(`Selected mode: ${mode}.`);
+    expect(result.instructions).not.toContain('Selected mode: {value}.');
+  }
+});
+
+test('effort parameters reach the active instructions after message parsing', async () => {
+  const session = orchestrationSession();
+  for (const level of ['high', 'low', 'medium']) {
+    const result = await session.message(`|effort:${level}| Explain configuration precedence.`);
+    expect(result.text).toBe('Explain configuration precedence.');
+    expect(result.instructions).toContain(`Selected effort: ${level}.`);
+    expect(result.instructions).not.toContain('Selected effort: {level}.');
+  }
+});
+
+test('ordinary answers and graph waits do not require an artifact continuation', async () => {
+  const session = orchestrationSession();
+  await session.message('Explain configuration precedence.');
+  for (const lastText of ['The configuration uses project precedence.', 'Waiting for graph completion.']) {
+    expect(await evaluateBuiltinContinuation({
+      sessionID: session.sessionID,
+      activeSet: functionSessionState.getActive(session.sessionID),
+      allFns: emperor.functions, hasHandlers: false, lastText,
+      artifacts: { exists: () => false }, workspaceDir: session.dir,
+      sessionAgentRegistry: session.state.sessionAgentRegistry, session: session.deps.session,
+    })).toBe(false);
+  }
+  expect(session.injections).toEqual([]);
+});
+
+async function rig(declaration: any, approvalPolicy?: any, taskTools: Record<string, any> = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'emperor-v3-'));
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
   const deliveries: any[] = [];
@@ -43,6 +111,7 @@ async function rig(declaration: any, approvalPolicy?: any) {
     workspaceDir: dir, storeRoot: join(dir, 'host-store'), validators,
     declareInvocationIdentity: false,
     workerSessionOf: (execution: any) => execution.executionId,
+    workerTaskToolsOf: () => inheritedWorkerTaskTools(Object.keys(taskTools), emperor.config.tools),
     deliver(request: any, effect: any) {
       deliveries.push(request);
       host.confirmExecution(effect, { executionId: `worker:${request.attemptId}` });
@@ -55,7 +124,7 @@ async function rig(declaration: any, approvalPolicy?: any) {
     outcomeValidators: validators, outcomeArtifactRoot: dir, approvalPolicy,
     onGraphDeclared: (id: string, sessionId: string, agent: string) => host.startDeclaredGraph(id, { sessionId, agent }),
   });
-  const tools = host.bindTools(createOutcomeGraphTools(toolset));
+  const tools = host.bindTools({ ...taskTools, ...createOutcomeGraphTools(toolset) });
   const call = async (tool: string, args: any, sessionID = 'emperor-session') => {
     const raw = await tools[tool].execute(args, {
       sessionID, messageID: 'm1', agent: sessionID === 'emperor-session' ? 'emperor' : 'worker',
@@ -77,13 +146,41 @@ async function rig(declaration: any, approvalPolicy?: any) {
   const status = () => call('graph_status', {
     graph_id: declaration.name, scope: 'all', format: 'json', include_output: true, include_history: true,
   });
-  return { deliveries, submit, status, call, declared };
+  return { dir, deliveries, submit, status, call, declared };
 }
 
 const report = (id: number) => ({
   schema_version: 1, plan_revision: 'example-v1', subtask_id: id,
   summary: 'Scoped work verified', files_modified: [], verification: [],
   incomplete_items: [], research_evidence: [],
+});
+
+test('workers can execute inherited task tools while recursive dispatch stays forbidden', async () => {
+  const nativeTools = ['Write', 'Edit', 'Bash', 'write', 'edit', 'bash', 'hashline_edit'];
+  const orchestrationTools = ['dispatch', 'rb_dispatch', 'team_create', 'task_retry', 'session_fork'];
+  const taskTools = Object.fromEntries([...nativeTools, ...orchestrationTools].map(name => [name, {
+    description: `Fixture host tool ${name}`, args: {},
+    async execute(_: unknown, context: any) {
+      writeFileSync(join(context.worktree, `tool-${name}.txt`), name);
+      return JSON.stringify({ executed: name });
+    },
+  }]));
+  const declaration = structuredClone(examples.execution);
+  declaration.name = 'delegated-tools';
+  declaration.nodes = declaration.nodes.slice(0, 1);
+  declaration.edges = [];
+  const rigged = await rig(declaration, undefined, taskTools);
+  const worker = `worker:${rigged.deliveries[0].attemptId}`;
+  expect(rigged.deliveries[0].inheritedTools).toEqual(nativeTools);
+  for (const name of nativeTools) {
+    expect(await rigged.call(name, {}, worker)).toEqual({ executed: name });
+    expect(readFileSync(join(rigged.dir, `tool-${name}.txt`), 'utf8')).toBe(name);
+  }
+  for (const name of orchestrationTools) {
+    expect(await rigged.call(name, {}, worker)).toMatchObject({ code: 'worker-tool-forbidden' });
+  }
+  expect((await rigged.submit(0, 'done', report(1))).decision).toBe('accepted');
+  expect((await rigged.status()).phase).toBe('complete');
 });
 
 test('real loader and resolver preserve role ownership, skills and active functions', async () => {
@@ -154,6 +251,43 @@ test('accepted done delivers pinned data once; replay and redeclaration do not d
   expect((await rigged.call('graph_declare', { declaration: examples.execution })).preserved).toBe(true);
   expect(rigged.deliveries).toHaveLength(2);
 });
+
+for (const outcome of ['done', 'failed']) {
+  test(`triggered inputs deliver only the arrived ${outcome} branch`, async () => {
+    const declaration = {
+      version: 3, name: `triggered-${outcome}`, budget: { max_executions: 2 },
+      nodes: [
+        { id: 'work', agent: 'emperor--jinyiwei--backend', prompt: 'Report the assigned work.',
+          completion: { mode: 'explicit' }, outcomes: [{ id: 'done' }, { id: 'failed' }] },
+        { id: 'inspect', agent: 'emperor--chancellor--reviewer', prompt: 'Inspect the actual upstream report without modifying files.',
+          completion: { mode: 'explicit' }, join: { strategy: 'any' }, outcomes: [{ id: 'pass' }],
+          inputs: [
+            { from: 'work', outcome: 'done', when: 'triggered' },
+            { from: 'work', outcome: 'failed', when: 'triggered' },
+          ] },
+      ],
+      edges: [
+        { from: 'work', to: 'inspect', outcome: 'done' },
+        { from: 'work', to: 'inspect', outcome: 'failed' },
+      ],
+    };
+    const rigged = await rig(declaration);
+    const payload = outcome === 'done' ? report(1) : {
+      schema_version: 1, plan_revision: 'example-v1', subtask_id: 1,
+      reason: 'A prerequisite is missing', completed_work: [], remaining_work: ['Implement the change'],
+      category: 'prerequisite_failure', attempts: [], report: null,
+    };
+    expect((await rigged.submit(0, outcome, payload)).decision).toBe('accepted');
+    await rigged.call('graph_declare', { declaration });
+    expect(rigged.deliveries.map(request => request.nodeId)).toEqual(['work', 'inspect']);
+    expect(rigged.deliveries[1].inputs).toHaveLength(1);
+    expect(rigged.deliveries[1].inputs[0]).toMatchObject({
+      from: 'work', outcome, payload: { kind: 'value', value: payload },
+    });
+    expect((await rigged.submit(1, 'pass', { verdict: 'pass' })).decision).toBe('accepted');
+    expect((await rigged.status()).phase).toBe('complete');
+  });
+}
 
 test('assigned testing consumes implementation reports and completes through execution outcomes', async () => {
   const rigged = await rig(examples.execution_with_tests);

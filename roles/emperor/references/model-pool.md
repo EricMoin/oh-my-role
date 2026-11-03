@@ -8,7 +8,7 @@ description: Model-tier assignments and orchestration cost policy
 |---|---|
 | provider/tier-1-flagship | Emperor, Reviewer |
 | provider/tier-2-reasoning | Chancellor, Drafter, Finalizer, eight departments |
-| provider/tier-3-fast | Jinyiwei, Approval |
+| provider/tier-3-fast | Jinyiwei, Approval, Copilot |
 
 These are configurable model identifiers, not declarations of semaphore capacity.
 Actual concurrency and resource limits belong to the rolebox runtime configuration.
