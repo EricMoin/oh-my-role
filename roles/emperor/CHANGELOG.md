@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [4.0.1]
 
 - Remove the required `<final_answer>` wrapper and synthesize's text-artifact
   continuation gate. Final replies use ordinary prose after collecting Graph v3

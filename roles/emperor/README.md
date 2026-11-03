@@ -1,7 +1,7 @@
 # Emperor
 
 A read-only coordinator for scoped implementation and behavior-focused testing.
-Version 4.0 targets the current rolebox Graph v3 implementation in Pi and dsh.
+Version 4.0.1 targets the current rolebox Graph v3 implementation in Pi and dsh.
 
 Emperor owns graph_declare, graph_control, graph_status and graph_audit. All
 dispatched agents submit their own explicit graph_submit_outcome. Chancellor
