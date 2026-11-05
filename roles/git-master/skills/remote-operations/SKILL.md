@@ -5,6 +5,12 @@ description: Remote repository management — remote add/remove/rename, fetch, p
 
 # Remote Operations
 
+For pull/merge requests, reviews, hosted CI, releases, or repository settings,
+also load `github-platform` or `gitlab-platform`. Load `github-cli` for `gh`
+and `gitlab-cli` for `glab`. Resolve the actual host and source/target repository
+from the request and remotes; a remote named `origin` can be a contributor's
+fork. Git authentication and CLI/API authentication are separate checks.
+
 ## Manage Remotes
 
 ```bash
