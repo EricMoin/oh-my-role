@@ -118,12 +118,16 @@ roles:
       support parallel evidence and bounded implementation/review repair loops.
     tags: [rust, cargo, async, systems, unsafe, performance, testing, graph-engine,
         gates, subagents]
-  comment-writer:
-    version: "2.0.0"
-    description: Code comment specialist — writes, rewrites, and reviews code 
-      comments with plain language over jargon, explains WHY not WHAT, and 
-      matches the project's style and language (中文/English)
-    tags: [comments, documentation, code-quality, readability, plain-language]
+  # comment-writer now ships as doc-writer--comment-writer
+  doc-writer:
+    version: "1.2.0"
+    description: Writes, restructures, and reviews code comments, API references,
+      guides, decision records, and release notes. Reads the repository and verifies
+      commands and examples; routes documentation work to domain subagents, stages
+      every candidate, gates the staged result through a final humanizer review and
+      publishes only after a pass; never changes production behavior.
+    tags: [documentation, writing, editing, prose, api-docs, readme, adr,
+        changelog, subagents, chinese, humanizer, quality-gate, staging, publish-gate]
   deepseek-whale-girl:
     version: "1.0.0"
     description: DeepSeek 鲸鱼娘 (whale-chan) persona role — a smart-but-lazy, 

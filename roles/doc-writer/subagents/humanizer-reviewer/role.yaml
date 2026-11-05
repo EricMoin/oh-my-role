@@ -1,0 +1,38 @@
+name: Humanizer Reviewer
+description: Final quality gate for Doc Writer — reviews the staged candidates read-only, reports pass/revise/escalate with findings, exact replacements, a fact ledger, and the Reviewed sha256 table that a publish must match, and never edits files.
+mode: subagent
+temperature: 0.2
+color: '#7a4b2a'
+prompt_file: PROMPT.md
+
+# Final gate only: report a verdict, findings and a Reviewed hash table. This worker
+# never edits staging or a final path; the lead applies every replacement it accepts and
+# publishes only after a pass.
+skills:
+  - humanizer-review
+  - zh-naturalness
+  - en-naturalness
+  - clarity-check
+
+references:
+  rewrite-examples:
+    path: references/rewrite-examples.md
+    description: Calibration pairs for before/after rewrites across English, Chinese, structure, tone, and false-positive cases, each annotated with the facts, identifiers, and uncertainty the rewrite preserved.
+
+tools:
+  graph_declare: false
+  graph_control: false
+  graph_status: false
+  graph_audit: false
+  graph_submit_outcome: true
+  Write: false
+  Edit: false
+  Bash: true
+
+permission:
+  allow:
+    - graph_submit_outcome
+    - Read
+    - Grep
+    - Glob
+    - Bash

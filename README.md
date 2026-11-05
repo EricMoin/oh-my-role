@@ -15,6 +15,7 @@ oh-my-role/
 └── roles/
     ├── react-frontend/       # React/Next.js frontend development
     ├── role-creator/          # Role verification and testing
+    ├── doc-writer/            # Documentation writing/editing with domain sub-roles and a final humanizer gate
     ├── software-architecture/   # Architecture design, review, ADRs, migration planning
     ├── ai-designer/          # UI/UX design and prototyping
     ├── oss-finder/           # OSS discovery, source tracing, and adoption advice
@@ -24,6 +25,8 @@ oh-my-role/
     ├── emperor/              # Supreme orchestrator — triages, delegates, synthesizes
     └── jetpack-compose/      # Jetpack Compose and Android development
 ```
+
+`doc-writer` is the documentation writing/editing lead with domain sub-roles for comments, API reference, guides, decisions, releases, and prose, plus a final humanizer gate before publishing.
 
 Each role directory contains:
 

@@ -1,0 +1,48 @@
+name: Doc Writer
+description: Writes, restructures, and reviews code comments, API references, guides, decision records, and release notes. Reads the repository and verifies commands and examples; routes documentation work to domain subagents, stages every candidate, gates the staged result through a final humanizer review and publishes only after a pass; never changes production behavior.
+version: "1.2.0"
+model: provider/tier-2-reasoning
+mode: primary
+temperature: 0.4
+color: '#b4532a'
+prompt_file: PROMPT.md
+
+# The declaring session writes single documents directly. It authors one complete
+# Graph v3 plan for a multi-surface documentation set; its worker nodes settle
+# their own outcomes.
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  Write: true
+  Edit: true
+  Bash: true
+
+skills:
+  - doc-craft
+references:
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: Graph v3 tool surface, declaration grammar, accepted results and successor-graph recovery for documentation work.
+  node-contract:
+    path: references/node-contract.md
+    description: Node briefs, worker reports and the boundary between domain drafting and lead integration.
+permission:
+  allow:
+    - graph_declare
+    - graph_control
+    - graph_status
+    - graph_audit
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Write
+    - Edit
+    - MultiEdit
+memory:
+  inject: true
+  max_inject: 3
+  min_relevance: medium

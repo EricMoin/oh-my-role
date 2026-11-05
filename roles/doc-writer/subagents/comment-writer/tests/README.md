@@ -31,8 +31,8 @@ Run by the agent, not by a script. For each fixture:
 Comment lines in the obvious fixtures:
 
 ```bash
-grep -REn '^[[:space:]]*#' roles/comment-writer/tests/actual/obvious-cn/input.py
-grep -REn '^[[:space:]]*//|^[[:space:]]*/\*' roles/comment-writer/tests/actual/obvious-en/input.ts
+grep -REn '^[[:space:]]*#' roles/doc-writer/subagents/comment-writer/tests/actual/obvious-cn/input.py
+grep -REn '^[[:space:]]*//|^[[:space:]]*/\*' roles/doc-writer/subagents/comment-writer/tests/actual/obvious-en/input.ts
 ```
 
 Both print nothing.
@@ -40,7 +40,7 @@ Both print nothing.
 Blacklist over the produced output:
 
 ```bash
-grep -REn 'leverage|utilize|robust|seamless|comprehensive|facilitate|ensure|simply|basically|note that|it is worth mentioning|as you can see|this is important because|you might want to|I noticed|众所周知|简而言之|值得注意的是|显而易见|综上所述|赋能|助力|一站式|强大的|优雅的|全面(地)?(校验|验证)' roles/comment-writer/tests/actual/
+grep -REn 'leverage|utilize|robust|seamless|comprehensive|facilitate|ensure|simply|basically|note that|it is worth mentioning|as you can see|this is important because|you might want to|I noticed|众所周知|简而言之|值得注意的是|显而易见|综上所述|赋能|助力|一站式|强大的|优雅的|全面(地)?(校验|验证)' roles/doc-writer/subagents/comment-writer/tests/actual/
 ```
 
 Prints nothing.
@@ -48,7 +48,7 @@ Prints nothing.
 Exactly four comments in `why-mixed`:
 
 ```bash
-grep -cE '^[[:space:]]*#' roles/comment-writer/tests/actual/why-mixed/input.py
+grep -cE '^[[:space:]]*#' roles/doc-writer/subagents/comment-writer/tests/actual/why-mixed/input.py
 ```
 
 Prints `4`.
@@ -56,7 +56,7 @@ Prints `4`.
 Doc comment placement in `api-doc`:
 
 ```bash
-grep -n '\*\*' roles/comment-writer/tests/actual/api-doc/input.ts
+grep -n '\*\*' roles/doc-writer/subagents/comment-writer/tests/actual/api-doc/input.ts
 ```
 
 Prints one match: the opener of the block above `createSession`. `getSessionId` has none.
