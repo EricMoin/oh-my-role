@@ -11,6 +11,7 @@ const load = (path: string) => import(pathToFileURL(resolve(rolebox, path)).href
 const { discoverRoles } = await load('src/loader/role-loader.ts');
 const { resolveSkills } = await load('src/resolver/skill-resolver.ts');
 const { resolveAllRoles } = await load('src/resolver/orchestrator.ts');
+const { createLoadReferenceTool } = await load('src/asset/reference-tool.ts');
 const { buildDeclaredOutcomeGraph } = await load('src/graph/tools/declare-graph.ts');
 const { createGraphToolSet } = await load('src/graph/tools/graph-tools.ts');
 const { createOutcomeGraphTools } = await load('src/graph/tools/index.ts');
@@ -110,6 +111,17 @@ test('the shipped role resolves from roles/ with four specialists and each resol
     // Every skill came from this agent's own directory, and the same ids resolve to nothing anywhere else.
     for (const skill of skills) expect(resolve(skill.filePath).startsWith(dir + sep)).toBe(true);
     expect(await resolveSkills(declared, globalSkillsDir, globalSkillsDir)).toEqual([]);
+  }
+});
+
+test('the director, design and review can load the same color composition reference outside the role repository', async () => {
+  const loader = createLoadReferenceTool([aiDesigner]);
+  const name = 'theory/color-composition';
+  const path = resolve(root, 'roles/ai-designer/references', `${name}.md`);
+  const content = readFileSync(path, 'utf8');
+  for (const agent of ['ai-designer', 'ai-designer--design', 'ai-designer--review']) {
+    const result = await loader.execute({ name }, { agent, directory: tmpdir() });
+    expect(result).toMatchObject({ metadata: { payload: { name, path, content } } });
   }
 });
 

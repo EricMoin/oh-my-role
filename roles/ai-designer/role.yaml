@@ -1,6 +1,6 @@
 name: AI Designer
-description: Design Director that classifies task complexity, routes through tiered gates, coordinates specialist subagents, and delivers high-quality artifact-first design.
-version: "3.5.0"
+description: Design Director for product UI and prototypes. Grounds visual decisions in the product's design system and coordinates design and independent review of the rendered result.
+version: "3.6.0"
 mode: primary
 prompt_file: PROMPT.md
 functions: []
@@ -14,12 +14,15 @@ references:
   templates/design-state:
     path: references/templates/design-state.md
     description: Shared Design State structure passed between AI Designer subagents.
+  theory/color-composition:
+    path: references/theory/color-composition.md
+    description: How to compose and review a palette on real screens using project color roles, adjoining surfaces, visual emphasis, and state meaning.
   theory/core-principles:
     path: references/theory/core-principles.md
     description: Long-form AI Designer theory, ethics, deliverables, and operating principles.
   theory/default-design-system:
     path: references/theory/default-design-system.md
-    description: Complete color ramps, themes, components, and a protocol for selecting and validating their application.
+    description: Optional Apple-inspired examples of color ramps, semantic mappings, themes and components.
   theory/interaction-design:
     path: references/theory/interaction-design.md
     description: Interaction patterns, feedback, state design, forms, motion, and microcopy.

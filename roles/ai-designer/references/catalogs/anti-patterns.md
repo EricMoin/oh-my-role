@@ -24,7 +24,7 @@ This is a reference library, not a sequential read. Use it as a diagnostic tool.
 ### Severity Levels
 
 - **Critical**: Dark patterns and accessibility violations. Must fix before delivery.
-- **High**: Demonstrated task obstruction or material conflict with an explicit brief, including requested reduction of visual bloat.
+- **High**: Demonstrated task obstruction or a material conflict with the brief, the project system or the intended visual relationships in the current frame.
 - **Medium**: Nonblocking visual or usability improvements. Do not initiate a revision loop for personal taste.
 - **Low**: Content and IA anti-patterns. Fix when time permits, flag otherwise.
 
@@ -332,13 +332,13 @@ Reference: Evil by Design (Nodder), Tragic Design (Shariat), Ruined by Design (M
 
 ### Rainbow Syndrome
 
-**Description**: Using too many colors without a cohesive palette. Every section a different color. Status indicators in 8 different hues. Charts that look like confetti.
+**Description**: Color changes imply distinctions the content does not make. For example, unrelated panel fills split one task into several apparent groups, or the same status changes hue from row to row.
 
-**Why It Happens**: Color is an easy differentiator. Without a constrained palette, each new element gets a new color until the interface is a carnival.
+**Why It Happens**: Colors are chosen for each component in isolation.
 
-**Instead**: Use the design system's color palette. Limit functional colors to 2-3 main hues plus neutrals. Use shade variations of the same hue rather than new hues. (See default-design-system.md § Design Tokens — Color Palette)
+**Instead**: Give colors stable roles. Inspect adjoining surfaces and repeated states at their real sizes. Preserve distinct hues when they identify meaningful categories or express the brand. See `theory/color-composition`.
 
-**Detection**: "How many distinct hues am I using? Can I reduce them without losing information?"
+**Detection**: "What distinction will a reader infer from these colors, and does it exist in the content?"
 
 ### Typography Chaos
 

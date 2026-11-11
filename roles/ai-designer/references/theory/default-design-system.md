@@ -25,27 +25,7 @@ Prefer project tokens when they exist. When introducing a token, give its role a
 
 ## Color Selection and Application Protocol
 
-The system below is a reusable capability set. Preserve its palette families, ramps, theme variants, and component specifications. A screen selects from the system; it does not redefine the system by deleting values it happens not to use. Optimization must preserve the existing visual identity unless a redesign is explicitly in scope.
-
-### Diagnose before editing
-
-Inspect the current screen and the relevant tokens together. Identify what needs correction: a component using the wrong semantic role, an unsuitable foreground/background pair, competing focal elements, an inconsistent state, or a missing capability. Record the affected component and existing value before choosing a replacement. Keep the original pairing when it already works.
-
-### Compose a relationship
-
-Use the primary, secondary, accent, and semantic families according to the product's direction. Supporting colors may occupy large regions, accents may appear in several related roles, and a rich palette may be the correct result. Choose a dominant/supporting relationship and intended focal areas; do not enforce a one-accent limit, neutral-only foundation, or a fixed percentage of colored pixels.
-
-For an undecided direction, compare a small number of plausible combinations on the same representative content. Select the one that best expresses the intended hierarchy and identity. Do not create alternatives for a settled local correction. A brand color can remain intact while a particular component uses a different step of its ramp for readability.
-
-### Specify the application
-
-Record the selected token, component/state, neighboring foreground or background, and the reason for that pairing. Separate primitive palette values from semantic component assignments. Prefer correcting an assignment before changing a shared primitive; when a shared value must change, inspect its other consumers. Preserve the project's existing color representation and theme mechanism.
-
-Do not assume all values in a family are interchangeable or pre-validated. Small colored labels, large color fields, and subdued separators have different demands even when they share a hue. Inspect transitions among default, hover, selected, disabled, and error states without changing the meaning of the color.
-
-### Verify improvement and preservation
-
-Compare the affected screen and neighboring uses before/after at equivalent sizes, content, and supported themes. Judge both expressive intent and readable hierarchy. Measure actual composited text/background pairs independently of visual judgment. Report the specific improvement, unchanged strengths, and any unverified coverage. A fix that passes contrast but erases the intended visual character is incomplete.
+Use the project's color representation, semantic assignments and theme mechanism. Retain reusable ramps even when a screen uses only a few steps. For deciding which colors belong together and verifying the result on a representative frame, follow [Color composition](color-composition.md).
 
 ## Design Tokens — Color Palette
 
@@ -625,17 +605,14 @@ Instead of shadows, elevate surfaces by lightening their background color:
 - Cards within cards: inner card is flat (level 0), outer card holds the elevation
 - Scrolling content does not cast shadows on the scroll container unless at the edge
 
-### Focus Ring Specification
+### Focus indicators
 
-Focus rings are not shadows but are specified here for completeness.
+Reuse the project's focus treatment for the same kind of control when it is clearly visible. If the system leaves placement open, choose it per component.
 
-| Property | Value | Notes |
-|----------|-------|-------|
-| Width | 3pt | Visible on all backgrounds |
-| Offset | 2pt | Gap between element edge and ring |
-| Color (light mode) | `color-primary-500` #007AFF at 50% opacity | Matches primary brand color |
-| Color (dark mode) | `color-primary-500` #0A84FF at 50% opacity | Brighter for dark backgrounds |
-| Style | Solid outline | Not a box-shadow — use actual outline for accessibility |
+| Control | Example treatment |
+|---------|-------------------|
+| Bordered text field | Use `border-focus` on the existing edge. If it needs more weight, draw the extra stroke inward so the field and its contents stay in place. Keep any validation message visible while editing. |
+| Button or link | The platform focus indicator or an outer outline can identify the whole target. A gap can help separate the outline from a filled button. Check the surrounding surface for contrast and clipping. |
 
 ---
 
@@ -809,7 +786,7 @@ Each component specification defines: size variants, internal dimensions, states
 | Default | As defined by type | As defined by type | — |
 | Hover | Darken background 5% | No change | Cursor: pointer |
 | Active / Pressed | Darken background 10% | No change | Scale: 0.98 (optional) |
-| Focus | No color change | No change | Focus ring: 3pt outline, 2pt offset, primary color 50% opacity |
+| Focus | No color change | No change | Use the project's button focus treatment or the platform indicator. |
 | Disabled | 40% opacity (entire button) | 40% opacity | Cursor: not-allowed. No hover/active effects. |
 | Loading | Same as default | Hidden (replaced by spinner) | 20pt spinner centered. Button width locked (no shrink). |
 
@@ -838,7 +815,7 @@ Each component specification defines: size variants, internal dimensions, states
 |-------|-------------|-----------|-------------|------------|
 | Default | `border-strong` #D1D5DB | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | — |
 | Hover | `neutral-400` #9CA3AF | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Border darkens slightly |
-| Focus | `color-primary-500` #007AFF | `surface` #FFFFFF | `color-primary-500` #007AFF | Label turns primary color. 2pt border. Focus ring. |
+| Focus | `border-focus` #007AFF | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Emphasize the field's existing edge. |
 | Filled | `border-strong` #D1D5DB | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Same as default but with value |
 | Error | `color-error-500` #FF3B30 | `color-error-50` #FFF0EF | `color-error-500` #FF3B30 | Error message below in error color |
 | Disabled | `neutral-200` #E5E7EB | `disabled-background` #F3F4F6 | `disabled-text` #9CA3AF | 60% opacity. No interaction. |
@@ -849,7 +826,7 @@ Each component specification defines: size variants, internal dimensions, states
 |-------|-------------|-----------|-------------|
 | Default | `border-strong` #4B5563 | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
 | Hover | `neutral-400` #9CA3AF | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
-| Focus | `color-primary-500` #0A84FF | `surface` #1F2937 | `color-primary-500` #0A84FF |
+| Focus | `border-focus` #0A84FF | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
 | Filled | `border-strong` #4B5563 | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
 | Error | `color-error-500` #FF453A | `color-error-50` #330A08 | `color-error-500` #FF453A |
 | Disabled | `neutral-700` #374151 | `disabled-background` #374151 | `disabled-text` #6B7280 |

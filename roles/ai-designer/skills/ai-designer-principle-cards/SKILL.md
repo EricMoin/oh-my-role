@@ -33,9 +33,9 @@ Reference:
 
 ## Visual defaults that must survive routing
 
-No generated `AAA · BBB` heading/tagline/metadata formula and no decorative replacement separators. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Preserve the complete palette and choose roles and combinations from it. Evaluate hue relationships, surface area, emphasis, state meaning, and actual contrast; there is no one-accent or neutral-only rule. An explicit user/project requirement is the exception, not a rationale invented after the design is built.
+No generated `AAA · BBB` heading/tagline/metadata formula and no decorative replacement separators. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Apply Color in Context when choosing or assessing colors, including when all components already use design tokens. An explicit user/project requirement is the exception, not a rationale invented after the design is built.
 
-Verify palette, separator copy, and cards/stripes on the current artifact; record evidence or state that visual inspection was unavailable. These apply to direct Quick work as well as specialist gates. Detailed explanations are in `visual-restraint.md`.
+Verify palette, separator copy, and cards/stripes on the current artifact and record the evidence or the unavailable coverage. These apply to direct Quick work as well as specialist gates. Use `theory/color-composition` for palette decisions and `theory/visual-restraint` for structure and copy.
 
 ## Core Cards
 
@@ -121,7 +121,9 @@ Verify palette, separator copy, and cards/stripes on the current artifact; recor
 
 **Fix Patterns**: Semantic labels, visible focus, applicable contrast thresholds, measured checks, generous touch targets (44px preferred; WCAG 2.2 AA uses 24px or qualifying spacing/exceptions), non-color indicators, reduced motion.
 
-**Reference**: core-principles.md; default-design-system.md.
+For focus, reuse the treatment on comparable controls in the project. When designing a bordered input from scratch, first try emphasizing its existing edge. Check that the focused field is recognizable alongside resting and invalid fields.
+
+**Reference**: core-principles.md, interaction-design.md (Focus State), default-design-system.md.
 
 ### Cognitive Load Budget
 
@@ -146,6 +148,18 @@ Verify palette, separator copy, and cards/stripes on the current artifact; recor
 **Fix Patterns**: Capture the current composition, identify the defective application, correct the smallest responsible role/component, and compare the same states afterward. Retain, retune, add, reorganize, or remove according to the defect; fewer elements or hues is not a success metric.
 
 **Reference**: default-design-system.md; visual-restraint.md.
+
+### Color in Context
+
+**Use When**: Creating, applying or reviewing a palette, from one component in its surrounding surface to a new theme.
+
+**Violation Signs**: Related surfaces look like separate workspaces. A repeated tint changes the apparent importance of a group. Selection or status styling contradicts what the content says.
+
+**Gate Question**: Which areas read together, what draws attention, and does the apparent state match the actual one?
+
+**Fix Patterns**: Trace the affected semantic role to its source. Adjust the relationship visible on a representative frame and recheck it with the neighboring surface or relevant state.
+
+**Reference**: `theory/color-composition`.
 
 ### Interface Economy
 
@@ -203,7 +217,7 @@ Verify palette, separator copy, and cards/stripes on the current artifact; recor
 
 **Gate Question**: What information does this motion communicate?
 
-**Fix Patterns**: Transform/opacity animations, short durations, spatial continuity, immediate focus rings, reduced-motion fallback.
+**Fix Patterns**: Transform/opacity animations, short durations, spatial continuity, immediate focus feedback, reduced-motion fallback.
 
 **Reference**: interaction-design.md; default-design-system.md.
 

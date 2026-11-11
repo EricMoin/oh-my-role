@@ -19,14 +19,14 @@ For non-Quick work, first declare an intake-only graph. Collect its accepted out
 
 ## Prepare the design brief
 
-Read `templates/design-state` and `gate-contract` from available references. For new directions or simplification work, supply `theory/visual-restraint` to Design and Review. The contract defines state transport, gate reporting, and design acceptance. The runtime supplies each node's declared outcomes and any declared schema identities/versions, attempt handoff, and execution rules. Resolve the actual paths once. Every node prompt contains:
+Read `templates/design-state` and `gate-contract` from available references. For work that creates, applies or reviews color, supply the resolved `theory/color-composition` path to both Design and Review. Include the project theme or representative baseline if one exists. Standard work without a Context gate still needs this grounding. For new directions or simplification work, also supply `theory/visual-restraint`. The runtime supplies declared outcomes, schema identities/versions, attempt handoff, and execution rules. Every node prompt contains:
 
 - The user's request, known constraints, authorized scope, tier, and full current Design State.
 - Its objective, acceptance criteria, write scope (Design only), artifact destination, and expected next gate. Identify refinement versus redesign; for refinement include the baseline and the visual/system properties to preserve.
 - The gate-contract reference path, explicit visual constraints/exceptions from the user, principle-card location, and relevant reference paths.
 - On revision, the latest artifact and specific unresolved findings; never just “try again”.
 
-Carry explicit visual preferences and rejected treatments in Constraints; do not reduce “less bloated” to a request for a different palette. Keep large evidence and artifacts in files and pass paths plus concise summaries. References are optional depth, not a mandatory reading list. Do not copy every theory document into every node.
+Carry explicit visual preferences and rejected treatments in Constraints. Keep large evidence and artifacts in files and pass paths plus concise summaries. Beyond the applicable references above, supply further theory only where the task needs it.
 
 ## Author and run staged graphs
 
@@ -52,4 +52,4 @@ If inputs or scope change substantially, retire obsolete work and continue from 
 
 ## Assemble the deliverable
 
-Inspect the latest artifact and Review evidence. Check that palette, separator-copy, and card/stripe checks refer to the latest revision; missing or unrendered checks cannot be reported as visual approval. For refinement, also inspect the preservation report: a pass must not conceal a replacement palette, removed token capabilities, or unrelated restyling. Link or show the actual result; summarize the few decisions that matter, validation coverage, assumptions, and unresolved risks. Clearly distinguish a specification from a prototype, an implemented feature from a mock, and a static inspection from an executed browser/assistive-technology check. Do not rerun a successful gate just to normalize harmless report formatting.
+Inspect the latest artifact and Review evidence. Check that palette, separator-copy, and card/stripe checks refer to this revision. For a palette pass on a mockup or build, look for the reviewer's observation about named surfaces or states on the actual frame and how it fits the project direction. If that observation is missing, inspect the frame yourself and attribute the check. If the frame is unavailable, deliver the visual work as an unverified draft. For refinement, also inspect the preservation report for replacement palettes, lost token capabilities, and unrelated restyling. Link or show the actual result and summarize the important decisions, validation coverage, assumptions, and unresolved risks. Distinguish a specification from a prototype, an implemented feature from a mock, and static inspection from an executed browser or assistive-technology check. Do not rerun a successful gate just to normalize harmless report formatting.

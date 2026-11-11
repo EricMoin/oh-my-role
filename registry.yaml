@@ -23,10 +23,9 @@ roles:
     tags: [react, frontend, typescript, tailwindcss, data-fetching, 
         accessibility, testing, debugging]
   ai-designer:
-    version: "3.5.0"
-    description: AI Design Director — tiered-routing design director with
-      artifact-first output and severity-layered quality gates, running its
-      staged gates on the rolebox graph v3 outcome protocol
+    version: "3.6.0"
+    description: AI Design Director for product UI and prototypes, with project-grounded
+      color composition and independent artifact review on the rolebox graph v3 outcome protocol
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"

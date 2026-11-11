@@ -761,7 +761,7 @@ The four principles (POUR):
 ### Keyboard Navigation
 
 - **Tab order follows visual order.** Left to right, top to bottom (in LTR languages). If visual order differs from DOM order, one of them is wrong.
-- **Focus indicators are visible.** The default browser focus ring is the minimum. Custom focus styles must be at least as visible (3:1 contrast against adjacent colors, at least 2px wide).
+- **Keep keyboard focus visible.** WCAG 2.2 AA leaves the indicator's placement to the designer. For a custom indicator, check 3:1 contrast against the applicable adjacent colors. The AAA focus appearance criterion uses a 2 CSS pixel perimeter as an area benchmark and also checks the change in contrast at the same pixels. [Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html) · [Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html) · [Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
 - **Interactive elements are focusable.** Buttons, links, inputs, selects, textareas, custom interactive components. Non-interactive elements (headings, paragraphs, divs) are not focusable.
 - **Keyboard shortcuts do not conflict** with screen reader shortcuts or browser shortcuts. Provide a way to remap or disable custom shortcuts.
 - **Skip links** allow keyboard users to bypass repetitive navigation and jump to main content.

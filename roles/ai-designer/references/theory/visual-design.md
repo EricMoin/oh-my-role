@@ -250,13 +250,13 @@ Different color models serve different purposes. Use the model that matches your
 
 ### Color Harmony
 
-Color harmony describes relationships between colors that produce visually stable, pleasing, or intentionally dynamic combinations. These are not rigid rules — they are starting points for palette development.
+Color harmony depends on how colors interact at their intended sizes and positions. The schemes below are starting points for exploration. Judge them on the surface using [Color composition](color-composition.md).
 
 **Complementary**: Two colors opposite each other on the color wheel (180° apart). High contrast, high energy. Creates vibrant tension. Use for: CTA buttons against a contrasting background, alert states. Risk: direct complementary pairs at full saturation vibrate visually — desaturate one or both.
 
 **Analogous**: Three colors adjacent on the color wheel (within 30–60° of each other). Low contrast, high harmony. Creates calm, cohesive palettes. Use for: backgrounds, gradients, multi-step progressions. Risk: insufficient contrast between states — ensure functional colors are still distinguishable.
 
-**Triadic**: Three colors evenly spaced on the color wheel (120° apart). Balanced contrast. Creates vibrant but stable palettes. Use for: information visualization with 3 categories, multi-brand systems. Risk: full-saturation triadic palettes feel childish — desaturate at least two of the three.
+**Triadic**: Three hues spaced roughly 120° apart can distinguish categories. If they compete for attention, test a change in chroma, lightness or area according to the intended hierarchy.
 
 **Split-Complementary**: One color plus the two colors adjacent to its complement. Similar vibrancy to complementary but less tension. Use for: primary + two accent colors. More forgiving than pure complementary — easier to balance.
 
@@ -270,7 +270,7 @@ Color temperature is a perceptual property that influences emotional response an
 
 **Cool colors** (blues, greens, purples): Recede from the viewer. Create calm, trust, spaciousness. Cool backgrounds feel open. Use cool colors for: backgrounds, trust-building interfaces (finance, healthcare), data-dense layouts where calm aids focus.
 
-**Neutral colors** (grays, tans, off-whites): Neither warm nor cool. Provide the scaffolding that lets chromatic colors work. Use neutrals for: backgrounds, borders, secondary text, disabled states. Neutrals with warm undertones (warm gray) feel more human. Neutrals with cool undertones (cool gray) feel more technical.
+**Neutral colors**: Whites, grays and near-blacks can carry different undertones. A green-gray panel can look more green next to a cream canvas than beside another green-gray. Judge that relationship on the actual surfaces and carry through a deliberate contrast when it supports the product's direction.
 
 ### The 60-30-10 Heuristic
 
@@ -326,9 +326,9 @@ HSL provides an intuitive framework for generating systematic color palettes:
 
 **Analogous palette**: Start with the primary hue. Shift by ±30° for adjacent hues. Apply the monochromatic lightness variations to each hue. This produces a harmonious multi-hue palette.
 
-**Complementary accent**: Take the primary hue. Shift by 180° for the complement. Use the complement only at the accent level (10% distribution). Generate lightness variations for both hues.
+**Complementary accent**: Explore a hue opposite the primary hue. Adjust lightness, chroma and area where the two are seen together.
 
-**Saturation guidelines**: Full saturation (100%) is aggressive — use only for small accent elements. UI surfaces work best at 5–30% saturation. Text works best at 0–10% saturation (near-neutral). Reduce saturation as elements increase in area.
+**Saturation and area**: A tint on a single chip can dominate when repeated across a table. Give a large saturated surface the weight the content or brand calls for and inspect the result in context.
 
 **Lightness for elevation**: In light themes, higher elevation = lighter surfaces (background at L:95%, card at L:100%, popup at L:100% with shadow). In dark themes, higher elevation = lighter surfaces (background at L:10%, card at L:15%, popup at L:20%).
 
@@ -706,7 +706,7 @@ Use this checklist during Phase 7 (Validate) of the design workflow (See ai-desi
 
 ### Color
 
-- [ ] Does the color distribution follow the 60-30-10 principle (or a documented alternative)?
+- [ ] Do neighboring surfaces group the intended content, and does the strongest color emphasis fall where this state needs it?
 - [ ] Is color never used as the sole indicator of meaning or state?
 - [ ] Have color combinations been tested for all three color blindness types?
 - [ ] Are semantic colors (error, warning, success, info) used consistently throughout?

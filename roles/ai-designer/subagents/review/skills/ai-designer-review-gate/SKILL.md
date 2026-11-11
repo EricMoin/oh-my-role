@@ -29,8 +29,9 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 
 ### High (should block)
 
-**Visual-default violations**: generated `AAA · BBB` label chains; decorative dark/colored left stripes on cards, callouts, or rows; unsupported card-grid page structure; color-role assignments or combinations that demonstrably defeat the agreed palette. Inspect equivalent stripe implementations, not only literal `border-left`. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision. This explicit acceptance rule overrides the general caution about subjective taste below.
+**Visual-default violations**: generated `AAA · BBB` label chains, decorative dark/colored left stripes on cards, callouts or rows, and unsupported card-grid page structure. Inspect equivalent stripe implementations. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision.
 
+**Color system and composition**: Require revision when a color assignment breaks the project system without an authorized exception, or a rendered pairing visibly conflicts with the intended color character, grouping, emphasis or state meaning. This applies to newly authored palettes and to valid project tokens used together. For example, two surfaces specified as the same paper can give each other a visible green or yellow cast. Cite the intended relationship, the elements in conflict and the effect seen on the frame.
 
 6. **Context mismatch**: layouts, imagery, or placeholder content that demonstrably obscure the user task or contradict the brief. Familiar patterns and symmetry are not failures by themselves
 7. **Brand dilution**: design ignores existing brand assets/guidelines provided in constraints, generic styling when brand context was available
@@ -41,7 +42,7 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 ### Medium (flag, don't block)
 
 11. **Decorative excess**: motion without communicative purpose, visual complexity without information value, gratuitous animation
-12. **Token soup**: design system tokens referenced but not actually coherent (spacing system with 13 arbitrary values, color palette with no relationship)
+12. **Minor token inconsistencies**: a redundant alias or a local spacing variation with no material effect on grouping, emphasis, state meaning or the agreed system.
 13. **Structural sameness**: every section uses identical layout pattern, no visual rhythm
 14. **Second-order defaults**: technically accessible but practically unusable (legal-minimum touch targets, minimum contrast with low-quality displays in mind)
 
@@ -49,7 +50,7 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 
 Report all three categories from `gate-contract`: palette, separator copy, and cards/stripes. Inspect source for copy/stripe implementations and inspect the current render for palette relationships and page structure. State which revision and viewport you examined. Record an exact exception when applicable. Never substitute “looks clean” or a checklist tick for evidence.
 
-Contrast measurements verify readability, not aesthetic coherence. Check role consistency, the relationship of neighboring colors, emphasis at actual surface areas, and interaction states. Multiple hues, tinted text/surfaces, deliberate temperature contrast, and vivid palettes are not failures by themselves. State the specific relationship that fails; “weird color” without an observable example is not an actionable finding. If rendering is unavailable, report visual checks as not checked and do not issue an overall visual pass for a build.
+Use the supplied `theory/color-composition` reference. Look at the current render before using Design's rationale to explain it. Record which adjoining surfaces appear to belong together, what draws attention and what appears selected or urgent. Then compare with the brief, the actual state, and the project baseline or declared direction. Check a contrasting state when it changes the meaning or area of the color. An intentional temperature shift or a vivid palette can pass with that same evidence. Report readability measurements separately.
 
 ## Preservation check for optimization
 
@@ -65,6 +66,7 @@ If visual bloat materially contradicts an explicit brief, treat it as a High con
 
 Reference these principle cards when relevant:
 
+- Color in Context
 - Accessibility Baseline
 - Recognition Over Recall
 - User Control and Freedom
@@ -100,7 +102,7 @@ Load these references when you need depth:
 
 Return `pass` when:
 
-- For visual builds, all three Visual Checks have current rendered/source evidence as appropriate; no required check is not-checked
+- For visual mockups and builds, all three Visual Checks have current rendered/source evidence as appropriate; no required check is not-checked. A written specification can pass a specification review under the shared contract.
 - Zero Critical issues
 - Zero unaccepted High issues
 - Medium issues are noted but do not block

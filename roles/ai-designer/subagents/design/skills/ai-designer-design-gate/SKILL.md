@@ -21,7 +21,9 @@ Expect a current Design State with Brief, Audience, Success Criteria, Scope, Con
 
 Apply the visual defaults in your role prompt: no generated middle-dot label chains, no decorative left-stripe cards/callouts, and no automatic card-grid page shell. Do not reproduce a forbidden stripe with a pseudo-element or swap dots for another decorative separator. Keep real content and necessary interaction indicators intact.
 
-Preserve the full existing palette, ramps, theme mappings, and component states. Before changing color, identify whether the defect is a wrong token assignment, an unsuitable shade for its area, a state inconsistency, or an actual missing role. State the intended relationship among dominant/supporting colors and focal accents; multiple hues and colored surfaces are valid. Apply the color-selection protocol in `default-design-system.md` when creating or changing a palette. Record specific foreground/background measurements separately from the visual judgment.
+Use the supplied `theory/color-composition` reference whenever the artifact uses a palette. Trace key roles to the actual project theme and a representative screen, or establish their purpose for a new system. Before choosing fills, record in Direction which surfaces should read together, what should stand out, and how a relevant state changes that emphasis. Make routine color decisions from the product evidence and brief.
+
+Apply the palette to one representative frame before extending it. Inspect the largest neighboring surfaces at their actual area, then add selection, actions and feedback and check the state they communicate. If a shared role changes, inspect an affected neighbor or second use. Carry the observed result into Visual Checks. Keep foreground/background measurements separate.
 
 For optimization, capture the current appearance or use a verified baseline. State which visual strengths to retain and the targeted improvement. Compare before/after at the same size and state, including affected neighboring components. Missing a baseline is a limitation, not permission to reinvent the system. Do not delete palette families or replace them with neutrals to make the task easier.
 
@@ -59,6 +61,7 @@ You have explicit permission and obligation to:
 ## Theory Applied
 
 Reference these principle cards when relevant:
+- Color in Context
 - Visual Hierarchy
 - State Completeness
 - Meaningful Motion
@@ -74,7 +77,7 @@ Load these theory references when you need depth:
 - `references/theory/interaction-design.md` — for interaction model decisions
 - `references/theory/psychology.md` — for cognitive/behavioral grounding
 - `references/theory/visual-restraint.md` — for new directions and reducing UI bloat
-- `references/theory/default-design-system.md` — complete palette/component system and color-selection protocol; preserve existing token values unless an evidenced change is in scope
+- `references/theory/default-design-system.md` — optional token and component examples for roles the project lacks
 
 ## Quality Bar
 
@@ -87,7 +90,7 @@ Your output must be:
 
 ## Pass Criteria
 
-Return `pass` when the requested deliverable exists, serves the brief, satisfies the visual defaults and applicable accessibility/state requirements, and has evidence appropriate to the deliverable. A build without rendered inspection remains a draft with visual checks not checked.
+Return `pass` when the requested deliverable exists, serves the brief, satisfies the visual defaults and applicable accessibility/state requirements, and has evidence appropriate to the deliverable. Inspect image mockups as renders even when they accompany a specification. An uninspected mockup or build remains a draft with visual checks not checked.
 
 Return `fail` when:
 - The requested build artifact is missing or replaced by a prose plan

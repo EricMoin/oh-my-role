@@ -627,11 +627,11 @@ Mouse pointer is over the element. Desktop-only — hover does not exist on touc
 
 #### Focus State
 
-The element has keyboard focus (via Tab key or programmatic focus).
+The user can tell which control will receive keyboard input.
 
-- **Visual change**: prominent and unmistakable. 2px+ outline or ring, 3:1 minimum contrast ratio against adjacent colors. The focus indicator must be visible against any background the element might appear on.
-- **Never remove focus indicators.** Never set `outline: none` without providing an equivalent alternative. Users who navigate by keyboard rely on focus visibility. Removing it makes the interface unusable for them.
-- **Focus vs focus-visible**: show focus styles on keyboard navigation. Optionally suppress them on mouse click if the design team insists, but the keyboard focus state must always be visible.
+- **Placement.** Follow the project's visible focus treatment for that component. A bordered input can emphasize its own edge. An outer outline can help a filled button stand out against its surroundings.
+- **Visibility.** Keep the browser's indicator unless the custom treatment gives an equally clear cue. Check the cue against the colors it actually touches, including when a field also shows an error.
+- **On the web.** Use `:focus-visible` for custom keyboard focus styles. The browser may also match an editable field after a pointer click.
 
 #### Active / Pressed State
 
@@ -970,7 +970,7 @@ Use this checklist to verify that every screen, component, and flow meets intera
 ### State Completeness
 
 - [ ] Is every interactive element designed in all applicable states (default, hover, focus, active, disabled, loading, error, empty, selected)?
-- [ ] Are focus states visible with 3:1 minimum contrast?
+- [ ] Can you follow keyboard focus from one control to the next, including onto a field with an error? Check custom indicators against their adjacent colors (3:1 where WCAG 1.4.11 applies).
 - [ ] Are disabled states explained (why is this disabled)?
 - [ ] Are empty states meaningful and actionable?
 - [ ] Are error states recoverable?
