@@ -16,6 +16,8 @@ Track:
   direct URL or file/line locator retained for point-of-use citation.
 - Tool fit: whether the source was inspected with an appropriate tool for the evidence type.
 - Claim: what the source supports, distinguished from the author's inference.
+- Scope: the conditions, exceptions, version and population the claim covers;
+  retain negative findings, tradeoffs and uncertainty as part of the claim.
 - Supporting passage: the exact short excerpt or observation, preserving enough
   context to check a quotation or paraphrase without changing its meaning.
 - Confidence: high, medium, low.
@@ -55,10 +57,31 @@ Low confidence:
 
 ## From ledger to narrative
 
+Fix the reader's question or decision, requested scope and sufficient answer in
+the working brief from `supersearch-reporting`. Keep a question-to-claim map:
+each material question needs supported claims, their evidence and qualifications,
+or an explicit gap. An available source or attractive component does not create
+a new question the report has to answer.
+
 Group findings by the question they answer, not by which scout found them. Merge
 duplicate claims while retaining distinct supporting sources and qualifications.
 Map each material question to a place in the report and identify missing evidence
 for its explanation, boundaries, alternatives or consequences before drafting.
+
+For every proposed explanation, distinguish what was observed, what a source
+states and what you infer from it. Record the premises and limits of an inference
+so the writer cannot attribute it to the cited author. Correlation alone does not
+establish cause; missing search results do not establish absence. Comparisons
+need comparable conditions, and rankings need evidence for the chosen criteria.
+Do not complete a persuasive narrative by supplying an unobserved mechanism,
+benchmark, example or recommendation from general plausibility.
+
+Carry names, numbers, units, dates, versions, identifiers, conditions, tradeoffs
+and uncertainty into drafting as facts to preserve. Component sample content and
+worker speculation are not confirmed evidence. A newly discovered factual
+gap returns to targeted inspection or becomes a narrowed claim or explicit gap;
+it is not a copyediting problem. Hypothetical examples must be labeled and kept
+separate from observed evidence.
 
 Confidence ratings and the ledger categories below are internal synthesis data,
 not a reader-facing section template. Use `supersearch-reporting` to write the

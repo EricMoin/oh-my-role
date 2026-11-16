@@ -56,8 +56,11 @@ one channel can finish:
   synthesize.
 - **Report** — a Deep request whose deliverable is a research report. Use the
   same search graph and additionally produce the HTML deliverable per the
-  `supersearch-html-report` skill. The chat answer stays a concise summary and
-  ends with the report path.
+  `supersearch-html-report` skill. Load it and `supersearch-reporting`, and read
+  its sibling `components.html` before drafting HTML. Reuse the supplied visual
+  system and component implementations; derive the argument and section order
+  from the user's questions and inspected evidence. The chat answer stays a
+  concise summary and ends with the report path.
 
 One request declares at most one search graph. Never declare a graph for a Quick
 answer, and never declare a second graph merely because startup is slow.
@@ -165,9 +168,16 @@ carries the existing evidence and the exact failure.
    per-claim confidence in the ledger; consolidate the report's overall evidence
    assessment and gaps at the end, while retaining essential qualifications next
    to affected claims. For a Report request, use `supersearch-html-report` to
-   compose a topic-specific document from optional component references, check
-   the finished artifact, and end the concise chat summary with its absolute
-   file link. Select sourced figures for explanatory value.
+   compose the argument with the supplied component library, preserving its
+   stylesheet, reading shell and selected component contracts. Choose components
+   to serve the prose; never copy the demo outline or invent a new visual system.
+   Reopen the finished file for a meaning-and-fact review, then structure and
+   language, then component and interaction checks. Preserve source conditions,
+   numbers and uncertainty during every rewrite, and verify newly added claims
+   before including them. Repair findings and recheck changed content before
+   delivery; a scout audit is not a review of the later report. End the concise
+   chat summary with its absolute file link. Select sourced figures for
+   explanatory value.
 
 ## Worker briefs and reports
 
@@ -180,7 +190,10 @@ carries the existing evidence and the exact failure.
 - The evidence auditor returns a `schema_version: 1` audit report:
   unsupported claims, weak tool choices, conflicts or stale evidence, missing
   primary checks, confidence adjustments, final-answer risks, and HTML report
-  findings when a report exists.
+  findings when a report exists. When supplying an existing HTML file for audit,
+  put its absolute path and the resolved absolute paths of `supersearch-reporting`
+  and `supersearch-html-report`'s SKILL.md files and `components.html` in the node
+  brief. The auditor reads those files directly; it does not inherit parent skills.
 - The auditor is a join node: it runs only after every declared `evidence_ready`
   input settles, and it reads only the accepted reports bound to those attempts.
 
@@ -195,9 +208,9 @@ Load skills by the problem being solved, not merely by words in the request:
 | Local files, code, git history, sessions, documents | supersearch-local-discovery |
 | Web, GitHub, official docs, anti-crawl fallbacks | supersearch-web-discovery |
 | Deduplication, conflict handling, confidence calibration | supersearch-evidence-synthesis |
-| Clear writing, report depth, direct citations and closing evidence limits | supersearch-reporting |
+| Reader-focused prose, fact-preserving revision, direct citations and final text review | supersearch-reporting |
 | Last-resort temporary scraping scripts under `.rolebox/scratch/` | supersearch-custom-scraping |
-| HTML report deliverable under `.rolebox/reports/` | supersearch-html-report |
+| Required HTML component library, composition and final artifact checks under `.rolebox/reports/` | supersearch-html-report |
 
 ## Answer shape
 

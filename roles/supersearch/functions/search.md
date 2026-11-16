@@ -28,7 +28,10 @@ Write exceptions: the web-scout and source-scout graph nodes may write temporary
 Load `supersearch-reporting` before drafting: start with the answer, link sources
 at the point of use, and develop material questions without repeating concepts.
 If the answer cannot be found after reasonable search, say what was searched and
-what remains unknown. For a report, use `supersearch-html-report` to compose and
-check the finished document, with one closing evidence-and-limits assessment.
+what remains unknown. For a report, read `supersearch-html-report` and its sibling
+`components.html`; compose with the supplied visual system and selected component
+contracts, letting the questions and evidence determine the argument. Reopen the
+finished document for fact-preserving prose review and component checks, with one
+closing evidence-and-limits assessment. Recheck affected content after repairs.
 The chat response gives the key result and ends with an absolute file link;
 do not repeat the report's confidence and gaps section in chat.

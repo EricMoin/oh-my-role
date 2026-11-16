@@ -8,7 +8,9 @@ description: >-
   multi-channel search declares exactly one bounded read-only search graph
   (channel-fanout or single-channel-plus-audit) whose local, web and source
   scouts and whose evidence auditor settle their own declared outcomes, and a
-  report request adds the HTML deliverable. Read-only: the only writes are
+  report request adds an evidence-backed HTML deliverable composed with the
+  supplied component library and reviewed for facts, prose and component fidelity.
+  Read-only: the only writes are
   temporary custom-scraping scripts in .rolebox/scratch/ and the report in
   .rolebox/reports/.
 version: "2.0.0"

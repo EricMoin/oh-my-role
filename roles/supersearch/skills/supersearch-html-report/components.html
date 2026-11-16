@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <!--
-  SuperSearch HTML component reference
+  SuperSearch HTML component library
 
-  本页是可拆选、可修改的组件参考，不是报告模板，也不是报告目录。
-  先按问题和证据写出论述，再按表达需要选取排版与交互片段。
-  不要复制整页换字，不要把这些演示章节或组件组合逐节套进报告。
-  CSS、布局、目录、搜索、主题脚本都可以改写或删除；保留交互时，
-  同步维护对应的选择器、元素 ID 与事件绑定，不留下失效按钮。
+  本页提供报告必须复用的视觉样式、阅读骨架和组件实现。
+  先按问题和证据写出论述，再用这里的组件组织表达。
+  复用 stylesheet、.wrap 和所选组件的 HTML/CSS 约定；
+  不要重新设计配色、字体、卡片或仪表盘，不要仅借用类名后改写样式。
+  章节标题、顺序、数量、长短和组件组合由论述决定，不复制演示目录，
+  不逐节填同一套组件，也不为凑满组件补写没有证据的内容。
+  可选交互按完整依赖取用；删去控制按钮时同时删去对应脚本。
+  无目录时用 .wrap.wrap--prose，避免保留空白侧栏。
+  必要的局部可访问性/溢出修复须记录原因；用户明确要求的展示变更另行遵循。
 
   组件位置：
-    - style：阅读排版、导航、表格、引用、图注、窄屏与打印样式。
-    - body：彼此独立的使用示例；示例顺序和数量不约束最终报告。
-    - 页尾脚本：目录定位与渐隐、主题切换、全文搜索，均可选用。
+    - style：复用阅读排版、导航、表格、引用、图注、窄屏与打印样式。
+    - body：按需组合的使用示例；示例顺序和数量不约束最终报告。
+    - 页尾独立脚本：目录定位与渐隐、主题切换、全文搜索，均可选用。
+    - 主题：head 初始化脚本、#themeToggle、页尾主题脚本与深色样式。
+    - 搜索：#searchToggle、#searchPanel/#searchInput/#searchResults 与页尾搜索脚本。
 
   演示中的 example.org 链接和文字只说明链接位置，不是研究证据。
   实际正文引用直达已检查的原始来源；目录链接才跳到报告内部。
@@ -21,7 +27,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperSearch · HTML 组件参考</title>
+    <title>SuperSearch · HTML 组件库</title>
+    <!-- Theme initialization: retain with the theme component. -->
     <script>
       (function () {
         try {
@@ -130,7 +137,10 @@
         }
 
         /* ———— 目录侧边栏 Table of Contents ———— */
-        section { scroll-margin-top: 24px; grid-column: 2; }
+        section { scroll-margin-top: 24px; grid-column: 2; min-width: 0; }
+        /* 无目录的阅读布局：保持相同正文宽度与排版。 */
+        .wrap.wrap--prose { grid-template-columns: minmax(0, 880px); }
+        .wrap--prose > section { grid-column: 1; }
         .toc-nav {
           grid-column: 1; grid-row: 1 / -1;
           width: 100%; max-width: 244px;
@@ -208,7 +218,7 @@
           .toc summary { display: none; }
         }
         @media (max-width: 1000px) {
-          .wrap { grid-template-columns: 1fr; column-gap: 0; row-gap: 0; justify-content: stretch; }
+          .wrap { grid-template-columns: minmax(0, 1fr); column-gap: 0; row-gap: 0; justify-content: stretch; }
           .toc-nav {
             grid-column: auto; grid-row: auto; position: static;
             max-width: 460px; width: 100%;
@@ -328,7 +338,7 @@
         <div class="toc-scroll">
         <details class="toc" open>
             <summary>组件目录</summary>
-            <div class="toc-head">组件参考</div>
+            <div class="toc-head">组件库</div>
             <div class="toc-list">
                 <div class="toc-group">
                     <a href="#usage"><span class="txt">如何使用本页</span></a>
@@ -345,9 +355,10 @@
     </nav>
 
     <section id="usage">
-        <h1>HTML 组件参考</h1>
-        <p>本页展示可独立选用的排版与交互。报告应先有自己的问题、证据和论述，再选择需要的组件；这里的章节不是报告目录，也没有需要逐项填写的内容。</p>
-        <p>可以修改布局、样式和脚本，也可以只取段落与引用样式。若保留搜索或目录定位，需同步维护其元素和选择器。页面右上角提供搜索与主题切换演示。</p>
+        <h1>HTML 组件库</h1>
+        <p>报告使用这里的样式、阅读骨架和组件实现。先根据问题与证据写出论述，再选择合适的组件；本页的演示章节不是报告目录，也没有需要逐项填写的内容。</p>
+        <p>复用排版、颜色、间距及所选组件的结构与类名，保留窄屏、打印和键盘焦点样式。内容可增减、重排，表格列由比较问题决定；不另造卡片、仪表盘或新的视觉系统。无目录时使用 <code>.wrap.wrap--prose</code>。</p>
+        <p>主题、搜索和目录增强脚本可以按需选用，控件与依赖须一同保留或移除。页面右上角展示搜索与主题切换；这些交互不决定报告的章节结构。</p>
     </section>
 
     <section id="prose">
@@ -413,6 +424,7 @@
 
 </div>
 
+<!-- TOC enhancement: .toc-nav, .toc-scroll, .toc-list links, section targets. -->
 <script>
   (function () {
     var links = Array.prototype.slice.call(document.querySelectorAll('.toc-list a[href^="#"]'));
@@ -469,6 +481,7 @@
     updateFade();
   })();
 </script>
+<!-- Theme toggle: #themeToggle and the head initialization script. -->
 <script>
 (function () {
   var root = document.documentElement;
@@ -480,7 +493,12 @@
       try { localStorage.setItem('theme', dark ? 'light' : 'dark'); } catch (e) {}
     });
   }
+})();
+</script>
 
+<!-- Search: retain this entire block with all four search element IDs. -->
+<script>
+(function () {
   var sections = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
   var index = [];
   sections.forEach(function (sec) {

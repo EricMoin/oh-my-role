@@ -55,7 +55,7 @@ accepted scout reports, not new broad research and not a product verdict.
 | missing_primary_checks | Primary sources, contradiction checks or verification passes still missing |
 | confidence_adjustments | Per-claim confidence changes with the reason for each change |
 | final_answer_risks | Residual risks the final answer must state or hedge |
-| html_report_findings | Defects in an existing HTML file actually inspected: unsupported or missing point-of-use source links (including citations that only jump to the bibliography), inaccurate quotes, repeated concepts or jargon obscuring the explanation, shallow coverage of material questions, repeated or missing closing evidence assessment, unfinished sample content, broken navigation/interactions, missing source list, or unattributed/invalid figures. Review meaning and behavior, not specific CSS classes or a mandatory layout. Empty array when no HTML was inspected; this does not certify a later report |
+| html_report_findings | Defects in an existing HTML file actually inspected: unsupported claims or point-of-use citations (including bibliography-only links), inaccurate quotes, changed numbers/conditions/uncertainty, repeated concepts or jargon, shallow coverage, repeated or missing closing evidence assessment, copied sample content, drift from the supplied component CSS/shell/markup contracts, broken navigation or interaction dependencies, missing source list, or unattributed/invalid figures. Check the selected components against components.html without imposing its demo headings, order, counts or uniform bundles. Empty array when no HTML was inspected; this does not certify a later report or edit |
 
 ## Non-success payloads
 

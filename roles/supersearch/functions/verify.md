@@ -14,12 +14,22 @@ Before finalizing:
 5. Downgrade confidence when evidence is secondary, stale, unverifiable, inconsistent, or gathered with a weak fallback.
 6. Separate confirmed facts from inference.
 7. Mark unknowns explicitly instead of filling gaps, and treat a `no_evidence`, `blocked` or `failed` scout result as a stated gap rather than a passing prerequisite.
-8. For a report, the lead checks the finished file using `supersearch-reporting`
-   and `supersearch-html-report`: coverage and depth of material questions,
-   repetition and jargon, direct citations beside supported text, and one closing
-   evidence assessment. Retain qualifications needed to interpret individual
-   claims. An audit of scout inputs does not verify a later HTML artifact; check
-   the composed document's links and interactions without requiring the component
-   reference's class names or layout.
+8. For a report, reopen the finished file and apply `supersearch-reporting`:
+   review meaning and facts, then structure, sentences and words. Reconcile all
+   material claims with inspected evidence, including new claims introduced in
+   headings, summaries, comparisons or captions. Preserve numbers, units,
+   versions, conditions, negation and uncertainty during edits. Verify depth,
+   repetition, direct citations and one closing evidence assessment, keeping
+   decision-changing qualifications next to their claims.
+9. Apply `supersearch-html-report` to that same file: compare its stylesheet,
+   reading shell and chosen markup/class contracts to `components.html`; reject
+   arbitrary redesigns and copied demo content. Check links and selected
+   interactions, including their dependencies. Section count, order and component
+   combinations follow the argument, not a fixed template. Repair defects and
+   reopen the changed file for the affected checks before delivery. An audit of
+   scout inputs does not verify a later HTML artifact; record unperformed visual
+   or interaction checks honestly.
 
-If a claim cannot survive this pass, remove it or label it as uncertain.
+Remove or correct claims that lack support or contradict the evidence. Retain a
+qualified inference only when inspected premises support it; state its conditions
+and uncertainty. Adding “possibly” does not make an invented claim acceptable.

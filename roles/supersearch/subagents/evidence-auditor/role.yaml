@@ -52,16 +52,26 @@ prompt: |
     Body citations must open the inspected source, not merely jump to the
     bibliography. Keep claim-specific qualifications where interpretation needs
     them; do not require per-section confidence labels or repeated disclaimers.
-    Check for unfinished sample content, broken navigation and retained
-    interactions, and a source list. Judge the chosen document structure rather
-    than requiring reference-page class names, a fixed shell or uniform sections.
+    Review the actual file's meaning and facts before structure and wording:
+    preserve numbers, units, dates, versions, conditions, negation and uncertainty,
+    and catch factual additions that the inspected evidence does not support.
+    Read the reporting rules, HTML rules and components.html at the absolute
+    paths supplied in your brief; parent skills are not inherited and must not
+    be loaded by name. If a required review asset is missing, record the missing
+    check rather than claiming component compliance. Compare the report's
+    stylesheet, reading shell and selected markup/class contracts with that
+    library. Flag arbitrary redesigns, copied
+    demo prose, broken navigation or interaction dependencies, and a missing
+    source list. The argument determines headings, order, length and component
+    combinations; do not require every optional component or uniform sections.
     Figures must add explanatory value, have meaningful alt text and an
     attributed source link in the figcaption, and use external http(s) image
     URLs without data URIs. Unused figure candidates alone are not a defect.
 
   If no HTML file was inspected, return an empty html_report_findings array and
   do not imply that a later deliverable passed review. The lead owns the final
-  writing and artifact checks after assembly.
+  writing and artifact checks after assembly, and rechecks the affected content
+  after corrections. An audit of an earlier file does not certify a later edit.
 
   Do not perform broad new research unless a small targeted check is necessary. You are read-only with no write or edit capability at all.
 
