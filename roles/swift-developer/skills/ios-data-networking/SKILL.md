@@ -1,0 +1,30 @@
+---
+name: ios-data-networking
+description: Trace iOS data ownership across URLSession, local caches, background transfers, SwiftData and Core Data, and verify recovery from stale responses and store upgrades.
+---
+
+# iOS data and networking
+
+Follow one user action to the code that reads or writes its data. Identify the authority for each value, the lifetime of cached copies, and the event that makes a change durable. A local preference may end at the existing store.
+
+When two devices appear to have claimed the last item, correlate both requests with the authoritative records. Two accepted writes expose an enforcement problem at the shared write boundary. One acceptance and one rejection with two success screens expose a client reconciliation problem. Preserve the distinction between a queued offline intent and a confirmed result. If you can only inspect the client, name the server guarantee that remains unknown.
+
+## HTTP, offline use and background work
+
+- Separate request construction, transport failure, cancellation, HTTP status and decoding. Accept the status codes and body shapes documented for that endpoint. A successful delete can return 204 with an empty body. An error response can contain valid JSON that describes a failure. [Handling URLSession responses](https://developer.apple.com/documentation/foundation/fetching-website-data-into-memory)
+- A screen showing the latest search should apply a response only while it still expects that request. A cache keyed by account and query can still accept a result for the previous query if it is fresh for that key. Check each write against its owner's policy. If sign-out revokes pending writes, ensure the store rejects writes from the expired session. Test signing back into the **same account** before its old request returns. For offline reads, distinguish a failed refresh with usable cached data from a successful empty response.
+- If an offline archive must sync later, make its pending work recoverable as soon as the local edit commits. When one database holds both, derive pending work from the saved record if it contains enough information, or save the edit and its sync intent in one transaction. Across independent systems, record the pending operation durably and reconcile its outcome after interruption. Stop after the local commit and reopen offline. The edit and the work needed to sync should both survive. Analytics designated best effort can fail independently.
+- When a write times out after the server may have committed it, consult the endpoint's idempotency contract. Reuse the same operation identifier across safe retries when the server supports deduplication. Otherwise reconcile with the server or ask for an explicit user decision before repeating a consequential write. Test an acknowledgement lost after commit. [HTTP method idempotency](https://www.rfc-editor.org/rfc/rfc9110#section-9.2.2)
+- Match execution to the job. A foreground request can follow the screen's lifetime. A transfer that must survive suspension may need a background URL session, a stable session identifier, delegate delivery and file-backed uploads. Reattach after a system-initiated relaunch and move a downloaded temporary file before the delegate callback returns. A system-scheduled background task has a different lifetime and timing contract. [Background downloads](https://developer.apple.com/documentation/foundation/downloading-files-in-the-background) · [Background execution strategies](https://developer.apple.com/documentation/backgroundtasks/choosing-background-strategies-for-your-app)
+
+## Persistence and migration
+
+| Existing boundary | Preserve and verify |
+| --- | --- |
+| SwiftData | Confirm availability against the deployment floor, starting with iOS 17 for the original framework. Keep the container and context ownership explicit. Use automatic migration for supported changes and a versioned migration plan for changes that require transformation. For a new uniqueness constraint, decide which duplicate survives and where its relationships go before migrating. [ModelContainer](https://developer.apple.com/documentation/swiftdata/modelcontainer) · [WWDC schema and migration example](https://developer.apple.com/videos/play/wwdc2023/10195/) |
+| Core Data | Use the context's queue for fetching and mutation. Pass permanent managed object IDs or value snapshots across queues. After a background import, verify what the view context observes and when. Keep a working Core Data stack when it fits the supported targets and store history. [Using Core Data in the background](https://developer.apple.com/documentation/coredata/using-core-data-in-the-background) |
+| Credentials and ordinary settings | Use the established Keychain wrapper for tokens and secrets. Select accessibility and access groups for the lock-state and sharing requirements. Store ordinary preferences separately. Verify logout and, if relevant, access after locking the device. [Keychain services](https://developer.apple.com/documentation/security/keychain-services) |
+
+For a SwiftData bulk import, a model actor can own an isolated context. Pass stable identifiers or decoded values at the boundary, resolve the records inside that context, and return the saved result to the UI. If editing can fail, await the save outcome before telling the user the edit is durable. [ModelActor](https://developer.apple.com/documentation/swiftdata/modelactor) · [ModelContext](https://developer.apple.com/documentation/swiftdata/modelcontext)
+
+Prove a storage upgrade on a **copy** of a representative on-disk store from a supported prior release. An in-memory empty store cannot exercise decoding or schema migration of old records. Include duplicates, optional fields and relationships relevant to the change. Open the upgraded store again and assert IDs, relationships, values and continued writes. On migration failure, preserve user-owned data, distinguish a locked or unavailable store from a schema error, and surface the project's recovery path. Reserve automatic reset for data explicitly classified as rebuildable.

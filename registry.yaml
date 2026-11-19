@@ -72,6 +72,12 @@ roles:
       and targeted video analysis for difficult UI paths
     tags: [android, kotlin, jetpack-compose, compose, mobile, research,
         source-tracing]
+  swift-developer:
+    version: "1.0.0"
+    description: Native iOS engineer for iPhone apps, Swift package APIs and product
+      rules, UIKit and SwiftUI features, extensions, device incidents and distribution.
+      Verifies changes through the owning caller, interaction or built artifact.
+    tags: [ios, swift, swiftui, uikit, xcode, accessibility, testing, performance]
   emperor:
     version: "4.0.1"
     description: "Top-level orchestrator — classifies user requests, dispatches scoped

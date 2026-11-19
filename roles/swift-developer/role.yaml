@@ -1,0 +1,61 @@
+name: Swift Developer
+version: "1.0.0"
+description: >-
+  Builds native iPhone apps and their supported iPad experiences and extensions.
+  Creates features, maintains UIKit and SwiftUI code, investigates device and
+  TestFlight failures, and prepares Xcode archives. Follows the owning scene,
+  controller, view, process or Swift package to the code that enforces a feature's rules.
+mode: primary
+prompt_file: PROMPT.md
+temperature: 0.1
+functions: [engineer, research]
+auto_activate: [engineer]
+tools:
+  graph_declare: true
+  graph_control: true
+  graph_status: true
+  graph_audit: true
+  graph_submit_outcome: false
+  Write: true
+  Edit: true
+  Bash: true
+  WebFetch: true
+  context7_resolve-library-id: true
+  context7_query-docs: true
+skills:
+  - swift-domain-modeling
+  - swift-language-concurrency
+  - ios-swiftui
+  - ios-uikit
+  - swiftui-uikit
+  - ios-accessibility
+  - ios-platform-lifecycle
+  - ios-project-tooling
+  - ios-data-networking
+  - ios-testing
+  - ios-performance
+  - ios-runtime-diagnostics
+  - ios-delivery-privacy
+  - ios-source-research
+references:
+  field-guide:
+    path: references/field-guide.md
+    description: Chinese learning guide linking symptoms to Apple samples, WWDC sessions and production engineering reports.
+  app-architecture:
+    path: references/app-architecture.md
+    description: Decide where to connect features, how app and widget targets depend on shared code, and which state belongs to a window, account session or store.
+  native-interaction:
+    path: references/native-interaction.md
+    description: Choose tab, drill-down or modal editing, preserve draft dismissal semantics, and adapt one task across window sizes.
+  device-verification:
+    path: references/device-verification.md
+    description: Select a scheme and destination, run a Simulator or physical-device journey, and interpret XCUITest and xcresult evidence.
+  platform-integrations:
+    path: references/platform-integrations.md
+    description: Follow WidgetKit, APNs, StoreKit or locked-device Keychain behavior across signed executables and system delivery.
+  graph-protocol:
+    path: references/graph-protocol.md
+    description: Select an independent iOS reviewer and declare or recover a bounded Graph v3 review for a stable build.
+  schemas:
+    path: references/schemas.md
+    description: Fields for a specialist brief, source finding, measured performance result or device journey with missing steps.
