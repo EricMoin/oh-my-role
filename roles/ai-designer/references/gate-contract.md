@@ -10,13 +10,22 @@ Apply your patch and carry forward a compact **full** Design State in the result
 
 ## Visual acceptance
 
-Design and Review must check the palette, separator-style copy, and card/stripe treatment in every visual artifact they touch. Record `Visual Checks` in the report: each category is `pass`, `fail`, `not-checked`, or `not-applicable`, with the artifact revision, location/viewport or source location, evidence, and any exact user/project exception. A screenshot checks visual composition; source inspection locates repeated separators and stripe implementations. Neither alone establishes every aspect of quality.
+Record four `Visual Checks` for the current revision. Give each a status (`pass`, `fail`, `not-checked`, or `not-applicable`), a location or viewport, and a brief observation. Cite the exact user or project requirement for any exception.
 
-For the palette entry, cite the project palette source or the basis of the new direction. Name the frame and the neighboring surfaces or states inspected. Describe the grouping, emphasis or state actually visible and how it fits the intended relationship. For an image-only critique, record any unknown token provenance and limit the claim to the visible evidence. Record contrast measurements as readability evidence.
+- **Palette.** Cite the project palette source or the basis of the new direction. Name the neighboring surfaces or states inspected and describe the grouping, emphasis or state actually visible. For image-only work, identify unknown token provenance. Record contrast measurements as readability evidence.
+- **Copy and information structure.** Name a representative heading, text group or control and the job its wording does. Try reading the section without its explanatory line. If the same information and action remain clear, omit that line. Preserve required copy, accessible names, instructions that prevent mistakes and feedback that guides recovery. Check runs of short terms even when separated only by spaces. An adjective list can disappear entirely. Independent actions need distinct controls, and comparable facts need identifiable fields. Judge the resulting meaning and grouping on the frame.
+- **Typography and spacing.** Inspect real text in a representative section. Identify the reading order, compare the gap within a related group with the gap to the next, and inspect body measure, leading and wrapping for the actual script. For responsive designs check narrow and wide layouts. Cite a visible result, such as whether a wrapped label still sits closer to its value than to the next field. Use the supplied `theory/visual-design` examples to calibrate for content and density.
+- **Cards/stripes.** Check the page structure and a representative container. When source is available, also inspect styling for equivalent decorative stripes.
 
 A confirmed violation of the visual defaults is a High finding and Review's outcome is `revise`, even if the page is functional. Design fixes its own detected violations before handing off. Image mockups, including frames attached to a specification, qualify for rendered inspection. An unavailable render leaves visual acceptance `not-checked` and the mockup or build a draft. A text-only specification may pass a specification review of its role assignments and proposed relationships. Purely nonvisual work marks these checks not applicable.
 
 For optimization work, also record `Preservation Check`: baseline/revision, intended improvement, retained visual strengths, changed tokens/components, and observed regressions or unverified coverage. Do not equate successful deletion or fewer colors with improvement. Preserve full reusable token families; test changes to shared tokens against affected uses before accepting them.
+
+## Deliverable acceptance
+
+When `DESIGN.md` is requested, use the supplied `templates/visual-spec` example. Check that another screen could use its palette roles and values, type styles, spacing and grouping rules, and relevant shared component treatments, such as field border weights and validation colors. For a visual-spec-only task, review the document on its own. An explicitly requested written flow or screen spec follows its own brief.
+
+In a requested HTML prototype, exercise the in-scope path from its entry control to its visible result. For a form with validation, trigger an error and use Tab or Shift+Tab to return to the invalid field. Check that the focused field is easy to locate, the error message is still visible, and the field and its text stay in place as the border changes. Correct the value and check that successful validation clears the error while the field retains its focus treatment if still active. Cite the controls and observed state changes in Evidence. A required control that leads nowhere needs revision. If tools cannot exercise a required path, report the missing interaction evidence to the director and keep the prototype a draft until that path is verified.
 
 ## Report and outcome
 
@@ -29,7 +38,7 @@ Design State Patch:
 Design State: <compact full state after applying the patch>
 Evidence: <paths, sources, measurements, commands and outcomes>
 Theory Applied: <relevant principles and their practical effect>
-Visual Checks: <palette; separator copy; cards/stripes, with evidence and coverage>
+Visual Checks: <palette; copy and information structure; typography and spacing; cards/stripes, with evidence and coverage>
 Preservation Check: <baseline, retained strengths, scoped changes, regression evidence; N/A for new work>
 Blocking Issues:
 Required Revisions:

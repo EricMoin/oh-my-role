@@ -227,7 +227,7 @@ These tokens abstract the color system into functional roles. Reference these in
 | `on-error` | White | #FFFFFF | Text on error-colored backgrounds |
 | `border-default` | `neutral-200` | #E5E7EB | Standard borders and dividers |
 | `border-strong` | `neutral-300` | #D1D5DB | Emphasized borders, input borders |
-| `border-focus` | `color-primary-500` | #007AFF | Focus rings, selected borders |
+| `border-focus` | `color-primary-500` | #007AFF | Focused field edges, selected borders |
 | `disabled-background` | `neutral-100` | #F3F4F6 | Disabled element backgrounds |
 | `disabled-text` | `neutral-400` | #9CA3AF | Disabled element text |
 | `placeholder` | `neutral-400` | #9CA3AF | Input placeholder text |
@@ -249,7 +249,7 @@ These tokens abstract the color system into functional roles. Reference these in
 | `on-error` | White | #FFFFFF | Text on error-colored backgrounds |
 | `border-default` | `neutral-700` | #374151 | Standard borders and dividers |
 | `border-strong` | `neutral-600` | #4B5563 | Emphasized borders, input borders |
-| `border-focus` | `color-primary-500` | #0A84FF | Focus rings, selected borders |
+| `border-focus` | `color-primary-500` | #0A84FF | Focused field edges, selected borders |
 | `disabled-background` | `neutral-700` | #374151 | Disabled element backgrounds |
 | `disabled-text` | `neutral-500` | #6B7280 | Disabled element text |
 | `placeholder` | `neutral-500` | #6B7280 | Input placeholder text |
@@ -607,12 +607,7 @@ Instead of shadows, elevate surfaces by lightening their background color:
 
 ### Focus indicators
 
-Reuse the project's focus treatment for the same kind of control when it is clearly visible. If the system leaves placement open, choose it per component.
-
-| Control | Example treatment |
-|---------|-------------------|
-| Bordered text field | Use `border-focus` on the existing edge. If it needs more weight, draw the extra stroke inward so the field and its contents stay in place. Keep any validation message visible while editing. |
-| Button or link | The platform focus indicator or an outer outline can identify the whole target. A gap can help separate the outline from a filled button. Check the surrounding surface for contrast and clipping. |
+Reuse a clearly visible focus treatment established for that component by the project or platform. For a new bordered text field, vary the weight of its existing border to show focus. Keep the field's outer dimensions and text position stable. The Input States example below shows how the same border can also signal an error. For a button or link, follow the platform or project treatment for that control.
 
 ---
 
@@ -649,7 +644,7 @@ Motion communicates state changes, guides attention, and provides continuity. Ev
 | Element appears | `ease-out` | 200-300ms | Modal fading in, toast sliding up |
 | Element disappears | `ease-in` | 100-200ms | Modal fading out, tooltip hiding |
 | Element moves | `ease-in-out` | 200-300ms | Sidebar sliding, panel resizing |
-| State change (color, opacity) | `ease-out` | 100-200ms | Button hover, focus ring |
+| State change (color, opacity) | `ease-out` | 100-200ms | Button hover color |
 | Loading/progress | `ease-linear` | Continuous | Progress bar fill, spinner rotation |
 | Spring/bounce effect | `ease-spring` | 300-500ms | Toggle snap, card entrance |
 
@@ -695,7 +690,7 @@ When `prefers-reduced-motion: reduce` is active:
 **Essential animations** (never fully disable):
 - Loading spinner (reduce to simple pulse or static indicator)
 - Progress bar (allow fill animation but remove easing)
-- Focus ring appearance (instant, no transition)
+- Show keyboard focus immediately.
 
 **Rule**: A reduced-motion user must receive the same information as a full-motion user. Remove the animation, never the content it reveals.
 
@@ -815,9 +810,10 @@ Each component specification defines: size variants, internal dimensions, states
 |-------|-------------|-----------|-------------|------------|
 | Default | `border-strong` #D1D5DB | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | — |
 | Hover | `neutral-400` #9CA3AF | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Border darkens slightly |
-| Focus | `border-focus` #007AFF | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Emphasize the field's existing edge. |
+| Focus | `border-focus` #007AFF | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Increase the weight of the existing border. |
 | Filled | `border-strong` #D1D5DB | `surface` #FFFFFF | `on-surface-secondary` #6B7280 | Same as default but with value |
-| Error | `color-error-500` #FF3B30 | `color-error-50` #FFF0EF | `color-error-500` #FF3B30 | Error message below in error color |
+| Error | `color-error-500` #FF3B30 | `color-error-50` #FFF0EF | `color-error-700` #AD2820 | Use the resting border weight. Describe the error below the field. |
+| Error + focus | `color-error-500` #FF3B30 | `color-error-50` #FFF0EF | `color-error-700` #AD2820 | Use the focused border weight and keep the error message visible. |
 | Disabled | `neutral-200` #E5E7EB | `disabled-background` #F3F4F6 | `disabled-text` #9CA3AF | 60% opacity. No interaction. |
 
 #### Input Dark Mode States
@@ -829,6 +825,7 @@ Each component specification defines: size variants, internal dimensions, states
 | Focus | `border-focus` #0A84FF | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
 | Filled | `border-strong` #4B5563 | `surface` #1F2937 | `on-surface-secondary` #9CA3AF |
 | Error | `color-error-500` #FF453A | `color-error-50` #330A08 | `color-error-500` #FF453A |
+| Error + focus | `color-error-500` #FF453A | `color-error-50` #330A08 | `color-error-500` #FF453A |
 | Disabled | `neutral-700` #374151 | `disabled-background` #374151 | `disabled-text` #6B7280 |
 
 ### Cards

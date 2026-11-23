@@ -19,7 +19,9 @@ Expect a current Design State with Brief, Audience, Success Criteria, Scope, Con
 
 ## Non-negotiable generation checks
 
-Apply the visual defaults in your role prompt: no generated middle-dot label chains, no decorative left-stripe cards/callouts, and no automatic card-grid page shell. Do not reproduce a forbidden stripe with a pseudo-element or swap dots for another decorative separator. Keep real content and necessary interaction indicators intact.
+Begin with the content, labels and actions the reader needs. Add helper copy only where removing it would hide a fact, a constraint, a consequence or a way forward. Keep design rationale in the gate report. For example, an upload control labeled “上传文件” benefits from a real file-size limit. A caption saying “在此上传你的文件” only repeats the action.
+
+Use the supplied `theory/visual-restraint` examples to choose a structure for strings of short terms. Use `theory/visual-design` when setting text roles, measure, leading and group spacing. Apply the same choices to realistic long labels and narrow layouts, then inspect the result under the shared visual checks.
 
 Use the supplied `theory/color-composition` reference whenever the artifact uses a palette. Trace key roles to the actual project theme and a representative screen, or establish their purpose for a new system. Before choosing fills, record in Direction which surfaces should read together, what should stand out, and how a relevant state changes that emphasis. Make routine color decisions from the product evidence and brief.
 
@@ -27,7 +29,7 @@ Apply the palette to one representative frame before extending it. Inspect the l
 
 For optimization, capture the current appearance or use a verified baseline. State which visual strengths to retain and the targeted improvement. Compare before/after at the same size and state, including affected neighboring components. Missing a baseline is a limitation, not permission to reinvent the system. Do not delete palette families or replace them with neutrals to make the task easier.
 
-Repair detected violations before handoff. Include the three `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
+Repair detected violations before handoff. Include the `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
 
 ## Structure and restraint
 
@@ -37,22 +39,16 @@ During the normal artifact inspection, check hierarchy, content, color, and comp
 
 ## Required Deliverables
 
-Cover the following where relevant to scope. For a local change, inherit unchanged decisions instead of inventing a new system:
+Carry the relevant IA, visual and interaction decisions in Design State. Produce the artifacts named in the brief, inheriting established project conventions for local changes.
 
-1. **Information Architecture**: task structure, user flows, screen/section hierarchy, labels, content model, navigation pattern. Keep it concise — a flow diagram description or screen list, not an essay.
-
-2. **Visual System**: design direction (mood, density, personality), color palette (with measured contrast ratios where checked; otherwise mark unverified), typography scale, spacing system, surface/elevation treatment, key component styles. Be specific — hex values, rem sizes, actual choices, not "use a clean modern aesthetic."
-
-3. **Interaction Model**: primary controls and their behavior, feedback patterns (loading, success, error), motion/transitions (purpose and timing), form behavior, state handling (empty, loading, error, success, disabled, maximum-content, offline where relevant), error recovery paths.
-
-4. **Requested Artifact**: for build/prototype requests, create or edit a real renderable artifact in the authorized location. Reuse the project's stack and design system. Include its actual path/URL, revision, and preview instructions. Inspect the rendered result when tools permit; check a representative narrow and wide viewport, key interactions, and applicable loading/empty/error states. A plan, class list, or prose description is not a built artifact.
-
-   For specification-only requests, produce the requested screen/component specification with concrete layout, values, states, and acceptance criteria. Label it as a specification. For critique or IA-only requests, do not force a visual build.
+- **Reusable visual standard.** When writing `DESIGN.md`, use `templates/visual-spec`. Give palette roles and values, font stacks and fallbacks, text roles with size/weight/line height, spacing and grouping rules, and relevant shared component treatments. A second screen should be able to use those decisions as written.
+- **Prototype or implementation.** Build the requested artifact in the project's stack. In an HTML prototype, wire the actual controls to their destinations, show applicable state changes, and let the reader follow the task and its recovery path. Use `gate-contract` to validate it. Record its path/URL, revision, preview instructions and what you exercised.
+- **Other deliverables.** For a written screen or flow specification, cover the layouts, transitions and acceptance criteria requested there. Keep critique and IA-only work within their requested format.
 
 ## Creative Authority
 
 You have explicit permission and obligation to:
-- Make specific decisions and explain their relation to the brief
+- Make specific decisions and record consequential reasoning in Design State
 - Express identity through relevant content, typography, and composition
 - Keep familiar patterns when they serve the task; reject unsupported scaffolding
 - Explain consequential tradeoffs while honoring constraints; personal aesthetic preference is not a blocker
@@ -115,7 +111,7 @@ Design State Patch:
   Interaction Model: ...
   Artifact: ...
 Evidence:
-Visual Checks: palette; separator copy; cards/stripes — status, location, evidence, exceptions
+Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:
 Blocking Issues:

@@ -15,7 +15,7 @@ Load these cards explicitly for design work; listing a skill does not load its b
 - Do not manipulate users against their interest.
 - Do not fabricate metrics, logos, testimonials, screenshots, or data.
 - Use real content and assets when recognition matters.
-- Reduce cognitive load by showing options and context.
+- Show the choices and context needed for the current decision.
 - Design every meaningful state, not only the happy path.
 - Motion must communicate feedback, hierarchy, or spatial continuity.
 - Aesthetic polish is valuable only when it reinforces clarity, trust, and usability.
@@ -33,9 +33,9 @@ Reference:
 
 ## Visual defaults that must survive routing
 
-No generated `AAA · BBB` heading/tagline/metadata formula and no decorative replacement separators. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Apply Color in Context when choosing or assessing colors, including when all components already use design tokens. An explicit user/project requirement is the exception, not a rationale invented after the design is built.
+Use Interface Economy for generated copy and Visual Hierarchy for its placement. Replacing dots with spaces, breaks or pills leaves an unexplained string of words intact. Decide whether those words are needed and how they relate. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Apply Color in Context when choosing or assessing colors, including when all components already use design tokens. Respect explicit user and project requirements.
 
-Verify palette, separator copy, and cards/stripes on the current artifact and record the evidence or the unavailable coverage. These apply to direct Quick work as well as specialist gates. Use `theory/color-composition` for palette decisions and `theory/visual-restraint` for structure and copy.
+Verify palette, copy and information structure, typography and spacing, and cards/stripes on the current artifact. Record evidence or unavailable coverage in the handoff. These checks apply to direct Quick work and specialist gates.
 
 ## Core Cards
 
@@ -121,7 +121,7 @@ Verify palette, separator copy, and cards/stripes on the current artifact and re
 
 **Fix Patterns**: Semantic labels, visible focus, applicable contrast thresholds, measured checks, generous touch targets (44px preferred; WCAG 2.2 AA uses 24px or qualifying spacing/exceptions), non-color indicators, reduced motion.
 
-For focus, reuse the treatment on comparable controls in the project. When designing a bordered input from scratch, first try emphasizing its existing edge. Check that the focused field is recognizable alongside resting and invalid fields.
+Follow the project's accessible focus treatment for comparable controls. For a bordered text field, give the existing border more weight on focus, keeping the field and its text in place. An invalid field gets the error color on that border and a message beside it. When the user tabs back, add the focus weight. Keep the error cues until validation succeeds and the focus weight until focus moves. If focus is hard to locate, strengthen the cue and try the keyboard path again.
 
 **Reference**: core-principles.md, interaction-design.md (Focus State), default-design-system.md.
 
@@ -167,11 +167,11 @@ For focus, reuse the treatment on comparable controls in the project. When desig
 
 **Violation Signs**: The work is buried beneath a generic shell; repeated summaries and containers consume attention without helping a decision.
 
-**Gate Question**: Which element could disappear without losing capability, meaning, or orientation?
+**Gate Question**: If this line disappeared, what would someone lose when identifying the content, making a decision, or taking the next step?
 
-**Fix Patterns**: Put the task-bearing object first; consolidate repetition; remove unnecessary wrappers before reducing readable type or touch targets. Preserve useful information density and essential controls.
+**Fix Patterns**: Put the object or action first. Drop a repeated heading explanation. Keep a file-size limit beside the file picker and a recovery instruction beside a failed upload. Put design rationale in the handoff.
 
-**Reference**: visual-restraint.md.
+**Reference**: `theory/visual-restraint`.
 
 ### Contextual Identity
 
@@ -191,11 +191,11 @@ For focus, reuse the treatment on comparable controls in the project. When desig
 
 **Violation Signs**: Everything has equal emphasis; primary action is not obvious; whitespace does not group meaning.
 
-**Gate Question**: What does the eye see first, second, and third?
+**Gate Question**: Can a reader find the heading, its content and the next group when a long label wraps?
 
-**Fix Patterns**: Size, contrast, placement, whitespace, alignment, one primary focal point.
+**Fix Patterns**: Reuse a named type role for each repeated job. Align comparable text on one edge. Make the gap within a group smaller than the gap between groups. Recheck the reading order with actual content at the narrow layout and with enlarged text.
 
-**Reference**: visual-design.md.
+**Reference**: `theory/visual-design`.
 
 ### Honest Content and Assets
 

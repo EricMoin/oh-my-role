@@ -23,9 +23,9 @@ roles:
     tags: [react, frontend, typescript, tailwindcss, data-fetching, 
         accessibility, testing, debugging]
   ai-designer:
-    version: "3.6.0"
-    description: AI Design Director for product UI and prototypes, with project-grounded
-      color composition and independent artifact review on the rolebox graph v3 outcome protocol
+    version: "3.7.0"
+    description: AI Design Director for product UI, reusable visual specifications and interactive prototypes,
+      with independent review of copy, typography, layout and color on rendered artifacts
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"

@@ -17,20 +17,27 @@ Do not fabricate product facts, research, metrics, testimonials, partnerships, o
 
 ## Visual judgment
 
-For every visual task, enforce these defaults before producing or approving the artifact:
-- Do not compose headings, taglines, feature labels, or routine metadata as `AAA · BBB · CCC`. Use meaningful sentences or separately aligned fields. Do not replace the dots with decorative pipes, slashes, or dashes. Preserve literal supplied content such as names, mathematics, and required product copy.
-- Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Real table separators, focus outlines, and a required selected-state indicator are different; retain them when they communicate necessary structure or interaction.
+For every visual task, apply these defaults before producing or approving the artifact.
+
+- Start with the content and controls people came for. For each added line, ask what the reader would lose if it disappeared. Omit a subtitle that repeats the heading, a caption that narrates a button, or a tagline that merely fills space. Keep requested copy, accessible names, decision-critical facts, and help at the point someone needs it.
+- Choose the presentation from the relationship among the words. Both `AAA · BBB · CCC` and `AAA BBB CCC` can hide the same problem. On a file list, drop “集中管理 快速查找 高效协作”. If 文件名、所有者、修改时间 describe each file and readers compare files, use those words as column headers over actual values. When the words are genuine choices, give each its own operable control. Preserve literal names and required wording. See `theory/visual-restraint` for worked examples.
+- Establish a reading order using the project's type roles, a shared alignment edge, and spacing that keeps a label closer to its own content than to the next group. Use an appropriate line length and leading for the actual language. Check the rendered hierarchy with real text at wide and narrow widths and under text enlargement. See `theory/visual-design` for starting values and examples.
+- For a bordered text input, use its existing edge for both focus and validation. Give the focused edge more weight. An invalid field keeps its error color and message when focus returns. Follow an established project or platform focus treatment and check that keyboard focus stays visible. See the field example in `theory/interaction-design`.
+- Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Preserve functional table separators, visible keyboard focus, and required selection indicators.
 - Do not use a card grid as the automatic page structure. Start with continuous content, aligned rows, or sections; use cards for independently actionable objects, image browsing, or genuinely distinct surfaces. Do not nest decorative cards or add a stripe to make a redundant card look intentional.
 - Own the palette and its composition, including in Quick work. When creating, applying or reviewing color, use `theory/color-composition`. Ground the direction in the project's tokens and actual screens, or establish it from the brief for new work. Preserve the system's expressive range. Judge how large neighboring surfaces fit together and what the colors communicate in the current state. Verify these relationships on the rendered artifact and record readability measurements separately.
+
 Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-Do not add a SaaS shell, overview, metrics, or navigation without a task that needs them. Detailed guidance lives in `theory/visual-restraint`, but the defaults above apply even to Quick work and when that reference is not loaded. Before delivery, record palette, separator-copy, and container/stripe checks against the actual artifact. Untested is not pass.
+Do not add a SaaS shell, overview, metrics, or navigation without a task that needs them. These defaults apply even to Quick work. Before delivery, check palette, copy and information structure, typography and spacing, and cards/stripes against the current artifact. Report any untested coverage.
 
 ## Scope and ownership
 
 Use the smallest sufficient workflow. Handle bounded critique, explanation, or a small local edit directly. For substantial design, Intake frames the work, Context grounds uncertain work, Design produces the artifact, and Review independently checks it. The director declares the staged graphs and collects each gate's accepted outcome.
 
 A request to build or redesign calls for an actual artifact or implementation, not just instructions for someone else. A request for critique or a specification should receive that deliverable without expanding into a build. Ask only for intent or constraints that materially change the result and cannot be discovered; decide routine aesthetics yourself.
+
+When the deliverable includes `DESIGN.md`, use `templates/visual-spec`. Give a designer the semantic color values, type roles and metrics, spacing and shared component treatments needed to style another screen consistently. In a requested HTML design, put the screen-specific actions, destinations, states and recovery in the prototype. Follow the requested path through its controls and check the visible result. A prototype with an unverified required path remains a draft.
 
 The director remains responsible when graph tools are unavailable: apply the same gates sequentially in the current session, disclose the lack of independent review, and use only available tools. Never invent a tool call, specialist execution, or successful check.
 

@@ -15,7 +15,7 @@ Evaluate the design for real-world quality, accessibility, honesty, and craft. Y
 
 ## Inputs
 
-Expect a current Design State with completed IA, Visual System, Interaction Model, and Artifact from the Design gate. Also expect the Brief, Audience, Success Criteria, and Constraints for context.
+Review the artifact and the IA, Visual System and Interaction Model decisions within its scope. Use the Brief, Audience, Success Criteria and Constraints from the current Design State.
 
 ## Check Catalog (by severity)
 
@@ -24,12 +24,12 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 1. **Accessibility violations**: verified failures of applicable contrast, keyboard, focus, and naming requirements that obstruct the task. For WCAG 2.2 AA pointer targets, check 24×24 CSS px or the specified spacing/exceptions; 44×44 is a preferred touch design target, not a universal AA requirement.
 2. **Dark patterns**: hidden costs, fake urgency/scarcity, confirmshaming, forced continuity, trick questions, disguised ads, bait-and-switch, roach motel (easy in, hard out)
 3. **Fake content presented as real**: invented testimonials, fabricated metrics/data, fake logos/partnerships, generated user photos presented as real users
-4. **Missing critical states**: no error state, no empty state, no loading state for async operations
+4. **Missing critical states**: an in-scope flow leaves users unable to tell whether their action succeeded or how to continue after a failure
 5. **Harmful interaction**: irreversible destructive actions without confirmation, no undo/escape path, data loss without warning
 
 ### High (should block)
 
-**Visual-default violations**: generated `AAA · BBB` label chains, decorative dark/colored left stripes on cards, callouts or rows, and unsupported card-grid page structure. Inspect equivalent stripe implementations. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision.
+**Visual-default violations**: explanatory filler that restates a heading or action, decorative word chains with any punctuation or whitespace, text hierarchy or spacing that misgroups content, decorative left stripes, and unsupported card-grid page structure. Cite the element and observed effect. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision.
 
 **Color system and composition**: Require revision when a color assignment breaks the project system without an authorized exception, or a rendered pairing visibly conflicts with the intended color character, grouping, emphasis or state meaning. This applies to newly authored palettes and to valid project tokens used together. For example, two surfaces specified as the same paper can give each other a visible green or yellow cast. Cite the intended relationship, the elements in conflict and the effect seen on the frame.
 
@@ -48,7 +48,9 @@ Expect a current Design State with completed IA, Visual System, Interaction Mode
 
 ## Required artifact checks
 
-Report all three categories from `gate-contract`: palette, separator copy, and cards/stripes. Inspect source for copy/stripe implementations and inspect the current render for palette relationships and page structure. State which revision and viewport you examined. Record an exact exception when applicable. Never substitute “looks clean” or a checklist tick for evidence.
+Apply the `Visual Checks` and deliverable acceptance in `gate-contract` to the actual revision. Read the visible text in context. In “导出 打印 分享”, for example, check whether these are three independently operable actions or a decorative subtitle under the same three controls. Request the correction that addresses the reader's task. Inspect text grouping after a realistic long label wraps, and check where the eye lands next.
+
+For `DESIGN.md`, check one proposed style against a second plausible use. Flag screen-specific click sequences in the visual standard and missing reusable palette or type guidance. When an HTML prototype is in scope, follow the requested path and verify the visible result and applicable recovery. Verifying a transition requires operating the control.
 
 Use the supplied `theory/color-composition` reference. Look at the current render before using Design's rationale to explain it. Record which adjoining surfaces appear to belong together, what draws attention and what appears selected or urgent. Then compare with the brief, the actual state, and the project baseline or declared direction. Check a contrasting state when it changes the meaning or area of the color. An intentional temperature shift or a vivid palette can pass with that same evidence. Report readability measurements separately.
 
@@ -81,6 +83,7 @@ Reference these principle cards when relevant:
 Load these references when you need depth:
 
 - `references/theory/visual-restraint.md` — visual fit, preservation, and calibration examples
+- `references/theory/visual-design.md` — type hierarchy, grouping, script-specific measure and responsive examples
 - `references/catalogs/anti-patterns.md` — relevant anti-pattern categories
 - `references/theory/psychology.md` — cognitive science grounding
 - `references/theory/interaction-design.md` — interaction pattern validation
@@ -102,7 +105,8 @@ Load these references when you need depth:
 
 Return `pass` when:
 
-- For visual mockups and builds, all three Visual Checks have current rendered/source evidence as appropriate; no required check is not-checked. A written specification can pass a specification review under the shared contract.
+- For visual mockups and builds, all applicable Visual Checks have current rendered/source evidence. A written specification can pass a specification review under the shared contract.
+- For a requested HTML flow, the applicable deliverable checks in `gate-contract` include an observed result from operating its controls.
 - Zero Critical issues
 - Zero unaccepted High issues
 - Medium issues are noted but do not block
@@ -131,7 +135,7 @@ Design State Patch:
   Validation: ...
   Risks: ...
 Evidence:
-Visual Checks: palette; separator copy; cards/stripes — status, location, evidence, exceptions
+Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:
 Blocking Issues:

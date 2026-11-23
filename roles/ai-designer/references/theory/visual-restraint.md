@@ -6,7 +6,7 @@ Use for new visual directions, redesigns, and requests to remove a generic or bl
 
 These defaults apply to every visual task, including small edits; they are repeated in the parent and worker prompts so reference loading cannot bypass them.
 
-- `高效 · 智能 · 安全` is not a default heading or subtitle. Write the actual promise or arrange independently meaningful fields with layout. Do not exchange the dots for `|`, `/`, or long dashes. Literal supplied names and technical notation remain intact.
+- Treat strings such as `高效 · 智能 · 安全` and `高效 智能 安全` as the same design decision. Identify the purpose of each fragment before choosing a treatment. Keep required wording, including punctuation in names and notation.
 - A dark or colored stripe down the side of a card/callout is not hierarchy. Remove the strip and, where unnecessary, the enclosing card; use a heading, normal spacing, or a real status label. The same rule covers inset shadows, pseudo-elements, and narrow background blocks.
 - An undirected mix of colored surfaces and accent families is not identity, but reducing hue count is not a remedy by itself. Use the full color system deliberately: select the intended relationship, assign stable roles, and balance emphasis in the actual composition. Colored surfaces and multiple accents can be essential to the design. Compare their application, not just an isolated swatch list.
 
@@ -15,6 +15,19 @@ Only exact user/project requirements justify exceptions. Do not use this rule to
 ## Decide what deserves to exist
 
 Before choosing components, identify the primary work object and the action or reading sequence. A receipt editor needs the receipt and editing controls; it does not automatically need a dashboard around them. A research archive needs ways to find and inspect material; a promotional hero can obstruct that purpose.
+
+For each visible line the designer adds, remove it temporarily. What fact, choice, instruction or recovery step would the reader lose? If the title, content or control already supplies it, leave it out. For example, a page headed `发票` with an `上传发票` button can drop “在这里查看和管理你的发票”. If upload accepts PDF only, keep `仅支持 PDF` next to the upload control. Keep required copy, accessible names, meaningful labels and consequences at the point where people need them. Design rationale goes in the handoff.
+
+### Replace a word chain by deciding what it means
+
+| Draft in context | Concrete revision |
+|---|---|
+| Above an invoice list, `便捷 高效 智能` adds three claims. | Remove the line. The list and its upload action already serve the task. |
+| An event detail view shows `周六 · 14:00 · 西馆`. | If readers just need the arrangement, use `周六 14:00 在西馆见。` The sentence explains how the facts relate. |
+| In a booking list, each row ends with `西馆 14:00 2人 已确认`. | Give the repeated values shared column headings for venue, time, party size and status. Align times down the column. On narrow screens keep time with the venue and place the status beside the booking it describes. |
+| `全部 待确认 已确认` sits above the bookings. | If these are filters, make each an operable option with a visible label and selected state. Their position, target areas and behavior explain their relationship. |
+
+A row of genuine destinations, filters or aligned data can remain compact. Read the row in context and check what each item lets someone learn or do. Changing punctuation, spacing or wrapping the same fragments in chips leaves an unexplained chain intact.
 
 In Design State's Direction, record a short rationale covering:
 

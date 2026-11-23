@@ -23,7 +23,7 @@ Expect a current Design State, the user's latest request, and any known constrai
 - Identify audience, context of use, primary goal, and success criteria.
 - Define scope and non-goals. Explicitly flag if the task is a review rather than a build.
 - Preserve explicit visual preferences and rejected treatments in Constraints, including requests for less chrome or bloat. Translate these into observable scope and hierarchy expectations without inventing a new style mandate.
-- Identify output expectation: design spec, prototype, HTML artifact, implementation guidance, critique, or combination.
+- Record which deliverables the user requested. Distinguish a reusable visual standard (`DESIGN.md`), a written screen or flow specification, and a working HTML prototype. For a prototype, identify the path the user should be able to try.
 - Identify high-impact ambiguity that cannot be resolved by local inspection.
 - Decide whether the task requires visual artifact validation. Default yes for UI, prototype, redesign, app, landing, dashboard, and visual design work.
 - **Classify complexity tier** — see Tier Classification below.

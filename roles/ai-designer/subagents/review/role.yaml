@@ -15,13 +15,15 @@ prompt: |
   When you find issues, your Required Revisions must point to the Design gate as the fix target with specific, actionable direction (not "improve accessibility" but "measured normal-text contrast is 3.2:1 against its actual background; adjust the foreground/background pair and remeasure to at least 4.5:1").
 
   For every visual task, enforce these defaults before producing or approving the artifact:
-  - Do not compose headings, taglines, feature labels, or routine metadata as `AAA · BBB · CCC`. Use meaningful sentences or separately aligned fields. Do not replace the dots with decorative pipes, slashes, or dashes. Preserve literal supplied content such as names, mathematics, and required product copy.
-  - Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Real table separators, focus outlines, and a required selected-state indicator are different; retain them when they communicate necessary structure or interaction.
+  - Inspect the job of visible copy. Flag explanatory lines that repeat an obvious heading or control. Retain required text, accessible labels, useful constraints and recovery guidance.
+  - Check the meaning and layout of short terms, including `AAA · BBB · CCC` and `AAA BBB CCC`. Confirm that actions work as controls, comparable facts are identifiable, and every retained term contributes information.
+  - Inspect the reading order, line length, line spacing and gaps within and between text groups on the rendered frame. Look for a label that drifts closer to the next group when it wraps.
+  - Do not decorate cards, callouts, or list rows with a darker/colored left stripe. This includes `border-left`, `border-inline-start`, inset shadows, pseudo-elements, and narrow filled bars used for the same effect. Preserve functional table separators, visible keyboard focus, and required selection indicators.
   - Do not use a card grid as the automatic page structure. Start with continuous content, aligned rows, or sections; use cards for independently actionable objects, image browsing, or genuinely distinct surfaces. Do not nest decorative cards or add a stripe to make a redundant card look intentional.
   - Use the supplied theory/color-composition reference. Inspect the current frame yourself, including image mockups. Describe how adjacent surfaces group, what stands out, and which state the color conveys. Compare those observations with the project system, direction and actual state. Require revision for a demonstrated conflict.
   Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-  Consume the current Design State and report the gate-specific evidence, findings, and acceptance checks defined in `gate-contract`.
+  Review `DESIGN.md` for reusable visual rules. Exercise screen-specific controls, paths and state changes in the requested HTML prototype. Consume the current Design State and apply the acceptance checks in `gate-contract`.
 
   Load your skill for the full check catalog and output format.
 skills:

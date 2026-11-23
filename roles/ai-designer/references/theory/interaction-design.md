@@ -289,30 +289,19 @@ Optimistic UI updates the interface immediately as if the action succeeded, then
 
 ### Empty States
 
-Empty states occur when there is no content to display. They are design opportunities, not dead ends.
+An empty view should tell the user what happened and expose a relevant action when one exists. Count the information already in the heading, filters and controls.
 
 #### First-Use Empty State
 
-The user has no content because they're new. Show:
-- A welcoming, helpful message explaining what this section is for
-- A clear primary CTA to create their first item / take their first action
-- Optional: an illustration or example showing what the populated state looks like
+For a new project list, “No projects yet” and a “Create project” button can be sufficient. If items arrive automatically, explain the event the user is waiting for. Add an example only when it helps someone understand what they can create.
 
 #### No-Results Empty State
 
-The user searched or filtered and got zero results. Show:
-- What they searched/filtered for
-- Suggestions: "Try different keywords," "Remove some filters," "Browse categories instead"
-- A clear action to modify their search or reset filters
+Keep the active search or filters visible. Show that nothing matched and offer a way to change the search or clear the filters.
 
 #### Error Empty State
 
-Content should be here but failed to load. Show:
-- What happened (in plain language)
-- A retry button
-- Alternative navigation ("Go back to homepage")
-
-**Never**: a blank white screen. "No data." "0 results." without context or next steps.
+If loading failed, identify the failure and offer the recovery available in that state. “Projects couldn’t load” beside “Retry” explains why the list is empty.
 
 ### Feedback Delivery Mechanisms
 
@@ -629,7 +618,7 @@ Mouse pointer is over the element. Desktop-only — hover does not exist on touc
 
 The user can tell which control will receive keyboard input.
 
-- **Placement.** Follow the project's visible focus treatment for that component. A bordered input can emphasize its own edge. An outer outline can help a filled button stand out against its surroundings.
+- **Placement.** Use the visible focus treatment established for the same kind of control. When designing a bordered text input from scratch, increase the weight of its existing border on focus. Keep the field and its text in place.
 - **Visibility.** Keep the browser's indicator unless the custom treatment gives an equally clear cue. Check the cue against the colors it actually touches, including when a field also shows an error.
 - **On the web.** Use `:focus-visible` for custom keyboard focus styles. The browser may also match an editable field after a pointer click.
 
@@ -666,12 +655,13 @@ Something went wrong related to this element.
 - **Error message**: specific, actionable, positioned adjacent to the element (See § Error Messages in Forms).
 - **Persistence**: the error state persists until the user corrects the input or the error condition resolves. Real-time validation clears the error state as soon as the input becomes valid.
 
+**Returning to an invalid field.** Suppose a user leaves the email field with `lin.example.com` entered. Validation changes the existing border to the error color and displays “邮箱缺少 @，例如 lin@example.com。” Tabbing back increases the weight of that same error-colored border. The message stays visible while the error persists. Once `lin@example.com` validates, clear the message and use the normal focused border until the user tabs away.
+
 #### Empty State
 
 The element or container has no content to display.
 
-- **Visual change**: a meaningful placeholder — not a blank space. Illustration, descriptive text, and a CTA to populate the content (See § Empty States).
-- **Variations**: first-use empty (welcoming, tutorial-oriented), no-results empty (helpful, suggests alternatives), error empty (explains failure, offers retry).
+Use the applicable first-use, no-results or failure treatment from § Empty States. For a filtered list, keep the filter controls available for recovery.
 
 #### Selected / Active State
 
@@ -769,14 +759,7 @@ Words are interface elements. The right three words on a button can be worth mor
 
 ### Empty State Copy
 
-**Structure**: [What this is] + [Why it's empty] + [How to populate it]
-
-- "No messages yet. Start a conversation by tapping the compose button."
-- "Your cart is empty. Browse our collection to find something you'll love."
-- "No search results for 'xyzzy.' Try different keywords or check the spelling."
-- "No projects yet. Create your first project to get started."
-
-Each empty state tells the user where they are, why it's empty, and what to do about it.
+Write only what the surrounding UI leaves unanswered. An empty inbox with a “New message” button needs no instructions for using it. For a first-use activity log, “Activity appears after your first upload” explains when records will arrive. In a filtered view, “No matching orders” and a “Clear filters” action give the reader a way forward.
 
 ### Onboarding Text
 

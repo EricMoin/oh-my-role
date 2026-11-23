@@ -114,14 +114,35 @@ test('the shipped role resolves from roles/ with four specialists and each resol
   }
 });
 
-test('the director, design and review can load the same color composition reference outside the role repository', async () => {
-  const loader = createLoadReferenceTool([aiDesigner]);
-  const name = 'theory/color-composition';
-  const path = resolve(root, 'roles/ai-designer/references', `${name}.md`);
-  const content = readFileSync(path, 'utf8');
-  for (const agent of ['ai-designer', 'ai-designer--design', 'ai-designer--review']) {
-    const result = await loader.execute({ name }, { agent, directory: tmpdir() });
-    expect(result).toMatchObject({ metadata: { payload: { name, path, content } } });
+test.each(['theory/color-composition', 'theory/visual-restraint', 'theory/visual-design', 'theory/interaction-design', 'templates/visual-spec'])(
+  'Quick and staged instructions point to %s and the visual workers can load it outside the role repository',
+  async name => {
+    const roleDir = resolve(root, 'roles/ai-designer');
+    const stagedInstructions = readFileSync(resolve(roleDir, 'skills/ai-designer-director/SKILL.md'), 'utf8');
+    expect(aiDesigner.config.prompt).toContain(name);
+    expect(stagedInstructions).toContain(name);
+    const loader = createLoadReferenceTool([aiDesigner]);
+    const path = resolve(roleDir, 'references', `${name}.md`);
+    const content = readFileSync(path, 'utf8');
+    for (const agent of ['ai-designer', 'ai-designer--design', 'ai-designer--review']) {
+      const result = await loader.execute({ name }, { agent, directory: tmpdir() });
+      expect(result).toMatchObject({ metadata: { payload: { name, path, content } } });
+    }
+  },
+);
+
+test('refocusing an invalid input retains the error border token in both themes', () => {
+  const path = resolve(root, 'roles/ai-designer/references/theory/default-design-system.md');
+  const sections = readFileSync(path, 'utf8').split(/^#{1,6} /m);
+  for (const heading of ['Input States', 'Input Dark Mode States']) {
+    const section = sections.find(text => text.startsWith(`${heading}\n`)) ?? '';
+    const borders = new Map<string, string>();
+    for (const [, state, token] of section.matchAll(/^\|\s*(Focus|Error|Error \+ focus)\s*\|\s*`([^`\n]+)`/gm)) {
+      borders.set(state, token);
+    }
+    expect(borders.size, heading).toBe(3);
+    expect(borders.get('Error + focus'), heading).toBe(borders.get('Error'));
+    expect(borders.get('Error + focus'), heading).not.toBe(borders.get('Focus'));
   }
 });
 
@@ -156,6 +177,22 @@ test('design gates retain visual acceptance and escalate missing delivered evide
   expect(contract).toContain('Visual Checks');
   expect(contract).toContain('Preservation Check');
   expect(contract).toContain('stable ID, severity, location, evidence, fix target, and acceptance check');
+});
+
+test('design and review report the same copy, typography and visual checks as the shared contract', () => {
+  const roleDir = resolve(root, 'roles/ai-designer');
+  const reports = [
+    'references/gate-contract.md',
+    'subagents/design/skills/ai-designer-design-gate/SKILL.md',
+    'subagents/review/skills/ai-designer-review-gate/SKILL.md',
+  ];
+  for (const path of reports) {
+    const template = readFileSync(resolve(roleDir, path), 'utf8');
+    const field = template.split('\n').find(line => line.startsWith('Visual Checks:'));
+    for (const category of ['palette', 'copy and information structure', 'typography and spacing', 'cards/stripes']) {
+      expect(field, path).toContain(category);
+    }
+  }
 });
 
 test('every shipped declaration compiles, names registered agents and carries the declared loop and inputs', () => {

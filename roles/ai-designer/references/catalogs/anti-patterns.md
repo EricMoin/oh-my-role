@@ -100,9 +100,9 @@ These are patterns that AI designers are particularly prone to. This section is 
 
 **Why It Happens**: AI errs on the side of caution — if something might be confusing, add an explanation. This compounds across a full interface until the explanations are more confusing than the interface itself.
 
-**Instead**: Make the interface self-evident through clear labels, familiar patterns, and logical layout. If you need a tooltip, the design may be unclear. Fix the design first, add the tooltip as a last resort.
+**Remedy.** Temporarily remove the helper line. If the nearby label and control still answer the same question, delete the line. Keep help that changes the user's next move, such as a file-size limit before upload or a retry action after failure. Keep accessible names and visible field labels.
 
-**Detection**: "Can I remove any labels, tooltips, or help text without losing clarity? If the UI needs this much explanation, is the design itself the problem?"
+**Detection.** Read the heading, subtitle, badges and controls together. Which lines repeat an action or explain the designer's intended experience? Inspect strings of short fragments joined by spaces as well as punctuation. Use the copy examples in `theory/visual-restraint` to decide between deletion, a sentence, aligned fields and controls.
 
 ### Consistency Zealotry
 
@@ -170,7 +170,7 @@ These are patterns that AI designers are particularly prone to. This section is 
 
 **Why It Happens**: AI generates at whatever fidelity level emerges from the prompt. Without clear fidelity calibration, outputs drift toward a muddy middle — too polished for exploration, too rough for implementation.
 
-**Instead**: Wireframes communicate structure with low visual fidelity — boxes, labels, hierarchy. Final designs communicate the complete experience with full fidelity — real colors, typography, imagery. Keep these distinct. (See ai-designer-core.md § Design Specification Document Template)
+**Remedy.** Use a wireframe to decide placement and hierarchy. Use actual copy, type, colors and imagery when evaluating the finished design.
 
 **Detection**: "Can a stakeholder tell whether this is a wireframe or a final design within 2 seconds?"
 
@@ -180,7 +180,7 @@ These are patterns that AI designers are particularly prone to. This section is 
 
 **Why It Happens**: The happy path is the most straightforward to design and the most visually appealing. Edge cases require creative problem-solving and often ugly solutions. AI gravitates toward the pretty screenshot.
 
-**Instead**: For every screen, design at minimum: default state, empty state, loading state, error state, maximum content state, and first-time user state. If you haven't designed the error state, you haven't designed the screen. (See ai-designer-interaction.md § State Design)
+**Remedy.** Identify the states the task can actually reach. A search with no matches needs different feedback from a request that failed. Make both recognizable and offer the appropriate recovery when applicable.
 
 **Detection**: "Have I designed every state for every screen? What does this look like with zero items? With 10,000 items? When the API fails?"
 
@@ -346,9 +346,9 @@ Reference: Evil by Design (Nodder), Tragic Design (Shariat), Ruined by Design (M
 
 **Why It Happens**: Each text element is styled independently without reference to a type scale. New sizes are invented for each new context.
 
-**Instead**: Use a defined type scale with 5-7 sizes. Limit to 2 typefaces maximum (one display, one body). Use weight and size — not typeface changes — to create hierarchy. (See ai-designer-visual.md § Typography in Practice)
+**Remedy.** Match each text element to a project type role. A repeated label should carry the same size, weight and line height wherever it does the same job. Use the worked layout in `theory/visual-design` to check hierarchy with actual content.
 
-**Detection**: "How many distinct text styles are on this screen? Can I reduce them to fit within my type scale?"
+**Detection.** Can someone distinguish a heading, body copy and supporting facts at the rendered sizes? Does the same reading order hold when a long title wraps?
 
 ### Grid Ignorance
 
@@ -366,9 +366,9 @@ Reference: Evil by Design (Nodder), Tragic Design (Shariat), Ruined by Design (M
 
 **Why It Happens**: Empty space feels like wasted space. There's pressure to "use the space" and show more content. But density without hierarchy is noise.
 
-**Instead**: Whitespace is a design element, not empty space. It creates hierarchy, groups related elements, and gives the eye places to rest. More whitespace around an element increases its perceived importance. (See ai-designer-visual.md § Whitespace & Density)
+**Remedy.** Remove duplicate explanations. Set the label-to-value gap smaller than the gap to the next group, and align comparable values along a shared edge.
 
-**Detection**: "Is there breathing room between sections? Can I increase spacing without losing functionality?"
+**Detection.** Inspect the actual frame at its target widths. When one label wraps, can the reader still tell which value belongs to it and where the next group starts? Preserve the density people need for comparison.
 
 ### Decorative Overload
 
@@ -568,21 +568,29 @@ These are not optional. Accessibility failures exclude real users and often viol
 
 ## Anti-Pattern Detection Checklist
 
-Run this checklist after completing any design artifact. It's organized by severity — fix critical issues before delivery, address important issues before handoff, and review lower-severity items as time permits.
+Use these questions to find issues in the current artifact. Apply the severity and outcome rules in `gate-contract`.
 
 ### Critical (Must Fix Before Delivery)
 
 - [ ] Any dark patterns present? (See § Dark Patterns) — These are never acceptable.
 - [ ] Any accessibility anti-patterns? (See § Accessibility Anti-Patterns) — These exclude real users.
-- [ ] Any one-state designs missing error, empty, or loading states? (See § One-State Design)
+- [ ] Does a missing state leave the user unable to finish the task or recover? (See § One-State Design)
 - [ ] Any color-only signaling without secondary indicators? (See § Color-Only Signaling)
 - [ ] Any contrast violations below WCAG AA? (See § Contrast Violation)
 - [ ] Any keyboard traps in custom components? (See § Keyboard Trap)
 
+### High (Visual Defaults)
+
+A confirmed violation in any of the four visual checks is a High finding. Review returns `revise`.
+
+- [ ] Can an explanatory line disappear with its meaning and action intact? Does a string of fragments still obscure which facts belong together? (See § Over-Explanation)
+- [ ] Does the text hierarchy, grouping, measure or wrapping make the actual content hard to read? (See § Typography Chaos and § Whitespace Phobia)
+- [ ] Do palette assignments, decorative stripes or container choices violate the visual defaults? Check the representative frame and the current brief.
+
 ### Important (Should Fix Before Handoff)
 
 - [ ] Any AI-specific anti-patterns? (See § AI-Specific Design Anti-Patterns) — Your most likely mistakes.
-- [ ] Any visual anti-patterns — rainbow colors, typography chaos, grid misalignment? (See § Visual Design Anti-Patterns)
+- [ ] Do misaligned rows or columns make comparable items hard to scan? (See § Grid Ignorance)
 - [ ] Any interaction anti-patterns — tiny targets, invisible loading, scroll hijacking? (See § Interaction Anti-Patterns)
 - [ ] Any disabled elements without explanation? (See § Disabled State Mystery)
 - [ ] Any zombie controls that look interactive but aren't? (See § Zombie Controls)
@@ -592,7 +600,7 @@ Run this checklist after completing any design artifact. It's organized by sever
 
 - [ ] Any content or IA anti-patterns — jargon, walls of text, orphan pages? (See § Content & IA Anti-Patterns)
 - [ ] Any generic symmetry or over-consistency? (See § Generic Symmetry, § Consistency Zealotry)
-- [ ] Any over-explanation or modal addiction? (See § Over-Explanation, § Modal Addiction)
+- [ ] Any modal addiction? (See § Modal Addiction)
 - [ ] Is the hamburger menu hiding essential navigation? (See § Hamburger Everything)
 - [ ] Any placeholder syndrome — designs untested with real content? (See § Placeholder Syndrome)
 - [ ] Any convention over context — patterns borrowed without rationale? (See § Convention Over Context)

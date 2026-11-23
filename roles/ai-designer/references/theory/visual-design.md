@@ -11,7 +11,7 @@ Visual design is not decoration. It is communication. Every typographic choice, 
 
 These four principles, from Robin Williams' *The Non-Designer's Design Book*, form the foundation of all visual communication. Every layout decision maps to one or more of these principles.
 
-**Contrast**: If two elements are not the same, make them very different. Slight differences look like mistakes. Bold differences look intentional. A heading that is only slightly larger than body text fails — it signals a difference without making it clear what the difference means. Minimum effective contrast: 1.5× size difference for text, 2× weight difference for emphasis, or a distinct color/style change.
+**Contrast.** Establish the reading order with size, weight, placement or space. For example, a compact list can give every item the same size and weight while its section heading stands apart through placement and spacing.
 
 **Repetition**: Repeat visual elements throughout the design. Consistent button styles, consistent heading treatments, consistent spacing patterns. Repetition creates unity — it tells the user "these things are the same kind of thing." Repetition also creates learnability: once the user recognizes a pattern, they can predict behavior. (See ai-designer-core.md § Consistency)
 
@@ -98,12 +98,27 @@ For a typical content page, hierarchy follows this weight order:
 4. **Body content**: Standard weight, comfortable reading size. The substance.
 5. **Supporting elements**: Metadata, timestamps, secondary actions. Lowest visual weight, smallest size, most muted color.
 
-If you find yourself giving equal weight to more than two elements on a screen, you have a hierarchy problem. Prioritize ruthlessly. (See ai-designer-core.md § Aesthetic & Minimalist Design)
+Give comparable items the same treatment so people can scan across them. Reserve extra emphasis for the heading, action or state that changes what the reader should attend to.
 
 
 ## Typography in Practice
 
-Typography is the most important visual design skill. Text dominates interfaces — it is the primary medium through which information is communicated. Good typography is invisible: the reader absorbs the content without noticing the type. Bad typography is a barrier: the reader struggles, squints, loses their place, or gives up.
+### Set a type hierarchy on real content
+
+Start with the project's type and spacing tokens. Map the text that survives the copy edit to roles such as page title, section heading, body and supporting metadata. Give each used role a font family with script-appropriate fallbacks, size, weight and line height. Align the starts of related text and give comparable numbers a common edge. Keep readable contrast for secondary text.
+
+For example, a Chinese exhibition listing could use this small web scale with its existing sans-serif family and Chinese fallback. These values are starting points for this layout.
+
+| Role | Size / line height | Weight | Placement |
+|---|---|---|---|
+| Page title | 28 / 36 px | 600 | Align `本周展览` with the listings below it. |
+| Listing title | 20 / 28 px | 600 | Give each exhibition name the same treatment, including names that wrap. |
+| Body | 16 / 26 px | 400 | Use for descriptions that help someone choose an exhibition. |
+| Supporting information | 14 / 22 px | 400 | Place the opening time near its exhibition name. |
+
+Try 8 px from a name to its opening time and 24 px before the next exhibition. Look at a wrapped name beside a short one. The time should read as part of its own listing and the next exhibition should be easy to find. A compact timetable can use smaller gaps while preserving these relationships. Apply spacing to the groups so a second line can grow without colliding with its neighbor.
+
+Inspect a representative wide and narrow layout with real strings and enlarged text. Follow the sequence from heading to content to action. Check that labels stay with their values, essential text wraps or reflows, and the fallback face keeps Chinese glyphs, Latin text and numerals legible on the same line. When a title collides with metadata, stack the metadata or allow the group to grow. Record the viewport and the actual failure or observed result.
 
 ### Type Anatomy
 
@@ -155,19 +170,9 @@ These terms are not interchangeable. Both must be optimized, but they address di
 
 **Readability**: Can you comfortably read paragraphs? Readability is a product of typeface choice, size, line height, line length, color contrast, and spacing. A legible typeface at 8px on a busy background is unreadable. Readability is the designer's responsibility.
 
-### Optimal Line Length
+### Reading measure
 
-Line length is the single most impactful readability factor that designers consistently get wrong.
-
-**The rule**: 45–75 characters per line (including spaces) for body text. 66 characters is the widely cited ideal.
-
-**Too short (under 40 characters)**: The eye must return to the left edge too frequently. Reading becomes choppy. Comprehension drops. Common in narrow mobile layouts and sidebars.
-
-**Too long (over 80 characters)**: The eye loses its place when returning to the start of the next line. Fatigue sets in quickly. Common in full-width layouts on large monitors.
-
-**Practical application**: For a 16px body font, 45–75 characters typically translates to 540–720px of content width. Do not fill the entire viewport width with body text on desktop screens. Use max-width constraints, multi-column layouts, or generous side margins.
-
-**Exception**: Code blocks can extend wider (up to 120 characters) because code is scanned, not read linearly, and line breaks in code change meaning.
+For sustained reading in a wide layout, try 45–75 characters per line for Latin prose or about 30–40 full-width characters for Chinese prose. Set a maximum column width and inspect several real paragraphs in the chosen font. Adjust the measure and leading together until the start of the next line is easy to find. A narrow screen naturally has shorter lines. Preserve readable type and allow wrapping. Tables, controls and code have different reading patterns and can use different widths.
 
 ### Typographic Scale
 
@@ -189,7 +194,7 @@ A typographic scale creates consistent, harmonious relationships between text si
 
 **Practical scale construction**: Start with a 16px base (body text). Apply the ratio to generate heading sizes, small text sizes, and display sizes. Round to whole pixels. Verify that each step is visibly distinct from adjacent steps — if two sizes look the same, the ratio is too tight for your size range.
 
-For concrete token values and the project's specific typographic scale, (See default-design-system.md § Design Tokens — Typography).
+Use the project's own type scale when available. The optional `theory/default-design-system` reference includes a worked Apple-inspired scale.
 
 ### Line Height
 
@@ -213,7 +218,7 @@ Font weight communicates emphasis and hierarchy within a type family.
 - Use a maximum of 3 weights from a single family. More than 3 creates confusion about what each weight means.
 - Never use thin or light weights (100–300) for text below 18px — they become illegible on low-resolution screens.
 - Bold text in body paragraphs should be used sparingly for inline emphasis. If everything is bold, nothing is bold.
-- Weight contrast between heading and body should be at least 2 steps (e.g., 700 heading, 400 body). A 500 heading over 400 body text looks like a mistake.
+- Test weight in the actual face. Size, spacing and position also help distinguish a heading from body copy.
 
 ### Widow and Orphan Control
 
@@ -352,9 +357,7 @@ Column grids divide the viewport into vertical columns with gutters (gaps) betwe
 
 The baseline grid is a horizontal rhythm that aligns text across columns to a consistent vertical beat. When text in adjacent columns aligns to the same baseline, the layout feels ordered. When baselines drift, the layout feels chaotic.
 
-**Establishing a baseline**: Set the baseline increment to match your body text line height. If body text is 16px with 1.5 line height, the baseline is 24px. Every text block, component, and spacing value should be a multiple of this baseline (24, 48, 72, 96...).
-
-**Practical application**: Strict baseline alignment is more critical in editorial and content-heavy layouts. In component-driven UI layouts, maintaining an overall vertical rhythm (consistent spacing multiples) is sufficient — individual component baselines can flex without visible harm.
+For parallel editorial columns, a shared 24 px body line height can keep successive lines aligned. For UI groups, choose gaps from the project's spacing scale according to which elements belong together. A 24 px line height leaves room for a label-to-input gap of 4 or 8 px. Let rows expand when text wraps.
 
 ### Modular Grid
 
@@ -475,16 +478,7 @@ There is no universally correct density. The right density depends on the user, 
 
 ### Breathing Room Around Interactive Elements
 
-Interactive elements need isolation to:
-1. Prevent accidental activation of adjacent elements (especially on touch)
-2. Signal that the element is important and actionable
-3. Meet minimum touch target requirements (44×44pt minimum including padding)
-
-**CTA buttons**: Minimum 16px clear space above and below, 24px to adjacent interactive elements. Primary CTAs benefit from 32–48px of isolation in high-priority contexts (checkout, signup, confirmation).
-
-**Form elements**: Minimum 16px between adjacent form fields. Group-level spacing (between field groups) should be 2–3× the within-group spacing to communicate grouping.
-
-**Navigation items**: Minimum 8px between items. On mobile, ensure the total tappable area (including padding) meets the 44×44pt minimum even when the visible element is smaller.
+Keep actions beside the content they affect. In a form, a small label-to-field gap followed by a larger gap before the next label makes ownership clear. In a dense toolbar, each control can retain a generous hit area through padding. Check target sizes and spacing against the applicable platform and accessibility requirements.
 
 
 ## Imagery & Iconography Principles
@@ -690,18 +684,18 @@ Use this checklist during Phase 7 (Validate) of the design workflow (See ai-desi
 
 ### Whitespace
 
-- [ ] Is there breathing room around primary CTAs (minimum 16px, ideally 32px+)?
-- [ ] Do section breaks use appropriate spacing (32–80px between major sections)?
+- [ ] Can the reader locate the main action without it crowding nearby labels or controls?
+- [ ] Does the gap before a new group read as a break after long titles wrap?
 - [ ] Is the spacing between related elements tighter than the spacing between unrelated elements?
 - [ ] Does micro-whitespace (line height, letter spacing) match the density intent?
-- [ ] Are touch targets adequately spaced (8px minimum between interactive elements)?
+- [ ] Are adjacent targets distinguishable and comfortably operable at the target density?
 
 ### Typography
 
 - [ ] Is the typographic scale consistent across all screens?
-- [ ] Are line lengths within the 45–75 character range for body text?
-- [ ] Do heading weights contrast sufficiently with body weight (2+ steps difference)?
-- [ ] Is line height appropriate for each text role (1.4–1.6 body, 1.1–1.3 headings)?
+- [ ] Is the reading column comfortable in the actual script and font at the target widths?
+- [ ] Can the reader distinguish headings, body text and secondary facts at their rendered sizes?
+- [ ] At normal and enlarged text sizes, can titles and body lines wrap without clipping or overlap?
 - [ ] Are font weights limited to 3 or fewer per typeface family?
 
 ### Color

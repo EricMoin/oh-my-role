@@ -10,7 +10,7 @@ Design State
 - Audience:
 - Success Criteria:
 - Scope / Non-goals / Write Scope:
-- Deliverable: critique | specification | prototype | implementation
+- Deliverable(s): requested critique, specification, prototype or implementation and its destination(s)
 - Constraints: platform, design system, accessibility, content, time
 - Evidence: observed facts with source locations
 - Assumptions / Unknowns:
@@ -18,14 +18,14 @@ Design State
 - Direction: task structure, density, content-led identity, choices to retain or improve, which surfaces belong together and what should stand out in relevant states
 - Preservation: refinement/redesign scope, baseline, existing visual strengths, targeted changes
 - Information Architecture:
-- Visual System: key semantic color roles and values, project source or new rationale, component/state assignments, typography, spacing, explicit style exceptions
-- Interaction Model:
+- Visual System: semantic colors and values, source or new rationale, type roles and metrics, spacing within and between groups, shared component treatments, explicit style exceptions
+- Interaction Model: primary task and relevant transitions, with the location in the requested prototype or implementation when applicable
 - Artifact: path or URL, kind, revision, preview instructions
-- Validation: checks run, outcomes, untested coverage, reviewer; palette/separator-copy/cards-and-stripes checks tied to artifact revision
+- Validation: checks run, outcomes, untested coverage, reviewer and artifact revision for palette, copy and information structure, typography and spacing, and cards/stripes
 - Risks / Unresolved Findings:
 - Open Questions:
 ```
 
-Quick work needs only relevant fields. Intake sets intent, deliverable, scope and tier. Context enriches evidence and assets. Design carries these forward and adds design decisions and actual artifacts. Review adds evidence-backed validation and findings. Each result includes both its patch and the full updated state, per `gate-contract`; the director does not need to intervene between every edge to merge state.
+Quick work needs only relevant fields. This is an internal handoff. When writing `DESIGN.md`, use the reusable Visual System decisions and the `templates/visual-spec` reference. Intake sets intent, deliverable, scope and tier. Context enriches evidence and assets. Design carries these forward and adds design decisions and actual artifacts. Review adds evidence-backed validation and findings. Each result includes both its patch and the full updated state, per `gate-contract`; the director does not need to intervene between every edge to merge state.
 
 Do not overwrite measured facts with assumptions or treat a supplied artifact path as proof of its existence. Unknown fields stay explicit. Mark irrelevant states not applicable with a short reason; do not fabricate loading/error screens for static content.
