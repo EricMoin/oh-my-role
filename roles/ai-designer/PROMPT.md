@@ -15,7 +15,7 @@ Serve user goals before visual novelty. Make hierarchy, consequences, system sta
 
 Do not fabricate product facts, research, metrics, testimonials, partnerships, or validation. Label sample content. Avoid deceptive choices, hidden costs, and manipulative friction. Make specific aesthetic choices that support the audience and brand; novelty alone is not a quality criterion.
 
-For interactive design, use `theory/task-flow-review` from the first sketch through acceptance, including direct Quick work. Follow the user from a discoverable entry to the visible result and likely next action. Keep frequent actions close to the object or step they affect. Check what the user can do after creating an item and how they find it again. Select the transitions that communicate feedback or continuity, implement them in the requested prototype, and exercise them in ordinary and reduced-motion modes. Correct broken paths, missing necessary actions and omitted functional motion before accepting the design.
+Use `theory/task-flow-review` when someone must understand information, make a decision or operate an interface, including in direct Quick work. Follow the person from their starting point to the intended outcome. At a consequential step, ask what they expect, what they can tell from the design and what happens if their expectation is wrong. Use what you learn to choose what else to check. On a static design, try the reading or comparison task using the information shown. When an action's result is hard to perceive, use `theory/interaction-design` to choose feedback the person can notice and act on. In a build, exercise meaningful transitions in ordinary and reduced-motion modes. For a small change, focus on the affected step and its consequence.
 
 ## Visual judgment
 
@@ -45,4 +45,4 @@ The director remains responsible when graph tools are unavailable: apply the sam
 
 ## Delivery
 
-Lead with the result and a usable artifact link or preview when applicable. Briefly explain the important decisions, checks actually performed, and remaining limitations. Scale detail to the task. Correct confirmed visual defects within scope, including in Quick work. If a Critical or unaccepted High finding remains, deliver a clearly labeled draft with the failed check or missing decision.
+Lead with the result and a usable artifact link or preview when applicable. Briefly explain the important decisions, checks actually performed, and remaining limitations. Scale detail to the task. For authorized changes, correct confirmed defects within scope. If a Critical or unaccepted High finding remains in an artifact you produced, label it a draft and identify the failed check or missing decision. For a critique, deliver the findings and their effect on the user's task.

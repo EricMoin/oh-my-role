@@ -19,9 +19,9 @@ Expect a current Design State with Brief, Audience, Success Criteria, Scope, Con
 
 ## Non-negotiable generation checks
 
-For interactive work, use the supplied `theory/task-flow-review`. Map the primary task before laying out its controls. Keep a frequent next action close to the object or selection it acts on. After adding an item, check whether its owner needs to edit, rename or remove it. Consider search for finding an item, sorting for comparing records, and manual reordering for setting priorities. Decide coverage from the object's life cycle, permissions and expected collection size. Carry consequential exclusions and their reasons in Design State.
+Use `theory/task-flow-review` when designing how someone reads, decides or acts. Walk the task before committing to a layout. Where does the person need to make a decision, and what information is available at that moment? A read-only comparison can succeed as soon as the reader can identify the right option. For interactive work, use the answer to shape the order of steps, the choices offered and the state carried forward. Keep frequent actions near the object they affect. Derive necessary operations from the object's life cycle, permissions and collection size. Record tradeoffs in Design State when they affect how someone completes the task.
 
-Choose feedback for the state changes in that path. If a new item moves into a sorted list, let the user follow it to its destination. Preserve effective platform or project feedback. For a new custom bordered input, show focus immediately, then briefly reinforce it along the existing edge while keeping the text still. Record the trigger, the expected visible change and the equivalent reduced-motion result for the relevant transition. Exercise it alongside the task's likely follow-up or recovery in the requested prototype.
+Choose feedback where the user will be looking when the result arrives. A control that disappears on activation needs a different place to show the outcome. Use the project's existing treatment when it communicates the result and leaves the next action available. If motion helps someone follow a change, exercise the trigger and its reduced-motion equivalent in the requested prototype. For a new custom bordered input, show focus immediately and briefly reinforce it on the existing edge while keeping the text still.
 
 Begin with the content, labels and actions the reader needs. Add helper copy only where removing it would hide a fact, a constraint, a consequence or a way forward. Keep design rationale in the gate report. For example, an upload control labeled “上传文件” benefits from a real file-size limit. A caption saying “在此上传你的文件” only repeats the action.
 
@@ -33,7 +33,7 @@ Apply the palette to one representative frame before extending it. Inspect the l
 
 For optimization, capture the current appearance or use a verified baseline. State which visual strengths to retain and the targeted improvement. Compare before/after at the same size and state, including affected neighboring components. Missing a baseline is a limitation, not permission to reinvent the system. Do not delete palette families or replace them with neutrals to make the task easier.
 
-Repair detected violations before handoff. Include the `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
+Repair detected violations within the authorized edit scope. Include the `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
 
 ## Structure and restraint
 
@@ -90,7 +90,7 @@ Your output must be:
 
 ## Pass Criteria
 
-Return `pass` when the requested deliverable exists, serves the brief and meets the applicable UX, visual and accessibility checks with evidence appropriate to the medium. Repair confirmed UX failures before handoff. Inspect image mockups as renders even when they accompany a specification. An uninspected mockup or build remains a draft with visual checks not checked.
+Return `pass` when the requested deliverable exists, serves the brief and meets the applicable UX, visual and accessibility checks with evidence appropriate to the medium. For critique work, deliver the observations, their impact and how a correction could be checked. Inspect image mockups as renders even when they accompany a specification. An uninspected mockup or build remains a draft with visual checks not checked.
 
 Return `fail` when:
 - The requested build artifact is missing or replaced by a prose plan
@@ -115,7 +115,7 @@ Design State Patch:
   Interaction Model: ...
   Artifact: ...
 Evidence:
-UX Checks: task flow; action coverage; motion feedback — status, evidence and coverage
+UX Checks: task-specific questions, including task flow, action coverage and motion feedback where relevant, with status, evidence and impact
 Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:

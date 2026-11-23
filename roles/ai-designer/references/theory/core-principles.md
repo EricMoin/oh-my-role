@@ -186,7 +186,7 @@ These principles are owned by ai-designer-core. Their full definitions, criteria
 
 **When to Apply**: Every state change. Loading, processing, saving, success, failure, partial completion, background operations, connectivity changes. If the system's state changes, the user must know.
 
-**When NOT to Apply**: Trivial operations that complete in under 100ms do not need explicit feedback — the result IS the feedback. Do not add a "saved!" toast for every keystroke in an autosaving form. Batch the feedback or make it ambient (e.g., a subtle status indicator).
+When the result is apparent at the point of action, it can provide its own feedback. When the outcome is hidden, even a fast operation needs a perceivable cue. For frequent autosaves, a nearby status can communicate pending, saved or failed changes while the person continues writing.
 
 **Checklist**:
 - [ ] Operations >1 second show a loading indicator
@@ -719,7 +719,7 @@ Failure on Important items degrades quality. Fix unless there is a documented ex
 6. [ ] **Responsive defined**: Is the design specified for at least 2 breakpoints (mobile + desktop)?
 7. [ ] **Heading structure semantic**: Do headings follow a logical H1 → H2 → H3 hierarchy (no skipped levels)?
 
-For an interactive deliverable, the blocking UX decisions are in `gate-contract`. Walk an ordinary user's entry, follow-up and recovery. Check required actions and observe the feedback that accompanies a consequential change, including the reduced-motion result.
+Apply the UX acceptance criteria in `gate-contract` to what someone needs to understand, decide or do. For interactions, check the entry, follow-up and recovery. Observe the feedback that accompanies a consequential change, including the reduced-motion result where relevant.
 
 ### Nice-to-Have (Polish)
 

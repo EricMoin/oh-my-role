@@ -48,9 +48,9 @@ Review the artifact and the IA, Visual System and Interaction Model decisions wi
 
 ## UX acceptance
 
-Use `theory/task-flow-review` and the `UX Checks` in `gate-contract`. Start at the ordinary entry point with the user's role and a representative object. Operate the requested prototype or implementation yourself. Locate the primary action, complete it and take the next likely action or recover from an error. Record the actual controls, any backtracking and the visible result. Recheck an alternate input method or layout when it changes access to the action.
+Use `theory/task-flow-review` and the `UX Checks` in `gate-contract`. Start at the ordinary entry point with the user's goal. For a read-only task, try answering the actual question from the supplied material and cite what allowed or prevented the judgment. For an interactive task, predict the effect from the cues on screen before acting, then follow the result and the likely next step. Investigate a plausible change of circumstances when it would expose a different decision or consequence. For example, if a bulk edit begins in a filtered list, can the user tell which records will change before committing? Compare the apparent scope with the actual affected records using disposable test data.
 
-Return `revise` for a confirmed High failure, including an unreachable required action, a repeated detour that loses the user's place, or a missing required or selected transition. For example, if the design calls for tracking a reordered row and the result is a color flash with the row jumping elsewhere, identify where continuity is lost. For a new custom bordered field, replay focus, error and refocus and inspect the feedback on its existing edge. For an established platform or project component, verify the cue it provides. Check the reduced-motion alternative where motion is in scope. Cite the trigger, observed change and correction. If the required interaction cannot be exercised, report the missing evidence under the shared contract.
+For feedback, look where the actor will be after activation. Check whether they can distinguish acceptance, completion and failure when those outcomes differ. Try the next step while the cue is present or after it disappears. Replay required transitions and their reduced-motion alternatives. For a new custom bordered field, inspect its edge on focus and, where field validation exists, on invalid refocus. Use the shared contract to report missing evidence and to decide whether a finding calls for revision of the requested deliverable.
 
 ## Required visual and deliverable checks
 
@@ -113,14 +113,12 @@ Return `pass` when:
 
 - For visual mockups and builds, all applicable Visual Checks have current rendered/source evidence. A written specification can pass a specification review under the shared contract.
 - All applicable UX Checks meet the shared contract for the requested medium. A prototype or implementation requires observed results from operating the in-scope paths and transitions.
-- Zero Critical issues
-- Zero unaccepted High issues
+- Zero Critical or unaccepted High issues in the requested deliverable. A critique can pass with serious findings about the product it examined.
 - Medium issues are noted but do not block
 
 Return `fail` when:
 
-- Any Critical issue exists, OR
-- Unaccepted High issues exist; only an explicit user/project acceptance within scope can waive them
+- The requested deliverable contains a Critical issue or an unaccepted High issue. Only explicit user/project acceptance within scope can waive a High finding.
 
 Return `needs-user-input` when:
 
@@ -141,7 +139,7 @@ Design State Patch:
   Validation: ...
   Risks: ...
 Evidence:
-UX Checks: task flow; action coverage; motion feedback — status, evidence and coverage
+UX Checks: task-specific questions, including task flow, action coverage and motion feedback where relevant, with status, evidence and impact
 Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:

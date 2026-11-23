@@ -25,7 +25,7 @@ roles:
   ai-designer:
     version: "3.8.0"
     description: AI Design Director for product UI, reusable visual specifications and interactive prototypes,
-      with independent review of task flows, action coverage, motion feedback and visual quality
+      with independent review of how people make decisions and complete tasks, alongside visual quality
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"

@@ -24,7 +24,7 @@ Expect a current Design State, the user's latest request, and any known constrai
 - Define scope and non-goals. Explicitly flag if the task is a review rather than a build.
 - Preserve explicit visual preferences and rejected treatments in Constraints, including requests for less chrome or bloat. Translate these into observable scope and hierarchy expectations without inventing a new style mandate.
 - Record which deliverables the user requested. Distinguish a reusable visual standard (`DESIGN.md`), a written screen or flow specification, and a working HTML prototype.
-- For an interactive task, name who acts, where they start, what they operate on, how they recognize completion, and the next action they commonly take. Carry relevant permissions, platform behavior and existing motion conventions into Design State. Use the brief and product evidence to set the boundaries of the walkthrough.
+- For a reading, decision or interaction task, name the person, their starting point, what they need to learn or do and their likely next step. Carry forward circumstances that change how they can recognize or use the outcome, such as shared ownership, frequent interruptions, permissions or established platform behavior. Ground these in the brief or product evidence and identify consequential unknowns.
 - Identify high-impact ambiguity that cannot be resolved by local inspection.
 - Decide whether the task requires visual artifact validation. Default yes for UI, prototype, redesign, app, landing, dashboard, and visual design work.
 - **Classify complexity tier** — see Tier Classification below.

@@ -45,7 +45,7 @@ Verify palette, copy and information structure, typography and spacing, and card
 
 **Violation Signs**: The design emphasizes what the team wants to promote but buries the user's task; visual drama competes with the primary action.
 
-**Gate Question**: Can a target user identify what to do next and why it matters?
+**Gate Question**: What is this person trying to decide or accomplish here? Can they do it with the information available at that moment?
 
 **Fix Patterns**: Rewrite around user intent, remove secondary distractions, make the primary action and consequence explicit.
 
@@ -69,11 +69,11 @@ Verify palette, copy and information structure, typography and spacing, and card
 
 **Violation Signs**: Clicks appear ignored, loading is invisible, completion is ambiguous, failure is silent.
 
-**Gate Question**: Does the user know what happened, what is happening, and what to do if it fails?
+**Gate Question**: What tells the person the action was received, whether it actually succeeded, and what they can do if it fails? Will that cue still be available where their attention goes next?
 
 **Fix Patterns**: Button loading states, progress, optimistic state with undo, inline success/failure, retry.
 
-**Reference**: interaction-design.md.
+**Reference**: `theory/task-flow-review` for choosing feedback in context and `theory/interaction-design` for feedback patterns.
 
 ### User Control and Freedom
 

@@ -1,6 +1,6 @@
 # Design Gate Contract
 
-Each specialist loads its declared gate skill, reads the supplied principle-card path, and uses the relevant design references. This contract defines Design State transport, evidence, and visual acceptance.
+Each specialist loads its declared gate skill, reads the supplied principle-card path, and uses the relevant design references. This contract defines Design State transport, evidence, and acceptance of the requested deliverable.
 
 ## Current state
 
@@ -23,19 +23,23 @@ For optimization work, also record `Preservation Check`: baseline/revision, inte
 
 ## UX acceptance
 
-Design owns the working path. Review evaluates it independently on the current revision using `theory/task-flow-review`. Record three `UX Checks` with the same statuses as the visual checks. For each applicable check, give the concrete entry or state, what was tried and what happened.
+Use `theory/task-flow-review` to follow the person's goal on the current revision. For a reading or comparison task, try making the intended decision from the information available together. For an interactive step, ask what the person knows before acting, what they expect to happen and what they can actually tell or do afterward. Let the brief, product conventions and observed behavior determine which questions deserve a closer look. Pursue a consequential mismatch even when the familiar checks below all pass.
 
 - **Task flow.** Start where the actor ordinarily enters. Follow the main task and a likely next step or recovery. Check the distance in movement, scrolling, navigation or repeated selection between actions often performed together. Cite the specific extra work when their placement breaks the flow.
 - **Action coverage.** For each task-critical object, check the operations the actor needs and the collection tools that match its scale. Locate and exercise the actual entries, including keyboard or touch access as applicable. Explain relevant omissions using scope, permissions or the object's lifecycle.
-- **Motion feedback.** For the distinct state changes that matter on the path, check the cue each one needs. Replay a representative instance of each required behavior and observe its trigger, progression and final state in ordinary and reduced-motion modes. Where a rapid repeat or reversal is plausible, interrupt it and check that the latest action wins. A screenshot, an animation declaration, or an unrelated effect cannot establish that the required cue ran.
+- **Feedback.** Check whether the result itself tells the actor what happened. Where they need another cue, judge its location, duration and prominence from where their attention will be and what they need to do next. Distinguish acknowledgment of input from completion or failure. For required motion feedback, replay the trigger, progression and settled state in ordinary and reduced-motion modes. Try interruption when repeated input is plausible.
 
-A blocked path, a missing necessary action, a recurring detour that loses task context, or missing required motion feedback is a blocking finding. Review submits `revise` with the failed step, user impact, fix target and observable retest. This includes a newly designed custom bordered field that merely changes color under ordinary motion, absent an evidenced project or platform requirement. For an existing component with suitable native behavior, test what it already does. For an expressly static brief, review the proposed path and state descriptions on their merits. For a build with unavailable execution evidence, record `not-checked` and use the existing draft/escalation path. Use `not-applicable` with a concrete reason for checks outside the brief.
+Record the questions actually examined in `UX Checks`, using the visual-check statuses. For each, identify the state, the observation and its consequence for the task. If two plausible designs would affect the user differently, say which condition favors the chosen one. A sound result can pass with a brief observation.
+
+Design fixes confirmed, in-scope defects in a requested build. A blocked path, an unreachable necessary action, a recurring detour that loses the user's place, or cues that lead to a materially wrong decision warrant revision. Review submits `revise` with the failed step, its impact, the fix target and an observable retest. Missing required motion feedback also warrants revision, including a new custom bordered field that only changes color under ordinary motion without an evidenced project or platform requirement. Test the existing cue when the project uses a suitable native component.
+
+For a critique, documented product defects are findings in the requested report. Judge the report by its accuracy, evidence and coverage. For a static brief, assess what the proposed states and relationships communicate. Exercise builds within the authorized scope and record unavailable execution evidence as `not-checked` under the existing draft/escalation route. Use `not-applicable` when a check falls outside the brief and give the reason.
 
 ## Deliverable acceptance
 
 When `DESIGN.md` is requested, use the supplied `templates/visual-spec` example. Check that another screen could use its palette roles and values, type styles, spacing and grouping rules, and relevant shared component treatments, such as field border weights and validation colors. For a visual-spec-only task, review the document on its own. An explicitly requested written flow or screen spec follows its own brief.
 
-In a requested HTML prototype, exercise the in-scope path from its entry control to its visible result. For a form with validation, trigger an error and use Tab or Shift+Tab to return to the invalid field. Check that the focused field is easy to locate, the error message is still visible, and the field and its text stay in place as the border changes. Correct the value and check that successful validation clears the error while the field retains its focus treatment if still active. Cite the controls and observed state changes in Evidence. A required control that leads nowhere needs revision. If tools cannot exercise a required path, report the missing interaction evidence to the director and keep the prototype a draft until that path is verified.
+In a requested HTML prototype, exercise the in-scope path from its entry control to its visible result. For a form with validation, trigger a reachable error and follow the recovery it offers. For a field-level error, return to the field using Tab or Shift+Tab. Check that the focused field is easy to locate, the error message is still visible, and the field and its text stay in place as the border changes. Correct the value and check that successful validation clears the error while the field retains its focus treatment if still active. Cite the controls and observed state changes in Evidence. A required control that leads nowhere needs revision. If tools cannot exercise a required path, report the missing interaction evidence to the director and keep the prototype a draft until that path is verified.
 
 ## Report and outcome
 
@@ -49,7 +53,7 @@ Design State: <compact full state after applying the patch>
 Evidence: <paths, sources, measurements, commands and outcomes>
 Theory Applied: <relevant principles and their practical effect>
 Visual Checks: <palette; copy and information structure; typography and spacing; cards/stripes, with evidence and coverage>
-UX Checks: <task flow; action coverage; motion feedback, with evidence and coverage>
+UX Checks: <task-specific questions, including task flow, action coverage and motion feedback where relevant, with status, evidence and impact>
 Preservation Check: <baseline, retained strengths, scoped changes, regression evidence; N/A for new work>
 Blocking Issues:
 Required Revisions:

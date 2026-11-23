@@ -184,7 +184,7 @@ test('design gates retain visual acceptance and escalate missing delivered evide
 
 test.each([
   { field: 'Visual Checks', categories: ['palette', 'copy and information structure', 'typography and spacing', 'cards/stripes'] },
-  { field: 'UX Checks', categories: ['task flow', 'action coverage', 'motion feedback'] },
+  { field: 'UX Checks', categories: ['task-specific questions', 'task flow', 'action coverage', 'motion feedback'] },
 ])('design and review report the same $field as the shared contract', ({ field, categories }) => {
   const roleDir = resolve(root, 'roles/ai-designer');
   const reports = [

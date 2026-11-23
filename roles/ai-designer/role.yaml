@@ -1,5 +1,5 @@
 name: AI Designer
-description: Design Director for product UI, visual specifications and prototypes. Reviews task flows, reachable actions, motion feedback and visual quality on the delivered artifact.
+description: Design Director for product UI, visual specifications and prototypes. Reviews how people make decisions and complete tasks, alongside the visual quality of the delivered artifact.
 version: "3.8.0"
 mode: primary
 prompt_file: PROMPT.md
@@ -31,7 +31,7 @@ references:
     description: Interaction patterns, feedback, state design, forms, motion, and microcopy.
   theory/task-flow-review:
     path: references/theory/task-flow-review.md
-    description: Worked UX review of task paths, action placement, object operations and motion feedback, with revision criteria.
+    description: How to derive UX checks from a person's task, compare design choices, and verify the effects on the delivered artifact.
   theory/psychology:
     path: references/theory/psychology.md
     description: Cognitive science, behavioral design, mental models, and humane UX checks.
