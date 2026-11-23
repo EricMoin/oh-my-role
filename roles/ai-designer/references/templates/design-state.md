@@ -19,9 +19,9 @@ Design State
 - Preservation: refinement/redesign scope, baseline, existing visual strengths, targeted changes
 - Information Architecture:
 - Visual System: semantic colors and values, source or new rationale, type roles and metrics, spacing within and between groups, shared component treatments, explicit style exceptions
-- Interaction Model: primary task and relevant transitions, with the location in the requested prototype or implementation when applicable
+- Interaction Model: actor, starting control, steps, visible outcome and likely follow-up. Include where related actions live and how users perceive state changes with ordinary and reduced motion.
 - Artifact: path or URL, kind, revision, preview instructions
-- Validation: checks run, outcomes, untested coverage, reviewer and artifact revision for palette, copy and information structure, typography and spacing, and cards/stripes
+- Validation: UX Checks and Visual Checks from `gate-contract`, with reviewer, artifact revision, observed results and untested coverage
 - Risks / Unresolved Findings:
 - Open Questions:
 ```

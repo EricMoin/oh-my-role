@@ -52,6 +52,13 @@
           {
             "id": "escalate"
           }
+        ],
+        "inputs": [
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
+          }
         ]
       },
       {
@@ -156,6 +163,11 @@
           {
             "from": "context-researcher",
             "outcome": "pass"
+          },
+          {
+            "from": "review",
+            "outcome": "revise",
+            "when": "triggered"
           }
         ]
       },

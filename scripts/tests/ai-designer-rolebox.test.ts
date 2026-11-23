@@ -114,7 +114,10 @@ test('the shipped role resolves from roles/ with four specialists and each resol
   }
 });
 
-test.each(['theory/color-composition', 'theory/visual-restraint', 'theory/visual-design', 'theory/interaction-design', 'templates/visual-spec'])(
+test.each([
+  'theory/color-composition', 'theory/visual-restraint', 'theory/visual-design',
+  'theory/interaction-design', 'theory/task-flow-review', 'templates/visual-spec',
+])(
   'Quick and staged instructions point to %s and the visual workers can load it outside the role repository',
   async name => {
     const roleDir = resolve(root, 'roles/ai-designer');
@@ -179,7 +182,10 @@ test('design gates retain visual acceptance and escalate missing delivered evide
   expect(contract).toContain('stable ID, severity, location, evidence, fix target, and acceptance check');
 });
 
-test('design and review report the same copy, typography and visual checks as the shared contract', () => {
+test.each([
+  { field: 'Visual Checks', categories: ['palette', 'copy and information structure', 'typography and spacing', 'cards/stripes'] },
+  { field: 'UX Checks', categories: ['task flow', 'action coverage', 'motion feedback'] },
+])('design and review report the same $field as the shared contract', ({ field, categories }) => {
   const roleDir = resolve(root, 'roles/ai-designer');
   const reports = [
     'references/gate-contract.md',
@@ -188,9 +194,9 @@ test('design and review report the same copy, typography and visual checks as th
   ];
   for (const path of reports) {
     const template = readFileSync(resolve(roleDir, path), 'utf8');
-    const field = template.split('\n').find(line => line.startsWith('Visual Checks:'));
-    for (const category of ['palette', 'copy and information structure', 'typography and spacing', 'cards/stripes']) {
-      expect(field, path).toContain(category);
+    const reportLine = template.split('\n').find(line => line.startsWith(`${field}:`)) ?? '';
+    for (const category of categories) {
+      expect(reportLine.toLowerCase(), `${path}: ${field}`).toContain(category);
     }
   }
 });
@@ -232,11 +238,11 @@ test('every shipped declaration compiles, names registered agents and carries th
     }]);
     const nodes = new Map(declaration.nodes.map((node: any) => [node.id, node]));
     expect(nodes.get('review')!.inputs ?? []).toEqual([{ from: 'design', outcome: 'ready' }]);
-    if (tier === 'full') expect(nodes.get('design')!.inputs).toEqual([{ from: 'context-researcher', outcome: 'pass' }]);
-    else expect(nodes.get('design')!.inputs).toBeUndefined();
+    const context = tier === 'full' ? [{ from: 'context-researcher', outcome: 'pass' }] : [];
+    expect(nodes.get('design')!.inputs).toEqual([
+      ...context, { from: 'review', outcome: 'revise', when: 'triggered' },
+    ]);
     expect(nodes.get('context-researcher')?.inputs).toBeUndefined();
-    // No node consumes the loop back-edge: the revise edge re-enters design without an input from review.
-    for (const node of declaration.nodes) for (const input of node.inputs ?? []) expect(input.from).not.toBe('review');
     expect(declaration.edges.filter((edge: any) => edge.from === 'review'))
       .toEqual([{ from: 'review', to: 'design', outcome: 'revise' }]);
   }
@@ -272,6 +278,7 @@ test('an entry node that consumes only the loop back-edge is refused at start, n
 test('the standard declaration dispatches design then review and completes only on an accepted pass', async () => {
   const rigged = await rig(examples.standard);
   expect(rigged.deliveries.map(request => request.nodeId)).toEqual(['design']);
+  expect(rigged.deliveries[0].inputs).toEqual([]);
 
   const design = report('Design', 'ready');
   expect((await rigged.submit(0, 'ready', design)).decision).toBe('accepted');
@@ -287,8 +294,9 @@ test('the standard declaration dispatches design then review and completes only 
   expect((await rigged.submit(1, 'revise', revise)).decision).toBe('accepted');
   await rigged.drain();
   expect(rigged.deliveries.map(request => request.nodeId)).toEqual(['design', 'review', 'design']);
-  // The revise edge re-enters design without a declared input from review.
-  expect(rigged.deliveries[2].inputs).toEqual([]);
+  expect(rigged.deliveries[2].inputs).toMatchObject([
+    { from: 'review', outcome: 'revise', payload: { kind: 'value', value: revise } },
+  ]);
 
   const redesign = report('Design', 'ready', 1);
   expect((await rigged.submit(2, 'ready', redesign)).decision).toBe('accepted');
@@ -342,6 +350,45 @@ test('the review loop stops at its declared traversal cap without manufacturing 
   expect(status.attempts.at(-1).accepted.outcomeId).toBe('revise');
   expect(status.attempts.filter((attempt: any) => attempt.accepted?.outcomeId === 'pass')).toHaveLength(0);
   expect(status.budget.totals.executions).toBe(6);
+});
+
+test('full design retains Context and receives the current UX finding on each repair', async () => {
+  const rigged = await rig(examples.full);
+  const context = { ...report('Context', 'pass'), audience: 'Collection owner' };
+  await rigged.submit(0, 'pass', context);
+  await rigged.drain();
+  expect(rigged.deliveries[1].inputs).toMatchObject([
+    { from: 'context-researcher', outcome: 'pass', payload: { kind: 'value', value: context } },
+  ]);
+  const [originalContext] = rigged.deliveries[1].inputs;
+  const findings = [
+    {
+      id: 'rename', severity: 'High', location: 'Saved view row menu', fix_target: 'Design',
+      evidence: 'The item menu only opens a preview.',
+      acceptance_check: 'Rename the selected item from its row and reopen it under its new name.',
+    },
+    {
+      id: 'reorder', severity: 'High', location: 'Sort by name', fix_target: 'Design',
+      evidence: 'After sorting, the selected item jumps out of view and loses its selection.',
+      acceptance_check: 'Follow the selected item to its new position and check that it remains selected.',
+    },
+  ];
+  for (const [round, finding] of findings.entries()) {
+    const designAttempt = rigged.deliveries.length - 1;
+    await rigged.submit(designAttempt, 'ready', report('Design', 'ready', round));
+    await rigged.drain();
+    const reviewAttempt = rigged.deliveries.length - 1;
+    const feedback = { ...report('Review', 'revise', round), reason: finding.evidence, unresolved: [finding] };
+    expect((await rigged.submit(reviewAttempt, 'revise', feedback)).decision).toBe('accepted');
+    await rigged.drain();
+    const repair = rigged.deliveries.at(-1);
+    expect(repair.nodeId).toBe('design');
+    expect(repair.inputs).toHaveLength(2);
+    const [contextInput, reviewInput] = repair.inputs;
+    expect(contextInput).toEqual(originalContext);
+    expect(reviewInput.attemptId).toBe(rigged.deliveries[reviewAttempt].attemptId);
+    expect(reviewInput.payload).toEqual({ kind: 'value', value: feedback });
+  }
 });
 
 test('a context escalation never starts artifact work', async () => {

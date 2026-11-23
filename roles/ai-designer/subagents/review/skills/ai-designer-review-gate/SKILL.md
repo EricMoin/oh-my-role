@@ -46,7 +46,13 @@ Review the artifact and the IA, Visual System and Interaction Model decisions wi
 13. **Structural sameness**: every section uses identical layout pattern, no visual rhythm
 14. **Second-order defaults**: technically accessible but practically unusable (legal-minimum touch targets, minimum contrast with low-quality displays in mind)
 
-## Required artifact checks
+## UX acceptance
+
+Use `theory/task-flow-review` and the `UX Checks` in `gate-contract`. Start at the ordinary entry point with the user's role and a representative object. Operate the requested prototype or implementation yourself. Locate the primary action, complete it and take the next likely action or recover from an error. Record the actual controls, any backtracking and the visible result. Recheck an alternate input method or layout when it changes access to the action.
+
+Return `revise` for a confirmed High failure, including an unreachable required action, a repeated detour that loses the user's place, or a missing required or selected transition. For example, if the design calls for tracking a reordered row and the result is a color flash with the row jumping elsewhere, identify where continuity is lost. For a new custom bordered field, replay focus, error and refocus and inspect the feedback on its existing edge. For an established platform or project component, verify the cue it provides. Check the reduced-motion alternative where motion is in scope. Cite the trigger, observed change and correction. If the required interaction cannot be exercised, report the missing evidence under the shared contract.
+
+## Required visual and deliverable checks
 
 Apply the `Visual Checks` and deliverable acceptance in `gate-contract` to the actual revision. Read the visible text in context. In “导出 打印 分享”, for example, check whether these are three independently operable actions or a decorative subtitle under the same three controls. Request the correction that addresses the reader's task. Inspect text grouping after a realistic long label wraps, and check where the eye lands next.
 
@@ -106,7 +112,7 @@ Load these references when you need depth:
 Return `pass` when:
 
 - For visual mockups and builds, all applicable Visual Checks have current rendered/source evidence. A written specification can pass a specification review under the shared contract.
-- For a requested HTML flow, the applicable deliverable checks in `gate-contract` include an observed result from operating its controls.
+- All applicable UX Checks meet the shared contract for the requested medium. A prototype or implementation requires observed results from operating the in-scope paths and transitions.
 - Zero Critical issues
 - Zero unaccepted High issues
 - Medium issues are noted but do not block
@@ -135,6 +141,7 @@ Design State Patch:
   Validation: ...
   Risks: ...
 Evidence:
+UX Checks: task flow; action coverage; motion feedback — status, evidence and coverage
 Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:

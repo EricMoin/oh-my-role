@@ -607,7 +607,7 @@ Instead of shadows, elevate surfaces by lightening their background color:
 
 ### Focus indicators
 
-Reuse a clearly visible focus treatment established for that component by the project or platform. For a new bordered text field, vary the weight of its existing border to show focus. Keep the field's outer dimensions and text position stable. The Input States example below shows how the same border can also signal an error. For a button or link, follow the platform or project treatment for that control.
+Reuse a clearly visible focus treatment established for that component by the project or platform. For a new custom bordered text field, show a visible focus cue immediately and fade in additional stroke weight on its existing edge. Use the project's short feedback timing and allow rapid focus changes to interrupt it. Keep the field's outer dimensions and text position stable. The Input States table describes the settled appearance in either motion mode. For a button or link, follow the platform or project treatment for that control.
 
 ---
 
@@ -687,10 +687,10 @@ When `prefers-reduced-motion: reduce` is active:
 - **Hover animations**: Reduced to instant color change (no transition duration)
 - **Page transitions**: Instant cut (no slide or fade)
 
-**Essential animations** (never fully disable):
-- Loading spinner (reduce to simple pulse or static indicator)
-- Progress bar (allow fill animation but remove easing)
-- Show keyboard focus immediately.
+**Feedback to preserve with reduced motion**:
+- Show that loading is in progress with a static indicator or status.
+- Keep progress values current.
+- Show the field's final focus weight immediately and retain any validation feedback.
 
 **Rule**: A reduced-motion user must receive the same information as a full-motion user. Remove the animation, never the content it reveals.
 

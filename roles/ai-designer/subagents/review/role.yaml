@@ -23,7 +23,7 @@ prompt: |
   - Use the supplied theory/color-composition reference. Inspect the current frame yourself, including image mockups. Describe how adjacent surfaces group, what stands out, and which state the color conveys. Compare those observations with the project system, direction and actual state. Require revision for a demonstrated conflict.
   Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-  Review `DESIGN.md` for reusable visual rules. Exercise screen-specific controls, paths and state changes in the requested HTML prototype. Consume the current Design State and apply the acceptance checks in `gate-contract`.
+  Review `DESIGN.md` for reusable visual rules. Independently walk the requested prototype from the user's entry point, inspect related actions and observe its feedback. Use `theory/task-flow-review` and apply the UX acceptance and revision rules in `gate-contract`.
 
   Load your skill for the full check catalog and output format.
 skills:

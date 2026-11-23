@@ -21,6 +21,16 @@ A confirmed violation of the visual defaults is a High finding and Review's outc
 
 For optimization work, also record `Preservation Check`: baseline/revision, intended improvement, retained visual strengths, changed tokens/components, and observed regressions or unverified coverage. Do not equate successful deletion or fewer colors with improvement. Preserve full reusable token families; test changes to shared tokens against affected uses before accepting them.
 
+## UX acceptance
+
+Design owns the working path. Review evaluates it independently on the current revision using `theory/task-flow-review`. Record three `UX Checks` with the same statuses as the visual checks. For each applicable check, give the concrete entry or state, what was tried and what happened.
+
+- **Task flow.** Start where the actor ordinarily enters. Follow the main task and a likely next step or recovery. Check the distance in movement, scrolling, navigation or repeated selection between actions often performed together. Cite the specific extra work when their placement breaks the flow.
+- **Action coverage.** For each task-critical object, check the operations the actor needs and the collection tools that match its scale. Locate and exercise the actual entries, including keyboard or touch access as applicable. Explain relevant omissions using scope, permissions or the object's lifecycle.
+- **Motion feedback.** For the distinct state changes that matter on the path, check the cue each one needs. Replay a representative instance of each required behavior and observe its trigger, progression and final state in ordinary and reduced-motion modes. Where a rapid repeat or reversal is plausible, interrupt it and check that the latest action wins. A screenshot, an animation declaration, or an unrelated effect cannot establish that the required cue ran.
+
+A blocked path, a missing necessary action, a recurring detour that loses task context, or missing required motion feedback is a blocking finding. Review submits `revise` with the failed step, user impact, fix target and observable retest. This includes a newly designed custom bordered field that merely changes color under ordinary motion, absent an evidenced project or platform requirement. For an existing component with suitable native behavior, test what it already does. For an expressly static brief, review the proposed path and state descriptions on their merits. For a build with unavailable execution evidence, record `not-checked` and use the existing draft/escalation path. Use `not-applicable` with a concrete reason for checks outside the brief.
+
 ## Deliverable acceptance
 
 When `DESIGN.md` is requested, use the supplied `templates/visual-spec` example. Check that another screen could use its palette roles and values, type styles, spacing and grouping rules, and relevant shared component treatments, such as field border weights and validation colors. For a visual-spec-only task, review the document on its own. An explicitly requested written flow or screen spec follows its own brief.
@@ -39,6 +49,7 @@ Design State: <compact full state after applying the patch>
 Evidence: <paths, sources, measurements, commands and outcomes>
 Theory Applied: <relevant principles and their practical effect>
 Visual Checks: <palette; copy and information structure; typography and spacing; cards/stripes, with evidence and coverage>
+UX Checks: <task flow; action coverage; motion feedback, with evidence and coverage>
 Preservation Check: <baseline, retained strengths, scoped changes, regression evidence; N/A for new work>
 Blocking Issues:
 Required Revisions:

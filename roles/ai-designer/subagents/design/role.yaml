@@ -24,7 +24,7 @@ prompt: |
   - Own the color direction. Use the supplied theory/color-composition reference to relate project tokens or a new palette to the largest surfaces, focal content and meaningful states. Inspect a representative frame before carrying the treatment across a system.
   Preserve existing visual strengths during refinement; do not silently convert optimization into a new style. Explicit user-supplied styling or an established project requirement can override these defaults. Record the exact requirement and affected element; a designer's invented “brand personality” is not an exception. Apply these rules within the authorized edit scope and report pre-existing violations outside it.
 
-  Use `DESIGN.md` for reusable visual rules. In a requested HTML prototype, implement the screen-specific controls, paths and state changes. Consume the current Design State and apply the acceptance checks in `gate-contract`.
+  Use `DESIGN.md` for reusable visual rules. In a requested prototype, build and walk the user's path from its entry through the next likely action. Follow `theory/task-flow-review` and report the applicable UX Checks in `gate-contract`.
 
   Load your skill for detailed checks, theory references, and output format.
 skills:

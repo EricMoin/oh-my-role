@@ -474,7 +474,7 @@ From: Web Form Design (Wroblewski) — label placement research, validation patt
 
 ## Motion & Animation Principles
 
-Motion in interfaces is not decoration. It is communication. Every animation must answer the question: "What information does this convey that static design cannot?"
+Begin with a change the user needs to notice or follow. Decide what should be perceptible on activation, through the transition and at rest. For the design and review procedure, use `theory/task-flow-review`.
 
 ### Purpose of Motion
 
@@ -539,7 +539,7 @@ For specific duration and easing token values: (See default-design-system.md § 
 
 ### Functional vs Decorative Animation
 
-**Functional animation** communicates information that static design cannot. A shared element transition tells you "this detail page is about the card you just tapped." A loading skeleton tells you "content is coming and here's roughly what it'll look like." A slide-in transition tells you "this screen is to the right of where you were."
+**Functional animation** can make a result easier to notice or maintain continuity between two clear states. When a row moves after sorting, a short transition can help the reader keep track of that row.
 
 **Decorative animation** looks nice but conveys no information. A logo that bounces on page load. Stars that sparkle around a button. Background particles floating.
 
@@ -582,9 +582,9 @@ Content reveals or hides from a specific point or edge.
 ### When NOT to Animate
 
 - **Initial page load**: users want content, not an entrance show. Render content immediately. If content loads asynchronously, use skeleton screens — not entrance animations.
-- **Purely decorative motion**: if removing the animation loses no information, the animation is decorative. Remove it or make it very subtle.
+- **Purely decorative motion**: remove effects that compete with the task or make frequent actions tiring.
 - **prefers-reduced-motion**: when the user's system setting requests reduced motion, respect it. Replace animations with instant state changes or very subtle fades (crossfade <200ms). Never ignore this preference.
-- **During user input**: don't animate elements while the user is typing, dragging, or otherwise actively engaged. Animations during input feel laggy and disorienting.
+- **During direct input**: let text, caret and dragged objects respond immediately. Keep focus transitions interruptible. A new keystroke should never restart the field's focus animation.
 - **Excessive stagger**: staggering 3 items entering a list feels polished. Staggering 50 items feels like watching paint dry. Limit stagger to 5–7 items max; beyond that, animate as a group.
 
 ### Source References
@@ -618,7 +618,7 @@ Mouse pointer is over the element. Desktop-only — hover does not exist on touc
 
 The user can tell which control will receive keyboard input.
 
-- **Placement.** Use the visible focus treatment established for the same kind of control. When designing a bordered text input from scratch, increase the weight of its existing border on focus. Keep the field and its text in place.
+- **Placement and transition.** Use an established accessible treatment for comparable controls. For a new custom bordered field, immediately show a visibly heavier edge, then fade in the remaining emphasis inward using the project's short feedback transition. Even on an already-red invalid field, the first focused frame must be distinguishable from its unfocused state. Keep the field bounds and caret stable. With reduced motion, show the final focus weight immediately.
 - **Visibility.** Keep the browser's indicator unless the custom treatment gives an equally clear cue. Check the cue against the colors it actually touches, including when a field also shows an error.
 - **On the web.** Use `:focus-visible` for custom keyboard focus styles. The browser may also match an editable field after a pointer click.
 
@@ -655,7 +655,7 @@ Something went wrong related to this element.
 - **Error message**: specific, actionable, positioned adjacent to the element (See § Error Messages in Forms).
 - **Persistence**: the error state persists until the user corrects the input or the error condition resolves. Real-time validation clears the error state as soon as the input becomes valid.
 
-**Returning to an invalid field.** Suppose a user leaves the email field with `lin.example.com` entered. Validation changes the existing border to the error color and displays “邮箱缺少 @，例如 lin@example.com。” Tabbing back increases the weight of that same error-colored border. The message stays visible while the error persists. Once `lin@example.com` validates, clear the message and use the normal focused border until the user tabs away.
+**Returning to an invalid field.** Suppose a user leaves the email field with `lin.example.com` entered. Validation changes the existing border to the error color and displays “邮箱缺少 @，例如 lin@example.com。” On Tab back, indicate focus immediately on that error edge, then briefly fade in the remaining stroke weight. Keep the message visible. Once `lin@example.com` validates, clear the message and retain normal focus. Try tabbing away mid-transition and returning with reduced motion enabled. Only the active field should show focus, and its reduced-motion cue should appear at full weight immediately.
 
 #### Empty State
 

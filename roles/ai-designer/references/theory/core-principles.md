@@ -719,14 +719,14 @@ Failure on Important items degrades quality. Fix unless there is a documented ex
 6. [ ] **Responsive defined**: Is the design specified for at least 2 breakpoints (mobile + desktop)?
 7. [ ] **Heading structure semantic**: Do headings follow a logical H1 → H2 → H3 hierarchy (no skipped levels)?
 
+For an interactive deliverable, the blocking UX decisions are in `gate-contract`. Walk an ordinary user's entry, follow-up and recovery. Check required actions and observe the feedback that accompanies a consequential change, including the reduced-motion result.
+
 ### Nice-to-Have (Polish)
 
 These items improve quality but do not block handoff.
 
-1. [ ] **Microinteractions specified**: Are hover, focus, and transition behaviors documented for interactive elements?
-2. [ ] **Motion sensitivity respected**: Does the design note where prefers-reduced-motion should suppress animation?
-3. [ ] **First-time experience designed**: Is there an onboarding or first-run experience for new users?
-4. [ ] **Delight moments identified**: Are there opportunities for positive surprise that don't compromise usability?
+1. [ ] **First-time experience designed**: Is there an onboarding or first-run experience for new users?
+2. [ ] **Delight moments identified**: Are there opportunities for positive surprise that don't compromise usability?
 
 
 ## Book Source Appendix

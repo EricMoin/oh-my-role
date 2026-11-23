@@ -121,7 +121,7 @@ Verify palette, copy and information structure, typography and spacing, and card
 
 **Fix Patterns**: Semantic labels, visible focus, applicable contrast thresholds, measured checks, generous touch targets (44px preferred; WCAG 2.2 AA uses 24px or qualifying spacing/exceptions), non-color indicators, reduced motion.
 
-Follow the project's accessible focus treatment for comparable controls. For a bordered text field, give the existing border more weight on focus, keeping the field and its text in place. An invalid field gets the error color on that border and a message beside it. When the user tabs back, add the focus weight. Keep the error cues until validation succeeds and the focus weight until focus moves. If focus is hard to locate, strengthen the cue and try the keyboard path again.
+Test the project's or platform's accessible focus treatment on comparable controls. For a new custom bordered text field, make the existing edge visibly heavier as soon as focus arrives. Let the remaining emphasis settle on that edge, keeping the field and its text in place. An invalid field retains its error color and message when the user tabs back. Keep the error cues until validation succeeds and the focus cue until focus moves. With reduced motion, show the full focus weight immediately.
 
 **Reference**: core-principles.md, interaction-design.md (Focus State), default-design-system.md.
 
@@ -213,11 +213,11 @@ Follow the project's accessible focus treatment for comparable controls. For a b
 
 **Use When**: Transitions, feedback, storytelling, onboarding, interactive controls.
 
-**Violation Signs**: Decorative movement, scroll hijacking, repeated entrance animations, no reduced-motion path.
+**Violation Signs**: A selected item jumps after sorting and becomes hard to find. A custom focus handoff only swaps colors. Repeated entrance animations compete with the action or obscure its result.
 
-**Gate Question**: What information does this motion communicate?
+**Gate Question**: When I operate the control, can I follow what changes and still see the result with reduced motion?
 
-**Fix Patterns**: Transform/opacity animations, short durations, spatial continuity, immediate focus feedback, reduced-motion fallback.
+**Fix Patterns**: Give immediate feedback, connect the start and end states with a short, interruptible transition, and preserve the final meaning with reduced motion. Use the task path and replay checks in `theory/task-flow-review`.
 
 **Reference**: interaction-design.md; default-design-system.md.
 
