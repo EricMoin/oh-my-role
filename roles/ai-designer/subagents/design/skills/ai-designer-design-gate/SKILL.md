@@ -25,7 +25,7 @@ Choose feedback where the user will be looking when the result arrives. A contro
 
 Begin with the content, labels and actions the reader needs. Add helper copy only where removing it would hide a fact, a constraint, a consequence or a way forward. Keep design rationale in the gate report. For example, an upload control labeled “上传文件” benefits from a real file-size limit. A caption saying “在此上传你的文件” only repeats the action.
 
-Use the supplied `theory/visual-restraint` examples to choose a structure for strings of short terms. Use `theory/visual-design` when setting text roles, measure, leading and group spacing. Apply the same choices to realistic long labels and narrow layouts, then inspect the result under the shared visual checks.
+Use the supplied `theory/visual-restraint` examples to choose a structure for strings of short terms. Use `theory/visual-design` when setting text roles, measure, leading and group spacing. Inspect realistic text at the intended display size and at narrow widths for responsive designs.
 
 Use the supplied `theory/color-composition` reference whenever the artifact uses a palette. Trace key roles to the actual project theme and a representative screen, or establish their purpose for a new system. Before choosing fills, record in Direction which surfaces should read together, what should stand out, and how a relevant state changes that emphasis. Make routine color decisions from the product evidence and brief.
 
@@ -33,13 +33,15 @@ Apply the palette to one representative frame before extending it. Inspect the l
 
 For optimization, capture the current appearance or use a verified baseline. State which visual strengths to retain and the targeted improvement. Compare before/after at the same size and state, including affected neighboring components. Missing a baseline is a limitation, not permission to reinvent the system. Do not delete palette families or replace them with neutrals to make the task easier.
 
-Repair detected violations within the authorized edit scope. Include the `Visual Checks` from the gate contract, with evidence or an honest `not-checked`. Spec values and CSS declarations alone cannot prove a rendered palette looks coherent.
+Include the `Visual Checks` from the gate contract. Use a current render to judge color composition. Record `not-checked` and the missing evidence when a required inspection is unavailable.
 
 ## Structure and restraint
 
 For a new direction or simplification request, read the supplied `theory/visual-restraint` reference. Record the task-bearing structure, chosen density, source of visual identity, and choices to retain or improve in Direction. For an existing product, reuse working conventions and remove only what the authorized scope supports.
 
-During the normal artifact inspection, check hierarchy, content, color, and component relationships. Choose the correction that improves the specific defect: retune, regroup, enrich, or remove where justified. Preserve the visual identity, functionality, and required states. This is part of the existing pass, not a new graph or an endless polishing loop.
+View the complete composition in its intended setting before handing it to Review. Follow the reading order and compare adjacent sections or screens. Check that the main decision draws the eye, related content reads together, and the type, color and spacing support the agreed direction throughout. Correct any confirmed issue within scope, including details the reviewer has yet to flag.
+
+On revision, open the latest artifact and address all the review findings together. If a shared treatment caused a defect, inspect its other uses. After editing, replay each acceptance check and judge the whole updated piece again. Record the finding IDs and what you observed at their locations on this revision. Repair regressions uncovered by this inspection before submitting `ready`.
 
 ## Required Deliverables
 
@@ -90,15 +92,9 @@ Your output must be:
 
 ## Pass Criteria
 
-Return `pass` when the requested deliverable exists, serves the brief and meets the applicable UX, visual and accessibility checks with evidence appropriate to the medium. For critique work, deliver the observations, their impact and how a correction could be checked. Inspect image mockups as renders even when they accompany a specification. An uninspected mockup or build remains a draft with visual checks not checked.
+Report `pass` and submit `ready` only when the requested deliverable exists, all known in-scope defects are fixed regardless of severity, and the required checks have evidence appropriate to the medium. Inspect mockups as renders even when they accompany a specification. For a critique, document the product findings and verify that the report itself is accurate and complete.
 
-Return `fail` when:
-- The requested build artifact is missing or replaced by a prose plan
-- Accessibility is not addressed
-- Critical states relevant to the task are missing
-- The design ignores evidenced audience needs or existing project constraints
-
-Choose routine aesthetic direction yourself and explain the rationale. Return `needs-user-input` only for a material conflict in product intent or constraints that cannot be resolved from evidence.
+Continue fixing issues you can resolve within the authorized scope. Choose routine aesthetic details yourself. If a required input, inspection or material decision remains unavailable, submit `escalate` to the director with the missing prerequisite and what would let work resume.
 
 ## Output
 
@@ -114,7 +110,7 @@ Design State Patch:
   Visual System: ...
   Interaction Model: ...
   Artifact: ...
-Evidence:
+Evidence: current artifact revision, overall judgment and observed results for earlier findings
 UX Checks: task-specific questions, including task flow, action coverage and motion feedback where relevant, with status, evidence and impact
 Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage

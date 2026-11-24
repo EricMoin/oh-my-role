@@ -35,7 +35,7 @@ Reference:
 
 Use Interface Economy for generated copy and Visual Hierarchy for its placement. Replacing dots with spaces, breaks or pills leaves an unexplained string of words intact. Decide whether those words are needed and how they relate. No colored or dark left stripe on cards/callouts, including equivalent inset shadows or pseudo-elements. No automatic page-wide card grid. Apply Color in Context when choosing or assessing colors, including when all components already use design tokens. Respect explicit user and project requirements.
 
-Verify palette, copy and information structure, typography and spacing, and cards/stripes on the current artifact. Record evidence or unavailable coverage in the handoff. These checks apply to direct Quick work and specialist gates.
+Verify palette, copy and information structure, typography and spacing, and cards/stripes on the current artifact. For direct Quick work and specialist gates alike, fix every confirmed defect in the requested design and verify the revised whole at the agreed scope. After a local edit, inspect the element in its surrounding layout and relevant states. A button-label change, for example, can push an adjacent action off a narrow screen. A different stylistic choice needs a concrete reason grounded in the brief or the artifact. Deliver only after every required check has evidence on the final revision.
 
 ## Core Cards
 

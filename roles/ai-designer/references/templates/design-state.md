@@ -21,8 +21,8 @@ Design State
 - Visual System: semantic colors and values, source or new rationale, type roles and metrics, spacing within and between groups, shared component treatments, explicit style exceptions
 - Interaction Model: actor, starting point, expected result and likely follow-up. Capture what the person needs to know or do at a consequential step and which design choice supports that.
 - Artifact: path or URL, kind, revision, preview instructions
-- Validation: UX Checks and Visual Checks from `gate-contract`, with reviewer, artifact revision, observed results and untested coverage
-- Risks / Unresolved Findings:
+- Validation: UX Checks, Visual Checks and whole-deliverable review from `gate-contract`, with reviewer, revision, observed results and any required evidence still missing
+- Risks / Unresolved Findings: open IDs of every severity and the observed retest for each closed ID
 - Open Questions:
 ```
 

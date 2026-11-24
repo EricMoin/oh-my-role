@@ -443,10 +443,10 @@ These phases are reference material for work that needs them. Select activities 
 
 **Output.** The requested design at its agreed fidelity.
 
-**Done When**: Every screen, state, and interaction is specified. An implementer could build it without asking questions.
+The design covers the screens, states and interactions the brief calls for, at the agreed fidelity.
 
 **Checklist**:
-- [ ] All screens designed for all states (default, empty, loading, error, success)
+- [ ] Each requested screen shows its applicable states (such as empty, loading, error or success)
 - [ ] Visual hierarchy established (See ai-designer-visual.md § Visual Hierarchy)
 - [ ] Typography, color, and spacing use design tokens (See default-design-system.md § Design Tokens)
 - [ ] Interactions specified (hover, focus, active, disabled states for all interactive elements)
@@ -461,45 +461,13 @@ In a requested HTML mockup, make the actual destinations, transitions, feedback 
 
 ### Phase 7: Validate
 
-**Purpose**: Self-review the design against established principles, accessibility requirements, and the project's success metrics.
+Review the current deliverable against the brief, using the applicable questions in the Master Self-Review Checklist. Inspect the composition at its intended size. Look at what draws attention first, how the eye moves through the content, and whether comparable elements line up across the requested screens and states. A form can submit correctly while its wrapped labels appear to belong to the wrong fields.
 
-**Inputs.** The current artifact and applicable items from the Master Self-Review Checklist.
-
-**Key Activities**:
-- Run the Master Self-Review Checklist — every item must pass or have a documented exception
-- Accessibility audit: WCAG 2.1 AA compliance check (See § Accessibility Foundations)
-- Consistency check: verify all patterns, tokens, and terminology are used consistently
-- Principle review: verify each universal principle has been respected or intentionally and justifiably violated
-- Identify remaining assumptions that need user testing
-
-**Outputs**: Validation report, list of issues found and fixed, list of items requiring user testing.
-
-**Done When**: All Critical items in the Self-Review Checklist pass. All Important items pass or have documented exceptions.
-
-**Checklist**:
-- [ ] Master Self-Review Checklist completed — all Critical items pass
-- [ ] Accessibility audit completed — WCAG 2.1 AA compliance verified
-- [ ] Consistency check completed — no unintentional variations
-- [ ] All assumptions flagged for user testing
-- [ ] Issues found during validation have been resolved
+Use evidence suited to the medium. Read a written specification as an implementer, inspect rendered artwork and exercise the required paths in a prototype. Check applicable accessibility requirements and the use of project tokens and terminology. Record assumptions that need user research separately from observed defects. Capture each confirmed in-scope defect, including details of spacing, typography or copy, with its location and the observation that would demonstrate a fix. A critique evaluates the evidence and completeness of the report itself.
 
 ### Phase 8: Iterate
 
-**Purpose**: Incorporate feedback, test results, and new information into the design. Design is never done — it's released.
-
-**Inputs**: Validation findings from Phase 7, stakeholder feedback, user testing results (when available).
-
-**Key Activities**:
-- Prioritize feedback: critical issues (breaks usability) → important issues (degrades experience) → nice-to-have (polish)
-- Apply the correction in the artifact that owns the decision.
-- Re-validate changes (return to Phase 7 for significant revisions)
-
-**Output.** The revised deliverable and the result of rechecking the change.
-
-**Checklist**:
-- [ ] Feedback prioritized by severity
-- [ ] Affected artifact updated
-- [ ] Re-validation completed for significant changes
+Use severity to decide which correction to make first. Fix every confirmed defect in the authorized deliverable and retest it on the revised artifact. Revisit the whole requested design after repairs, including neighboring elements and other uses of a changed component. For a local edit, inspect that element in its surrounding composition and affected states. Follow through on issues the fresh review uncovers. Deliver when the final revision passes every required check with evidence and has zero open in-scope defects.
 
 ### When to Skip or Combine Phases
 
@@ -693,40 +661,35 @@ The four principles (POUR):
 
 ## Master Self-Review Checklist
 
-Run this checklist during Phase 7 (Validate). Every item is a yes/no verifiable question. Organize your review from Critical to Nice-to-Have.
+Use the questions that apply to the requested medium, audience and scope. Follow the acceptance rules in `gate-contract`. Personal taste alone calls for no revision.
 
-### Critical (Must Pass)
-
-Failure on any Critical item blocks handoff. Fix before proceeding.
+### Task completion and access
 
 1. [ ] **Problem-solution fit**: Does the design solve the stated problem from Phase 1?
 2. [ ] **Primary flow completable**: Can the primary persona complete their primary task from start to finish without getting stuck?
 3. [ ] **Keyboard accessible**: Can every interactive element be reached and operated via keyboard alone?
-4. [ ] **Color contrast compliant**: Does all text meet WCAG 2.1 AA contrast ratios (4.5:1 normal, 3:1 large)?
+4. [ ] **Readable text**: Do measured text/background pairs meet the applicable contrast requirements?
 5. [ ] **Error states specified**: Is every error state designed with what happened + why + what to do?
-6. [ ] **Touch targets adequate**: Are all touch targets at least 44×44pt with 8pt minimum spacing?
+6. [ ] **Touch targets adequate**: Do touch targets meet the applicable platform and accessibility requirements?
 7. [ ] **No dark patterns**: Does the design contain zero confirmshaming, hidden options, forced continuity, or manipulative urgency? (See ai-designer-antipatterns.md § Dark Pattern Catalog)
 
-### Important (Should Pass)
-
-Failure on Important items degrades quality. Fix unless there is a documented exception with rationale.
+### Content, consistency and navigation
 
 1. [ ] **Empty states designed**: Is every list, feed, and container designed for the "nothing here yet" state?
 2. [ ] **Loading states designed**: Is every async operation designed with appropriate loading feedback?
 3. [ ] **Content extremes handled**: Does the design work with minimum AND maximum realistic content?
 4. [ ] **Consistency verified**: Are patterns, tokens, and terminology used consistently throughout?
 5. [ ] **Navigation coherent**: Can the user always tell where they are, where they can go, and how to go back?
-6. [ ] **Responsive defined**: Is the design specified for at least 2 breakpoints (mobile + desktop)?
+6. [ ] **Responsive layouts**: Does the design hold together at the widths the brief requires?
 7. [ ] **Heading structure semantic**: Do headings follow a logical H1 → H2 → H3 hierarchy (no skipped levels)?
 
 Apply the UX acceptance criteria in `gate-contract` to what someone needs to understand, decide or do. For interactions, check the entry, follow-up and recovery. Observe the feedback that accompanies a consequential change, including the reduced-motion result where relevant.
 
-### Nice-to-Have (Polish)
+### Visual finish
 
-These items improve quality but do not block handoff.
-
-1. [ ] **First-time experience designed**: Is there an onboarding or first-run experience for new users?
-2. [ ] **Delight moments identified**: Are there opportunities for positive surprise that don't compromise usability?
+1. [ ] Does the first point of emphasis match what the audience came to see or do?
+2. [ ] Do alignment, spacing and line breaks group the actual content correctly across the requested layouts?
+3. [ ] Do related screens and states read as one design, with visible differences where meaning or priority changes?
 
 
 ## Book Source Appendix

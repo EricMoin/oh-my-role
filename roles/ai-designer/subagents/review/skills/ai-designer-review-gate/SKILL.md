@@ -19,7 +19,7 @@ Review the artifact and the IA, Visual System and Interaction Model decisions wi
 
 ## Check Catalog (by severity)
 
-### Critical (blocks delivery)
+### Critical
 
 1. **Accessibility violations**: verified failures of applicable contrast, keyboard, focus, and naming requirements that obstruct the task. For WCAG 2.2 AA pointer targets, check 24×24 CSS px or the specified spacing/exceptions; 44×44 is a preferred touch design target, not a universal AA requirement.
 2. **Dark patterns**: hidden costs, fake urgency/scarcity, confirmshaming, forced continuity, trick questions, disguised ads, bait-and-switch, roach motel (easy in, hard out)
@@ -27,7 +27,7 @@ Review the artifact and the IA, Visual System and Interaction Model decisions wi
 4. **Missing critical states**: an in-scope flow leaves users unable to tell whether their action succeeded or how to continue after a failure
 5. **Harmful interaction**: irreversible destructive actions without confirmation, no undo/escape path, data loss without warning
 
-### High (should block)
+### High
 
 **Visual-default violations**: explanatory filler that restates a heading or action, decorative word chains with any punctuation or whitespace, text hierarchy or spacing that misgroups content, decorative left stripes, and unsupported card-grid page structure. Cite the element and observed effect. Unless an exact user/project requirement authorizes the treatment, record a High finding and require revision.
 
@@ -39,11 +39,11 @@ Review the artifact and the IA, Visual System and Interaction Model decisions wi
 9. **Cognitive overload**: poor grouping or labels that make the actual task difficult, deeply nested navigation without context, information density mismatched to the audience. Do not treat 7±2 as a universal menu limit
 10. **Poor error recovery**: error messages without guidance, no path back to valid state, form data loss on error
 
-### Medium (flag, don't block)
+### Medium
 
 11. **Decorative excess**: motion without communicative purpose, visual complexity without information value, gratuitous animation
-12. **Minor token inconsistencies**: a redundant alias or a local spacing variation with no material effect on grouping, emphasis, state meaning or the agreed system.
-13. **Structural sameness**: every section uses identical layout pattern, no visual rhythm
+12. **Inconsistent spacing**: the value beneath one heading sits visibly farther away than equivalent values in the same series, weakening the alignment readers use to compare them.
+13. **Structural sameness**: a decision and its supporting detail receive identical visual treatment, obscuring their order in the brief.
 14. **Second-order defaults**: technically accessible but practically unusable (legal-minimum touch targets, minimum contrast with low-quality displays in mind)
 
 ## UX acceptance
@@ -68,7 +68,7 @@ Compare the current revision with the available baseline at equivalent viewports
 
 For new directions or simplification work, read `theory/visual-restraint` and inspect the artifact against Direction and the user's stated preferences. Look for generic scaffolding, redundant containers, excessive navigation, and repeated text that delay the real task. Also check the opposite failure: simplification that hides necessary controls, removes useful density, or damages orientation.
 
-If visual bloat materially contradicts an explicit brief, treat it as a High context-mismatch issue even when basic interactions work. Cite the exact element and task/brief conflict, then suggest the smallest removal, consolidation, or layout correction. An isolated stylistic preference remains nonblocking. Do not fail cards, symmetry, system fonts, or quiet styling merely for being familiar; do not prescribe a fashionable replacement skin.
+If visual bloat materially contradicts an explicit brief, treat it as a High context-mismatch issue even when basic interactions work. Cite the exact element and task/brief conflict, then suggest a correction that addresses the cause. Ground aesthetic findings in the agreed direction and an observable effect. Leave personal preferences out of the findings.
 
 ## Theory Applied
 
@@ -95,34 +95,17 @@ Load these references when you need depth:
 - `references/theory/interaction-design.md` — interaction pattern validation
 - `references/theory/core-principles.md` — ethics and operating principles
 
-## Review Discipline
+## Review discipline
 
-- Read the current artifact without modifying it. Judge the ACTUAL design output, not theoretical possibilities
-- For prototypes/implementations, inspect the render and exercise key interactions when tools permit; otherwise explicitly limit the review to static/spec evidence
-- Tie each finding to a location, user impact, severity, evidence, fix target, and acceptance check. Never invent contrast values or test results
-- Distinguish untested coverage from a confirmed defect. Apply Critical/High severity by actual impact, not merely catalog membership
-- Be specific: cite exact values, exact components, exact states
-- Distinguish "I would do it differently" from "this harms users"
-- Critical/High issues need specific fix direction, not just identification
-- If the design is genuinely good, say so — don't manufacture problems
-- Required Revisions always point to the Design gate as the fix target
+Start each round with a fresh reading of the whole requested deliverable. Open the current artifacts yourself and follow the brief in order. Keep the review read-only. For visual work, look at the complete composition at its intended size, then compare related sections, screens and states. Record where attention goes first, how the next element carries the task forward, and whether the treatments hold together across the piece. Anchor that judgment in the actual content and audience. A working flow can still have a secondary panel that visually overwhelms the decision the person came to make.
+
+Finish the inspection even after finding a serious defect. On a revision, also replay every prior acceptance check, inspect other uses of a changed component, and look for regressions. Collect all confirmed in-scope findings in the same `revise` result. Keep their stable IDs in `unresolved` until fresh evidence on the current revision establishes closure. For each open finding give Design its location, impact, severity, evidence and an observable acceptance check. Reserve `notes` for context.
 
 ## Pass Criteria
 
-Return `pass` when:
+Return `pass` only when the whole deliverable meets the brief, zero confirmed in-scope defects remain at any severity, and all required checks have evidence from this revision. Inspect visual mockups and builds as rendered. For a prototype or implementation, exercise the in-scope paths and transitions. Judge a written specification by its completeness and usability. In a critique, findings about the examined product belong in the report. Verify the report's own accuracy and coverage.
 
-- For visual mockups and builds, all applicable Visual Checks have current rendered/source evidence. A written specification can pass a specification review under the shared contract.
-- All applicable UX Checks meet the shared contract for the requested medium. A prototype or implementation requires observed results from operating the in-scope paths and transitions.
-- Zero Critical or unaccepted High issues in the requested deliverable. A critique can pass with serious findings about the product it examined.
-- Medium issues are noted but do not block
-
-Return `fail` when:
-
-- The requested deliverable contains a Critical issue or an unaccepted High issue. Only explicit user/project acceptance within scope can waive a High finding.
-
-Return `needs-user-input` when:
-
-- A material conflict in product intent prevents a safe correction. Escalate to the director with the conflicting constraint and an actionable alternative; do not treat deceptive design as an acceptable business exception
+Report `fail` and submit `revise` for any confirmed in-scope defect Design can repair. If a required inspection cannot be performed or a material conflict in intent or scope prevents a correction, submit `escalate` to the director with the missing prerequisite and the evidence gathered.
 
 ## Output
 
@@ -131,19 +114,16 @@ Use the shared gate report and outcome contract, with these gate-specific fields
 ```md
 Gate: Review
 Status: pass | fail | needs-user-input
-Critical Issues: (count and list, or "None")
-High Issues: (count and list, or "None")
-Medium Issues: (count and list, or "None")
 Design State: <full updated state>
 Design State Patch:
   Validation: ...
   Risks: ...
-Evidence:
+Evidence: current artifact revision, overall judgment and observed results for earlier findings
 UX Checks: task-specific questions, including task flow, action coverage and motion feedback where relevant, with status, evidence and impact
 Visual Checks: palette; copy and information structure; typography and spacing; cards/stripes — status, location, evidence, exceptions
 Preservation Check: baseline, retained strengths, scoped changes, regressions or unverified coverage
 Theory Applied:
-Blocking Issues:
+Blocking Issues: (every open finding with its severity, or "None")
 Required Revisions: (point to Design gate with specific fix direction)
 Next Gate: Done | Design | Director
 ```

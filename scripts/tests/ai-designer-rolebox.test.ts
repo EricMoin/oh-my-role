@@ -74,14 +74,14 @@ async function rig(declaration: any, options: { expectStart?: 'started' | 'refus
   const submit = (index: number, outcome_id: string, data: any) => {
     const request = deliveries[index];
     return call('graph_submit_outcome', {
-      graph_id: declaration.name, node_id: request.nodeId, outcome_id,
+      graph_id: request.graphId, node_id: request.nodeId, outcome_id,
       credential: request.credential, data,
     }, `worker:${request.attemptId}`);
   };
   // Committed effects are drained through the same declaration entry, exactly like a live director.
-  const drain = () => call('graph_declare', { declaration });
-  const status = () => call('graph_status', {
-    graph_id: declaration.name, scope: 'all', format: 'json', include_output: true, include_history: true,
+  const drain = (plan = declaration) => call('graph_declare', { declaration: plan });
+  const status = (graphId = declaration.name) => call('graph_status', {
+    graph_id: graphId, scope: 'all', format: 'json', include_output: true, include_history: true,
   });
   return { deliveries, submit, status, call, declared, drain };
 }
@@ -180,6 +180,45 @@ test('design gates retain visual acceptance and escalate missing delivered evide
   expect(contract).toContain('Visual Checks');
   expect(contract).toContain('Preservation Check');
   expect(contract).toContain('stable ID, severity, location, evidence, fix target, and acceptance check');
+});
+
+test('Quick, sequential and staged delivery use the same whole-deliverable review', async () => {
+  const roleDir = resolve(root, 'roles/ai-designer');
+  const director = readFileSync(resolve(roleDir, 'skills/ai-designer-director/SKILL.md'), 'utf8');
+  const quickAndSequential = aiDesigner.config.prompt;
+  for (const instructions of [quickAndSequential, director]) {
+    expect(instructions).toMatch(/whole-deliverable review in `gate-contract`/i);
+  }
+  const loader = createLoadReferenceTool([aiDesigner]);
+  for (const agent of ['ai-designer', 'ai-designer--design', 'ai-designer--review']) {
+    const result = await loader.execute({ name: 'gate-contract' }, { agent, directory: tmpdir() });
+    const contract = result.metadata.payload.content;
+    expect(contract).toMatch(/^## Whole-deliverable review$/m);
+    expect(contract).toMatch(/Review submits `revise` for any confirmed in-scope defect/);
+    expect(contract).toMatch(/Review submits `pass` only with an empty `unresolved`/);
+  }
+  expect(director).toContain('`unresolved` is empty');
+  expect(director).toMatch(/report and `notes` contain no pending fixes or missing required checks/);
+});
+
+test('shipped gate instructions do not waive lower-severity defects or hand off an exhausted draft', () => {
+  const roleDir = resolve(root, 'roles/ai-designer');
+  const assets = [
+    'PROMPT.md', 'skills/ai-designer-director/SKILL.md', 'references/gate-contract.md',
+    'subagents/review/role.yaml',
+    'subagents/design/skills/ai-designer-design-gate/SKILL.md',
+    'subagents/review/skills/ai-designer-review-gate/SKILL.md',
+    'references/theory/core-principles.md', 'references/catalogs/anti-patterns.md',
+  ];
+  const previousWaivers = [
+    /unaccepted High/i, /Medium \(flag, don't block\)/i, /Medium issues are noted but do not block/i,
+    /Medium\*\*: Nonblocking visual or usability improvements/i, /Medium: flag for improvement, do not block/i,
+    /deliver (?:an honest|it as an unverified) draft/i,
+  ];
+  for (const asset of assets) {
+    const instructions = readFileSync(resolve(roleDir, asset), 'utf8');
+    for (const waiver of previousWaivers) expect(instructions, asset).not.toMatch(waiver);
+  }
 });
 
 test.each([
@@ -322,16 +361,24 @@ test('the standard declaration dispatches design then review and completes only 
   expect(status.loops).toMatchObject([{ id: 'review-loop', traversals: 1, maxTraversals: 2 }]);
 });
 
-test('the review loop stops at its declared traversal cap without manufacturing a pass', async () => {
+test('an exhausted review stays stopped while its latest findings can continue under a fresh graph name', async () => {
   const rigged = await rig(examples.standard);
   const dispatched: string[] = [];
   const decisions: string[] = [];
+  const openFinding = {
+    id: 'wrap', severity: 'High', location: 'Toolbar at narrow width', fix_target: 'Design',
+    evidence: 'The action label wraps into the title.', acceptance_check: 'Read both at 320px.',
+  };
   for (let index = 0; index < 8; index++) {
     const request = rigged.deliveries[index];
     if (request === undefined) break;
     dispatched.push(request.nodeId);
     const outcome = request.nodeId === 'design' ? 'ready' : 'revise';
-    decisions.push((await rigged.submit(index, outcome, report(request.nodeId, outcome, index))).decision);
+    const data = {
+      ...report(request.nodeId, outcome, Math.floor(index / 2)),
+      unresolved: outcome === 'revise' ? [openFinding] : [],
+    };
+    decisions.push((await rigged.submit(index, outcome, data)).decision);
     await rigged.drain();
   }
   expect(dispatched).toEqual(['design', 'review', 'design', 'review', 'design', 'review']);
@@ -350,9 +397,30 @@ test('the review loop stops at its declared traversal cap without manufacturing 
   expect(status.attempts.at(-1).accepted.outcomeId).toBe('revise');
   expect(status.attempts.filter((attempt: any) => attempt.accepted?.outcomeId === 'pass')).toHaveLength(0);
   expect(status.budget.totals.executions).toBe(6);
+
+  const lastReview = status.attempts.at(-1).result.payload.value;
+  const continuation = structuredClone(examples.standard);
+  continuation.name = 'design-standard-r3';
+  for (const node of continuation.nodes) {
+    node.prompt = 'Keep the complete toolbar readable at 320px. Try a two-row layout and recheck the whole toolbar.\n'
+      + JSON.stringify(lastReview);
+  }
+  expect((await rigged.drain(continuation)).start.kind).toBe('started');
+  const resumedDesign = rigged.deliveries.length - 1;
+  expect(rigged.deliveries[resumedDesign]).toMatchObject({
+    nodeId: 'design', graphId: continuation.name, prompt: expect.stringContaining(openFinding.acceptance_check),
+  });
+  await rigged.submit(resumedDesign, 'ready', report('Design', 'ready', 3));
+  await rigged.drain(continuation);
+  await rigged.submit(resumedDesign + 1, 'pass', {
+    ...report('Review', 'pass', 3), evidence: 'Read the entire toolbar at 320px; the action and title fit on separate rows.',
+  });
+  await rigged.drain(continuation);
+  expect((await rigged.status(continuation.name)).phase).toBe('complete');
+  expect((await rigged.status()).phase).toBe('stopped');
 });
 
-test('full design retains Context and receives the current UX finding on each repair', async () => {
+test('full design receives all findings, including retained and new minor defects after the main fix', async () => {
   const rigged = await rig(examples.full);
   const context = { ...report('Context', 'pass'), audience: 'Collection owner' };
   await rigged.submit(0, 'pass', context);
@@ -361,24 +429,30 @@ test('full design retains Context and receives the current UX finding on each re
     { from: 'context-researcher', outcome: 'pass', payload: { kind: 'value', value: context } },
   ]);
   const [originalContext] = rigged.deliveries[1].inputs;
-  const findings = [
-    {
-      id: 'rename', severity: 'High', location: 'Saved view row menu', fix_target: 'Design',
-      evidence: 'The item menu only opens a preview.',
-      acceptance_check: 'Rename the selected item from its row and reopen it under its new name.',
-    },
-    {
-      id: 'reorder', severity: 'High', location: 'Sort by name', fix_target: 'Design',
-      evidence: 'After sorting, the selected item jumps out of view and loses its selection.',
-      acceptance_check: 'Follow the selected item to its new position and check that it remains selected.',
-    },
-  ];
-  for (const [round, finding] of findings.entries()) {
+  const rename = {
+    id: 'rename', severity: 'High', location: 'Saved view row menu', fix_target: 'Design',
+    evidence: 'The item menu only opens a preview.',
+    acceptance_check: 'Rename the selected item from its row and reopen it under its new name.',
+  };
+  const rowSpacing = {
+    id: 'row-spacing', severity: 'Low', location: 'Saved view details', fix_target: 'Design',
+    evidence: 'The owner row is inset four pixels farther than the other details.',
+    acceptance_check: 'Compare the left edges of all detail rows on the narrow layout.',
+  };
+  const dialogSpacing = {
+    id: 'dialog-spacing', severity: 'Low', location: 'Rename dialog', fix_target: 'Design',
+    evidence: 'The new dialog repeats the extra inset on its name field label.',
+    acceptance_check: 'Compare the left edges of the name field and its label.',
+  };
+  const rounds = [[rename, rowSpacing], [rowSpacing, dialogSpacing]];
+  for (const [round, findings] of rounds.entries()) {
     const designAttempt = rigged.deliveries.length - 1;
     await rigged.submit(designAttempt, 'ready', report('Design', 'ready', round));
     await rigged.drain();
     const reviewAttempt = rigged.deliveries.length - 1;
-    const feedback = { ...report('Review', 'revise', round), reason: finding.evidence, unresolved: [finding] };
+    const feedback = {
+      ...report('Review', 'revise', round), reason: findings.map(finding => finding.evidence).join(' '), unresolved: findings,
+    };
     expect((await rigged.submit(reviewAttempt, 'revise', feedback)).decision).toBe('accepted');
     await rigged.drain();
     const repair = rigged.deliveries.at(-1);
@@ -389,6 +463,22 @@ test('full design retains Context and receives the current UX finding on each re
     expect(reviewInput.attemptId).toBe(rigged.deliveries[reviewAttempt].attemptId);
     expect(reviewInput.payload).toEqual({ kind: 'value', value: feedback });
   }
+
+  const lastDesign = rigged.deliveries.length - 1;
+  await rigged.submit(lastDesign, 'ready', report('Design', 'ready', 2));
+  await rigged.drain();
+  const lastReview = rigged.deliveries.length - 1;
+  expect(rigged.deliveries[lastReview].inputs[0].attemptId).toBe(rigged.deliveries[lastDesign].attemptId);
+  const pass = {
+    ...report('Review', 'pass', 2),
+    evidence: 'Renamed and reopened the view. At both widths the detail rows align, and the dialog label lines up with its field.',
+  };
+  expect((await rigged.submit(lastReview, 'pass', pass)).decision).toBe('accepted');
+  await rigged.drain();
+  const status = await rigged.status();
+  expect(status.attempts.map((attempt: any) => attempt.accepted?.outcomeId))
+    .toEqual(['pass', 'ready', 'revise', 'ready', 'revise', 'ready', 'pass']);
+  expect(status.phase).toBe('complete');
 });
 
 test('a context escalation never starts artifact work', async () => {

@@ -18,15 +18,12 @@ This is a reference library, not a sequential read. Use it as a diagnostic tool.
    - **Why It Happens** — The root cause (so you can prevent it)
    - **What To Do Instead** — The concrete fix
    - **Detection** — A question to ask yourself
-3. Confirm the pattern causes a task, brief, or accessibility problem before changing it. Familiar styling alone is not a defect.
+3. Identify the affected element and the consequence for the task, visual composition, agreed direction or accessibility. Leave a choice in place when the only objection is personal taste.
 4. The detection checklist at the end (§ Anti-Pattern Detection Checklist) is a quick-scan summary.
 
 ### Severity Levels
 
-- **Critical**: Dark patterns and accessibility violations. Must fix before delivery.
-- **High**: Demonstrated task obstruction or a material conflict with the brief, the project system or the intended visual relationships in the current frame.
-- **Medium**: Nonblocking visual or usability improvements. Do not initiate a revision loop for personal taste.
-- **Low**: Content and IA anti-patterns. Fix when time permits, flag otherwise.
+Use severity to order repairs. A dark pattern or an accessibility failure that excludes users needs immediate attention. Misleading emphasis may affect a whole screen. A single misaligned row can slow a comparison. Fix every confirmed in-scope defect and verify the result under `gate-contract`, including small defects. For a critique, cite the pattern and its observed effect in the report.
 
 ---
 
@@ -570,7 +567,7 @@ These are not optional. Accessibility failures exclude real users and often viol
 
 Use these questions to find issues in the current artifact. Apply the severity and outcome rules in `gate-contract`.
 
-### Critical (Must Fix Before Delivery)
+### Critical risks
 
 - [ ] Any dark patterns present? (See § Dark Patterns) — These are never acceptable.
 - [ ] Any accessibility anti-patterns? (See § Accessibility Anti-Patterns) — These exclude real users.
@@ -581,13 +578,13 @@ Use these questions to find issues in the current artifact. Apply the severity a
 
 ### High (Visual Defaults)
 
-A confirmed violation in any of the four visual checks is a High finding. Review returns `revise`.
+A confirmed violation of the visual defaults in the design being delivered is a High finding. Review returns `revise`.
 
 - [ ] Can an explanatory line disappear with its meaning and action intact? Does a string of fragments still obscure which facts belong together? (See § Over-Explanation)
 - [ ] Does the text hierarchy, grouping, measure or wrapping make the actual content hard to read? (See § Typography Chaos and § Whitespace Phobia)
 - [ ] Do palette assignments, decorative stripes or container choices violate the visual defaults? Check the representative frame and the current brief.
 
-### Important (Should Fix Before Handoff)
+### Layout and controls
 
 - [ ] Any AI-specific anti-patterns? (See § AI-Specific Design Anti-Patterns) — Your most likely mistakes.
 - [ ] Do misaligned rows or columns make comparable items hard to scan? (See § Grid Ignorance)
@@ -596,7 +593,7 @@ A confirmed violation in any of the four visual checks is a High finding. Review
 - [ ] Any zombie controls that look interactive but aren't? (See § Zombie Controls)
 - [ ] Any feature parity blindness — all features given equal weight? (See § Feature Parity Blindness)
 
-### Review (Consider Fixing)
+### Content and navigation
 
 - [ ] Any content or IA anti-patterns — jargon, walls of text, orphan pages? (See § Content & IA Anti-Patterns)
 - [ ] Any generic symmetry or over-consistency? (See § Generic Symmetry, § Consistency Zealotry)
@@ -623,4 +620,4 @@ The anti-patterns in this catalog are informed by the following references:
 
 ---
 
-*Load this skill alongside any ai-designer skill. After producing a design, run § Anti-Pattern Detection Checklist. Fix critical issues immediately. Flag important issues for revision. Note review items for future iteration.*
+After repairs, recheck the affected interaction or visual relationship and inspect the complete requested artifact. For example, after realigning a table row, scan the whole table with its longest labels and confirm that each value still reads under the correct heading.

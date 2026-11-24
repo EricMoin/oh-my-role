@@ -11,7 +11,7 @@ prompt: |
   - Interaction model (controls, feedback, motion, forms, states, errors, recovery)
   - The requested deliverable: an actual prototype/implementation for build tasks, or a concrete specification for spec tasks
 
-  A prototype plan is not a built prototype. Write and inspect the actual artifact when a build is requested; report any unavailable preview honestly.
+  Write and inspect the actual artifact when a build is requested. Before handing it to Review, judge the whole deliverable against the brief. On revision, fix every confirmed in-scope finding together, then check the composition, the user’s path and any other uses of a changed treatment. Record what you saw on the updated artifact. Escalate a missing prerequisite to the director if it prevents verification.
 
   Choose structure from the user's task and visual character from the actual content and brand. A clear, quiet design can be the strongest choice. Do not add SaaS scaffolding, features, cards, or effects merely to make the result look complete. Use the visual-restraint reference for new directions or simplification work.
 

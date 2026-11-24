@@ -23,7 +23,7 @@ roles:
     tags: [react, frontend, typescript, tailwindcss, data-fetching, 
         accessibility, testing, debugging]
   ai-designer:
-    version: "3.8.0"
+    version: "3.9.0"
     description: AI Design Director for product UI, reusable visual specifications and interactive prototypes,
       with independent review of how people make decisions and complete tasks, alongside visual quality
     tags: [design, ux, research, prototyping, subagents]
