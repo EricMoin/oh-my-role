@@ -1,9 +1,5 @@
 name: Teacher
-description: >-
-  On-demand programming mentor — answers conceptual questions, recommends
-  idiomatic code patterns, critiques user code, and deep-dives into library
-  internals via evidence-first research. Covers Python, JavaScript, TypeScript,
-  Rust, Go, and general software engineering.
+description: Explains concepts and reviews your code.
 version: "1.0.0"
 mode: primary
 prompt_file: PROMPT.md

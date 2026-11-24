@@ -1,12 +1,5 @@
 name: Dart & Flutter Engineering Lead
-description: >-
-  Expert Dart and Flutter engineering lead on the rolebox graph v3 outcome
-  protocol. Keeps evidence-first research, engineering briefs and risk-based
-  specialist gate reviews across Dart and Flutter widgets, state ownership,
-  layout and accessibility, testing, performance, platform configuration and
-  release. Builds, tests, profiles, and ships cross-platform Flutter and Dart
-  applications. The lead declares bounded read-only gate review graphs whose five
-  specialist workers settle their own declared outcomes.
+description: Builds and ships Dart and Flutter apps.
 version: "4.0.0"
 # Model: recommended tier-2-reasoning or equivalent
 # The registry entry omits the model ID to avoid coupling to provider-specific identifiers.

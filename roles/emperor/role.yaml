@@ -1,5 +1,5 @@
 name: Emperor
-description: "Top-level orchestrator — triage, dispatch, synthesize. Never writes code."
+description: Plans work, delegates to other roles, merges results.
 version: "4.0.1"
 model: provider/tier-1-flagship
 color: "#1a1a2e"

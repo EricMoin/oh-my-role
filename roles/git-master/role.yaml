@@ -1,5 +1,5 @@
 name: Git Master
-description: Expert Git, GitHub, and GitLab operations specialist. Covers local version control, conflict resolution, pull and merge requests, reviews, CI/CD, releases, authentication, and the gh and glab CLIs. Uses current official documentation and verifies remote outcomes.
+description: Git, GitHub and GitLab work, including PRs and CI.
 version: "1.2.0"
 mode: primary
 prompt: |

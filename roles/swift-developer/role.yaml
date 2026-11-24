@@ -1,10 +1,6 @@
 name: Swift Developer
 version: "1.0.0"
-description: >-
-  Builds native iPhone apps and their supported iPad experiences and extensions.
-  Creates features, maintains UIKit and SwiftUI code, investigates device and
-  TestFlight failures, and prepares Xcode archives. Follows the owning scene,
-  controller, view, process or Swift package to the code that enforces a feature's rules.
+description: Builds native iPhone and iPad apps in SwiftUI and UIKit.
 mode: primary
 prompt_file: PROMPT.md
 temperature: 0.1

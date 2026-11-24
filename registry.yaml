@@ -4,134 +4,78 @@ url: https://github.com/EricMoin/oh-my-role
 roles:
   apk-reverse-engineer:
     version: "1.0.0"
-    description: Android reverse-engineering specialist — decompiles and 
-      analyzes Android apps, extracts APIs, audits security, and runs Frida 
-      dynamic analysis. Lawful-use gated.
+    description: Decompiles Android apps, extracts APIs, audits security, runs Frida.
     tags: [android, reverse-engineering, apk, decompilation, frida, security, 
         mobile]
   software-architecture:
     version: "2.2.0"
-    description: Software architecture orchestrator — coordinates specialist 
-      subagents for design, review, ADRs, migration plans, and 
-      architecture-shaping implementation
+    description: Designs and reviews software architecture and ADRs.
     tags: [architecture, design, planning, adr, migration, subagents]
   react-frontend:
     version: "3.0.0"
-    description: React and Next.js frontend engineering with version-matched source
-      research, Graph v3 implementation and review, and verification through the
-      affected component, route or browser interaction
+    description: Builds and debugs React and Next.js apps.
     tags: [react, nextjs, frontend, typescript, tailwindcss, data-fetching,
         accessibility, testing, debugging, graph-v3]
   ai-designer:
     version: "3.9.0"
-    description: AI Design Director for product UI, reusable visual specifications and interactive prototypes,
-      with independent review of how people make decisions and complete tasks, alongside visual quality
+    description: Designs product UI, visual specs and interactive prototypes.
     tags: [design, ux, research, prototyping, subagents]
   oss-finder:
     version: "1.2.0"
-    description: OSS research and adoption advisor — discovers, source-traces, 
-      audits, compares, and recommends open-source implementations
+    description: Finds and evaluates open-source libraries.
     tags: [oss, research, github, architecture, adoption]
   supersearch:
     version: "2.0.0"
-    description: Aggressive evidence-backed search specialist on the rolebox 
-      graph v3 outcome protocol — triangulates across local files, code, git 
-      history, web, GitHub, official docs, package metadata, sessions, and 
-      visual/document sources with a multi-engine anti-crawl fallback chain and 
-      default-escalation custom scraping; declares one bounded read-only search 
-      graph (channel-fanout or single-channel-plus-audit) whose scout and 
-      evidence-auditor workers settle their own declared outcomes, and adds the 
-      HTML report deliverable on request
+    description: Searches code, web, GitHub and docs for cited answers. Runs on the rolebox graph v3 outcome protocol.
     tags: [search, research, web, github, docs, evidence]
   tauri:
     version: "1.0.0"
-    description: Tauri desktop app developer — builds cross-platform apps with 
-      Rust and web tech
+    description: Builds cross-platform desktop apps with Tauri.
     tags: [tauri, rust, desktop, cross-platform]
   dart-flutter:
     version: "4.0.0"
-    description: Dart/Flutter engineering lead with evidence-first research, 
-      engineering briefs, and risk-based specialist gate reviews — builds, tests, 
-      profiles, and ships cross-platform Flutter and Dart applications on the 
-      rolebox graph v3 outcome protocol, declaring bounded read-only gate review 
-      graphs whose five specialist workers settle their own declared outcomes
+    description: Builds and ships Dart and Flutter apps.
     tags: [dart, flutter, mobile, cross-platform, testing, performance, research]
   jetpack-compose:
     version: "4.6.1"
-    description: Jetpack Compose Engineering Lead with evidence-first research,
-      invariant-driven design, risk-based reviews,
-      encapsulation-preserving tests, AOSP/AndroidX source tracing, and idiomatic
-      Compose guidance — builds, tests, profiles, and ships Android applications
-      on the rolebox graph v3 outcome protocol, declaring bounded read-only
-      specialist review graphs whose workers settle their own declared outcomes,
-      with early target confirmation, bounded investigation, tiered verification,
-      and optional background journey recording that does not block repairs.
-      Supports on-device and emulator verification of a built app — Android targets
-      through the android CLI, HarmonyOS/OpenHarmony targets over hdc, with
-      compact per-run evidence, reusable device knowledge when useful,
-      and targeted video analysis for difficult UI paths
+    description: Builds Android apps in Kotlin and Jetpack Compose.
     tags: [android, kotlin, jetpack-compose, compose, mobile, research,
         source-tracing]
   swift-developer:
     version: "1.0.0"
-    description: Native iOS engineer for iPhone apps, Swift package APIs and product
-      rules, UIKit and SwiftUI features, extensions, device incidents and distribution.
-      Verifies changes through the owning caller, interaction or built artifact.
+    description: Builds native iPhone and iPad apps in SwiftUI and UIKit.
     tags: [ios, swift, swiftui, uikit, xcode, accessibility, testing, performance]
   emperor:
     version: "4.0.1"
-    description: "Top-level orchestrator — classifies user requests, dispatches scoped
-      implementation and behavior-focused testing, synthesizes execution results"
+    description: Plans work, delegates to other roles, merges results.
     tags: [orchestrator, triage, dispatch, planner, executor, subagents]
   role-creator:
     version: "1.0.0"
-    description: Meta-role that interviews the user, generates a new rolebox
-      role (four templates), and verifies it with a 4-tier mechanism
-      (structural → resolution-sim → deploy-health → behavioral eval). Runs on the
-      rolebox graph v3 outcome protocol — bounded revise/review cycles are
-      declared as loop groups whose nodes settle their own outcomes — with
-      deploy-to-harness capability.
+    description: Creates and verifies new rolebox roles.
     tags: [meta, role-creation, verification, scaffolding, graph-v3]
   rolebox-tester:
     version: "7.0.0"
-    description: Host-aware, primary-first functional test suite for rolebox
-      2.2.0 — 178 tests in 16 modules covering the graph v3 outcome protocol
-      (declarations, worker outcome submission, controls, status/audit, loop
-      groups), dispatch, functions, references, tools/hashline, permissions,
-      MCP, sessions, memory, task and asset management, LSP, web,
-      hooks/recovery, CLI, DSH role teams, computer and browse, with
-      capability-probed PASS/FAIL/SKIP reporting.
+    description: Tests an installed rolebox end to end.
     tags: [testing, qa, graph-v3, outcome-protocol, host-aware, dispatch,
         hashline, lsp, sessions, memory, team, computer, browse]
   teacher:
     version: "1.0.0"
-    description: On-demand programming mentor — answers conceptual questions, 
-      recommends idiomatic patterns, critiques code with severity levels, and 
-      traces library internals via evidence-first research
+    description: Explains concepts and reviews your code.
     tags: [mentor, teaching, code-review, research, patterns]
   git-master:
     version: "1.2.0"
-    description: Git, GitHub, and GitLab operations specialist — local version
-      control, pull and merge requests, reviews, CI/CD, releases, authentication,
-      and the gh and glab CLIs with current official documentation
+    description: Git, GitHub and GitLab work, including PRs and CI.
     tags: [git, version-control, vcs, github, gitlab, gh, glab, pull-requests,
         merge-requests, ci-cd]
   rust-engineer:
     version: "5.1.0"
-    description: Rust engineering lead that researches the repository and composes
-      Graph v3 execution with five implementation experts and five separate
-      read-only domain reviewers. Independent verification and source tracing
-      support parallel evidence and bounded implementation/review repair loops.
+    description: Builds, reviews and optimizes Rust code.
     tags: [rust, cargo, async, systems, unsafe, performance, testing, graph-engine,
         gates, subagents]
   # comment-writer now ships as doc-writer--comment-writer
   doc-writer:
     version: "1.2.0"
-    description: Writes, restructures, and reviews code comments, API references,
-      guides, decision records, and release notes. Reads the repository and verifies
-      commands and examples; routes documentation work to domain subagents, stages
-      every candidate, gates the staged result through a final humanizer review and
-      publishes only after a pass; never changes production behavior.
+    description: Writes and edits docs, checks commands and examples.
     tags: [documentation, writing, editing, prose, api-docs, readme, adr,
         changelog, subagents, chinese, humanizer, quality-gate, staging, publish-gate]
   deepseek-whale-girl:
@@ -142,10 +86,7 @@ roles:
     tags: [persona, roleplay, companion, character, deepseek, chinese]
   typescript-engineer:
     version: "2.1.0"
-    description: Graph-native TypeScript engineer for rolebox — type modeling,
-      runtime debugging, API design, module packaging and workspace builds,
-      running on the graph v3 outcome protocol with bounded implementation/review
-      outcome plans, declared repair loops and targeted evidence branches.
+    description: Builds and debugs TypeScript, types and packages.
     tags:
     - typescript
     - javascript

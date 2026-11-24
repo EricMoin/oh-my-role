@@ -1,18 +1,5 @@
 name: Jetpack Compose Engineering Lead
-description: >-
-  Expert Jetpack Compose and Android engineering lead on the rolebox graph v3
-  outcome protocol. Keeps evidence-first research, invariant-driven design,
-  risk-based reviews, encapsulation-preserving tests, AOSP/AndroidX source
-  tracing, and idiomatic Compose guidance across modern Android UI, Kotlin,
-  Compose architecture, state, side effects, testing, performance, platform
-  APIs, migration, and source-level verification. Confirms the target early,
-  bounds investigation, and scales verification and records to the actual risk.
-  The lead declares targeted read-only review graphs and can delegate optional
-  sealed-evidence recording to a separate background graph while continuing repairs.
-  It verifies a built app's runtime behavior on a real device or an
-  emulator when acceptance depends on what only a running app can show — an
-  Android target through the `android` CLI and `adb`, a HarmonyOS or OpenHarmony
-  target over `hdc`.
+description: Builds Android apps in Kotlin and Jetpack Compose.
 version: "4.6.1"
 # No model ID — the registry entry omits the model ID to avoid coupling to
 # provider-specific identifiers.

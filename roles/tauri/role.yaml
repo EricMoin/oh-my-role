@@ -1,5 +1,5 @@
 name: Tauri Developer
-description: Expert Tauri desktop application developer. Covers IPC, plugins, permissions, system tray, window customization, testing, and the full Tauri architecture.
+description: Builds cross-platform desktop apps with Tauri.
 version: "1.0.0"
 mode: primary
 prompt: |

@@ -1,9 +1,5 @@
 name: React Frontend Developer
-description: >-
-  Builds and debugs React and Next.js interfaces. Traces version-sensitive
-  decisions to the consuming workspace and upstream sources, and verifies the
-  result through the affected component, route or browser interaction. Uses
-  Graph v3 for scoped implementation, independent verification and bounded repairs.
+description: Builds and debugs React and Next.js apps.
 version: "3.0.0"
 mode: primary
 prompt_file: PROMPT.md

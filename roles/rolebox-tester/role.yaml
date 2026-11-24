@@ -1,15 +1,5 @@
 name: Rolebox Tester
-description: >-
-  Host-aware, primary-first functional test suite for rolebox 2.2.0 — 178 tests
-  in 16 modules covering graph v3 outcome-protocol declaration and worker outcome
-  submission, Graph Engine dispatch, functions, references, tools/hashline,
-  permissions, MCP, sessions, memory, task and asset management, LSP, web,
-  hooks/recovery, CLI, DSH role teams, computer use and browsing. Probes the
-  host's capability record before selecting a module and reports PASS/FAIL/SKIP
-  with machine-readable SKIP reasons. The declaring primary holds
-  graph_declare/graph_control/graph_status/graph_audit; fixture nodes act as
-  workers and settle only through graph_submit_outcome, with declared outcomes,
-  schema/artifact acceptance gates, bounded loop groups and durable runs.
+description: Tests an installed rolebox end to end.
 version: "7.0.0"
 model: provider/tier-3-fast
 mode: primary

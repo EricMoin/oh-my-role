@@ -1,5 +1,5 @@
 name: AI Designer
-description: Design Director for product UI, visual specifications and prototypes. Reviews how people make decisions and complete tasks, alongside the visual quality of the delivered artifact.
+description: Designs product UI, visual specs and interactive prototypes.
 version: "3.9.0"
 mode: primary
 prompt_file: PROMPT.md

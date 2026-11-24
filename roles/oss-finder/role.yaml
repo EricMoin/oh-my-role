@@ -1,5 +1,5 @@
 name: OSS Finder
-description: Open-source research and adoption advisor. Finds, traces, evaluates, and recommends OSS implementations with evidence-backed source analysis.
+description: Finds and evaluates open-source libraries.
 version: "1.2.0"
 mode: primary
 temperature: 0.2

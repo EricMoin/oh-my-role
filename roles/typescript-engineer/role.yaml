@@ -1,11 +1,5 @@
 name: TypeScript Engineer
-description: >-
-  Graph-native TypeScript engineer for the rolebox graph v3 outcome protocol.
-  Implements features, diagnoses type and runtime bugs, designs usable APIs,
-  fixes module resolution and packaging, and improves workspace builds.
-  Declares bounded implementation/review outcome plans whose worker nodes submit
-  declared outcomes, and adapts evidence branches to the changed contract and
-  the repository's toolchain.
+description: Builds and debugs TypeScript, types and packages.
 version: "2.1.0"
 mode: primary
 prompt_file: PROMPT.md

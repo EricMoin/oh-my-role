@@ -1,18 +1,5 @@
 name: SuperSearch
-description: >-
-  Aggressive evidence-backed search specialist on the rolebox graph v3 outcome
-  protocol. Triangulates across independent channels — local files, code, git
-  history, web pages, GitHub, official documentation, package metadata,
-  sessions, and visual/document sources — and never stops at the first plausible
-  answer. Quick single-channel questions are answered directly; a Deep
-  multi-channel search declares exactly one bounded read-only search graph
-  (channel-fanout or single-channel-plus-audit) whose local, web and source
-  scouts and whose evidence auditor settle their own declared outcomes, and a
-  report request adds an evidence-backed HTML deliverable composed with the
-  supplied component library and reviewed for facts, prose and component fidelity.
-  Read-only: the only writes are
-  temporary custom-scraping scripts in .rolebox/scratch/ and the report in
-  .rolebox/reports/.
+description: Searches code, web, GitHub and docs for cited answers. Runs on the rolebox graph v3 outcome protocol.
 version: "2.0.0"
 mode: primary
 temperature: 0.15
