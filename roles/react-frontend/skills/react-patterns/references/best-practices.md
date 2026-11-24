@@ -22,9 +22,9 @@ This document contains comprehensive guidelines for React development in this pr
 
 ## Core Principles
 
-### Functional Components Only
+### Function components
 
-Use functional components exclusively. Class components are legacy and should not be used:
+Prefer function components for new UI. Existing class components and class-based error boundaries are supported.
 
 ```typescript
 // CORRECT: Functional component
@@ -32,9 +32,6 @@ function UserProfile({ userId }: { userId: string }) {
   const user = useUser(userId);
   return <div>{user.name}</div>;
 }
-
-// INCORRECT: Class component (legacy)
-class UserProfile extends React.Component { /* ... */ }
 ```
 
 ### Single Responsibility Principle
@@ -68,7 +65,7 @@ function UserCard({ user }: { user: User }) {
 
 ### Separation of Concerns
 
-Never mix behavior logic with visual rendering in the same component. Extract behavior into focused custom hooks:
+Extract a hook when it gives a related group of state, effects and handlers a useful boundary. Simple interactions can live in their component.
 
 ```typescript
 // CORRECT: Hook handles all logic, component handles rendering
@@ -211,7 +208,7 @@ Follow kebab-case for component filenames:
 
 ### Props Typing
 
-Do NOT use `React.FC`. Type props directly on the function:
+Follow the project's props convention. This example declares the public props directly on the function.
 
 ```typescript
 // CORRECT: Type props directly
@@ -222,14 +219,11 @@ interface UserCardProps {
 
 function UserCard({ user, onSelect }: UserCardProps) {
   return (
-    <div onClick={() => onSelect?.(user)}>
+    <button type="button" onClick={() => onSelect?.(user)}>
       {user.name}
-    </div>
+    </button>
   );
 }
-
-// INCORRECT: Using React.FC
-const UserCard: React.FC<UserCardProps> = ({ user }) => { /* ... */ };
 ```
 
 ### Extending HTML Elements
@@ -245,8 +239,10 @@ interface InputProps extends React.ComponentProps<"input"> {
 function Input({ label, error, className, ...props }: InputProps) {
   return (
     <div className="input-wrapper">
-      <label>{label}</label>
-      <input className={cn("input", error && "input-error", className)} {...props} />
+      <label>
+        {label}
+        <input className={cn("input", error && "input-error", className)} {...props} />
+      </label>
       {error && <span className="error">{error}</span>}
     </div>
   );
@@ -303,14 +299,9 @@ interface RenderProps<T> {
 
 ## State Management
 
-### State Management Hierarchy
+### State ownership
 
-Use state management in this order of preference:
-
-1. **Local state** (`useState`/`useReducer`) - Component-specific UI state
-2. **Zustand** - Shared client state across components
-3. **TanStack Query** - Server state and data synchronization
-4. **URL state** - Shareable application state (with TanStack Router)
+Local state belongs to a component or common parent. Shareable navigation belongs in the project's router. A client store such as Zustand can serve independent consumers. For a remote resource, use the route's loader or existing server-data cache.
 
 ### Local State (useState/useReducer)
 
@@ -632,9 +623,9 @@ function useUpdateTodo() {
     mutationFn: updateTodo,
     onMutate: async (newTodo) => {
       await queryClient.cancelQueries({ queryKey: ["todos"] });
-      const previous = queryClient.getQueryData(["todos"]);
-      queryClient.setQueryData(["todos"], (old: Todo[]) =>
-        old.map((t) => (t.id === newTodo.id ? newTodo : t))
+      const previous = queryClient.getQueryData<Todo[]>(["todos"]);
+      queryClient.setQueryData<Todo[]>(["todos"], (old) =>
+        old?.map((t) => (t.id === newTodo.id ? newTodo : t))
       );
       return { previous };
     },
@@ -976,10 +967,10 @@ export type { User, UserAvatarProps } from "./types";
 
 ## Anti-Patterns to Avoid
 
-### 1. Mixing Logic and Rendering
+### 1. Repeated fetching logic
 
 ```typescript
-// BAD: Logic mixed with rendering
+// This duplicates the search lifecycle and can accept a stale response.
 function IssueList() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({});
@@ -997,7 +988,7 @@ function IssueList() {
   // Lots of JSX...
 }
 
-// GOOD: Extract to hook
+// Share the search lifecycle when several components need it.
 function useIssueSearch() {
   // All logic here
 }
@@ -1041,18 +1032,14 @@ function UserInfo() {
 
 Split large components into smaller, focused ones. If a component is over 200 lines, it probably needs splitting.
 
-### 4. Inline Function Props Without useCallback
+### 4. Unnecessary callback wrappers
 
 ```typescript
-// BAD: Creates new function on every render
+// Wrap the call only when the handler needs to adapt its arguments.
 <List onItemClick={(id) => handleClick(id)} />
 
-// GOOD: Stable reference
-const handleItemClick = useCallback((id: string) => {
-  handleClick(id);
-}, [handleClick]);
-
-<List onItemClick={handleItemClick} />
+// Pass the existing callback directly when the signatures match.
+<List onItemClick={handleClick} />
 ```
 
 ### 5. Not Handling Loading/Error States
@@ -1082,12 +1069,9 @@ function UserProfile({ userId }: Props) {
 
 Before finishing a task involving React:
 
-- [ ] Components are functional and follow single responsibility principle
-- [ ] Behavior logic is extracted into custom hooks
-- [ ] TypeScript props are typed directly (not using `React.FC`)
-- [ ] State management follows the hierarchy (local -> Zustand -> TanStack Query -> URL)
-- [ ] Error boundaries are in place for error handling
+- [ ] Component APIs and ref behavior match their consumers' React versions
+- [ ] State lives with the owner responsible for its lifetime
+- [ ] Rendering failures have the recovery behavior required by this flow
 - [ ] Accessibility requirements are met (semantic HTML, keyboard navigation)
 - [ ] Loading and error states are handled
-- [ ] Tests are written for components and hooks
-- [ ] Run `pnpm run lint`, `pnpm run typecheck`, and `pnpm run test`
+- [ ] Run the relevant scripts with the consuming workspace's package manager

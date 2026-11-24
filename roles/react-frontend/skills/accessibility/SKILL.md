@@ -13,7 +13,7 @@ Accessibility is a core quality bar, not a polish step: every interactive elemen
 - **Concrete patterns**: ❌/✅ React/TSX snippets for buttons, dialogs, form fields, menus, visually-hidden text, and skip links in `references/patterns.md`
 - **WAI-ARIA Authoring Practices**: follow the APG patterns for any composite widget — don't invent roles (https://www.w3.org/WAI/ARIA/apg/)
 - **Related skills**:
-  - `react` (react-patterns) → **Extend native element props**: wrappers that render a single native element must extend `React.ComponentProps<"…">` and spread `...props`, so callers keep `aria-*`, `data-*`, `disabled`, `onClick`, etc. — do not build bespoke passthrough lists
+  - `react` (react-patterns) → **Extend native element props**: native primitives can expose the native props their callers need, including accessible names and descriptions
   - `tailwindcss` → focus-visible rings (`focus-visible:ring-2 focus-visible:ring-ring`) and design tokens (`text-foreground`, `bg-card`, `text-destructive`) that keep contrast themable
 
 ## Core Principles
@@ -28,7 +28,7 @@ Only build a custom widget (and its ARIA roles) when a native element genuinely 
 
 ### 2. Keyboard Navigation
 
-- Every interactive element is **reachable and operable by keyboard alone** (Tab to reach, Enter/Space to activate).
+- Use the native keyboard interaction for each control. Tab moves between controls, Enter follows a link, and either Enter or Space activates a button. Composite widgets can have one tab stop and internal arrow-key navigation.
 - Never remove the default focus indicator with `outline: none` — use Tailwind's `focus-visible:` variant instead (see `tailwindcss` skill) so focus rings appear only for keyboard users.
 - Keep a **logical tab order**: `tabindex` should only ever be `0` or `-1` — positive values ("`tabindex=5`") break document order.
 - **Escape dismisses** overlays: dialogs, popovers, menus, comboboxes.
@@ -36,8 +36,8 @@ Only build a custom widget (and its ARIA roles) when a native element genuinely 
 
 ### 3. Focus Management
 
-- **On open**: move focus into a dialog (to the dialog container with `tabIndex={-1}`, or the first focusable element) so screen readers announce it.
-- **While open**: trap focus inside — wrap Tab at the first/last focusable element (see `references/patterns.md` → dialog).
+- **On open**: move focus to a meaningful element inside the modal, such as its first field, a heading for long content or a safe action for a destructive decision.
+- **While a modal is open**, contain keyboard focus and make the background inert. Prefer the project’s tested dialog primitive or a native modal dialog.
 - **On close**: restore focus to the element that opened it.
 - **On route change** (SPA): move focus to the new page's heading (an `<h1>` with `tabIndex={-1}`) so keyboard and screen-reader users don't lose their place.
 
@@ -46,30 +46,30 @@ Only build a custom widget (and its ARIA roles) when a native element genuinely 
 - Every input has an associated `<label>` (use `htmlFor`/`id`, or wrap the input inside the `<label>`).
 - **Errors are announced**: link the input to its error with `aria-describedby`, set `aria-invalid`, and render the message with `role="alert"` (inserted after interaction) or an `aria-live="polite"` region.
 - **Required/invalid state is never color-only**: convey it with text plus `aria-required` and `aria-invalid` — never just a red border.
-- Placeholder text is not a label — use `aria-labelledby`/`aria-describedby` instead.
+- Give the field a visible label or reference its label with `aria-labelledby`. Use `aria-describedby` for supporting text such as its format or an error. [WAI accessible names and descriptions](https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/)
 
 ### 5. ARIA When Needed
 
 - Use roles, states, and properties only to fill gaps a native element can't express: `role="dialog"`, `aria-modal`, `aria-expanded`, `aria-haspopup`, `aria-controls`, `aria-live`, `aria-current`, `aria-pressed`.
 - **Live regions** (`aria-live="polite"`) announce async updates — toasts, "saved" confirmations, fetch results. Prefer the `role="status"` / `role="alert"` shortcuts.
-- Follow the **WAI-ARIA Authoring Practices** patterns; every widget needs an accessible name via `aria-label` or `aria-labelledby` (icon-only buttons must have one).
+- Confirm each control has an accessible name. Visible button text and associated labels usually provide it. Use an explicit name for icon-only controls.
 - Spread `aria-*` through component wrappers via the `react-patterns` **Extend native element props** pattern rather than re-declaring bespoke props.
 
 ### 6. Contrast & Motion
 
-- **WCAG AA**: 4.5:1 for normal text, 3:1 for large text (≥18pt or 14pt bold) and UI-component boundaries/graphics.
-- Prefer design tokens (`text-foreground`, `text-muted-foreground`, `bg-card`, … — see `tailwindcss` skill) so contrast is guaranteed by the theme; never hardcode near-gray text like `text-gray-400` for body copy.
+- Check text against its actual background. WCAG AA specifies 4.5:1 for normal text and 3:1 for large text, with listed exceptions. Required visual cues for controls, states and meaningful graphics have a separate 3:1 criterion. [Text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) · [Non-text contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)
+- Measure rendered foreground and background colors for the affected states and themes, including token-based colors.
 - **Respect `prefers-reduced-motion`**: use the `motion-reduce:` variant or `@media (prefers-reduced-motion: reduce)` to disable non-essential animations, auto-scrolling, and autoplay.
 
 ### 7. Testing Accessibility
 
-- **Automated**: run `jest-axe` (or `vitest-axe`) — `expect(await axe(container)).toHaveNoViolations()` — on every interactive component test.
+- **Automated**: use the project’s accessibility tooling on the affected UI. Record its coverage and check keyboard or assistive-technology behavior directly when the requirement depends on it.
 - **By role**: query rendered UI with `getByRole("button", { name: /submit/i })` (React Testing Library). Role queries force the semantics that a11y depends on — ties into the testing guidance in the `react` (react-patterns) skill.
-- **Manual pass** (do this before merging): Tab through the whole page and confirm visible focus, confirm Escape closes overlays, and do one screen-reader pass (VoiceOver/NVDA) over the main flows.
+- **Manual pass**: exercise the changed interaction in the target browser. Check tab order, focus location, name or announcement as applicable. Record the browser and assistive technology if used.
 
 ## Validation Checklist
 
-Before finishing any task that touches UI:
+Select the checks that cover the changed interaction:
 
 - [ ] Semantic elements used instead of `div` + ARIA where a native element exists
 - [ ] All interactive elements keyboard-reachable and keyboard-operable
@@ -78,9 +78,9 @@ Before finishing any task that touches UI:
 - [ ] Form errors announced (`aria-describedby` + `role="alert"`/`aria-live`) and `aria-invalid` set
 - [ ] Required/invalid state not conveyed by color alone
 - [ ] Dialogs: focus moved in, trapped, and restored on close; Escape dismisses
-- [ ] Contrast meets WCAG AA (design tokens, not hardcoded colors)
+- [ ] Rendered color pairs meet the applicable WCAG contrast criterion
 - [ ] `prefers-reduced-motion` respected
-- [ ] jest-axe / axe-core passes with zero violations
+- [ ] Report results from the accessibility checks run and any browser checks still needed
 - [ ] Manual keyboard pass (tab order, focus visibility, Escape behavior)
 
 ## Detailed References

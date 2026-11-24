@@ -10,7 +10,7 @@ A skill for giving React + Tailwind v4 interfaces a point of view. The goal is n
 
 Companion skills:
 
-- `tailwindcss`: design tokens, utilities, and responsive patterns. Use it for every class decision; this skill decides which choices deserve to exist.
+- `tailwindcss`: design tokens, utilities, and responsive patterns. Use it for an interface that already uses Tailwind. Follow the project’s styling system.
 - `ai-designer` role: the review gate adds accessibility and human-factors checks for higher-stakes design work.
 
 For the full catalog of what makes UI read as AI-generated, and what to do instead, see `references/anti-slop.md`.
@@ -73,4 +73,4 @@ Before finishing any design task:
 - [ ] Motion is orchestrated into one moment, not scattered
 - [ ] Complexity matches the ambition: maximalist is detailed, minimal is precise
 - [ ] Passes the anti-slop checklist in `references/anti-slop.md`
-- [ ] Uses Tailwind design tokens (`bg-background`, `text-foreground`, ...) per the `tailwindcss` skill, not raw colors
+- [ ] Uses colors and tokens available in the project’s theme

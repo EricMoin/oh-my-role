@@ -5,15 +5,15 @@ This document contains comprehensive patterns and best practices for using Tailw
 ## Core Principles
 
 - **Utility-First**: Embrace utility-first approach and avoid custom CSS
-- **Design Tokens**: Always use design system tokens instead of explicit colors
+- **Design Tokens**: Use the active design system’s palette
 - **Mobile-First**: Build responsive layouts with mobile-first approach
 - **No @apply**: Avoid `@apply` except for base styles
 
-## Critical: Design Token Usage
+## Theme-dependent utilities
 
-To ensure theme switching works correctly, always use design system tokens:
+The examples below assume a Tailwind v4 theme that defines these semantic colors. Inspect the app’s CSS entry point before copying them. [Tailwind theme variables](https://tailwindcss.com/docs/theme)
 
-### Required Tokens
+### Example theme tokens
 
 **Backgrounds:**
 - `bg-background` - Main page background
@@ -39,7 +39,7 @@ To ensure theme switching works correctly, always use design system tokens:
 - `bg-destructive text-destructive-foreground` - Destructive actions
 - `bg-accent text-accent-foreground` - Accent/highlight states
 
-### Never Use Explicit Colors
+### Example with a switchable semantic theme
 
 ```tsx
 // BAD - Breaks theme switching
@@ -57,7 +57,7 @@ To ensure theme switching works correctly, always use design system tokens:
 
 ## Long Class Strings
 
-Break class strings longer than 100 characters into arrays:
+Group longer class strings when that fits the workspace formatter.
 
 ```typescript
 // BAD - Single long string
@@ -350,16 +350,15 @@ const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs))
 
 Before finishing a task involving Tailwind CSS:
 
-- [ ] Using design tokens instead of explicit colors (`bg-background`, not `bg-white`)
-- [ ] Long class strings broken into arrays (>100 chars)
+- [ ] Color utilities exist in the active theme and render as intended
+- [ ] Class strings follow the workspace formatter
 - [ ] Mobile-first responsive approach (`sm:` `md:` `lg:` prefixes for larger screens)
 - [ ] Focus states use `focus-visible:` for keyboard accessibility
 - [ ] No `@apply` except for base styles
 - [ ] No inline styles when Tailwind utilities exist
 - [ ] No dynamically constructed class names
 - [ ] No `!important` usage
-- [ ] Run lint checks (`pnpm run lint`)
-- [ ] Run type checks (`pnpm run typecheck`)
+- [ ] Run the existing workspace checks for the affected styles
 
 ## Documentation
 

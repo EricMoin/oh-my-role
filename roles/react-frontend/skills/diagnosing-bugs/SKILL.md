@@ -21,7 +21,7 @@ Get a **minimal, reliable reproduction before touching any code**. A bug you can
   - Is it environment-dependent? Note browser, viewport, auth state, hydration vs. client navigation.
 - Write the repro down. If you can't reduce it, at least capture the exact steps that trigger it.
 
-If you cannot reproduce it, say so. Do not proceed to fixing.
+If the environment cannot reproduce the symptom, inspect the recorded error, failing input, source and installed versions. State what that evidence establishes and which runtime observation still needs confirmation.
 
 ## 2. Isolate
 
@@ -39,7 +39,7 @@ The goal is a file, a hook, and an expression you can point at and say: *"the be
 Form **ONE falsifiable hypothesis** about the root cause. For each hypothesis, write down the specific observation you would expect if it were true.
 
 - Bad: "maybe the state is wrong."
-- Good: "The effect depends on `user.id`, but `user` is a new object on every render, so the effect re-runs every render and re-fetches. If true, I'd see a network request per render and the effect firing on unrelated state changes."
+- Good: "The effect depends on the entire `user` object. The caller constructs a fresh object on each render, so the effect runs again even when `user.id` stays the same. If true, I'd see a network request per render and the effect firing on unrelated state changes."
 
 Predict before you instrument. If the observation doesn't match the prediction, the hypothesis is wrong — discard it.
 
@@ -49,7 +49,7 @@ Confirm with an **instrument before fixing**. Choose the cheapest instrument tha
 
 - `console.log` / `console.trace` in the effect, render body, or event handler — log the values the hypothesis claims are involved (deps, state, props), not noise.
 - **React DevTools**: Profiler for re-render loops and memoization failures; Components tab for props/state/hook values and the "why did this render" info.
-- A **failing test** that asserts the wrong behavior you predicted (red first).
+- A **regression test** that asserts the expected public behavior and fails on the reported input.
 
 Only when the instrument shows what you predicted do you move to fixing.
 
@@ -76,7 +76,7 @@ The most common root causes in React, with the tell (what you'll observe) and th
 | **Derived state stored in state instead of computed** | Component state desyncs from props; reset logic sprinkled in effects | Compute during render (`const isFull = items.length >= max`), never `useState` + `useEffect` to mirror props — see `react-patterns` **useEffect Decision Tree** |
 | **`key` misuse causing state carryover** | Component keeps old internal state when its data changes (e.g. an editor showing the previous row's draft) | Use a stable, data-derived `key` (`key={item.id}`) so React remounts instead of reusing state — see `react-patterns` **Reset state on prop change** |
 | **`setState` in render** | "Cannot update a component while rendering a different component" warning; render loops | Move the update to an event handler or effect; if it's derived, compute it during render instead |
-| **Hydration mismatch from client-only data** | Hydration errors in console; server HTML differs from first client render; flicker on load | Render client-only data only after mount, or use the inline-script pattern — see `vercel-react-best-practices` **Prevent Hydration Mismatch Without Flickering** |
+| **Hydration mismatch from client-only data** | Hydration errors in console; server HTML differs from first client render; flicker on load | Identify the first divergent value. Make the initial server and client output agree, then apply client-only preferences at the appropriate boundary. [React hydration contract](https://react.dev/reference/react-dom/client/hydrateRoot) |
 | **Object/array identity breaking `memo`/`useMemo`** | Memoized components re-render on every parent render; `useMemo` recomputes constantly | Pass primitives or stable references; define objects/arrays outside the component or with `useMemo` on narrow deps — see `vercel-react-best-practices` **Narrow Effect Dependencies** (same principle applies to memo deps) |
 | **Race conditions in async effects** | A slow earlier request overwrites a newer one; data from a stale fetch appears after unmount | Add cleanup: `AbortController` (or an `ignore` flag) cancelled in the effect's cleanup — see `react-patterns` **Fetch data** row of the **useEffect Decision Tree** |
 
@@ -84,7 +84,7 @@ The most common root causes in React, with the tell (what you'll observe) and th
 
 Before declaring a React bug fixed:
 
-- [ ] Reproduced deterministically
+- [ ] Recorded the failing conditions or the evidence available for an intermittent issue
 - [ ] Read the actual error, not guessed
 - [ ] Root cause identified (not symptom)
 - [ ] Regression test added

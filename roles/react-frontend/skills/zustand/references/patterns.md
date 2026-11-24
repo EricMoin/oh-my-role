@@ -1,6 +1,6 @@
 # Zustand State Management Patterns
 
-This document contains comprehensive patterns, best practices, and guidelines for working with Zustand in this project.
+These are client-store examples. For server-rendered routes, create request-scoped stores with consistent initial data across the server and first client render. [Zustand’s Next.js guide](https://zustand.docs.pmnd.rs/learn/guides/nextjs)
 
 ## Table of Contents
 
@@ -157,7 +157,7 @@ src/
 
 ### Recommended Middleware Order
 
-Apply middleware from outermost to innermost:
+For a store using all three middleware, this example composes them from outermost to innermost.
 1. `devtools` (outermost) - for Redux DevTools integration
 2. `persist` - for localStorage persistence
 3. `immer` (innermost) - for immutable updates with mutable syntax
@@ -902,11 +902,11 @@ Before considering a store implementation complete:
 
 - [ ] Store handles a single, focused domain
 - [ ] TypeScript interfaces are fully defined
-- [ ] Actions are grouped in an `actions` object
-- [ ] Middleware is applied in correct order (devtools > persist > immer)
-- [ ] Selector hooks are exported for all state slices
+- [ ] Actions follow the store's public API
+- [ ] Selected middleware fits the store’s persistence, debugging or update requirements
+- [ ] Consumers subscribe to the values they read
 - [ ] Only necessary state is persisted (using `partialize`)
 - [ ] Initial state is defined separately for reset functionality
 - [ ] Loading and error states are handled for async operations
 - [ ] Store is tested with proper isolation
-- [ ] No server state is stored (use TanStack Query instead)
+- [ ] Remote data has a clear owner across the route, store and any query cache

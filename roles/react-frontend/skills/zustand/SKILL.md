@@ -6,7 +6,7 @@ allowed-tools: Read, Grep, Glob
 
 # Zustand State Management Guide
 
-This skill provides guidelines, patterns, and best practices for working with Zustand in this project.
+Use these examples when the project uses Zustand. In a server-rendered app, scope request-specific state per request and hydrate the client from the same initial data. [Zustand’s Next.js guide](https://zustand.docs.pmnd.rs/learn/guides/nextjs)
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ For detailed store patterns, middleware usage, and comprehensive examples, pleas
 
 ## Core Philosophy
 
-- **Shared Client State Only**: Use Zustand for shared client state, not server state (use TanStack Query for that).
+- **State ownership**: Use the store for shared client state. When a route loader or query cache already owns a remote value, read it there.
 - **Domain-Specific Stores**: Keep stores focused on specific domains.
 - **Type Safety**: Leverage TypeScript for fully typed stores.
 - **Simplicity**: Prefer simplicity over complex abstractions.
@@ -28,9 +28,9 @@ For detailed store patterns, middleware usage, and comprehensive examples, pleas
 - Keep stores close to features that use them
 - Export typed selector hooks for better DX and performance
 
-### Recommended Middleware Stack
+### Optional middleware
 
-Use the following middleware combination for production stores:
+Use just the middleware the store needs. This example combines persistence, DevTools inspection and Immer for nested updates.
 
 ```typescript
 import { create } from "zustand";
@@ -68,7 +68,7 @@ interface StoreState {
 
 ### Selector Hooks Pattern
 
-Always create selector hooks for performance optimization:
+Subscribe to the slices a component reads. Export a reusable selector hook when it helps callers.
 
 ```typescript
 // Bad - subscribes to entire store
@@ -100,7 +100,7 @@ export const useAuthActions = () => useAuthStore((state) => state.actions);
 1. Define the state interface with typed actions
 2. Create the store with appropriate middleware
 3. Export selector hooks for each state slice
-4. Add to the feature's barrel export
+4. Expose the store through the feature’s established public entry point
 
 ### Persisting State
 
@@ -143,10 +143,10 @@ Before finishing a task involving Zustand:
 
 - [ ] Store is domain-specific and focused
 - [ ] TypeScript interfaces are properly defined
-- [ ] Middleware is applied in correct order (devtools > persist > immer)
-- [ ] Selector hooks are created for performance
-- [ ] Actions are grouped in an `actions` object
+- [ ] Each selected middleware serves an actual requirement
+- [ ] Consumers subscribe to the values they read
+- [ ] Actions follow the store's public API
 - [ ] Only necessary state is persisted
-- [ ] Run type checks (`pnpm run typecheck`) and tests (`pnpm run test`)
+- [ ] Run the relevant existing workspace checks
 
 For detailed rules, examples, and anti-patterns, please consult `references/patterns.md`.

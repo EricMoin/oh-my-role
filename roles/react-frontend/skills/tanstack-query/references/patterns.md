@@ -1,6 +1,6 @@
 # TanStack Query Patterns
 
-Concrete TSX/TypeScript patterns for TanStack Query v5 (`@tanstack/react-query`) and TanStack Form (`@tanstack/react-form`) in this project. Stack: React 19, TypeScript, pnpm.
+TypeScript examples for projects that already use TanStack Query v5. The form example also uses TanStack Form.
 
 ## Table of Contents
 
@@ -38,7 +38,7 @@ export const todoKeys = {
 Invalidation by tree level:
 
 ```typescript
-// Refetch every list variant (all filters)
+// Invalidate all filter variants. Active eligible queries refetch by default.
 queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
 
 // Refetch a single detail
@@ -163,7 +163,7 @@ export function useIssueWithComments(issueId: string | undefined) {
 
 ## Mutation with Optimistic Update + Rollback
 
-Update the cache immediately, snapshot for rollback, restore on error, reconcile on settle.
+For a screen that allows one pending edit to its unfiltered list, update the same key the screen reads. Invalidate all filter variants after the server settles. A screen allowing overlapping mutations needs per-edit rollback or a pending UI.
 
 ```typescript
 // src/features/todos/use-toggle-todo.ts
@@ -183,35 +183,36 @@ async function toggleTodoOnServer(id: string): Promise<Todo> {
 
 export function useToggleTodo() {
   const queryClient = useQueryClient();
+  const listKey = todoKeys.list({});
 
   return useMutation({
     mutationFn: (id: string) => toggleTodoOnServer(id),
 
     onMutate: async (id: string) => {
       // Cancel in-flight refetches so they don't clobber the optimistic write
-      await queryClient.cancelQueries({ queryKey: todoKeys.lists() });
+      await queryClient.cancelQueries({ queryKey: listKey, exact: true });
 
       // Snapshot the current cache for rollback
-      const previous = queryClient.getQueryData<Todo[]>(todoKeys.lists());
+      const previous = queryClient.getQueryData<Todo[]>(listKey);
 
       // Apply the optimistic change
-      queryClient.setQueryData<Todo[]>(todoKeys.lists(), (old) =>
+      queryClient.setQueryData<Todo[]>(listKey, (old) =>
         old?.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
       );
 
-      return { previous }; // passed to onError/onSettled as context
+      return { previous };
     },
 
-    onError: (_error, _id, context) => {
+    onError: (_error, _id, rollback) => {
       // Roll back to the snapshot
-      if (context?.previous) {
-        queryClient.setQueryData(todoKeys.lists(), context.previous);
+      if (rollback?.previous) {
+        queryClient.setQueryData(listKey, rollback.previous);
       }
     },
 
     onSettled: () => {
       // Reconcile with the server (background refetch)
-      void queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
+      return queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
     },
   });
 }
@@ -220,19 +221,23 @@ export function useToggleTodo() {
 Component usage:
 
 ```tsx
-function TodoItem({ todo }: { todo: Todo }) {
+function TodoList({ todos }: { todos: Todo[] }) {
   const toggleTodo = useToggleTodo();
 
   return (
-    <label>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => toggleTodo.mutate(todo.id)}
-        disabled={toggleTodo.isPending}
-      />
-      {todo.title}
-    </label>
+    <div>
+      {todos.map((todo) => (
+        <label key={todo.id}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => toggleTodo.mutate(todo.id)}
+            disabled={toggleTodo.isPending}
+          />
+          {todo.title}
+        </label>
+      ))}
+    </div>
   );
 }
 ```
@@ -435,9 +440,9 @@ export function useCreateIssue() {
 
 ## Anti-Patterns to Avoid
 
-1. **Server state in Zustand** — duplicate cache → drift. Query owns it.
-2. **Fetch-after-mutation** — refetching manually instead of invalidating. `invalidateQueries` handles background refetch with dedup.
-3. **Inline/unstructured keys** — `["data", obj]` or non-serializable values break cache identity and invalidation.
+1. **Competing owners.** A separate store mirroring Query's cache can display an older value after a successful mutation.
+2. **Stale readers after a mutation.** Check which query keys the writer updates or invalidates and which readers actually refetch.
+3. **Incomplete keys** — include each input used to identify the remote data. Inline plain objects are valid when their values are serializable.
 4. **`enabled: false` forever** — a query disabled by a missing input should be gated by `Boolean(input)`, not hardcoded.
 5. **Optimistic updates without snapshot** — no `context.previous` means no rollback path.
 6. **Unbounded `staleTime: 0` defaults** — if data barely changes, set `staleTime` to avoid refetch storms on every remount.

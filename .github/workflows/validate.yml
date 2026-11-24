@@ -64,7 +64,7 @@ jobs:
         env:
           ROLEBOX_ROOT: ${{ github.workspace }}/.rolebox-contract
           PYTHONDONTWRITEBYTECODE: "1"
-      - run: node scripts/test-runtime-contracts.mjs roles/ai-designer roles/dart-flutter roles/jetpack-compose roles/rust-engineer roles/supersearch roles/swift-developer roles/typescript-engineer scripts/tests
+      - run: node scripts/test-runtime-contracts.mjs roles/ai-designer roles/dart-flutter roles/jetpack-compose roles/react-frontend roles/rust-engineer roles/supersearch roles/swift-developer roles/typescript-engineer scripts/tests
         if: steps.contract.outputs.available == 'true'
         env:
           ROLEBOX_ROOT: ${{ github.workspace }}/.rolebox-contract

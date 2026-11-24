@@ -16,22 +16,22 @@ TDD is a **workflow**, not a testing technique. You write a failing test first, 
 
 Write a test that expresses the **behavior** you want, then run it and watch it fail. A test that passes before the feature exists proves nothing — it is not exercising what you think it is.
 
-- `pnpm vitest run <path-to-test>` — see it fail, and read *why* it fails (wrong value? missing element? error?).
+- Run the owning workspace’s focused test command. On pnpm with Vitest, for example, use `pnpm vitest run <path-to-test>`. Read the failure.
 - The failure should be about missing behavior, not a broken test. If the test fails for the wrong reason (a typo, a bad query), fix the test before proceeding.
 
 ### 2. Green — make it pass with the minimal change
 
 Write the **minimum code** to make the test pass. No extra features, no premature abstraction, no "while I'm here" refactors, no speculative generics. Duplication and awkwardness are acceptable at this stage — you will clean them up in step 3 while the tests hold you safe.
 
-- `pnpm vitest run` — green.
+- Rerun the same focused test and confirm it passes.
 - If you cannot get green quickly, the test or the seam is wrong. Re-read the test; do not widen it into a lie.
 
 ### 3. Refactor — improve with the tests green
 
 With the suite green, improve the code: extract a hook or component, rename, remove duplication, tighten types. The tests tell you instantly if a refactor changed behavior.
 
-- Run `pnpm vitest run` after **each** refactor step, not once at the end.
-- If a refactor breaks a test, the test is asserting implementation details — see [What a Good Test Is](#what-a-good-test-is) and fix the test, not the code.
+- Rerun the focused tests after each refactor step.
+- If a refactor breaks a test, check the public behavior. Repair the implementation for a real regression. Adjust the assertion only when the behavior still satisfies the contract.
 
 ### Rules of the loop
 
@@ -50,7 +50,7 @@ A good test verifies **behavior through public interfaces**, not implementation 
 - It **fails for the right reason**: it goes red when behavior breaks, not when markup moves.
 - It asserts **one behavior per test**, so a failure pinpoints the broken contract.
 
-If a test breaks on every refactor, it is coupled to implementation, not behavior. Fix the test, not the code. For the full ❌/✅ catalog, see `references/tests.md`.
+Repeated failures after internal changes warrant checking whether the assertion observes the public behavior. For the full ❌/✅ catalog, see `references/tests.md`.
 
 ## Seams — Where Tests Go
 
@@ -121,7 +121,7 @@ Before finishing any task that adds or changes tests:
 - [ ] Test written before implementation (red first)
 - [ ] Tests query by role / accessible name (not `data-testid` first)
 - [ ] No assertions on internal state or implementation details
-- [ ] Ran `pnpm vitest run` (or `pnpm test`) — green
+- [ ] Ran the workspace’s appropriate focused test command and checked its result
 
 ## Detailed References
 

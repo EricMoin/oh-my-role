@@ -1,6 +1,6 @@
 ---
 name: vercel-react-best-practices
-description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+description: Investigate React and Next.js performance issues with Vercel's optimization examples. Use for a reported slowdown, bundle or request budget, or a performance review where a trace or build measurement can test the proposed change.
 license: MIT
 metadata:
   author: vercel
@@ -9,17 +9,11 @@ metadata:
 
 # Vercel React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 45 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+This local copy of Vercel’s React performance guidance is a collection of candidate optimizations. Check the installed version, router, runtime and compiler before applying a rule. Establish the bottleneck, then measure the same interaction or build before and after. For shared caches, establish the data’s request, user and tenant scope before considering cross-request reuse. [Upstream skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices)
 
 ## When to Apply
 
-Reference these guidelines when:
-
-- Writing new React components or Next.js pages
-- Implementing data fetching (client or server-side)
-- Reviewing code for performance issues
-- Refactoring existing React/Next.js code
-- Optimizing bundle size or load times
+Select the relevant category after identifying the affected route, request or interaction. For example, a network waterfall calls for comparing request start times, while a bundle regression calls for comparing the modules loaded by the route.
 
 ## Rule Categories by Priority
 
@@ -112,7 +106,6 @@ Read individual rule files for detailed explanations and code examples:
 ```
 rules/async-parallel.md
 rules/bundle-barrel-imports.md
-rules/_sections.md
 ```
 
 Each rule file contains:

@@ -27,6 +27,8 @@ oh-my-role/
     └── swift-developer/      # Native iOS development with SwiftUI and UIKit
 ```
 
+`react-frontend` traces React and Next.js behavior to the consuming package and verifies the affected interaction. Its [source guide](roles/react-frontend/references/source-evidence.md) connects symptoms to project checks and upstream evidence. Its [Graph v3 workflow](roles/react-frontend/references/graph-protocol.md) shows how a source finding reaches the implementation and how a verifier returns a failing case for repair.
+
 `doc-writer` is the documentation writing/editing lead with domain sub-roles for comments, API reference, guides, decisions, releases, and prose, plus a final humanizer gate before publishing.
 
 `swift-developer` builds and maintains native iOS apps, with separate SwiftUI, UIKit and interop workflows. Its [iOS field guide / iOS 开发资料导读](roles/swift-developer/references/field-guide.md) connects symptoms with engineering evidence. The [role design notes / 角色设计取舍](roles/swift-developer/DESIGN.md) explain how Apple's and community authors' skills informed the design.

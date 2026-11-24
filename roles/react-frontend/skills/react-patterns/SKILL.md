@@ -1,6 +1,6 @@
 ---
 name: react
-description: Comprehensive React development guide covering component architecture, hooks, state management, TypeScript integration, useEffect patterns, and testing with Vitest. Use when creating React components, custom hooks, managing state, or any frontend React code. Essential for React 19+ development. Don't use for React Native, non-React frameworks (Vue, Svelte, Solid), or backend-only Node.js code.
+description: Design React DOM components, hooks, state ownership, effects and TypeScript props for the project's supported React versions.
 allowed-tools: Read, Grep, Glob
 metadata:
   author: Pedro Nauck
@@ -9,27 +9,27 @@ metadata:
 ---
 # React Development Guide
 
-This skill provides comprehensive guidelines, patterns, and best practices for React development in this project.
+Check the consuming package's React and React DOM versions, and the peer range for a shared component library. The React 19 examples require that version throughout the supported range.
 
 ## Quick Start
 
 1. **Best Practices**: For component architecture, state management, and TypeScript integration, read `references/best-practices.md`
-2. **Element wrappers**: If a component renders a single native element (`button`, `input`, `a`, …), extend that element’s props (`React.ComponentProps<"…">`) and spread `...props` — see **Extend native element props** below and `references/best-practices.md` → *Extending HTML Elements*.
+2. **Element wrappers**: Keep native semantics and the public prop contract when creating a reusable primitive. See **Extend native element props** below.
 3. **useEffect Patterns**: For understanding when to use (and avoid) useEffect, read `references/useeffect-patterns.md`
 4. **Data Fetching**: For TanStack Query patterns, use the `tanstack-query` skill
 5. **Forms**: For form handling with TanStack Form, use the `tanstack-query` skill
 
 ## Core Principles
 
-- **Functional Components Only**: Use functional components exclusively - class components are legacy
+- Prefer function components for new UI. Preserve supported class components and existing error boundaries.
 - **Single Responsibility**: Keep components small and focused on a single purpose
-- **Separation of Concerns**: Extract behavior logic into custom hooks, keep components focused on rendering
+- Keep local behavior close to the UI that owns it. Extract a hook when it gives shared or complex behavior a clear contract.
 - **Feature-Based Organization**: Co-locate related files by feature, not by type
-- **React 19+ Features**: Embrace modern React features (`use()`, Actions, `useOptimistic()`)
+- Match APIs such as `use`, form Actions and `useOptimistic` to the target renderer, framework and peer range.
 
 ## Extend native element props
 
-**Default rule for wrappers:** whenever a component’s root output is a **single native element**, its props interface MUST extend that element’s intrinsic props — same contract as shadcn/ui-generated primitives. Callers keep access to `aria-*`, `data-*`, `onClick`, `disabled`, etc., without bespoke passthrough lists.
+For a primitive that exposes a native element's API, derive its props from that element and pass supported attributes through. For a component that owns a value, event or accessible name, define the narrower contract explicitly.
 
 **Do this:**
 
@@ -37,7 +37,7 @@ This skill provides comprehensive guidelines, patterns, and best practices for R
 | ------------- | ------ |
 | Base type | `interface XProps extends React.ComponentProps<"button">` (or `"input"`, `"a"`, `"div"`, …) |
 | Spreading | Destructure your custom fields, then `{...props}` (and merged `className`) onto the DOM node |
-| Ref | Use `React.forwardRef` and the matching element ref type when refs are needed |
+| Ref | React 19 function components can receive `ref` as a prop. Use `forwardRef` when the component must expose a ref to React 18 consumers. [React ref API](https://react.dev/reference/react/forwardRef) |
 
 ```typescript
 interface TextFieldProps extends React.ComponentProps<"input"> {
@@ -62,14 +62,14 @@ function TextField({ label, error, className, ...props }: TextFieldProps) {
 
 ## Quick Reference Tables
 
-### State Management Hierarchy
+### State ownership
 
-| Priority | Tool | Use Case |
-|----------|------|----------|
-| 1 | `useState`/`useReducer` | Component-specific UI state |
-| 2 | Zustand | Shared client state across components |
-| 3 | TanStack Query | Server state and data synchronization |
-| 4 | URL state | Shareable application state (TanStack Router) |
+| What owns the value? | Typical implementation |
+| --- | --- |
+| The mounted component or subtree | Local state, lifted to a common parent as needed |
+| The navigation history or shareable link | The existing router's path or search parameters |
+| Multiple independent client consumers | Their shared parent, context or the project's existing client store |
+| A remote resource | The route's data loader or the existing server-data cache |
 
 ### useEffect Decision Tree
 
@@ -99,7 +99,7 @@ function TextField({ label, error, className, ...props }: TextFieldProps) {
 ## TypeScript Integration
 
 ```typescript
-// CORRECT: Type props directly (never use React.FC)
+// One way to type a function component's props.
 interface BrandButtonProps {
   variant: "primary" | "secondary";
   children: React.ReactNode;
@@ -117,7 +117,7 @@ interface IconButtonProps extends React.ComponentProps<"button"> {
 
 ## Custom Hooks Guidelines
 
-- Extract non-visual logic into custom hooks
+- Extract related stateful behavior when it has a meaningful hook contract
 - Keep hooks focused on single purpose
 - Use clear naming: `useXxx` pattern
 - Return arrays for state-like hooks, objects for complex returns
@@ -145,7 +145,7 @@ function useUser(id: string) {
 ## Component Architecture Pattern
 
 ```typescript
-// CORRECT: Hook handles all logic, component handles rendering
+// Encapsulate the search behavior shared by issue views.
 function useIssueSearch(projectId: string) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Filters>({});
@@ -213,16 +213,13 @@ describe("useMyHook", () => {
 
 Before finishing a task involving React:
 
-- [ ] Components are functional and follow single responsibility principle
-- [ ] Behavior logic is extracted into custom hooks
-- [ ] TypeScript props are typed directly (not using `React.FC`); native wrappers extend `React.ComponentProps<"…">` (or `ButtonHTMLAttributes` + variants following shadcn/ui conventions) and forward `...props`
-- [ ] State management follows the hierarchy (local -> Zustand -> TanStack Query -> URL)
+- [ ] Props and refs preserve the public contract throughout the supported React range
+- [ ] Each state value has an owner and the expected lifetime across navigation and remounts
 - [ ] useEffect is only used for external system synchronization
-- [ ] Error boundaries are in place for error handling
+- [ ] Rendering failures have the recovery behavior required by this flow
 - [ ] Loading and error states are handled
 - [ ] Accessibility requirements are met (semantic HTML, keyboard navigation)
-- [ ] Tests are written for components and hooks
-- [ ] Run `pnpm run lint`, `pnpm run typecheck`, and `pnpm run test`
+- [ ] Run the relevant existing checks using the owning workspace's scripts and package manager
 
 ## Detailed References
 

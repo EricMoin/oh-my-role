@@ -16,14 +16,7 @@ For complete TSX patterns (query-key factories, dependent queries, optimistic up
 
 TanStack Query is the **server state** layer: it owns fetching, caching, revalidation, retries, and synchronization with the backend. It is not a general-purpose state manager.
 
-Follow the state-management hierarchy from the `react-patterns` skill:
-
-| Priority | Tool | Use Case |
-|----------|------|----------|
-| 1 | `useState`/`useReducer` | Component-specific UI state |
-| 2 | Zustand | Shared client state across components (see the `zustand` skill) |
-| 3 | TanStack Query | Server state and data synchronization |
-| 4 | URL state | Shareable application state (TanStack Router) |
+Use Query where it already owns remote data. Compare the route's loader, URL and component state when identifying the owner of a value.
 
 Rules of thumb:
 
@@ -42,11 +35,11 @@ const { data, isPending, isError, error, refetch } = useQuery({
   staleTime: 5 * 60 * 1000, // 5 minutes — data is fresh, no refetch on remount
   gcTime: 30 * 60 * 1000,   // v5 rename of cacheTime — how long inactive data is kept
   enabled: Boolean(projectId), // dependent queries: skip until a value is ready
-  select: (data) => data.members, // derive a slice; stable reference prevents extra renders
+  select: (data) => data.members,
 });
 ```
 
-- **`staleTime`** — how long data is considered fresh. Tune per query: short for real-time-ish data, long for stable reference data. Default is 0 (always refetch on mount), which is usually too aggressive.
+- **`staleTime`** controls freshness. With the v5 defaults, stale queries can refetch when an enabled observer mounts. Choose a longer freshness window when the product permits it.
 - **`gcTime`** — how long inactive cached data is kept (v5 renamed `cacheTime`).
 - **`enabled`** — gate the query. Set `false` until required inputs exist (dependent queries, auth, filters).
 - **`select`** — derive data or pick a subset. The selector result is cached, so it is safe to return new object references; but keep the selector itself stable (defined outside the component or memoized) to avoid recomputation.
@@ -54,7 +47,7 @@ const { data, isPending, isError, error, refetch } = useQuery({
 
 ## Mutations
 
-Mutations write to the server and reconcile the cache. Never fetch after a mutation — invalidate or update the cache instead.
+After a successful write, reconcile the affected readers using the mutation response, targeted invalidation or the project's explicit refetch flow.
 
 ```typescript
 const queryClient = useQueryClient();
@@ -98,14 +91,14 @@ const toggleTodo = useMutation({
 });
 ```
 
-The `onMutate` return value is passed to `onError`/`onSettled` as the third argument — use it to carry the pre-mutation snapshot.
+The rollback value returned by `onMutate` is the third argument to `onError` and the fourth to `onSettled`. This list snapshot assumes one outstanding update to the list. For overlapping edits, scope rollback to the edited value or show the pending mutation in the UI. [Mutation callback signatures at v5.90.3](https://github.com/TanStack/query/blob/v5.90.3/docs/framework/react/reference/useMutation.md)
 
 ## Query Key Discipline
 
 Query keys are the cache's identity. Two rules:
 
 1. **Hierarchical and structured** — start broad, narrow down: `["todos", "list", { filters }]`. Key order matters for invalidation (invalidating `["todos"]` matches everything under it).
-2. **Serializable** — only JSON-serializable values (strings, numbers, booleans, arrays, plain objects). No class instances, functions, or components. Stable references, not inline objects that change identity every render.
+2. **Serializable** — include each changing input to the query function. The default hash treats fresh plain objects with the same serializable properties as equivalent. Array element order matters. [Query key hashing at v5.90.3](https://github.com/TanStack/query/blob/v5.90.3/docs/framework/react/guides/query-keys.md)
 
 Use a **query-key factory** so keys and their consumers stay in sync:
 
@@ -119,7 +112,7 @@ export const todoKeys = {
 };
 ```
 
-Invalidate partial trees: `invalidateQueries({ queryKey: todoKeys.lists() })` refetches every list variant.
+`invalidateQueries({ queryKey: todoKeys.lists() })` invalidates the matching list variants. Active eligible queries refetch by default.
 
 ## Suspense & Error Boundaries
 
@@ -146,7 +139,7 @@ const { data: project } = useSuspenseQuery({
 
 ## Forms with TanStack Form
 
-For forms bound to server data, use `@tanstack/react-form` and drive submission through a mutation:
+When the project uses `@tanstack/react-form`, its submit handler can call a Query mutation:
 
 ```typescript
 const form = useForm({
@@ -167,15 +160,15 @@ const form = useForm({
 
 ## Validation Checklist
 
-Before finishing a task involving TanStack Query or TanStack Form:
+Select the checks that cover the changed behavior.
 
-- [ ] Server state lives in Query, not Zustand or local state
-- [ ] Query keys are hierarchical, serializable, and use a query-key factory
-- [ ] `staleTime`/`gcTime` are tuned per query; `enabled` gates dependent queries
-- [ ] Mutations invalidate (`invalidateQueries`) or update (`setQueryData`) the cache — no fetch-after-mutation
-- [ ] Optimistic updates carry a snapshot and roll back in `onError`
+- [ ] Readers and writers agree on the owner of the remote data
+- [ ] Query keys identify all inputs and support the intended invalidations
+- [ ] Freshness and dependent-query behavior match the product's requirements
+- [ ] The affected reader displays the saved value after the mutation succeeds
+- [ ] A failed optimistic mutation leaves visible data consistent, including any overlapping edits
 - [ ] Loading and error states are handled (Suspense + ErrorBoundary, or explicit `isPending`/`isError` branches)
-- [ ] Forms use typed fields and submit through a mutation
-- [ ] Run `pnpm typecheck` and `pnpm test` — both green
+- [ ] Forms using a mutation report its pending, success and failure states
+- [ ] Run the relevant existing checks with the workspace's package manager
 
 For complete TSX examples, consult `references/patterns.md`.

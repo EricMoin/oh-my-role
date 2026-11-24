@@ -1,6 +1,6 @@
 # Accessible React/TSX Patterns
 
-Concrete ❌/✅ patterns for accessible React UI. Class strings use the project's Tailwind design tokens (see the `tailwindcss` skill) and the `cn()` helper where class composition is needed. Wrappers that render a single native element extend that element's props and spread `...props` so callers keep `aria-*`/`data-*` access (see the `react` skill → *Extend native element props*).
+Concrete ❌/✅ patterns for accessible React UI. Class strings assume a theme with the illustrated Tailwind tokens (see the `tailwindcss` skill) and the `cn()` helper where class composition is needed. Wrappers that render a single native element extend that element's props and spread `...props` so callers keep `aria-*`/`data-*` access (see the `react` skill → *Extend native element props*).
 
 ## 1. Accessible button — never `div` with `onClick`
 
@@ -21,7 +21,7 @@ Concrete ❌/✅ patterns for accessible React UI. Class strings use the project
 </button>
 ```
 
-If a native `<button>` truly cannot be used, replicate the full contract on the custom widget: `role="button"`, `tabIndex={0}`, `onKeyDown` handling for Enter and Space, and `aria-disabled` instead of `disabled` (a `disabled` attribute is skipped by both keyboard and screen readers — see `aria-disabled:` in the `tailwindcss` skill).
+If a native `<button>` truly cannot be used, replicate the full contract on the custom widget: `role="button"`, `tabIndex={0}`, `onKeyDown` handling for Enter and Space, and `aria-disabled` instead of `disabled` (native disabled controls are generally removed from sequential keyboard navigation; custom controls must also suppress activation).
 
 ```tsx
 // ✅ Custom widget (only when a real button is impossible):
@@ -46,102 +46,31 @@ If a native `<button>` truly cannot be used, replicate the full contract on the 
 
 ## 2. Accessible dialog — focus in, focus trap, Escape, focus restore
 
+Use the project's tested modal primitive where available. A native modal dialog provides background inertness and modal focus handling through `showModal()`.
+
 ```tsx
-// ✅ Accessible dialog: focus moved in on open, trapped while open,
-//    Escape dismisses, focus restored to the trigger on close
-function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
+function DetailsDialog({ children }: { children: React.ReactNode }) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
-  // On open: remember the trigger and move focus into the dialog
-  useEffect(() => {
-    if (open) {
-      triggerRef.current = document.activeElement as HTMLElement | null;
-      dialogRef.current?.focus();
-    }
-  }, [open]);
-
-  // Escape to dismiss + trap Tab inside the dialog
-  useEffect(() => {
-    if (!open) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const container = dialogRef.current;
-      if (!container) return;
-      const focusables = Array.from(
-        container.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
-  // On close: restore focus to the trigger
-  useEffect(() => {
-    if (!open) triggerRef.current?.focus();
-  }, [open]);
-
-  if (!open) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      tabIndex={-1}
-      ref={dialogRef}
-      className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4"
-    >
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg">
-        <h2 id={titleId} className="text-lg font-semibold">
-          {title}
-        </h2>
-        <div className="mt-4">{children}</div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 rounded-md border border-input px-4 py-2 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Close
-        </button>
-      </div>
-    </div>
+    <>
+      <button type="button" onClick={() => dialog.current?.showModal()}>
+        Show details
+      </button>
+      <dialog ref={dialog} aria-labelledby={titleId}>
+        <h2 id={titleId}>Details</h2>
+        {children}
+        <form method="dialog">
+          <button type="submit">Close</button>
+        </form>
+      </dialog>
+    </>
   );
 }
 ```
 
-Key contract: `role="dialog"` + `aria-modal="true"` + `aria-labelledby` (title), `tabIndex={-1}` on the container so it can receive focus, focus trap on Tab, Escape to dismiss, and focus restore to the trigger on close.
+In the target browser, open the dialog by keyboard, check the initial focus and Tab/Shift+Tab behavior, dismiss it with Escape and with the Close button, and verify where focus returns. [WAI-ARIA modal dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
 
 ## 3. Accessible form field — label + announced error
 

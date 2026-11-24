@@ -9,7 +9,7 @@ metadata:
 ---
 # Tailwind CSS Developer Guide
 
-This skill provides guidelines, patterns, and best practices for working with Tailwind CSS v4 in this project.
+This skill provides guidelines, patterns, and best practices for working with Tailwind CSS v4 when the consuming project uses v4. Confirm the resolved Tailwind version and the theme loaded by the affected entry point.
 
 ## Quick Reference
 
@@ -19,27 +19,27 @@ For detailed patterns, examples, and checklists, see:
 ## Core Principles
 
 - **Utility-First**: Embrace utility-first approach and avoid custom CSS.
-- **Design Tokens**: Always use design system tokens (`bg-background`, `text-foreground`) instead of explicit colors (`bg-white`, `text-black`).
+- **Design Tokens**: Use the theme utilities and CSS conventions defined by the project.
 - **Mobile-First**: Build responsive layouts with mobile-first approach.
 
-## Critical: Design Token Usage
+## Check the project theme
 
-To ensure theme switching works correctly:
+In v4 a theme variable such as `--color-card` provides a corresponding utility such as `bg-card`. Check the theme for each name before copying the examples. [Tailwind theme variables](https://tailwindcss.com/docs/theme)
 
-**Always use:**
+Examples from a design system with semantic colors include
 - Backgrounds: `bg-background`, `bg-card`, `bg-muted`, `bg-popover`
 - Text: `text-foreground`, `text-muted-foreground`, `text-card-foreground`
 - Borders: `border-border`, `border-input`, `border-ring`
 - Actions: `bg-primary text-primary-foreground`, `bg-secondary text-secondary-foreground`
 - States: `bg-destructive text-destructive-foreground`, `bg-accent text-accent-foreground`
 
-**Never use:** `bg-white`, `text-black`, `border-gray-200`, `bg-blue-500`
+The default palette is also available where the project keeps it. Check the rendered color pair in each supported theme.
 
 ## Common Tasks
 
 ### Long Class Strings
 
-Break class strings longer than 100 characters into arrays:
+Group class strings if that matches the formatter and improves readability.
 
 ```typescript
 const cardBaseClasses = [
@@ -83,9 +83,9 @@ const cardBaseClasses = [
 
 Before finishing a task involving Tailwind CSS:
 
-- [ ] Using design tokens instead of explicit colors
-- [ ] Long class strings broken into arrays (>100 chars)
+- [ ] Chosen utilities generate the intended CSS in the active theme
+- [ ] Class strings follow the workspace formatter
 - [ ] Mobile-first responsive approach
-- [ ] Run lint checks (`pnpm run lint`)
+- [ ] Run the workspace’s styling or build check
 
 For detailed rules, anti-patterns, and configuration examples, see [references/patterns.md](references/patterns.md).

@@ -107,4 +107,4 @@ Run this before calling a design done:
 - [ ] Copy names the actual product and audience; no filler
 - [ ] Numbered markers only for real sequences
 - [ ] Motion is one orchestrated moment, not per-element sprinkles
-- [ ] Colors use design tokens from the `tailwindcss` skill (no raw hex)
+- [ ] Colors use the project’s actual palette and theme tokens
